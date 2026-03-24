@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Ready to execute
-stopped_at: Completed 04-01-PLAN.md
-last_updated: "2026-03-24T10:56:54.502Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 04-03-PLAN.md (Tasks 1-2, checkpoint Task 3 pending)
+last_updated: "2026-03-24T11:05:43.478Z"
 progress:
   total_phases: 4
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 20
-  completed_plans: 18
+  completed_plans: 20
 ---
 
 # Project State
@@ -64,6 +64,7 @@ Plan: 3 of 3
 | Phase 03 P03 | 9min | 2 tasks | 12 files |
 | Phase 04 P02 | 6min | 2 tasks | 15 files |
 | Phase 04 P01 | 8min | 2 tasks | 15 files |
+| Phase 04 P03 | 5min | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -107,6 +108,8 @@ Recent decisions affecting current work:
 - [Phase 04]: 커뮤니티 수집기는 게시글+댓글 함께 수집 (별도 댓글 API 없음)
 - [Phase 04]: progress/JobProgress JSONB를 Record<string, ...>로 일반화
 - [Phase 04]: 커뮤니티 게시글은 articles 테이블 재사용 (boardName->publisher 매핑)
+- [Phase 04]: 소스 체크박스를 SOURCE_OPTIONS 배열 기반 그룹별 렌더링으로 변경
+- [Phase 04]: CrisisScenarios lg:col-span-2 전체 폭 + RadialBarChart 반원형 프로그레스
 
 ### Pending Todos
 
@@ -120,6 +123,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-24T10:56:54.500Z
-Stopped at: Completed 04-01-PLAN.md
+Last session: 2026-03-24T11:05:43.476Z
+Stopped at: Completed 04-03-PLAN.md (Tasks 1-2, checkpoint Task 3 pending)
 Resume file: None
