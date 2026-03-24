@@ -2,3 +2,5 @@
 export { db } from './db';
 export type { Database } from './db';
 export * from './db/schema';
+export { triggerCollection, createCollectorWorker, createPipelineWorker, redisConnection } from './queue';
+export * from './types';
