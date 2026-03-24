@@ -9,6 +9,7 @@
     "outDir": "dist",
     "incremental": true,
     "module": "esnext",
+    "baseUrl": ".",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "plugins": [
