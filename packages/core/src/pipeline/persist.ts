@@ -73,7 +73,7 @@ export async function persistComments(data: (typeof comments.$inferInsert)[]) {
 export async function updateJobProgress(
   jobId: number,
   progress: Record<string, unknown>,
-  status?: string,
+  status?: 'pending' | 'running' | 'completed' | 'partial_failure' | 'failed',
 ) {
   return db
     .update(collectionJobs)

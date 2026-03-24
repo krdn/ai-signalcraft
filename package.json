@@ -7,7 +7,8 @@
     "test": "pnpm -r test",
     "db:push": "pnpm --filter @ai-signalcraft/core db:push",
     "db:studio": "pnpm --filter @ai-signalcraft/core db:studio",
-    "worker": "pnpm --filter @ai-signalcraft/core worker"
+    "worker": "pnpm --filter @ai-signalcraft/core worker",
+    "trigger": "tsx scripts/trigger-collection.ts"
   },
   "devDependencies": {
     "typescript": "^5.8.0",

@@ -73,9 +73,15 @@ importers:
 
   packages/core:
     dependencies:
+      '@ai-signalcraft/collectors':
+        specifier: workspace:*
+        version: link:../collectors
       bullmq:
         specifier: ^5.0.0
         version: 5.71.0
+      dotenv:
+        specifier: ^16.4.0
+        version: 16.6.1
       drizzle-orm:
         specifier: ^0.40.0
         version: 0.40.1(@opentelemetry/api@1.9.0)(@types/pg@8.20.0)(gel@2.2.0)(pg@8.20.0)
@@ -1144,6 +1150,10 @@ packages:
 
   domutils@3.2.2:
     resolution: {integrity: sha512-6kZKyUajlDuqlHKVX1w7gyslj9MPIXzIFiz/rGu35uC1wMi+kMhQwGhl4lt9unC9Vb9INnY9Z3/ZA3+FhASLaw==}
+
+  dotenv@16.6.1:
+    resolution: {integrity: sha512-uBq4egWHTcTt33a72vpSG0z3HnPuIl6NqYcTrKEg2azoEyl2hpW0zqlxysq2pK9HlDIHyHyakeYaYnSAwd8bow==}
+    engines: {node: '>=12'}
 
   drizzle-kit@0.30.6:
     resolution: {integrity: sha512-U4wWit0fyZuGuP7iNmRleQyK2V8wCuv57vf5l3MnG4z4fzNTjY/U13M8owyQ5RavqvqxBifWORaR3wIUzlN64g==}
@@ -2570,6 +2580,8 @@ snapshots:
       dom-serializer: 2.0.0
       domelementtype: 2.3.0
       domhandler: 5.0.3
+
+  dotenv@16.6.1: {}
 
   drizzle-kit@0.30.6:
     dependencies:
