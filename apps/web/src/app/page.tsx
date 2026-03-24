@@ -7,6 +7,7 @@ import { TriggerForm } from '@/components/analysis/trigger-form';
 import { PipelineMonitor } from '@/components/analysis/pipeline-monitor';
 import { RecentJobs } from '@/components/analysis/recent-jobs';
 import { HistoryTable } from '@/components/analysis/history-table';
+import { ReportView } from '@/components/report/report-view';
 
 // 분석 실행 탭 -- 트리거 폼 + 파이프라인 모니터 + 최근 작업
 function AnalysisTab({
@@ -45,14 +46,9 @@ function DashboardTab() {
   );
 }
 
-// AI 리포트 탭 -- Plan 04에서 구현
-function ReportTab() {
-  return (
-    <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-      <p className="text-lg font-semibold">AI 리포트</p>
-      <p className="text-sm mt-2">Plan 04에서 구현됩니다</p>
-    </div>
-  );
+// AI 리포트 탭 -- 마크다운 뷰어 + 섹션 네비 + PDF 내보내기
+function ReportTab({ jobId }: { jobId: number | null }) {
+  return <ReportView jobId={jobId} />;
 }
 
 // 히스토리 탭 -- 과거 분석 목록 (조회만, 비교 기능은 deferred)
@@ -69,8 +65,9 @@ export default function Home() {
     setActiveTab(1);
   }, []);
 
-  // 작업 선택 시 결과 대시보드 탭으로 전환
-  const handleSelectJob = useCallback((_jobId: number) => {
+  // 작업 선택 시 결과 대시보드 탭으로 전환 + jobId 설정
+  const handleSelectJob = useCallback((jobId: number) => {
+    setActiveJobId(jobId);
     setActiveTab(1);
   }, []);
 
@@ -88,7 +85,7 @@ export default function Home() {
             onSelectJob={handleSelectJob}
           />,
           <DashboardTab key="dashboard" />,
-          <ReportTab key="report" />,
+          <ReportTab key="report" jobId={activeJobId} />,
           <HistoryTabPanel key="history" onViewResult={handleSelectJob} />,
         ]}
       />
