@@ -1,8 +1,10 @@
 // BullMQ Worker 실행 프로세스 -- Next.js와 별도 프로세스로 실행
 // 실행: pnpm --filter @ai-signalcraft/core worker 또는 tsx watch src/queue/worker-process.ts
 import 'dotenv/config';
-import { Job } from 'bullmq';
+import { Job, Worker } from 'bullmq';
 import { createCollectorWorker, createPipelineWorker } from './workers';
+import { redisConnection } from './connection';
+import { triggerAnalysis } from './flows';
 import {
   NaverNewsCollector,
   NaverCommentsCollector,
@@ -22,6 +24,7 @@ import {
   persistComments,
   updateJobProgress,
 } from '../pipeline';
+import { runAnalysisPipeline } from '../analysis/runner';
 
 // 수집기 등록
 registerCollector(new NaverNewsCollector());
@@ -147,17 +150,45 @@ const pipelineWorker = createPipelineWorker(async (job: Job) => {
 
     // D-06: 최종 상태 업데이트 -- dbJobId는 number이므로 parseInt 불필요
     await updateJobProgress(dbJobId, {}, 'completed');
+
+    // D-09: 수집 완료 후 자동 분석 트리거
+    const keyword = job.data.keyword;
+    if (keyword) {
+      await triggerAnalysis(dbJobId, keyword);
+      console.log(`분석 파이프라인 트리거됨: job=${dbJobId}, keyword=${keyword}`);
+    }
+
     return { persisted: true };
   }
 });
 
+// 분석 Worker -- analysis 큐
+const analysisWorker = new Worker('analysis', async (job: Job) => {
+  const { dbJobId, keyword } = job.data;
+
+  if (job.name === 'run-analysis') {
+    console.log(`분석 시작: job=${dbJobId}, keyword=${keyword}`);
+    const result = await runAnalysisPipeline(dbJobId);
+
+    await job.updateProgress({
+      completedModules: result.completedModules,
+      failedModules: result.failedModules,
+    });
+
+    console.log(`분석 완료: completed=${result.completedModules.length}, failed=${result.failedModules.length}`);
+    return result;
+  }
+}, { connection: redisConnection });
+
 console.log('Workers started. Waiting for jobs...');
 console.log('  - Collector worker (collectors queue)');
 console.log('  - Pipeline worker (pipeline queue)');
+console.log('  - Analysis worker (analysis queue)');
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {
   await collectorWorker.close();
   await pipelineWorker.close();
+  await analysisWorker.close();
   process.exit(0);
 });

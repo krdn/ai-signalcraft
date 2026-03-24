@@ -63,3 +63,14 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
 
   return { flowId, dbJobId, flow };
 }
+
+// D-09: 분석 파이프라인 트리거 -- persist 완료 후 호출
+// runner.ts가 내부적으로 3단계 병렬/순차를 관리하므로 Flow는 단일 작업으로 단순화
+export async function triggerAnalysis(dbJobId: number, keyword: string) {
+  const flow = await getFlowProducer().add({
+    name: 'run-analysis',
+    queueName: 'analysis',
+    data: { dbJobId, keyword },
+  });
+  return flow;
+}
