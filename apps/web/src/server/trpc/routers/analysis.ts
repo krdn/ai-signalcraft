@@ -22,11 +22,12 @@ export const analysisRouter = router({
         teamId: ctx.teamId ?? null,
       }).returning();
 
-      // 2. BullMQ 트리거 -- CollectionTrigger 형식
+      // 2. BullMQ 트리거 -- CollectionTrigger 형식 (INT-01: sources 전달)
       await triggerCollection({
         keyword: input.keyword,
         startDate: new Date(input.startDate).toISOString(),
         endDate: new Date(input.endDate).toISOString(),
+        sources: input.sources,
       }, job.id);
 
       return { jobId: job.id };

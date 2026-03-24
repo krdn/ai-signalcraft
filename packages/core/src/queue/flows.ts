@@ -25,78 +25,81 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
   // D-05: 3단계 분리 -- collect -> normalize -> persist
   // D-01: 통합 키워드 수집 -- 모든 소스 동시 실행
   // D-04: 부분 실패 허용 -- 소스별 독립 실행
+  // INT-01: sources 필드 기반 조건부 수집기 실행
+  const enabledSources = params.sources ?? ['naver', 'youtube', 'dcinside', 'fmkorea', 'clien'];
+
+  const children = [];
+  if (enabledSources.includes('naver')) {
+    children.push({
+      name: 'normalize-naver',
+      queueName: 'pipeline',
+      data: { source: 'naver-news', flowId, dbJobId, maxComments: limits.commentsPerItem },
+      children: [{
+        name: 'collect-naver-articles',
+        queueName: 'collectors',
+        data: { ...params, source: 'naver-news', maxItems: limits.naverArticles, maxComments: limits.commentsPerItem, flowId, dbJobId },
+      }],
+    });
+  }
+  if (enabledSources.includes('youtube')) {
+    children.push({
+      name: 'normalize-youtube',
+      queueName: 'pipeline',
+      data: { source: 'youtube', flowId, dbJobId },
+      children: [{
+        name: 'collect-youtube-videos',
+        queueName: 'collectors',
+        data: { ...params, source: 'youtube-videos', maxItems: limits.youtubeVideos, flowId, dbJobId },
+      }, {
+        name: 'collect-youtube-comments',
+        queueName: 'collectors',
+        data: { ...params, source: 'youtube-comments', maxComments: limits.commentsPerItem, flowId, dbJobId },
+      }],
+    });
+  }
+  // 커뮤니티 수집기 -- 각 소스별 독립 실행 (부분 실패 허용)
+  if (enabledSources.includes('dcinside')) {
+    children.push({
+      name: 'normalize-community-dcinside',
+      queueName: 'pipeline',
+      data: { source: 'dcinside', flowId, dbJobId },
+      children: [{
+        name: 'collect-dcinside',
+        queueName: 'collectors',
+        data: { ...params, source: 'dcinside', maxItems: limits.communityPosts, maxComments: limits.commentsPerItem, flowId, dbJobId },
+      }],
+    });
+  }
+  if (enabledSources.includes('fmkorea')) {
+    children.push({
+      name: 'normalize-community-fmkorea',
+      queueName: 'pipeline',
+      data: { source: 'fmkorea', flowId, dbJobId },
+      children: [{
+        name: 'collect-fmkorea',
+        queueName: 'collectors',
+        data: { ...params, source: 'fmkorea', maxItems: limits.communityPosts, maxComments: limits.commentsPerItem, flowId, dbJobId },
+      }],
+    });
+  }
+  if (enabledSources.includes('clien')) {
+    children.push({
+      name: 'normalize-community-clien',
+      queueName: 'pipeline',
+      data: { source: 'clien', flowId, dbJobId },
+      children: [{
+        name: 'collect-clien',
+        queueName: 'collectors',
+        data: { ...params, source: 'clien', maxItems: limits.communityPosts, maxComments: limits.commentsPerItem, flowId, dbJobId },
+      }],
+    });
+  }
+
   const flow = await getFlowProducer().add({
     name: 'persist',
     queueName: 'pipeline',
     data: { flowId, dbJobId, keyword: params.keyword },
-    children: [
-      {
-        name: 'normalize-naver',
-        queueName: 'pipeline',
-        data: { source: 'naver-news', flowId, dbJobId, maxComments: limits.commentsPerItem },
-        children: [
-          {
-            name: 'collect-naver-articles',
-            queueName: 'collectors',
-            data: { ...params, source: 'naver-news', maxItems: limits.naverArticles, maxComments: limits.commentsPerItem, flowId, dbJobId },
-          },
-        ],
-      },
-      {
-        name: 'normalize-youtube',
-        queueName: 'pipeline',
-        data: { source: 'youtube', flowId, dbJobId },
-        children: [
-          {
-            name: 'collect-youtube-videos',
-            queueName: 'collectors',
-            data: { ...params, source: 'youtube-videos', maxItems: limits.youtubeVideos, flowId, dbJobId },
-          },
-          {
-            name: 'collect-youtube-comments',
-            queueName: 'collectors',
-            data: { ...params, source: 'youtube-comments', maxComments: limits.commentsPerItem, flowId, dbJobId },
-          },
-        ],
-      },
-      // 커뮤니티 수집기 -- 각 소스별 독립 실행 (부분 실패 허용)
-      {
-        name: 'normalize-community-dcinside',
-        queueName: 'pipeline',
-        data: { source: 'dcinside', flowId, dbJobId },
-        children: [
-          {
-            name: 'collect-dcinside',
-            queueName: 'collectors',
-            data: { ...params, source: 'dcinside', maxItems: limits.communityPosts, maxComments: limits.commentsPerItem, flowId, dbJobId },
-          },
-        ],
-      },
-      {
-        name: 'normalize-community-fmkorea',
-        queueName: 'pipeline',
-        data: { source: 'fmkorea', flowId, dbJobId },
-        children: [
-          {
-            name: 'collect-fmkorea',
-            queueName: 'collectors',
-            data: { ...params, source: 'fmkorea', maxItems: limits.communityPosts, maxComments: limits.commentsPerItem, flowId, dbJobId },
-          },
-        ],
-      },
-      {
-        name: 'normalize-community-clien',
-        queueName: 'pipeline',
-        data: { source: 'clien', flowId, dbJobId },
-        children: [
-          {
-            name: 'collect-clien',
-            queueName: 'collectors',
-            data: { ...params, source: 'clien', maxItems: limits.communityPosts, maxComments: limits.commentsPerItem, flowId, dbJobId },
-          },
-        ],
-      },
-    ],
+    children,
   });
 
   return { flowId, dbJobId, flow };
