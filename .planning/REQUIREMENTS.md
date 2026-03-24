@@ -53,7 +53,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [x] **REPT-01**: AI 종합 분석 리포트 자동 생성 (8개 분석 모듈 결과 통합)
 - [x] **REPT-02**: 최종 전략 요약 (현재 상태 + 승부 핵심 한 줄 요약)
-- [ ] **REPT-03**: 리포트 PDF/마크다운 내보내기
+- [x] **REPT-03**: 리포트 PDF/마크다운 내보내기
 
 ### Dashboard
 
@@ -129,7 +129,7 @@ Deferred to future release. Tracked but not in current roadmap.
 | ADVN-04 | Phase 4 | Pending |
 | REPT-01 | Phase 2 | Complete |
 | REPT-02 | Phase 2 | Complete |
-| REPT-03 | Phase 2 | Pending |
+| REPT-03 | Phase 2 | Complete |
 | DASH-01 | Phase 3 | Pending |
 | DASH-02 | Phase 3 | Pending |
 | DASH-03 | Phase 3 | Pending |

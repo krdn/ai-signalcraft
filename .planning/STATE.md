@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Ready to execute
-stopped_at: Completed 02-04-PLAN.md
-last_updated: "2026-03-24T06:27:48.496Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 02-05-PLAN.md
+last_updated: "2026-03-24T06:34:44.683Z"
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 11
-  completed_plans: 10
+  completed_plans: 11
 ---
 
 # Project State
@@ -56,6 +56,7 @@ Plan: 5 of 5
 | Phase 02 P03 | 3min | 1 tasks | 12 files |
 | Phase 02 P02 | 3min | 1 tasks | 13 files |
 | Phase 02 P04 | 4min | 2 tasks | 8 files |
+| Phase 02 P05 | 4min | 1 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -82,6 +83,7 @@ Recent decisions affecting current work:
 - [Phase 02]: prompt-utils 공통 모듈로 입력 데이터 포맷 로직 분리 (본문 500자 제한)
 - [Phase 02]: BullMQ Flow를 단일 run-analysis 작업으로 단순화 (runner가 내부 3단계 관리)
 - [Phase 02]: core 패키지에 ai-gateway 워크스페이스 의존성 추가 (runner에서 analyzeStructured 직접 호출)
+- [Phase 02]: Playwright 기반 마크다운->HTML->PDF 변환 (정규식 기반, 외부 파서 없이)
 
 ### Pending Todos
 
@@ -95,6 +97,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-24T06:27:48.494Z
-Stopped at: Completed 02-04-PLAN.md
+Last session: 2026-03-24T06:34:44.679Z
+Stopped at: Completed 02-05-PLAN.md
 Resume file: None

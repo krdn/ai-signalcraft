@@ -56,7 +56,7 @@ Plans:
 - [x] 02-02-PLAN.md -- Stage 1 분석 모듈 4개 (macro-view, segmentation, sentiment-framing, message-impact)
 - [x] 02-03-PLAN.md -- Stage 2 분석 모듈 4개 (risk-map, opportunity, strategy, final-summary)
 - [x] 02-04-PLAN.md -- 분석 실행 러너 + BullMQ Flow 확장 + Worker 핸들러
-- [ ] 02-05-PLAN.md -- 통합 리포트 생성기 + PDF 내보내기
+- [x] 02-05-PLAN.md -- 통합 리포트 생성기 + PDF 내보내기
 
 ### Phase 3: Dashboard + Team
 **Goal**: 분석팀이 웹 대시보드에서 분석을 트리거하고, 진행 상태를 모니터링하며, 시각화된 결과를 팀원과 함께 확인할 수 있다
