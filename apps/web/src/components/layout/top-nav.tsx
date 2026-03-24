@@ -11,8 +11,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
-import { LogOut, Moon, Sun } from 'lucide-react';
+import { LogOut, Moon, Sun, Users } from 'lucide-react';
+import { TeamSettings } from '@/components/team/team-settings';
 
 const TAB_LABELS = ['분석 실행', '결과 대시보드', 'AI 리포트', '히스토리'] as const;
 
@@ -71,6 +79,26 @@ export function TopNav({ activeTab, onTabChange }: TopNavProps) {
               <p className="text-xs text-muted-foreground">{session?.user?.email}</p>
             </div>
           </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <Dialog>
+            <DialogTrigger
+              render={
+                <DropdownMenuItem
+                  className="flex items-center gap-2 cursor-pointer"
+                  onSelect={(e) => e.preventDefault()}
+                >
+                  <Users className="h-4 w-4" />
+                  <span>팀 설정</span>
+                </DropdownMenuItem>
+              }
+            />
+            <DialogContent className="sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle>팀 설정</DialogTitle>
+              </DialogHeader>
+              <TeamSettings />
+            </DialogContent>
+          </Dialog>
           <DropdownMenuSeparator />
           <DropdownMenuItem
             className="flex items-center justify-between cursor-pointer"
