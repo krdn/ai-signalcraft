@@ -80,19 +80,20 @@ Plans:
 - [ ] 03-06-PLAN.md -- 전체 시각적/기능적 통합 검증 (checkpoint)
 
 ### Phase 4: Expansion + Advanced Analysis
-**Goal**: 커뮤니티(DC갤러리, 에펨코리아, 클리앙)와 X(트위터) 수집기가 추가되고, AI 지지율 추정/프레임 전쟁/위기 시나리오/승리 시뮬레이션 고급 분석이 제공된다
+**Goal**: 커뮤니티(DC갤러리, 에펨코리아, 클리앙) 수집기가 추가되고, AI 지지율 추정/프레임 전쟁/위기 시나리오/승리 시뮬레이션 고급 분석이 대시보드에서 제공된다. X(트위터) 수집기(COLL-05)는 v2로 이월.
 **Depends on**: Phase 3
 **Requirements**: COLL-05, COLL-06, COLL-07, COLL-08, ADVN-01, ADVN-02, ADVN-03, ADVN-04
 **Success Criteria** (what must be TRUE):
   1. DC갤러리, 에펨코리아, 클리앙에서 게시글과 댓글이 수집되며 개별 수집기 실패가 전체 파이프라인에 영향을 주지 않는다
-  2. X(트위터)에서 트윗과 반응이 수집되어 다른 소스와 동일한 정규화 형태로 저장된다
-  3. AI 지지율 추정치가 감정 비율과 플랫폼 편향을 보정하여 산출되고 "참고치" 한계가 명시된다
-  4. 프레임 전쟁 분석, 위기 대응 시나리오 3개, 승리 확률 시뮬레이션이 생성되어 리포트에 통합된다
-**Plans**: TBD
+  2. AI 지지율 추정치가 감정 비율과 플랫폼 편향을 보정하여 산출되고 "참고치" 한계가 명시된다
+  3. 프레임 전쟁 분석, 위기 대응 시나리오 3개, 승리 확률 시뮬레이션이 생성되어 리포트에 통합된다
+  4. 대시보드에 5번째 '고급 분석' 탭이 추가되어 고급 분석 결과가 시각화된다
+**Plans**: 3 plans
 
 Plans:
-- [ ] 04-01: TBD
-- [ ] 04-02: TBD
+- [ ] 04-01-PLAN.md -- 커뮤니티 수집기 3종 (DC갤러리/에펨코리아/클리앙) + 파이프라인 통합
+- [ ] 04-02-PLAN.md -- 고급 분석 모듈 4종 (지지율/프레임전쟁/위기시나리오/승리시뮬레이션) + Stage 4
+- [ ] 04-03-PLAN.md -- 대시보드 확장 (커뮤니티 소스 UI + 고급 분석 탭 + 시각화 컴포넌트)
 
 ## Progress
 
@@ -104,4 +105,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 | 1. Foundation + Core Data Collection | 5/6 | In Progress|  |
 | 2. AI Analysis Engine + Report | 1/5 | In Progress|  |
 | 3. Dashboard + Team | 0/6 | Planned | - |
-| 4. Expansion + Advanced Analysis | 0/2 | Not started | - |
+| 4. Expansion + Advanced Analysis | 0/3 | Planned | - |
