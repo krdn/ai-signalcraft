@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Milestone complete
-stopped_at: Completed 04-03-PLAN.md (Tasks 1-2, checkpoint Task 3 pending)
-last_updated: "2026-03-24T11:29:53.710Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 05-01-PLAN.md
+last_updated: "2026-03-24T12:26:56.027Z"
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 20
-  completed_plans: 20
+  total_phases: 5
+  completed_phases: 5
+  total_plans: 21
+  completed_plans: 21
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-24)
 
 **Core value:** 다양한 플랫폼의 여론 데이터를 AI로 분석하여 전략 팀이 즉시 활용 가능한 종합 분석 리포트를 생성한다.
-**Current focus:** Phase 04 — expansion-advanced-analysis
+**Current focus:** Phase 05 — integration-flow-gap-closure
 
 ## Current Position
 
-Phase: 04
-Plan: Not started
+Phase: 05 (integration-flow-gap-closure) — EXECUTING
+Plan: 1 of 1
 
 ## Performance Metrics
 
@@ -65,6 +65,7 @@ Plan: Not started
 | Phase 04 P02 | 6min | 2 tasks | 15 files |
 | Phase 04 P01 | 8min | 2 tasks | 15 files |
 | Phase 04 P03 | 5min | 2 tasks | 10 files |
+| Phase 05 P01 | 4min | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -110,6 +111,7 @@ Recent decisions affecting current work:
 - [Phase 04]: 커뮤니티 게시글은 articles 테이블 재사용 (boardName->publisher 매핑)
 - [Phase 04]: 소스 체크박스를 SOURCE_OPTIONS 배열 기반 그룹별 렌더링으로 변경
 - [Phase 04]: CrisisScenarios lg:col-span-2 전체 폭 + RadialBarChart 반원형 프로그레스
+- [Phase 05]: sources optional 필드로 하위 호환 유지 + onConflictDoUpdate upsert + isNull DB 필터로 JS 후처리 대체
 
 ### Pending Todos
 
@@ -123,6 +125,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-24T11:05:43.476Z
-Stopped at: Completed 04-03-PLAN.md (Tasks 1-2, checkpoint Task 3 pending)
+Last session: 2026-03-24T12:26:56.024Z
+Stopped at: Completed 05-01-PLAN.md
 Resume file: None

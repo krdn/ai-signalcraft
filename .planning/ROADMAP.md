@@ -109,7 +109,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 05-01-PLAN.md -- INT-01 sources 전달 + INT-02 리포트 upsert + FLOW-01 callbackUrl + getPendingInvites 필터
+- [x] 05-01-PLAN.md -- INT-01 sources 전달 + INT-02 리포트 upsert + FLOW-01 callbackUrl + getPendingInvites 필터
 
 ## Progress
 
