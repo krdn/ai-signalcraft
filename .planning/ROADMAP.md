@@ -16,6 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 2: AI Analysis Engine + Report** - 감성/키워드/심층 분석 모듈 및 AI 종합 리포트 자동 생성
 - [ ] **Phase 3: Dashboard + Team** - 웹 대시보드 시각화, 분석 트리거 UI, 팀 인증/공유 기능
 - [ ] **Phase 4: Expansion + Advanced Analysis** - 커뮤니티/X 수집기 확장 및 AI 지지율/시뮬레이션 고급 분석
+- [ ] **Phase 5: Integration & Flow Gap Closure** - 감사 갭 해소: 소스 선택 전달, 리포트 upsert, 초대 수락 플로우 수정
 
 ## Phase Details
 
@@ -95,6 +96,21 @@ Plans:
 - [x] 04-02-PLAN.md -- 고급 분석 모듈 4종 (지지율/프레임전쟁/위기시나리오/승리시뮬레이션) + Stage 4
 - [x] 04-03-PLAN.md -- 대시보드 확장 (커뮤니티 소스 UI + 고급 분석 탭 + 시각화 컴포넌트)
 
+### Phase 5: Integration & Flow Gap Closure
+**Goal**: 감사에서 식별된 통합/플로우 갭 3건을 해소하여 소스 선택 전달, 리포트 갱신, 초대 수락 플로우를 정상화한다
+**Depends on**: Phase 4
+**Requirements**: COLL-01, COLL-02, COLL-03, COLL-04, COLL-06, COLL-07, COLL-08, FOUND-03, ADVN-01, ADVN-02, ADVN-03, ADVN-04, REPT-01, TEAM-01, TEAM-03
+**Gap Closure**: Closes INT-01, INT-02, FLOW-01 from v1.0 audit
+**Success Criteria** (what must be TRUE):
+  1. 트리거 폼에서 선택한 소스만 수집기가 실행되고, 미선택 소스는 건너뛴다
+  2. Stage 4 ADVN 분석 완료 후 리포트 재생성 시 기존 리포트가 갱신(upsert)된다
+  3. callbackUrl이 포함된 로그인 시 해당 URL로 리다이렉트되어 초대 수락 플로우가 완료된다
+  4. getPendingInvites가 acceptedAt IS NULL 조건으로 정확히 미수락 초대만 반환한다
+**Plans**: 0 plans (to be planned)
+
+Plans:
+- [ ] 05-01-PLAN.md -- sources 필드 전달 + 리포트 upsert + 로그인 callbackUrl + 초대 필터 수정
+
 ## Progress
 
 **Execution Order:**
@@ -106,3 +122,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 | 2. AI Analysis Engine + Report | 1/5 | In Progress|  |
 | 3. Dashboard + Team | 0/6 | Planned | - |
 | 4. Expansion + Advanced Analysis | 1/3 | In Progress|  |
+| 5. Integration & Flow Gap Closure | 0/1 | Planned | - |

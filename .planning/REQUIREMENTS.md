@@ -102,16 +102,16 @@ Deferred to future release. Tracked but not in current roadmap.
 |-------------|-------|--------|
 | FOUND-01 | Phase 1 | Complete |
 | FOUND-02 | Phase 1 | Complete |
-| FOUND-03 | Phase 1 | Complete |
+| FOUND-03 | Phase 1, 5 | Complete (INT-01 gap fix in Phase 5) |
 | FOUND-04 | Phase 1 | Complete |
-| COLL-01 | Phase 1 | Complete |
-| COLL-02 | Phase 1 | Complete |
-| COLL-03 | Phase 1 | Complete |
-| COLL-04 | Phase 1 | Complete |
+| COLL-01 | Phase 1, 5 | Complete (INT-01 gap fix in Phase 5) |
+| COLL-02 | Phase 1, 5 | Complete (INT-01 gap fix in Phase 5) |
+| COLL-03 | Phase 1, 5 | Complete (INT-01 gap fix in Phase 5) |
+| COLL-04 | Phase 1, 5 | Complete (INT-01 gap fix in Phase 5) |
 | COLL-05 | Phase 4 | Complete |
-| COLL-06 | Phase 4 | Complete |
-| COLL-07 | Phase 4 | Complete |
-| COLL-08 | Phase 4 | Complete |
+| COLL-06 | Phase 4, 5 | Complete (INT-01 gap fix in Phase 5) |
+| COLL-07 | Phase 4, 5 | Complete (INT-01 gap fix in Phase 5) |
+| COLL-08 | Phase 4, 5 | Complete (INT-01 gap fix in Phase 5) |
 | COLL-09 | Phase 1 | Complete |
 | COLL-10 | Phase 1 | Complete |
 | ANLZ-01 | Phase 2 | Complete |
@@ -123,11 +123,11 @@ Deferred to future release. Tracked but not in current roadmap.
 | DEEP-03 | Phase 2 | Complete |
 | DEEP-04 | Phase 2 | Complete |
 | DEEP-05 | Phase 2 | Complete |
-| ADVN-01 | Phase 4 | Complete |
-| ADVN-02 | Phase 4 | Complete |
-| ADVN-03 | Phase 4 | Complete |
-| ADVN-04 | Phase 4 | Complete |
-| REPT-01 | Phase 2 | Complete |
+| ADVN-01 | Phase 4, 5 | Complete (INT-02 gap fix in Phase 5) |
+| ADVN-02 | Phase 4, 5 | Complete (INT-02 gap fix in Phase 5) |
+| ADVN-03 | Phase 4, 5 | Complete (INT-02 gap fix in Phase 5) |
+| ADVN-04 | Phase 4, 5 | Complete (INT-02 gap fix in Phase 5) |
+| REPT-01 | Phase 2, 5 | Complete (INT-02 gap fix in Phase 5) |
 | REPT-02 | Phase 2 | Complete |
 | REPT-03 | Phase 2 | Complete |
 | DASH-01 | Phase 3 | Complete |
@@ -137,9 +137,9 @@ Deferred to future release. Tracked but not in current roadmap.
 | DASH-05 | Phase 3 | Complete |
 | DASH-06 | Phase 3 | Complete |
 | DASH-07 | Phase 3 | Complete |
-| TEAM-01 | Phase 3 | Complete |
+| TEAM-01 | Phase 3, 5 | Complete (FLOW-01 gap fix in Phase 5) |
 | TEAM-02 | Phase 3 | Complete |
-| TEAM-03 | Phase 3 | Complete |
+| TEAM-03 | Phase 3, 5 | Complete (FLOW-01 gap fix in Phase 5) |
 
 **Coverage:**
 - v1 requirements: 40 total
