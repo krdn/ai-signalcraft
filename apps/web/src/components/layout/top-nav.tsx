@@ -7,7 +7,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
@@ -73,12 +72,10 @@ export function TopNav({ activeTab, onTabChange }: TopNavProps) {
           </Avatar>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuLabel>
-            <div className="flex flex-col space-y-1">
-              <p className="text-sm font-medium">{session?.user?.name ?? '사용자'}</p>
-              <p className="text-xs text-muted-foreground">{session?.user?.email}</p>
-            </div>
-          </DropdownMenuLabel>
+          <div className="px-2 py-1.5">
+            <p className="text-sm font-medium">{session?.user?.name ?? '사용자'}</p>
+            <p className="text-xs text-muted-foreground">{session?.user?.email}</p>
+          </div>
           <DropdownMenuSeparator />
           <Dialog>
             <DialogTrigger

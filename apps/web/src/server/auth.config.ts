@@ -14,10 +14,14 @@ export const authConfig: NextAuthConfig = {
       // 미들웨어에서는 authorize가 호출되지 않음 (JWT 토큰 검증만 수행)
       authorize: () => null,
     }),
-    Google({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    }),
+    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+      ? [
+          Google({
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+          }),
+        ]
+      : []),
   ],
   session: { strategy: 'jwt' },
   pages: { signIn: '/login' },

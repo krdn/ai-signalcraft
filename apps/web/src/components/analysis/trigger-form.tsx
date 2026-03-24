@@ -122,11 +122,9 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
             <div className="space-y-2">
               <Label>시작일</Label>
               <Popover>
-                <PopoverTrigger className="w-full">
-                  <Button variant="outline" className="w-full justify-start text-left font-normal" type="button">
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {format(startDate, 'yyyy-MM-dd', { locale: ko })}
-                  </Button>
+                <PopoverTrigger className="inline-flex w-full items-center justify-start rounded-lg border bg-card px-3 py-2 text-sm font-normal text-foreground hover:bg-accent hover:text-accent-foreground">
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {format(startDate, 'yyyy-MM-dd', { locale: ko })}
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
@@ -141,11 +139,9 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
             <div className="space-y-2">
               <Label>종료일</Label>
               <Popover>
-                <PopoverTrigger className="w-full">
-                  <Button variant="outline" className="w-full justify-start text-left font-normal" type="button">
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {format(endDate, 'yyyy-MM-dd', { locale: ko })}
-                  </Button>
+                <PopoverTrigger className="inline-flex w-full items-center justify-start rounded-lg border bg-card px-3 py-2 text-sm font-normal text-foreground hover:bg-accent hover:text-accent-foreground">
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {format(endDate, 'yyyy-MM-dd', { locale: ko })}
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
