@@ -29,14 +29,15 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. 키워드를 입력하면 네이버 뉴스 기사와 댓글이 수집되어 DB에 정규화된 형태로 저장된다
   4. 키워드를 입력하면 유튜브 영상 메타데이터와 댓글이 수집되어 DB에 저장된다
   5. BullMQ 파이프라인으로 수집 작업이 큐잉/실행/상태추적되고 중복 데이터가 자동 제거된다
-**Plans**: 5 plans
+**Plans**: 6 plans
 
 Plans:
-- [ ] 01-01-PLAN.md -- pnpm 모노리포 스캐폴딩 + PostgreSQL DB 스키마
-- [ ] 01-02-PLAN.md -- BullMQ 파이프라인 + Collector Adapter 인터페이스 + AI Gateway 골격
-- [ ] 01-03-PLAN.md -- 네이버 뉴스 기사/댓글 수집기
-- [ ] 01-04-PLAN.md -- 유튜브 영상/댓글 수집기
-- [ ] 01-05-PLAN.md -- 정규화/중복제거 파이프라인 통합 + E2E 검증
+- [x] 01-01-PLAN.md -- pnpm 모노리포 스캐폴딩 + PostgreSQL DB 스키마
+- [x] 01-02-PLAN.md -- BullMQ 파이프라인 + Collector Adapter 인터페이스 + AI Gateway 골격
+- [x] 01-03-PLAN.md -- 네이버 뉴스 기사/댓글 수집기
+- [x] 01-04-PLAN.md -- 유튜브 영상/댓글 수집기
+- [x] 01-05-PLAN.md -- 정규화/중복제거 파이프라인 통합 + E2E 검증
+- [ ] 01-06-PLAN.md -- 네이버 댓글 수집 파이프라인 연결 (COLL-02 Gap Closure)
 
 ### Phase 2: AI Analysis Engine + Report
 **Goal**: 수집된 데이터에 대해 AI 기반 감성/키워드/심층 분석을 실행하고, 8개 분석 모듈 결과를 통합한 종합 전략 리포트를 자동 생성할 수 있다
@@ -95,7 +96,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation + Core Data Collection | 0/5 | Planning complete | - |
+| 1. Foundation + Core Data Collection | 5/6 | In Progress|  |
 | 2. AI Analysis Engine + Report | 0/3 | Not started | - |
 | 3. Dashboard + Team | 0/3 | Not started | - |
 | 4. Expansion + Advanced Analysis | 0/2 | Not started | - |
