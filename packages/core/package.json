@@ -12,6 +12,7 @@
     "worker": "tsx watch src/queue/worker-process.ts"
   },
   "dependencies": {
+    "@ai-signalcraft/ai-gateway": "workspace:*",
     "@ai-signalcraft/collectors": "workspace:*",
     "drizzle-orm": "^0.40.0",
     "pg": "^8.13.0",
