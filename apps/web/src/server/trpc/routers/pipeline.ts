@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { protectedProcedure, router } from '../init';
 import { collectionJobs, analysisResults, analysisReports } from '@ai-signalcraft/core';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 
 export const pipelineRouter = router({
@@ -9,10 +9,13 @@ export const pipelineRouter = router({
   getStatus: protectedProcedure
     .input(z.object({ jobId: z.number() }))
     .query(async ({ input, ctx }) => {
-      // 1. collectionJobs에서 수집 상태 조회
+      // 1. collectionJobs에서 수집 상태 조회 (팀 소속 확인)
+      const jobConditions = ctx.teamId
+        ? and(eq(collectionJobs.id, input.jobId), eq(collectionJobs.teamId, ctx.teamId))
+        : eq(collectionJobs.id, input.jobId);
       const [job] = await ctx.db.select()
         .from(collectionJobs)
-        .where(eq(collectionJobs.id, input.jobId));
+        .where(jobConditions);
       if (!job) throw new TRPCError({ code: 'NOT_FOUND' });
 
       // 2. analysisResults에서 분석 모듈 상태 조회
