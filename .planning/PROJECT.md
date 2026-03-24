@@ -25,18 +25,19 @@
 - [x] 다중 AI 모델 지원 (Claude, GPT 등 유연 전환) — Validated in Phase 2
 - [x] AI 종합 분석 리포트 자동 생성 + PDF 내보내기 — Validated in Phase 2
 
+- [x] 커뮤니티(DC갤러리, 에펨코리아, 클리앙) 게시글/댓글 수집 (스크래핑) — Validated in Phase 4
+- [x] AI 지지율 추정 모델 — Validated in Phase 4
+- [x] 프레임 전쟁 분석 (경쟁 프레임 구조) — Validated in Phase 4
+- [x] 위기 대응 시나리오 생성 — Validated in Phase 4
+- [x] 승리 확률 및 전략 시뮬레이션 — Validated in Phase 4
+- [x] 웹 대시보드 (분석 결과 시각화) — Validated in Phase 3
+- [x] 수동 트리거 기반 분석 파이프라인 실행 — Validated in Phase 3
+- [x] 다중 AI 모델 지원 (Claude, GPT 등 유연 전환) — Validated in Phase 2
+- [x] 팀 멀티유저 지원 (3~10명) — Validated in Phase 3
+
 ### Active
 
-- [ ] X(트위터) 트윗 및 반응 수집 (API)
-- [ ] 커뮤니티(DC갤러리, 에펨코리아, 클리앙) 게시글/댓글 수집 (스크래핑)
-- [ ] AI 지지율 추정 모델
-- [ ] 프레임 전쟁 분석 (경쟁 프레임 구조)
-- [ ] 위기 대응 시나리오 생성
-- [ ] 승리 확률 및 전략 시뮬레이션
-- [ ] 웹 대시보드 (분석 결과 시각화)
-- [ ] 수동 트리거 기반 분석 파이프라인 실행
-- [ ] 다중 AI 모델 지원 (Claude, GPT 등 유연 전환)
-- [ ] 팀 멀티유저 지원 (3~10명)
+- [ ] X(트위터) 트윗 및 반응 수집 (API) — v2로 이월 (D-01)
 
 ### Out of Scope
 
