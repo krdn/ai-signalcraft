@@ -1,5 +1,5 @@
 import { FlowProducer } from 'bullmq';
-import { redisConnection } from './connection';
+import { getRedisConnection } from './connection';
 import type { CollectionTrigger } from '../types';
 
 // FlowProducer를 lazy 초기화 -- import 시 Redis 연결 시도 방지
@@ -7,7 +7,7 @@ let flowProducer: FlowProducer | null = null;
 
 function getFlowProducer() {
   if (!flowProducer) {
-    flowProducer = new FlowProducer({ connection: redisConnection });
+    flowProducer = new FlowProducer({ connection: getRedisConnection() });
   }
   return flowProducer;
 }

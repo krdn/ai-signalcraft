@@ -1,9 +1,30 @@
 // BullMQ Worker 실행 프로세스 -- Next.js와 별도 프로세스로 실행
-// 실행: pnpm --filter @ai-signalcraft/core worker 또는 tsx watch src/queue/worker-process.ts
-import 'dotenv/config';
+// 실행: pnpm worker (루트) 또는 pnpm --filter @ai-signalcraft/core worker
+import { config } from 'dotenv';
+import { resolve } from 'path';
+import { existsSync } from 'fs';
+
+// 모노리포 루트 탐색 -- pnpm-workspace.yaml이 있는 디렉토리
+function findMonorepoRoot(startDir: string): string {
+  let dir = startDir;
+  for (let i = 0; i < 10; i++) {
+    if (existsSync(resolve(dir, 'pnpm-workspace.yaml'))) return dir;
+    const parent = resolve(dir, '..');
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return startDir; // 폴백: 시작 디렉토리
+}
+
+const root = findMonorepoRoot(process.cwd());
+
+// dotenv 로드: 루트 .env (공통) + apps/web/.env.local (개발 설정)
+// override: false -> 먼저 로드된 값이 우선 (apps/web/.env.local 우선)
+config({ path: resolve(root, 'apps/web/.env.local') });
+config({ path: resolve(root, '.env') });
 import { Job, Worker } from 'bullmq';
 import { createCollectorWorker, createPipelineWorker } from './workers';
-import { redisConnection } from './connection';
+import { getRedisConnection } from './connection';
 import { triggerAnalysis } from './flows';
 import {
   NaverNewsCollector,
@@ -224,7 +245,7 @@ const analysisWorker = new Worker('analysis', async (job: Job) => {
     console.log(`분석 완료: completed=${result.completedModules.length}, failed=${result.failedModules.length}`);
     return result;
   }
-}, { connection: redisConnection });
+}, { connection: getRedisConnection() });
 
 console.log('Workers started. Waiting for jobs...');
 console.log('  - Collector worker (collectors queue)');

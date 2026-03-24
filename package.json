@@ -4,6 +4,7 @@
   "scripts": {
     "build": "pnpm -r build",
     "dev": "pnpm --filter @ai-signalcraft/web dev",
+    "dev:all": "pnpm --filter @ai-signalcraft/web dev & pnpm --filter @ai-signalcraft/core worker & wait",
     "test": "pnpm -r test",
     "db:push": "pnpm --filter @ai-signalcraft/core db:push",
     "db:studio": "pnpm --filter @ai-signalcraft/core db:studio",
