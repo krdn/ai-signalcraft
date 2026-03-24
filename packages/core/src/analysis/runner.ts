@@ -10,6 +10,10 @@ import {
   opportunityModule,
   strategyModule,
   finalSummaryModule,
+  approvalRatingModule,
+  frameWarModule,
+  crisisScenarioModule,
+  winSimulationModule,
 } from './modules';
 import { loadAnalysisInput } from './data-loader';
 import { persistAnalysisResult } from './persist-analysis';
@@ -25,6 +29,13 @@ export const STAGE1_MODULES: AnalysisModule[] = [
 
 // Stage 2: 순차 실행 (Stage 1 결과 의존)
 export const STAGE2_MODULES: AnalysisModule[] = [riskMapModule, opportunityModule, strategyModule];
+
+// Stage 4: 고급 분석 (ADVN 모듈)
+// ADVN-01(approval-rating), ADVN-02(frame-war): 병렬 (독립)
+// ADVN-03(crisis-scenario): ADVN-01 + risk-map 의존
+// ADVN-04(win-simulation): ADVN-01~03 전체 의존
+export const STAGE4_PARALLEL: AnalysisModule[] = [approvalRatingModule, frameWarModule];
+export const STAGE4_SEQUENTIAL: AnalysisModule[] = [crisisScenarioModule, winSimulationModule];
 
 /**
  * 단일 분석 모듈 실행 (AI Gateway 호출 + DB 저장)
@@ -138,23 +149,70 @@ export async function runAnalysisPipeline(jobId: number): Promise<{
   // Stage 3: 최종 요약 (모듈 8, 모든 선행 결과 참조)
   const finalResult = await runModule(finalSummaryModule, input, priorResults);
   allResults[finalResult.module] = finalResult;
+  if (finalResult.status === 'completed') {
+    priorResults[finalResult.module] = finalResult.result;
+  }
 
-  const completedModules = Object.values(allResults)
+  // 기본 완료/실패 모듈 집계 (Stage 1~3)
+  const getCompletedModules = () => Object.values(allResults)
     .filter((r) => r.status === 'completed')
     .map((r) => r.module);
-  const failedModules = Object.values(allResults)
+  const getFailedModules = () => Object.values(allResults)
     .filter((r) => r.status === 'failed')
     .map((r) => r.module);
 
-  // D-04: 모든 분석 완료 후 통합 리포트 생성
-  const report = await generateIntegratedReport({
+  // D-04: 기본 분석 완료 후 통합 리포트 생성
+  let report = await generateIntegratedReport({
     jobId: input.jobId,
     keyword: input.keyword,
     dateRange: input.dateRange,
     results: allResults,
-    completedModules,
-    failedModules,
+    completedModules: getCompletedModules(),
+    failedModules: getFailedModules(),
   });
 
-  return { results: allResults, completedModules, failedModules, report };
+  // Stage 4: 고급 분석 (ADVN 모듈) -- 실패해도 기존 리포트에 영향 없음
+  // Stage 4a: ADVN-01(approval-rating), ADVN-02(frame-war) 병렬 실행
+  const stage4aSettled = await Promise.allSettled(
+    STAGE4_PARALLEL.map((m) => runModule(m, input, priorResults)),
+  );
+  for (const settled of stage4aSettled) {
+    if (settled.status === 'fulfilled') {
+      allResults[settled.value.module] = settled.value;
+      if (settled.value.status === 'completed') {
+        priorResults[settled.value.module] = settled.value.result;
+      }
+    }
+  }
+
+  // Stage 4b: ADVN-03(crisis-scenario), ADVN-04(win-simulation) 순차 실행
+  for (const module of STAGE4_SEQUENTIAL) {
+    const result = await runModule(module, input, priorResults);
+    allResults[result.module] = result;
+    if (result.status === 'completed') {
+      priorResults[result.module] = result.result;
+    }
+  }
+
+  // Stage 4 완료 후: 고급 분석 결과가 있으면 리포트 재생성
+  const advnCompleted = STAGE4_PARALLEL.concat(STAGE4_SEQUENTIAL)
+    .some(m => allResults[m.name]?.status === 'completed');
+
+  if (advnCompleted) {
+    report = await generateIntegratedReport({
+      jobId: input.jobId,
+      keyword: input.keyword,
+      dateRange: input.dateRange,
+      results: allResults,
+      completedModules: getCompletedModules(),
+      failedModules: getFailedModules(),
+    });
+  }
+
+  return {
+    results: allResults,
+    completedModules: getCompletedModules(),
+    failedModules: getFailedModules(),
+    report,
+  };
 }
