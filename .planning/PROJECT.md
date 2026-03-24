@@ -2,63 +2,65 @@
 
 ## What This Is
 
-공인(정치인, 연예인, 기업인 등)에 대한 여론을 자동 수집·분석하여 전략적 인사이트를 제공하는 데이터 파이프라인 및 웹 대시보드. 소규모 분석팀(3~10명)이 수동 트리거로 분석을 실행하고, 대시보드에서 결과를 확인한다.
+공인(정치인, 연예인, 기업인 등)에 대한 여론을 6개 플랫폼(네이버 뉴스, 유튜브, DC갤러리, 에펨코리아, 클리앙, X)에서 자동 수집하고, 12개 AI 분석 모듈로 종합 전략 리포트를 생성하는 데이터 파이프라인 및 웹 대시보드. 소규모 분석팀(3~10명)이 수동 트리거로 분석을 실행하고, 대시보드에서 시각화된 결과와 AI 리포트를 확인한다.
 
 ## Core Value
 
 다양한 플랫폼의 여론 데이터를 수집하고 AI로 분석하여, 정치 캠프나 전략 팀이 실제 의사결정에 즉시 활용할 수 있는 수준의 종합 분석 리포트를 생성한다.
 
+## Current State (v1.0 shipped 2026-03-24)
+
+- **코드베이스**: 24,443 LOC TypeScript, 271 files, pnpm 모노리포 4 packages
+- **기술 스택**: Next.js 16 + tRPC 11 + Drizzle ORM + BullMQ + AI SDK v6 + shadcn/ui + Tailwind 4
+- **수집기**: 네이버 뉴스/댓글, 유튜브, DC갤러리, 에펨코리아, 클리앙 (5개 활성) + X v1 스텁
+- **분석 모듈**: 12개 (Stage 1-4: 감성/프레임/전략/지지율 등)
+- **대시보드**: 다크모드, 5탭(트리거/모니터/결과/리포트/고급분석), 10개 시각화 컴포넌트
+- **인증**: NextAuth v5 (Credentials + Google), Resend 이메일 초대, RBAC
+- **기술 부채**: 13개 low-severity 항목 (상세: milestones/v1.0-MILESTONE-AUDIT.md)
+
 ## Requirements
 
 ### Validated
 
-- [x] 네이버 뉴스 기사 및 댓글 수집 (API/스크래핑) — Validated in Phase 1
-- [x] 유튜브 영상 메타데이터 및 댓글 수집 (YouTube Data API) — Validated in Phase 1
-- [x] 수집 데이터 운영 서버 DB 저장 (192.168.0.5) — Validated in Phase 1
-- [x] AI 기반 여론 구조 분석 (긍정/부정/혼재, 변곡점) — Validated in Phase 2
-- [x] 집단별 반응 분석 (연령/성별/정치성향/플랫폼별) — Validated in Phase 2
-- [x] 감정 및 프레임 분석 (감정 비율, 키워드, 프레임 유형) — Validated in Phase 2
-- [x] 메시지 효과 분석 (성공/실패 메시지 식별) — Validated in Phase 2
-- [x] 리스크 분석 (Top 3 리스크 + 영향도) — Validated in Phase 2
-- [x] 기회 분석 (확장 가능한 긍정 요소) — Validated in Phase 2
-- [x] 전략 도출 (타겟/메시지/콘텐츠/리스크 대응) — Validated in Phase 2
-- [x] 다중 AI 모델 지원 (Claude, GPT 등 유연 전환) — Validated in Phase 2
-- [x] AI 종합 분석 리포트 자동 생성 + PDF 내보내기 — Validated in Phase 2
-
-- [x] 커뮤니티(DC갤러리, 에펨코리아, 클리앙) 게시글/댓글 수집 (스크래핑) — Validated in Phase 4
-- [x] AI 지지율 추정 모델 — Validated in Phase 4
-- [x] 프레임 전쟁 분석 (경쟁 프레임 구조) — Validated in Phase 4
-- [x] 위기 대응 시나리오 생성 — Validated in Phase 4
-- [x] 승리 확률 및 전략 시뮬레이션 — Validated in Phase 4
-- [x] 웹 대시보드 (분석 결과 시각화) — Validated in Phase 3
-- [x] 수동 트리거 기반 분석 파이프라인 실행 — Validated in Phase 3
-- [x] 다중 AI 모델 지원 (Claude, GPT 등 유연 전환) — Validated in Phase 2
-- [x] 팀 멀티유저 지원 (3~10명) — Validated in Phase 3
+- ✓ 네이버 뉴스 기사 및 댓글 수집 — v1.0
+- ✓ 유튜브 영상 메타데이터 및 댓글 수집 — v1.0
+- ✓ 수집 데이터 운영 서버 DB 저장 — v1.0
+- ✓ 커뮤니티(DC갤러리, 에펨코리아, 클리앙) 수집 — v1.0
+- ✓ AI 감성/프레임/키워드/트렌드/집단별 분석 — v1.0
+- ✓ 리스크/기회/전략/메시지 효과 분석 — v1.0
+- ✓ AI 지지율 추정/프레임 전쟁/위기 시나리오/승리 시뮬레이션 — v1.0
+- ✓ AI 종합 리포트 자동 생성 + PDF 내보내기 — v1.0
+- ✓ 웹 대시보드 시각화 + 수동 트리거 실행 — v1.0
+- ✓ 다중 AI 모델 지원 (Claude, GPT) — v1.0
+- ✓ 팀 멀티유저 + RBAC + 이메일 초대 — v1.0
 
 ### Active
 
-- [ ] X(트위터) 트윗 및 반응 수집 (API) — v2로 이월 (D-01)
+- [ ] X(트위터) 트윗 및 반응 수집 v2 — v1.0에서 이월
+- [ ] (다음 마일스톤에서 정의)
 
 ### Out of Scope
 
-- 실시간 자동 수집 (수동 트리거 방식으로 결정) — 복잡도와 비용 절감
+- 실시간 자동 수집 — 수동 트리거 방식으로 결정, 비용 절감
 - 모바일 앱 — 웹 대시보드 우선
 - 해외 여론 분석 — 한국 여론에 집중
 - 자연어 대화형 인터페이스 — 대시보드 기반
+- 여론조사 대체 주장 — AI 추정은 참고치, 법적/윤리적 리스크
+- 자동 댓글/게시글 작성 — 여론 조작 도구 변질 방지
 
 ## Context
 
-- **분석 프롬프트**: `docs/prompt.md`에 8개 분석 모듈 + 4개 추가 기능 정의됨
-- **데이터 소스**: 네이버 뉴스, 유튜브, X(트위터), DC갤러리, 에펨코리아, 클리앙
-- **수집 전략**: 공식 API 우선(YouTube Data API, X API), 불가 시 스크래핑(네이버 뉴스, 커뮤니티)
-- **AI 모델**: Claude API, OpenAI GPT 등 혼합 사용, 분석 항목별 최적 모델 선택
-- **인프라**: 운영 서버(192.168.0.5)에 DB 저장, 로컬(192.168.0.8)에서 개발
-- **분석 대상**: 한국 공인 전반 (정치인, 연예인, 기업인 등)
+- **분석 프롬프트**: `docs/prompt.md`에 12개 분석 모듈 정의
+- **데이터 소스**: 네이버 뉴스, 유튜브, DC갤러리, 에펨코리아, 클리앙, X(v1 스텁)
+- **수집 전략**: 공식 API 우선(YouTube Data API), 불가 시 스크래핑(네이버, 커뮤니티)
+- **AI 모델**: Claude Sonnet 4 (고급분석), GPT (범용) — AI SDK v6 Gateway로 전환
+- **인프라**: 운영 서버(192.168.0.5) PostgreSQL + Redis, 로컬(192.168.0.8) 개발
+- **v1.0 감사**: 40/40 요구사항 충족, 13개 기술 부채 (low-severity)
 
 ## Constraints
 
-- **인프라**: 운영 서버(192.168.0.5) PostgreSQL 또는 MongoDB 활용 — 기존 인프라 활용
-- **API 비용**: AI API 호출 비용 관리 필요 — 분석 단위별 토큰 최적화
+- **인프라**: 운영 서버(192.168.0.5) PostgreSQL 활용 — 기존 인프라
+- **API 비용**: AI API 호출 비용 관리 — 분석 단위별 토큰 최적화
 - **법적**: 스크래핑 대상 사이트 robots.txt 및 이용약관 준수
 - **패키지 매니저**: pnpm 사용
 
@@ -66,11 +68,26 @@
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| API 우선 + 스크래핑 보조 수집 전략 | 안정성과 데이터 품질 확보, API 미제공 소스만 스크래핑 | — Pending |
-| 수동 트리거 실행 방식 | 비용 관리 및 분석 필요 시점에 집중 실행 | — Pending |
-| 다중 AI 모델 유연 전환 | 분석 항목별 최적 모델 선택, 비용/품질 균형 | — Pending |
-| 운영 서버 DB 저장 | 기존 인프라 활용, 데이터 보안 | — Pending |
-| 기술 스택은 리서치 후 결정 | 도메인 특성에 맞는 최적 스택 선택 | — Pending |
+| API 우선 + 스크래핑 보조 수집 전략 | 안정성과 데이터 품질 확보 | ✓ Good — YouTube API + 커뮤니티 스크래핑 안정 동작 |
+| 수동 트리거 실행 방식 | 비용 관리 및 필요 시점 집중 실행 | ✓ Good — BullMQ 파이프라인으로 구현 |
+| 다중 AI 모델 유연 전환 | 분석별 최적 모델 선택, 비용/품질 균형 | ✓ Good — AI SDK v6 Gateway로 구현 |
+| 운영 서버 DB 저장 | 기존 인프라 활용, 데이터 보안 | ✓ Good — PostgreSQL + Drizzle ORM |
+| TypeScript 모노리포 통일 | 단일 언어, 타입 공유, 배포 단순 | ✓ Good — kiwi-nlp npm으로 Python 불필요 |
+| Next.js 16 + tRPC 11 | App Router SSR + 타입 안전 API | ✓ Good — Server Components 활용 |
+| BullMQ Flow 단순화 | 단일 runner가 내부 3단계 관리 | ✓ Good — 디버깅 용이 |
+| window.print() PDF | 서버 Playwright 대신 클라이언트 인쇄 | ⚠️ Revisit — pdf-exporter 미사용 |
+| X 수집기 v2 이월 | API $200/월 비용, 우선순위 낮음 | — Pending (v2에서 결정) |
+
+## Next Milestone Goals
+
+> `/gsd:new-milestone`로 v1.1 시작 시 정의
+
+잠재 영역:
+- X 수집기 v2 본격 구현
+- 운영 서버 Docker 배포 자동화
+- 기술 부채 해소 (13개 항목)
+- 경쟁 인물 비교 분석
+- 분석 스케줄링/알림
 
 ## Evolution
 
@@ -90,4 +107,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-24 after Phase 5 completion — Integration & Flow Gap Closure 완료 (v1.0 마일스톤 최종 Phase)*
+*Last updated: 2026-03-24 after v1.0 milestone — 5 phases, 21 plans, 40 requirements shipped*
