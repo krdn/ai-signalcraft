@@ -1,14 +1,16 @@
-import NextAuth, { type NextAuthConfig } from 'next-auth';
+import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import Google from 'next-auth/providers/google';
 import { DrizzleAdapter } from '@auth/drizzle-adapter';
 import { db, users } from '@ai-signalcraft/core';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
+import { authConfig } from './auth.config';
 
-const config: NextAuthConfig = {
+// DB 의존 프로바이더로 오버라이드 (미들웨어용 auth.config.ts의 프로바이더 대체)
+const nextAuth = NextAuth({
+  ...authConfig,
   adapter: DrizzleAdapter(db),
-  session: { strategy: 'jwt' }, // Credentials 사용 시 JWT 필수
   providers: [
     Credentials({
       credentials: {
@@ -41,25 +43,7 @@ const config: NextAuthConfig = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
   ],
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.role = (user as Record<string, unknown>).role;
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.sub!;
-        (session.user as unknown as Record<string, unknown>).role = token.role;
-      }
-      return session;
-    },
-  },
-  pages: { signIn: '/login' },
-};
-
-const nextAuth = NextAuth(config);
+});
 
 export const handlers: typeof nextAuth.handlers = nextAuth.handlers;
 export const auth: typeof nextAuth.auth = nextAuth.auth;
