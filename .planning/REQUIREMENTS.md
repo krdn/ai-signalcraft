@@ -61,7 +61,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **DASH-02**: 파이프라인 실행 상태 모니터링 (진행률, 작업별 상태)
 - [ ] **DASH-03**: 감성 분석 시각화 (긍정/부정/중립 비율 차트, 시계열 트렌드)
 - [ ] **DASH-04**: 키워드/연관어 시각화 (워드클라우드, 네트워크 그래프)
-- [ ] **DASH-05**: AI 리포트 뷰어 (분석 결과 전문 표시, 섹션 네비게이션)
+- [x] **DASH-05**: AI 리포트 뷰어 (분석 결과 전문 표시, 섹션 네비게이션)
 - [x] **DASH-06**: 분석 히스토리 목록 (과거 분석 결과 조회, 비교)
 - [ ] **DASH-07**: 리스크/기회 대시보드 (리스크 맵, 기회 매트릭스)
 
@@ -134,7 +134,7 @@ Deferred to future release. Tracked but not in current roadmap.
 | DASH-02 | Phase 3 | Complete |
 | DASH-03 | Phase 3 | Pending |
 | DASH-04 | Phase 3 | Pending |
-| DASH-05 | Phase 3 | Pending |
+| DASH-05 | Phase 3 | Complete |
 | DASH-06 | Phase 3 | Complete |
 | DASH-07 | Phase 3 | Pending |
 | TEAM-01 | Phase 3 | Complete |
