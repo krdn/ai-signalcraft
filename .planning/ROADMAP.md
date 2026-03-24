@@ -53,9 +53,9 @@ Plans:
 
 Plans:
 - [x] 02-01-PLAN.md -- 분석 DB 스키마 + AnalysisModule 인터페이스/타입 + AI Gateway 확장
-- [ ] 02-02-PLAN.md -- Stage 1 분석 모듈 4개 (macro-view, segmentation, sentiment-framing, message-impact)
-- [ ] 02-03-PLAN.md -- Stage 2 분석 모듈 4개 (risk-map, opportunity, strategy, final-summary)
-- [ ] 02-04-PLAN.md -- 분석 실행 러너 + BullMQ Flow 확장 + Worker 핸들러
+- [x] 02-02-PLAN.md -- Stage 1 분석 모듈 4개 (macro-view, segmentation, sentiment-framing, message-impact)
+- [x] 02-03-PLAN.md -- Stage 2 분석 모듈 4개 (risk-map, opportunity, strategy, final-summary)
+- [x] 02-04-PLAN.md -- 분석 실행 러너 + BullMQ Flow 확장 + Worker 핸들러
 - [ ] 02-05-PLAN.md -- 통합 리포트 생성기 + PDF 내보내기
 
 ### Phase 3: Dashboard + Team
