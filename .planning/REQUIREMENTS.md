@@ -103,40 +103,40 @@ Deferred to future release. Tracked but not in current roadmap.
 | FOUND-01 | Phase 1 | Pending |
 | FOUND-02 | Phase 1 | Pending |
 | FOUND-03 | Phase 1 | Pending |
-| FOUND-04 | Phase 2 | Pending |
+| FOUND-04 | Phase 1 | Pending |
 | COLL-01 | Phase 1 | Pending |
 | COLL-02 | Phase 1 | Pending |
-| COLL-03 | Phase 3 | Pending |
-| COLL-04 | Phase 3 | Pending |
-| COLL-05 | Phase 5 | Pending |
-| COLL-06 | Phase 3 | Pending |
-| COLL-07 | Phase 3 | Pending |
-| COLL-08 | Phase 3 | Pending |
+| COLL-03 | Phase 1 | Pending |
+| COLL-04 | Phase 1 | Pending |
+| COLL-05 | Phase 4 | Pending |
+| COLL-06 | Phase 4 | Pending |
+| COLL-07 | Phase 4 | Pending |
+| COLL-08 | Phase 4 | Pending |
 | COLL-09 | Phase 1 | Pending |
 | COLL-10 | Phase 1 | Pending |
 | ANLZ-01 | Phase 2 | Pending |
 | ANLZ-02 | Phase 2 | Pending |
 | ANLZ-03 | Phase 2 | Pending |
-| ANLZ-04 | Phase 4 | Pending |
-| DEEP-01 | Phase 4 | Pending |
-| DEEP-02 | Phase 4 | Pending |
-| DEEP-03 | Phase 4 | Pending |
-| DEEP-04 | Phase 4 | Pending |
-| DEEP-05 | Phase 4 | Pending |
-| ADVN-01 | Phase 5 | Pending |
+| ANLZ-04 | Phase 2 | Pending |
+| DEEP-01 | Phase 2 | Pending |
+| DEEP-02 | Phase 2 | Pending |
+| DEEP-03 | Phase 2 | Pending |
+| DEEP-04 | Phase 2 | Pending |
+| DEEP-05 | Phase 2 | Pending |
+| ADVN-01 | Phase 4 | Pending |
 | ADVN-02 | Phase 4 | Pending |
-| ADVN-03 | Phase 5 | Pending |
-| ADVN-04 | Phase 5 | Pending |
+| ADVN-03 | Phase 4 | Pending |
+| ADVN-04 | Phase 4 | Pending |
 | REPT-01 | Phase 2 | Pending |
-| REPT-02 | Phase 4 | Pending |
-| REPT-03 | Phase 4 | Pending |
+| REPT-02 | Phase 2 | Pending |
+| REPT-03 | Phase 2 | Pending |
 | DASH-01 | Phase 3 | Pending |
 | DASH-02 | Phase 3 | Pending |
 | DASH-03 | Phase 3 | Pending |
 | DASH-04 | Phase 3 | Pending |
 | DASH-05 | Phase 3 | Pending |
 | DASH-06 | Phase 3 | Pending |
-| DASH-07 | Phase 4 | Pending |
+| DASH-07 | Phase 3 | Pending |
 | TEAM-01 | Phase 3 | Pending |
 | TEAM-02 | Phase 3 | Pending |
 | TEAM-03 | Phase 3 | Pending |
@@ -144,8 +144,8 @@ Deferred to future release. Tracked but not in current roadmap.
 **Coverage:**
 - v1 requirements: 40 total
 - Mapped to phases: 40
-- Unmapped: 0 ✓
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-24*
-*Last updated: 2026-03-24 after initial definition*
+*Last updated: 2026-03-24 after roadmap phase mapping*
