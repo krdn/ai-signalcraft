@@ -13,6 +13,28 @@ export interface ReportGenerationInput {
   failedModules: string[];
 }
 
+// 고급 분석(ADVN) 모듈 결과가 있으면 프롬프트에 추가할 섹션 생성
+const ADVN_MODULES = ['approval-rating', 'frame-war', 'crisis-scenario', 'win-simulation'];
+
+function buildAdvancedAnalysisSection(input: ReportGenerationInput): string {
+  const advnResults = Object.entries(input.results)
+    .filter(([k, r]) => ADVN_MODULES.includes(k) && r.status === 'completed');
+
+  if (advnResults.length === 0) return '';
+
+  return `
+
+## 고급 분석 결과
+다음 고급 분석 모듈 결과도 리포트에 자연스럽게 통합하세요:
+${advnResults.map(([k, r]) => `### ${k}\n${JSON.stringify(r.result, null, 2)}`).join('\n\n')}
+
+고급 분석 섹션에서는:
+- AI 지지율 추정 결과에 면책 문구를 반드시 포함
+- 프레임 전쟁 분석의 시각적 구조(지배적 vs 위협 vs 반전 가능)
+- 위기 시나리오 3개를 표 형태로 정리
+- 승리 확률과 핵심 전략을 명확히 구분`;
+}
+
 /**
  * 모든 모듈 결과를 AI에 넘겨 자연어 종합 리포트 생성
  * - 완료된 모듈 결과만 JSON으로 직렬화하여 프롬프트에 포함
@@ -75,7 +97,7 @@ ${resultsJson}
    - ## 7. 전략 도출 (strategy 결과)
    - ## 8. 최종 전략 요약 (final-summary 결과)
 4. 전략 중심으로 작성, 단순 요약 금지
-5. 근거 없는 추측 금지${failedSection}`;
+5. 근거 없는 추측 금지${failedSection}${buildAdvancedAnalysisSection(input)}`;
 
   const result = await analyzeText(prompt, {
     provider: config.provider,

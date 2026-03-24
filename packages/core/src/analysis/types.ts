@@ -73,6 +73,11 @@ export const MODULE_MODEL_MAP: Record<string, { provider: AIProvider; model: str
   'strategy':          { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
   'final-summary':     { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
   'integrated-report': { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
+  // Stage 4: ADVN 고급 분석 모듈
+  'approval-rating':   { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
+  'frame-war':         { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
+  'crisis-scenario':   { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
+  'win-simulation':    { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
 };
 
 // 모듈 이름 상수
@@ -85,4 +90,9 @@ export const MODULE_NAMES = {
   OPPORTUNITY: 'opportunity',
   STRATEGY: 'strategy',
   FINAL_SUMMARY: 'final-summary',
+  // Stage 4: ADVN 고급 분석 모듈
+  APPROVAL_RATING: 'approval-rating',
+  FRAME_WAR: 'frame-war',
+  CRISIS_SCENARIO: 'crisis-scenario',
+  WIN_SIMULATION: 'win-simulation',
 } as const;
