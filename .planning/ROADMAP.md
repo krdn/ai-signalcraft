@@ -74,7 +74,7 @@ Plans:
 Plans:
 - [x] 03-01-PLAN.md -- shadcn/ui + Tailwind 4 + tRPC + NextAuth + Auth/Team DB 스키마 기반 스캐폴딩
 - [x] 03-02-PLAN.md -- 로그인/인증 + 4탭 레이아웃 + 분석 실행 탭 + 히스토리 탭
-- [ ] 03-03-PLAN.md -- 결과 대시보드 시각화 (감성/트렌드/워드클라우드/리스크/기회)
+- [x] 03-03-PLAN.md -- 결과 대시보드 시각화 (감성/트렌드/워드클라우드/리스크/기회)
 - [x] 03-04-PLAN.md -- AI 리포트 마크다운 뷰어 + 섹션 네비 + PDF 내보내기
 - [x] 03-05-PLAN.md -- 팀 관리 (초대/역할/멤버 목록/Resend 이메일)
 - [ ] 03-06-PLAN.md -- 전체 시각적/기능적 통합 검증 (checkpoint)
