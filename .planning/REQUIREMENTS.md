@@ -68,8 +68,8 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Team & Auth
 
 - [x] **TEAM-01**: 사용자 인증 (이메일/비밀번호 로그인)
-- [ ] **TEAM-02**: 팀 멤버 관리 (초대, 역할 할당)
-- [ ] **TEAM-03**: 분석 결과 팀 공유 (동일 분석 결과 팀원 전체 접근)
+- [x] **TEAM-02**: 팀 멤버 관리 (초대, 역할 할당)
+- [x] **TEAM-03**: 분석 결과 팀 공유 (동일 분석 결과 팀원 전체 접근)
 
 ## v2 Requirements
 
@@ -138,8 +138,8 @@ Deferred to future release. Tracked but not in current roadmap.
 | DASH-06 | Phase 3 | Complete |
 | DASH-07 | Phase 3 | Pending |
 | TEAM-01 | Phase 3 | Complete |
-| TEAM-02 | Phase 3 | Pending |
-| TEAM-03 | Phase 3 | Pending |
+| TEAM-02 | Phase 3 | Complete |
+| TEAM-03 | Phase 3 | Complete |
 
 **Coverage:**
 - v1 requirements: 40 total
