@@ -41,11 +41,16 @@ Declared values (must be multiples of 4):
 | 2xl | 48px | Top nav height (fixed), major vertical section breaks |
 | 3xl | 64px | Page top padding (below nav) |
 
+### Component height tokens:
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| tab-height | 40px | Tab bar item height for compact navigation feel |
+| touch-min | 36px | Minimum touch target size for buttons, checkboxes, interactive controls |
+
 Exceptions:
 - Top navigation bar height: 48px (2xl)
-- Tab bar uses 40px height (10 * 4px) for compact feel
 - Chart card minimum height: 280px (content-driven, not spacing token)
-- Touch targets (buttons, checkboxes): minimum 36px (9 * 4px)
 
 ---
 
@@ -54,9 +59,11 @@ Exceptions:
 | Role | Size | Weight | Line Height | Usage |
 |------|------|--------|-------------|-------|
 | Body | 14px | 400 (regular) | 1.5 | Default text, descriptions, table cells |
-| Label | 12px | 500 (medium) | 1.4 | Form labels, chart axis labels, metadata, badges |
+| Label | 12px | 400 (regular) | 1.4 | Form labels, chart axis labels, metadata, badges |
 | Heading | 18px | 600 (semibold) | 1.3 | Card titles, section headers, tab labels |
-| Display | 28px | 700 (bold) | 1.2 | Page title ("AI SignalCraft"), large metric values |
+| Display | 28px | 600 (semibold) | 1.2 | Page title ("AI SignalCraft"), large metric values |
+
+**Weights used:** 2 only — 400 (regular) and 600 (semibold). No other weights permitted.
 
 **Font stack:** `Geist Sans, -apple-system, BlinkMacSystemFont, sans-serif`
 **Monospace (data):** `Geist Mono, monospace` -- used for numeric values in charts, progress percentages, timestamps
@@ -122,7 +129,7 @@ Dark mode is the default theme (D-03). All colors defined for dark mode first. L
 | Empty state heading (히스토리) | "분석 기록이 없습니다" | No history records |
 | Empty state body (히스토리) | "첫 번째 분석을 실행하면 여기에 기록됩니다." | Points to trigger tab |
 | Error state (파이프라인) | "수집 중 오류가 발생했습니다. 일부 소스에서 데이터를 가져오지 못했습니다." | Inline error (D-13) |
-| Error action | "재시도" | Retry button next to error message (D-13) |
+| Error action | "다시 시도" | Retry button next to error message (D-13) |
 | Error state (인증) | "로그인에 실패했습니다. 이메일과 비밀번호를 확인해 주세요." | Login form error |
 | Error state (네트워크) | "서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요." | Network failure |
 | Loading state | "분석 중..." | Pipeline in-progress indicator |
@@ -131,6 +138,8 @@ Dark mode is the default theme (D-03). All colors defined for dark mode first. L
 | Destructive: 분석 삭제 | 없음 | Phase 3에서 분석 삭제 기능 없음 |
 | Login page title | "AI SignalCraft" | Login form heading |
 | Login page subtitle | "여론 분석 대시보드에 로그인" | Below logo |
+| Login CTA (credentials) | "이메일로 로그인" | Credentials login button -- distinguishes from Google OAuth |
+| Login CTA (Google) | "Google로 로그인" | Google OAuth button (outline style) |
 | Invite email subject | "[AI SignalCraft] 팀 초대" | Email subject line |
 | Tab labels | "분석 실행" / "결과 대시보드" / "AI 리포트" / "히스토리" | Top nav tabs (D-02) |
 
@@ -190,8 +199,8 @@ Dark mode is the default theme (D-03). All colors defined for dark mode first. L
 ```
 - Fixed at top, height: 48px
 - Background: secondary color (card surface)
-- Logo: Display weight, accent color, 18px
-- Tabs: Heading weight, 14px, accent bottom border on active
+- Logo: semibold (600), accent color, 18px
+- Tabs: semibold (600), 14px, accent bottom border on active
 - User dropdown: avatar 32px circle, dropdown with profile/team/logout/theme
 
 ### Tab: 분석 실행 (D-04)
@@ -273,7 +282,7 @@ Dark mode is the default theme (D-03). All colors defined for dark mode first. L
 |                                          |
 | [Email Input]                            |
 | [Password Input]                         |
-| [로그인 Button (full-width, accent)]      |
+| [이메일로 로그인 Button (full-width, accent)]|
 |                                          |
 | ─── 또는 ───                              |
 |                                          |
@@ -299,7 +308,7 @@ Dark mode is the default theme (D-03). All colors defined for dark mode first. L
 
 ### Pipeline Error Recovery (D-13):
 1. Error appears inline below the failed stage
-2. "재시도" button visible next to error
+2. "다시 시도" button visible next to error
 3. Successful source results remain visible
 4. Retry triggers only the failed portion
 
@@ -329,13 +338,13 @@ Dark mode is the default theme (D-03). All colors defined for dark mode first. L
 | Component | Empty | Loading | Loaded | Error | Partial |
 |-----------|-------|---------|--------|-------|---------|
 | Trigger Form | Default form state | Button spinner + disabled | N/A | Inline error below form | N/A |
-| Pipeline Monitor | Hidden | Progress bars animating | Completed badge + summary | Stage-level error + retry | Some stages done, one failed |
-| Sentiment Chart | "데이터 없음" placeholder | Skeleton (circle) | Donut chart rendered | Error card + retry | N/A |
-| Trend Chart | "데이터 없음" placeholder | Skeleton (rectangle) | Line chart rendered | Error card + retry | N/A |
-| Word Cloud | "키워드 없음" placeholder | Skeleton (cloud shape) | Words rendered | Error card + retry | N/A |
-| Risk Cards | "리스크 없음" placeholder | Skeleton (3 card stack) | Card list rendered | Error card + retry | N/A |
-| Report Viewer | "리포트 없음" placeholder | Skeleton (text blocks) | Markdown rendered | Error card + retry | N/A |
-| History Table | Empty state illustration | Skeleton rows (5) | Data table with pagination | Error banner + retry | N/A |
+| Pipeline Monitor | Hidden | Progress bars animating | Completed badge + summary | Stage-level error + "다시 시도" | Some stages done, one failed |
+| Sentiment Chart | "데이터 없음" placeholder | Skeleton (circle) | Donut chart rendered | Error card + "다시 시도" | N/A |
+| Trend Chart | "데이터 없음" placeholder | Skeleton (rectangle) | Line chart rendered | Error card + "다시 시도" | N/A |
+| Word Cloud | "키워드 없음" placeholder | Skeleton (cloud shape) | Words rendered | Error card + "다시 시도" | N/A |
+| Risk Cards | "리스크 없음" placeholder | Skeleton (3 card stack) | Card list rendered | Error card + "다시 시도" | N/A |
+| Report Viewer | "리포트 없음" placeholder | Skeleton (text blocks) | Markdown rendered | Error card + "다시 시도" | N/A |
+| History Table | Empty state illustration | Skeleton rows (5) | Data table with pagination | Error banner + "다시 시도" | N/A |
 | Team Members | "팀원 없음" (admin only) | Skeleton rows (3) | Member list | Error toast | N/A |
 
 ---
