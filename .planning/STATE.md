@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Ready to execute
-stopped_at: Completed 03-01-PLAN.md
-last_updated: "2026-03-24T08:54:49.976Z"
+stopped_at: Completed 03-02-PLAN.md
+last_updated: "2026-03-24T09:06:24.445Z"
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 17
-  completed_plans: 12
+  completed_plans: 13
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-24)
 ## Current Position
 
 Phase: 03 (dashboard-team) — EXECUTING
-Plan: 2 of 6
+Plan: 3 of 6
 
 ## Performance Metrics
 
@@ -58,6 +58,7 @@ Plan: 2 of 6
 | Phase 02 P04 | 4min | 2 tasks | 8 files |
 | Phase 02 P05 | 4min | 1 tasks | 8 files |
 | Phase 03 P01 | 9min | 2 tasks | 23 files |
+| Phase 03 P02 | 8min | 3 tasks | 41 files |
 
 ## Accumulated Context
 
@@ -88,6 +89,8 @@ Recent decisions affecting current work:
 - [Phase 03]: AdapterAccountType 인라인 정의로 core->next-auth 의존성 순환 방지
 - [Phase 03]: NextAuth v5 config 명시적 타입 어노테이션으로 portable type 에러 해결
 - [Phase 03]: tRPC v11 바닐라 클라이언트 패턴 (createTRPCOptionsProxy 대신)
+- [Phase 03]: auth.config.ts 분리로 미들웨어에서 core 패키지 번들링 방지
+- [Phase 03]: serverExternalPackages에 playwright-core, bullmq, ioredis 추가
 
 ### Pending Todos
 
@@ -101,6 +104,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-24T08:54:49.971Z
-Stopped at: Completed 03-01-PLAN.md
+Last session: 2026-03-24T09:06:24.442Z
+Stopped at: Completed 03-02-PLAN.md
 Resume file: None
