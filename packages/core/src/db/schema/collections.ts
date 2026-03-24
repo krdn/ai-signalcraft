@@ -11,13 +11,13 @@ export const collectionJobs = pgTable('collection_jobs', {
   status: text('status', {
     enum: ['pending', 'running', 'completed', 'partial_failure', 'failed'],
   }).notNull().default('pending'),
-  progress: jsonb('progress').$type<{
-    naver: { status: string; articles: number; comments: number };
-    youtube: { status: string; videos: number; comments: number };
-  }>(),
+  progress: jsonb('progress').$type<
+    Record<string, { status: string; posts?: number; articles?: number; videos?: number; comments: number }>
+  >(),
   limits: jsonb('limits').$type<{
     naverArticles: number;
     youtubeVideos: number;
+    communityPosts?: number;
     commentsPerItem: number;
   }>(),
   errorDetails: jsonb('error_details').$type<Record<string, string>>(),

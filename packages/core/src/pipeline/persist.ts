@@ -105,6 +105,9 @@ export async function createCollectionJob(params: {
       progress: {
         naver: { status: 'pending', articles: 0, comments: 0 },
         youtube: { status: 'pending', videos: 0, comments: 0 },
+        dcinside: { status: 'pending', posts: 0, comments: 0 },
+        fmkorea: { status: 'pending', posts: 0, comments: 0 },
+        clien: { status: 'pending', posts: 0, comments: 0 },
       } as any,
     })
     .returning();

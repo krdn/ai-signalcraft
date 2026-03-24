@@ -7,6 +7,7 @@ export const CollectionTriggerSchema = z.object({
   limits: z.object({
     naverArticles: z.number().default(100),
     youtubeVideos: z.number().default(50),
+    communityPosts: z.number().default(50),
     commentsPerItem: z.number().default(500),
   }).optional(),
 });
@@ -20,7 +21,4 @@ export type SourceStatus = {
   error?: string;
 };
 
-export type JobProgress = {
-  naver: SourceStatus;
-  youtube: SourceStatus;
-};
+export type JobProgress = Record<string, SourceStatus>;

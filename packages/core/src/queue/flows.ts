@@ -18,6 +18,7 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
   const limits = params.limits ?? {
     naverArticles: 100,
     youtubeVideos: 50,
+    communityPosts: 50,
     commentsPerItem: 500,
   };
 
@@ -55,6 +56,43 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
             name: 'collect-youtube-comments',
             queueName: 'collectors',
             data: { ...params, source: 'youtube-comments', maxComments: limits.commentsPerItem, flowId, dbJobId },
+          },
+        ],
+      },
+      // 커뮤니티 수집기 -- 각 소스별 독립 실행 (부분 실패 허용)
+      {
+        name: 'normalize-community-dcinside',
+        queueName: 'pipeline',
+        data: { source: 'dcinside', flowId, dbJobId },
+        children: [
+          {
+            name: 'collect-dcinside',
+            queueName: 'collectors',
+            data: { ...params, source: 'dcinside', maxItems: limits.communityPosts, maxComments: limits.commentsPerItem, flowId, dbJobId },
+          },
+        ],
+      },
+      {
+        name: 'normalize-community-fmkorea',
+        queueName: 'pipeline',
+        data: { source: 'fmkorea', flowId, dbJobId },
+        children: [
+          {
+            name: 'collect-fmkorea',
+            queueName: 'collectors',
+            data: { ...params, source: 'fmkorea', maxItems: limits.communityPosts, maxComments: limits.commentsPerItem, flowId, dbJobId },
+          },
+        ],
+      },
+      {
+        name: 'normalize-community-clien',
+        queueName: 'pipeline',
+        data: { source: 'clien', flowId, dbJobId },
+        children: [
+          {
+            name: 'collect-clien',
+            queueName: 'collectors',
+            data: { ...params, source: 'clien', maxItems: limits.communityPosts, maxComments: limits.commentsPerItem, flowId, dbJobId },
           },
         ],
       },

@@ -1,6 +1,9 @@
 // 수집 데이터를 DB 스키마에 맞게 정규화
-import type { NaverArticle, NaverComment, YoutubeVideo, YoutubeComment } from '@ai-signalcraft/collectors';
+import type { NaverArticle, NaverComment, YoutubeVideo, YoutubeComment, CommunityPost, CommunityComment } from '@ai-signalcraft/collectors';
 import type { articles, videos, comments } from '../db/schema/collections';
+
+/** 커뮤니티 소스 타입 */
+export type CommunitySource = 'dcinside' | 'fmkorea' | 'clien';
 
 /** NaverArticle -> articles 테이블 insert 형식 */
 export function normalizeNaverArticle(
@@ -82,6 +85,49 @@ export function normalizeYoutubeComment(
     author: comment.author,
     likeCount: comment.likeCount,
     dislikeCount: 0,
+    publishedAt: comment.publishedAt,
+    rawData: comment.rawData,
+  };
+}
+
+/** CommunityPost -> articles 테이블 insert 형식 */
+export function normalizeCommunityPost(
+  post: CommunityPost,
+  jobId: number,
+  source: CommunitySource,
+): typeof articles.$inferInsert {
+  return {
+    jobId,
+    source,
+    sourceId: post.sourceId,
+    url: post.url,
+    title: post.title,
+    content: post.content,
+    author: post.author,
+    publisher: post.boardName, // 갤러리/게시판 이름을 publisher로 매핑
+    publishedAt: post.publishedAt,
+    rawData: post.rawData,
+  };
+}
+
+/** CommunityComment -> comments 테이블 insert 형식 */
+export function normalizeCommunityComment(
+  comment: CommunityComment,
+  jobId: number,
+  source: CommunitySource,
+  articleDbId?: number,
+): typeof comments.$inferInsert {
+  return {
+    jobId,
+    source,
+    sourceId: comment.sourceId,
+    parentId: comment.parentId,
+    articleId: articleDbId ?? null,
+    videoId: null,
+    content: comment.content,
+    author: comment.author,
+    likeCount: comment.likeCount,
+    dislikeCount: comment.dislikeCount,
     publishedAt: comment.publishedAt,
     rawData: comment.rawData,
   };

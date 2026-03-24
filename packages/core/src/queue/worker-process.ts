@@ -10,20 +10,26 @@ import {
   NaverCommentsCollector,
   YoutubeVideosCollector,
   YoutubeCommentsCollector,
+  DCInsideCollector,
+  FMKoreaCollector,
+  ClienCollector,
   registerCollector,
   getCollector,
 } from '@ai-signalcraft/collectors';
-import type { NaverComment } from '@ai-signalcraft/collectors';
+import type { NaverComment, CommunityPost } from '@ai-signalcraft/collectors';
 import {
   normalizeNaverArticle,
   normalizeNaverComment,
   normalizeYoutubeVideo,
   normalizeYoutubeComment,
+  normalizeCommunityPost,
+  normalizeCommunityComment,
   persistArticles,
   persistVideos,
   persistComments,
   updateJobProgress,
 } from '../pipeline';
+import type { CommunitySource } from '../pipeline/normalize';
 import { runAnalysisPipeline } from '../analysis/runner';
 
 // 수집기 등록
@@ -31,6 +37,12 @@ registerCollector(new NaverNewsCollector());
 registerCollector(new NaverCommentsCollector());
 registerCollector(new YoutubeVideosCollector());
 registerCollector(new YoutubeCommentsCollector());
+registerCollector(new DCInsideCollector());
+registerCollector(new FMKoreaCollector());
+registerCollector(new ClienCollector());
+
+// 커뮤니티 소스 목록 (normalize/persist에서 공통 처리)
+const COMMUNITY_SOURCES: CommunitySource[] = ['dcinside', 'fmkorea', 'clien'];
 
 // 수집 Worker -- collectors 큐
 const collectorWorker = createCollectorWorker(async (job: Job) => {
@@ -89,6 +101,12 @@ const pipelineWorker = createPipelineWorker(async (job: Job) => {
       }
     }
 
+    // normalize-community: 커뮤니티 수집 결과 (게시글에 댓글이 이미 포함됨)
+    if (job.name.startsWith('normalize-community')) {
+      // 커뮤니티 수집기는 게시글+댓글을 함께 수집하므로 별도 댓글 수집 불필요
+      // results에 각 커뮤니티 소스 결과가 담겨 있음
+    }
+
     return { source, dbJobId, normalized: true, results };
   }
 
@@ -145,6 +163,34 @@ const pipelineWorker = createPipelineWorker(async (job: Job) => {
           return normalizeYoutubeComment(c, jobIdForDb, videoDbId);
         });
         await persistComments(normalized);
+      }
+
+      // Step 5: 커뮤니티 게시글+댓글 persist
+      // 커뮤니티 수집기는 게시글에 댓글이 포함되어 있으므로 게시글 persist 후 댓글 처리
+      for (const communitySource of COMMUNITY_SOURCES) {
+        if (!results[communitySource]) continue;
+
+        const postItems = (results[communitySource] as any).items as CommunityPost[] || [];
+        // Step 5a: 게시글 persist -> sourceId->dbId 매핑
+        const normalizedPosts = postItems.map((p: CommunityPost) =>
+          normalizeCommunityPost(p, jobIdForDb, communitySource),
+        );
+        const persistedPosts = await persistArticles(normalizedPosts);
+        const communityArticleMap = new Map<string, number>();
+        for (const row of persistedPosts) {
+          communityArticleMap.set(row.sourceId, row.id);
+        }
+
+        // Step 5b: 댓글 persist -- 게시글 FK 연결
+        const allCommunityComments = postItems.flatMap((p: CommunityPost) =>
+          (p.comments || []).map((c) => {
+            const articleDbId = communityArticleMap.get(p.sourceId);
+            return normalizeCommunityComment(c, jobIdForDb, communitySource, articleDbId);
+          }),
+        );
+        if (allCommunityComments.length > 0) {
+          await persistComments(allCommunityComments);
+        }
       }
     }
 
