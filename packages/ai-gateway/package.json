@@ -9,7 +9,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "ai": "^4.0.0",
+    "ai": "^6.0.0",
     "@ai-sdk/anthropic": "latest",
     "@ai-sdk/openai": "latest",
     "zod": "^3.24.0"
