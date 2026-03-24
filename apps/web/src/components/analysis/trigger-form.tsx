@@ -15,20 +15,36 @@ import { Loader2, CalendarIcon } from 'lucide-react';
 import { format, subDays } from 'date-fns';
 import { ko } from 'date-fns/locale';
 
+type SourceId = 'naver' | 'youtube' | 'dcinside' | 'fmkorea' | 'clien';
+
+const SOURCE_OPTIONS = [
+  { group: '뉴스/영상', items: [
+    { id: 'naver' as SourceId, label: '네이버 뉴스' },
+    { id: 'youtube' as SourceId, label: '유튜브' },
+  ]},
+  { group: '커뮤니티', items: [
+    { id: 'dcinside' as SourceId, label: 'DC갤러리' },
+    { id: 'fmkorea' as SourceId, label: '에펨코리아' },
+    { id: 'clien' as SourceId, label: '클리앙' },
+  ]},
+];
+
+const ALL_SOURCES: SourceId[] = ['naver', 'youtube', 'dcinside', 'fmkorea', 'clien'];
+
 interface TriggerFormProps {
   onJobStarted: (jobId: number) => void;
 }
 
 export function TriggerForm({ onJobStarted }: TriggerFormProps) {
   const [keyword, setKeyword] = useState('');
-  const [sources, setSources] = useState<string[]>(['naver', 'youtube']);
+  const [sources, setSources] = useState<SourceId[]>(['naver', 'youtube']);
   const [startDate, setStartDate] = useState<Date>(subDays(new Date(), 7));
   const [endDate, setEndDate] = useState<Date>(new Date());
 
   const triggerMutation = useMutation({
     mutationFn: (input: {
       keyword: string;
-      sources: ('naver' | 'youtube')[];
+      sources: SourceId[];
       startDate: string;
       endDate: string;
     }) => trpcClient.analysis.trigger.mutate(input),
@@ -42,16 +58,16 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
   });
 
   const handleAllToggle = (checked: boolean) => {
-    setSources(checked ? ['naver', 'youtube'] : []);
+    setSources(checked ? [...ALL_SOURCES] : []);
   };
 
-  const handleSourceToggle = (source: string, checked: boolean) => {
+  const handleSourceToggle = (source: SourceId, checked: boolean) => {
     setSources((prev) =>
       checked ? [...prev, source] : prev.filter((s) => s !== source)
     );
   };
 
-  const isAllSelected = sources.includes('naver') && sources.includes('youtube');
+  const isAllSelected = ALL_SOURCES.every((s) => sources.includes(s));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,7 +75,7 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
 
     triggerMutation.mutate({
       keyword: keyword.trim(),
-      sources: sources as ('naver' | 'youtube')[],
+      sources,
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
     });
@@ -89,31 +105,34 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
           {/* 소스 선택 */}
           <div className="space-y-2">
             <Label>소스</Label>
-            <div className="flex items-center gap-4">
+            <div className="space-y-3">
+              {/* 전체 선택 */}
               <label className="flex items-center gap-2 cursor-pointer">
                 <Checkbox
                   checked={isAllSelected}
                   onCheckedChange={(checked) => handleAllToggle(!!checked)}
                   disabled={triggerMutation.isPending}
                 />
-                <span className="text-sm">전체</span>
+                <span className="text-sm font-medium">전체 선택</span>
               </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <Checkbox
-                  checked={sources.includes('naver')}
-                  onCheckedChange={(checked) => handleSourceToggle('naver', !!checked)}
-                  disabled={triggerMutation.isPending}
-                />
-                <span className="text-sm">네이버</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <Checkbox
-                  checked={sources.includes('youtube')}
-                  onCheckedChange={(checked) => handleSourceToggle('youtube', !!checked)}
-                  disabled={triggerMutation.isPending}
-                />
-                <span className="text-sm">유튜브</span>
-              </label>
+              {/* 그룹별 소스 */}
+              {SOURCE_OPTIONS.map((group) => (
+                <div key={group.group} className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground">{group.group}</p>
+                  <div className="flex items-center gap-4 pl-2">
+                    {group.items.map((item) => (
+                      <label key={item.id} className="flex items-center gap-2 cursor-pointer">
+                        <Checkbox
+                          checked={sources.includes(item.id)}
+                          onCheckedChange={(checked) => handleSourceToggle(item.id, !!checked)}
+                          disabled={triggerMutation.isPending}
+                        />
+                        <span className="text-sm">{item.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
