@@ -108,6 +108,27 @@ describe('report/pdf-exporter', () => {
   });
 });
 
+describe('report/persist-analysis', () => {
+  it('persistAnalysisReport가 export되고 함수 타입이다', async () => {
+    const { persistAnalysisReport } = await import('../src/analysis/persist-analysis');
+    expect(typeof persistAnalysisReport).toBe('function');
+  });
+
+  it('analysisReports 스키마에 jobId unique index가 정의되어 있다', async () => {
+    const { analysisReports } = await import('../src/db/schema/analysis');
+    // 테이블 정의와 jobId 컬럼 존재 확인
+    expect(analysisReports.jobId).toBeDefined();
+    // Drizzle 테이블의 config extraConfig가 정의되어 있는지 확인
+    const { getTableConfig } = await import('drizzle-orm/pg-core');
+    const config = getTableConfig(analysisReports);
+    // uniqueConstraints 또는 indexes에 job_id 관련 항목 존재
+    const hasJobIdIndex = config.indexes.some(
+      (idx) => idx.config.name === 'analysis_reports_job_id_idx'
+    );
+    expect(hasJobIdIndex).toBe(true);
+  });
+});
+
 describe('report/index barrel', () => {
   it('report barrel이 generator와 pdf-exporter를 re-export한다', async () => {
     const mod = await import('../src/report/index');

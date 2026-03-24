@@ -26,14 +26,22 @@ export async function persistAnalysisResult(data: typeof analysisResults.$inferI
 }
 
 /**
- * 종합 분석 리포트 저장
- * 기존 리포트가 있으면 업데이트, 없으면 삽입
+ * 종합 분석 리포트 upsert (jobId 기준)
+ * 기존 리포트가 있으면 갱신, 없으면 삽입
  */
 export async function persistAnalysisReport(data: typeof analysisReports.$inferInsert) {
   const [report] = await db
     .insert(analysisReports)
     .values(data)
-    .onConflictDoNothing()
+    .onConflictDoUpdate({
+      target: [analysisReports.jobId],
+      set: {
+        title: sql`excluded.title`,
+        markdownContent: sql`excluded.markdown_content`,
+        oneLiner: sql`excluded.one_liner`,
+        metadata: sql`excluded.metadata`,
+      },
+    })
     .returning();
   return report;
 }

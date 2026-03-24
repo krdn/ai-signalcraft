@@ -40,4 +40,6 @@ export const analysisReports = pgTable('analysis_reports', {
     generatedAt: string;
   }>(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-});
+}, (table) => [
+  uniqueIndex('analysis_reports_job_id_idx').on(table.jobId),
+]);
