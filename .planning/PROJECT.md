@@ -15,18 +15,20 @@
 - [x] 네이버 뉴스 기사 및 댓글 수집 (API/스크래핑) — Validated in Phase 1
 - [x] 유튜브 영상 메타데이터 및 댓글 수집 (YouTube Data API) — Validated in Phase 1
 - [x] 수집 데이터 운영 서버 DB 저장 (192.168.0.5) — Validated in Phase 1
+- [x] AI 기반 여론 구조 분석 (긍정/부정/혼재, 변곡점) — Validated in Phase 2
+- [x] 집단별 반응 분석 (연령/성별/정치성향/플랫폼별) — Validated in Phase 2
+- [x] 감정 및 프레임 분석 (감정 비율, 키워드, 프레임 유형) — Validated in Phase 2
+- [x] 메시지 효과 분석 (성공/실패 메시지 식별) — Validated in Phase 2
+- [x] 리스크 분석 (Top 3 리스크 + 영향도) — Validated in Phase 2
+- [x] 기회 분석 (확장 가능한 긍정 요소) — Validated in Phase 2
+- [x] 전략 도출 (타겟/메시지/콘텐츠/리스크 대응) — Validated in Phase 2
+- [x] 다중 AI 모델 지원 (Claude, GPT 등 유연 전환) — Validated in Phase 2
+- [x] AI 종합 분석 리포트 자동 생성 + PDF 내보내기 — Validated in Phase 2
 
 ### Active
 
 - [ ] X(트위터) 트윗 및 반응 수집 (API)
 - [ ] 커뮤니티(DC갤러리, 에펨코리아, 클리앙) 게시글/댓글 수집 (스크래핑)
-- [ ] AI 기반 여론 구조 분석 (긍정/부정/혼재, 변곡점)
-- [ ] 집단별 반응 분석 (연령/성별/정치성향/플랫폼별)
-- [ ] 감정 및 프레임 분석 (감정 비율, 키워드, 프레임 유형)
-- [ ] 메시지 효과 분석 (성공/실패 메시지 식별)
-- [ ] 리스크 분석 (Top 3 리스크 + 영향도)
-- [ ] 기회 분석 (확장 가능한 긍정 요소)
-- [ ] 전략 도출 (타겟/메시지/콘텐츠/리스크 대응)
 - [ ] AI 지지율 추정 모델
 - [ ] 프레임 전쟁 분석 (경쟁 프레임 구조)
 - [ ] 위기 대응 시나리오 생성
@@ -87,4 +89,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-24 after Phase 1 completion — Foundation + Core Data Collection 완료*
+*Last updated: 2026-03-24 after Phase 2 completion — AI Analysis Engine + Report 완료*
