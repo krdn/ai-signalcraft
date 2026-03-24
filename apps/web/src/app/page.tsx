@@ -8,6 +8,7 @@ import { PipelineMonitor } from '@/components/analysis/pipeline-monitor';
 import { RecentJobs } from '@/components/analysis/recent-jobs';
 import { HistoryTable } from '@/components/analysis/history-table';
 import { ReportView } from '@/components/report/report-view';
+import { DashboardView } from '@/components/dashboard/dashboard-view';
 
 // 분석 실행 탭 -- 트리거 폼 + 파이프라인 모니터 + 최근 작업
 function AnalysisTab({
@@ -36,14 +37,9 @@ function AnalysisTab({
   );
 }
 
-// 결과 대시보드 탭 -- Plan 03에서 구현
-function DashboardTab() {
-  return (
-    <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-      <p className="text-lg font-semibold">결과 대시보드</p>
-      <p className="text-sm mt-2">분석 실행 탭에서 새 분석을 시작하거나, 히스토리에서 이전 결과를 선택하세요.</p>
-    </div>
-  );
+// 결과 대시보드 탭 -- 6개 시각화 컴포넌트 (감성/트렌드/워드클라우드/플랫폼/리스크/기회)
+function DashboardTab({ jobId }: { jobId: number | null }) {
+  return <DashboardView jobId={jobId} />;
 }
 
 // AI 리포트 탭 -- 마크다운 뷰어 + 섹션 네비 + PDF 내보내기
@@ -84,7 +80,7 @@ export default function Home() {
             onComplete={handleComplete}
             onSelectJob={handleSelectJob}
           />,
-          <DashboardTab key="dashboard" />,
+          <DashboardTab key="dashboard" jobId={activeJobId} />,
           <ReportTab key="report" jobId={activeJobId} />,
           <HistoryTabPanel key="history" onViewResult={handleSelectJob} />,
         ]}
