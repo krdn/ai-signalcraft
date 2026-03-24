@@ -91,7 +91,7 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 04-01-PLAN.md -- 커뮤니티 수집기 3종 (DC갤러리/에펨코리아/클리앙) + 파이프라인 통합
+- [x] 04-01-PLAN.md -- 커뮤니티 수집기 3종 (DC갤러리/에펨코리아/클리앙) + 파이프라인 통합
 - [ ] 04-02-PLAN.md -- 고급 분석 모듈 4종 (지지율/프레임전쟁/위기시나리오/승리시뮬레이션) + Stage 4
 - [ ] 04-03-PLAN.md -- 대시보드 확장 (커뮤니티 소스 UI + 고급 분석 탭 + 시각화 컴포넌트)
 
@@ -105,4 +105,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 | 1. Foundation + Core Data Collection | 5/6 | In Progress|  |
 | 2. AI Analysis Engine + Report | 1/5 | In Progress|  |
 | 3. Dashboard + Team | 0/6 | Planned | - |
-| 4. Expansion + Advanced Analysis | 0/3 | Planned | - |
+| 4. Expansion + Advanced Analysis | 1/3 | In Progress|  |

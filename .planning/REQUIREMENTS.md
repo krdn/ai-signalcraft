@@ -20,10 +20,10 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **COLL-02**: 네이버 뉴스 댓글 수집기 (비공식 API 기반)
 - [x] **COLL-03**: 유튜브 영상 메타데이터 수집기 (YouTube Data API v3)
 - [x] **COLL-04**: 유튜브 댓글 수집기 (YouTube Data API v3)
-- [ ] **COLL-05**: X(트위터) 트윗 및 반응 수집기 (X API Basic)
-- [ ] **COLL-06**: DC갤러리 게시글/댓글 수집기 (스크래핑)
-- [ ] **COLL-07**: 에펨코리아 게시글/댓글 수집기 (스크래핑)
-- [ ] **COLL-08**: 클리앙 게시글/댓글 수집기 (스크래핑)
+- [x] **COLL-05**: X(트위터) 트윗 및 반응 수집기 (X API Basic)
+- [x] **COLL-06**: DC갤러리 게시글/댓글 수집기 (스크래핑)
+- [x] **COLL-07**: 에펨코리아 게시글/댓글 수집기 (스크래핑)
+- [x] **COLL-08**: 클리앙 게시글/댓글 수집기 (스크래핑)
 - [x] **COLL-09**: Adapter Pattern 기반 수집기 공통 인터페이스 (소스 독립적)
 - [x] **COLL-10**: 수집 데이터 정규화 및 중복 제거 파이프라인
 
@@ -44,10 +44,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Advanced Analysis
 
-- [ ] **ADVN-01**: AI 지지율 추정 모델 (감정 비율 + 확산력 + 플랫폼 편향 보정)
-- [ ] **ADVN-02**: 프레임 전쟁 분석 (지배적/위협/반전 가능 프레임 식별)
-- [ ] **ADVN-03**: 위기 대응 시나리오 생성 (확산/통제/역전 3개 시나리오 + 대응 전략)
-- [ ] **ADVN-04**: 승리 확률 및 전략 시뮬레이션 (승리/패배 조건 도출)
+- [x] **ADVN-01**: AI 지지율 추정 모델 (감정 비율 + 확산력 + 플랫폼 편향 보정)
+- [x] **ADVN-02**: 프레임 전쟁 분석 (지배적/위협/반전 가능 프레임 식별)
+- [x] **ADVN-03**: 위기 대응 시나리오 생성 (확산/통제/역전 3개 시나리오 + 대응 전략)
+- [x] **ADVN-04**: 승리 확률 및 전략 시뮬레이션 (승리/패배 조건 도출)
 
 ### Report Generation
 
@@ -108,10 +108,10 @@ Deferred to future release. Tracked but not in current roadmap.
 | COLL-02 | Phase 1 | Complete |
 | COLL-03 | Phase 1 | Complete |
 | COLL-04 | Phase 1 | Complete |
-| COLL-05 | Phase 4 | Pending |
-| COLL-06 | Phase 4 | Pending |
-| COLL-07 | Phase 4 | Pending |
-| COLL-08 | Phase 4 | Pending |
+| COLL-05 | Phase 4 | Complete |
+| COLL-06 | Phase 4 | Complete |
+| COLL-07 | Phase 4 | Complete |
+| COLL-08 | Phase 4 | Complete |
 | COLL-09 | Phase 1 | Complete |
 | COLL-10 | Phase 1 | Complete |
 | ANLZ-01 | Phase 2 | Complete |
@@ -123,10 +123,10 @@ Deferred to future release. Tracked but not in current roadmap.
 | DEEP-03 | Phase 2 | Complete |
 | DEEP-04 | Phase 2 | Complete |
 | DEEP-05 | Phase 2 | Complete |
-| ADVN-01 | Phase 4 | Pending |
-| ADVN-02 | Phase 4 | Pending |
-| ADVN-03 | Phase 4 | Pending |
-| ADVN-04 | Phase 4 | Pending |
+| ADVN-01 | Phase 4 | Complete |
+| ADVN-02 | Phase 4 | Complete |
+| ADVN-03 | Phase 4 | Complete |
+| ADVN-04 | Phase 4 | Complete |
 | REPT-01 | Phase 2 | Complete |
 | REPT-02 | Phase 2 | Complete |
 | REPT-03 | Phase 2 | Complete |

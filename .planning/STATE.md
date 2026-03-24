@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Ready to plan
-stopped_at: Phase 4 context gathered
-last_updated: "2026-03-24T10:14:28.137Z"
+status: Ready to execute
+stopped_at: Completed 04-01-PLAN.md
+last_updated: "2026-03-24T10:56:54.502Z"
 progress:
   total_phases: 4
   completed_phases: 3
-  total_plans: 17
-  completed_plans: 17
+  total_plans: 20
+  completed_plans: 18
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-24)
 
 **Core value:** 다양한 플랫폼의 여론 데이터를 AI로 분석하여 전략 팀이 즉시 활용 가능한 종합 분석 리포트를 생성한다.
-**Current focus:** Phase 03 — dashboard-team
+**Current focus:** Phase 04 — expansion-advanced-analysis
 
 ## Current Position
 
-Phase: 4
-Plan: Not started
+Phase: 04 (expansion-advanced-analysis) — EXECUTING
+Plan: 3 of 3
 
 ## Performance Metrics
 
@@ -62,6 +62,8 @@ Plan: Not started
 | Phase 03 P04 | 4min | 1 tasks | 7 files |
 | Phase 03 P05 | 8min | 2 tasks | 12 files |
 | Phase 03 P03 | 9min | 2 tasks | 12 files |
+| Phase 04 P02 | 6min | 2 tasks | 15 files |
+| Phase 04 P01 | 8min | 2 tasks | 15 files |
 
 ## Accumulated Context
 
@@ -99,6 +101,12 @@ Recent decisions affecting current work:
 - [Phase 03]: adminProcedure 별도 미들웨어로 관리자 RBAC 재사용 패턴
 - [Phase 03]: shadcn chart ChartContainer 래핑으로 Recharts 테마 색상 자동 적용
 - [Phase 03]: 워드클라우드 dynamic import + 타입 캐스팅으로 SSR/TypeScript 호환성 해결
+- [Phase 04]: ADVN 모듈은 모두 anthropic/claude-sonnet-4-20250514 모델 사용
+- [Phase 04]: Stage 4 실행 전 기본 리포트 생성 후 ADVN 완료 시 재생성으로 기존 리포트 안전 보장
+- [Phase 04]: CrisisScenarioSchema에 z.tuple로 3개 시나리오 타입 순서 강제
+- [Phase 04]: 커뮤니티 수집기는 게시글+댓글 함께 수집 (별도 댓글 API 없음)
+- [Phase 04]: progress/JobProgress JSONB를 Record<string, ...>로 일반화
+- [Phase 04]: 커뮤니티 게시글은 articles 테이블 재사용 (boardName->publisher 매핑)
 
 ### Pending Todos
 
@@ -112,6 +120,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-24T10:14:28.134Z
-Stopped at: Phase 4 context gathered
-Resume file: .planning/phases/04-expansion-advanced-analysis/04-CONTEXT.md
+Last session: 2026-03-24T10:56:54.500Z
+Stopped at: Completed 04-01-PLAN.md
+Resume file: None
