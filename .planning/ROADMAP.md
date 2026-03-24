@@ -68,13 +68,16 @@ Plans:
   3. 감성 비율 차트, 시계열 트렌드, 워드클라우드, 리스크/기회 매트릭스가 대시보드에 시각화된다
   4. AI 종합 리포트를 섹션별로 탐색하고 과거 분석 히스토리를 조회/비교할 수 있다
   5. 이메일/비밀번호로 로그인하고 팀원을 초대하여 동일한 분석 결과를 공유할 수 있다
-**Plans**: TBD
+**Plans**: 6 plans
 **UI hint**: yes
 
 Plans:
-- [ ] 03-01: TBD
-- [ ] 03-02: TBD
-- [ ] 03-03: TBD
+- [ ] 03-01-PLAN.md -- shadcn/ui + Tailwind 4 + tRPC + NextAuth + Auth/Team DB 스키마 기반 스캐폴딩
+- [ ] 03-02-PLAN.md -- 로그인/인증 + 4탭 레이아웃 + 분석 실행 탭 + 히스토리 탭
+- [ ] 03-03-PLAN.md -- 결과 대시보드 시각화 (감성/트렌드/워드클라우드/리스크/기회)
+- [ ] 03-04-PLAN.md -- AI 리포트 마크다운 뷰어 + 섹션 네비 + PDF 내보내기
+- [ ] 03-05-PLAN.md -- 팀 관리 (초대/역할/멤버 목록/Resend 이메일)
+- [ ] 03-06-PLAN.md -- 전체 시각적/기능적 통합 검증 (checkpoint)
 
 ### Phase 4: Expansion + Advanced Analysis
 **Goal**: 커뮤니티(DC갤러리, 에펨코리아, 클리앙)와 X(트위터) 수집기가 추가되고, AI 지지율 추정/프레임 전쟁/위기 시나리오/승리 시뮬레이션 고급 분석이 제공된다
@@ -100,5 +103,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 |-------|----------------|--------|-----------|
 | 1. Foundation + Core Data Collection | 5/6 | In Progress|  |
 | 2. AI Analysis Engine + Report | 1/5 | In Progress|  |
-| 3. Dashboard + Team | 0/3 | Not started | - |
+| 3. Dashboard + Team | 0/6 | Not started | - |
 | 4. Expansion + Advanced Analysis | 0/2 | Not started | - |
