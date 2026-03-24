@@ -57,7 +57,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Dashboard
 
-- [ ] **DASH-01**: 분석 실행 트리거 UI (인물/키워드 입력, 소스 선택, 기간 설정)
+- [x] **DASH-01**: 분석 실행 트리거 UI (인물/키워드 입력, 소스 선택, 기간 설정)
 - [ ] **DASH-02**: 파이프라인 실행 상태 모니터링 (진행률, 작업별 상태)
 - [ ] **DASH-03**: 감성 분석 시각화 (긍정/부정/중립 비율 차트, 시계열 트렌드)
 - [ ] **DASH-04**: 키워드/연관어 시각화 (워드클라우드, 네트워크 그래프)
@@ -67,7 +67,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Team & Auth
 
-- [ ] **TEAM-01**: 사용자 인증 (이메일/비밀번호 로그인)
+- [x] **TEAM-01**: 사용자 인증 (이메일/비밀번호 로그인)
 - [ ] **TEAM-02**: 팀 멤버 관리 (초대, 역할 할당)
 - [ ] **TEAM-03**: 분석 결과 팀 공유 (동일 분석 결과 팀원 전체 접근)
 
@@ -130,14 +130,14 @@ Deferred to future release. Tracked but not in current roadmap.
 | REPT-01 | Phase 2 | Complete |
 | REPT-02 | Phase 2 | Complete |
 | REPT-03 | Phase 2 | Complete |
-| DASH-01 | Phase 3 | Pending |
+| DASH-01 | Phase 3 | Complete |
 | DASH-02 | Phase 3 | Pending |
 | DASH-03 | Phase 3 | Pending |
 | DASH-04 | Phase 3 | Pending |
 | DASH-05 | Phase 3 | Pending |
 | DASH-06 | Phase 3 | Pending |
 | DASH-07 | Phase 3 | Pending |
-| TEAM-01 | Phase 3 | Pending |
+| TEAM-01 | Phase 3 | Complete |
 | TEAM-02 | Phase 3 | Pending |
 | TEAM-03 | Phase 3 | Pending |
 
