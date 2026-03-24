@@ -21,7 +21,7 @@ import { Switch } from '@/components/ui/switch';
 import { LogOut, Moon, Sun, Users } from 'lucide-react';
 import { TeamSettings } from '@/components/team/team-settings';
 
-const TAB_LABELS = ['분석 실행', '결과 대시보드', 'AI 리포트', '히스토리'] as const;
+const TAB_LABELS = ['분석 실행', '결과 대시보드', 'AI 리포트', '히스토리', '고급 분석'] as const;
 
 interface TopNavProps {
   activeTab: number;
