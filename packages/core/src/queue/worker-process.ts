@@ -11,6 +11,7 @@ import {
   registerCollector,
   getCollector,
 } from '@ai-signalcraft/collectors';
+import type { NaverComment } from '@ai-signalcraft/collectors';
 import {
   normalizeNaverArticle,
   normalizeNaverComment,
@@ -58,6 +59,31 @@ const pipelineWorker = createPipelineWorker(async (job: Job) => {
     for (const [key, value] of Object.entries(childValues)) {
       const childResult = value as { source: string; items: unknown[]; count: number };
       results[childResult.source] = childResult;
+    }
+
+    // normalize-naver: 기사 수집 결과에서 URL 추출 후 댓글 수집
+    if (job.name === 'normalize-naver' && results['naver-news']) {
+      const articles = (results['naver-news'] as { items: Array<{ url: string }> }).items;
+      const maxComments = (job.data.maxComments as number) ?? 500;
+      const commentsCollector = new NaverCommentsCollector();
+      const allComments: NaverComment[] = [];
+
+      for (const article of articles) {
+        if (!article.url) continue;
+        try {
+          for await (const chunk of commentsCollector.collectForArticle(article.url, { maxComments })) {
+            allComments.push(...chunk);
+          }
+        } catch (err) {
+          // D-04: 부분 실패 허용 -- 개별 기사 댓글 실패 시 로깅 후 계속
+          console.warn(`댓글 수집 실패 (${article.url}):`, err);
+        }
+        await job.updateProgress({ commentsCollected: allComments.length });
+      }
+
+      if (allComments.length > 0) {
+        results['naver-comments'] = { source: 'naver-comments', items: allComments, count: allComments.length };
+      }
     }
 
     return { source, dbJobId, normalized: true, results };

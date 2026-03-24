@@ -32,17 +32,12 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
       {
         name: 'normalize-naver',
         queueName: 'pipeline',
-        data: { source: 'naver-news', flowId, dbJobId },
+        data: { source: 'naver-news', flowId, dbJobId, maxComments: limits.commentsPerItem },
         children: [
           {
             name: 'collect-naver-articles',
             queueName: 'collectors',
             data: { ...params, source: 'naver-news', maxItems: limits.naverArticles, maxComments: limits.commentsPerItem, flowId, dbJobId },
-          },
-          {
-            name: 'collect-naver-comments',
-            queueName: 'collectors',
-            data: { ...params, source: 'naver-comments', maxComments: limits.commentsPerItem, flowId, dbJobId },
           },
         ],
       },
