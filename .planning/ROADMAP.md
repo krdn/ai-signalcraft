@@ -49,12 +49,14 @@ Plans:
   3. 프레임 분석, 리스크/기회 분석, 메시지 효과 분석, 전략 도출이 실행되어 구조화된 결과가 DB에 저장된다
   4. 모든 분석 결과를 통합한 AI 종합 리포트가 자동 생성되고 PDF/마크다운으로 내보내기된다
   5. Claude/GPT 등 다중 AI 모델이 AI Gateway를 통해 유연하게 전환되고 토큰 사용량이 추적된다
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
-- [ ] 02-01: TBD
-- [ ] 02-02: TBD
-- [ ] 02-03: TBD
+- [ ] 02-01-PLAN.md -- 분석 DB 스키마 + AnalysisModule 인터페이스/타입 + AI Gateway 확장
+- [ ] 02-02-PLAN.md -- Stage 1 분석 모듈 4개 (macro-view, segmentation, sentiment-framing, message-impact)
+- [ ] 02-03-PLAN.md -- Stage 2 분석 모듈 4개 (risk-map, opportunity, strategy, final-summary)
+- [ ] 02-04-PLAN.md -- 분석 실행 러너 + BullMQ Flow 확장 + Worker 핸들러
+- [ ] 02-05-PLAN.md -- 통합 리포트 생성기 + PDF 내보내기
 
 ### Phase 3: Dashboard + Team
 **Goal**: 분석팀이 웹 대시보드에서 분석을 트리거하고, 진행 상태를 모니터링하며, 시각화된 결과를 팀원과 함께 확인할 수 있다
@@ -97,6 +99,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation + Core Data Collection | 5/6 | In Progress|  |
-| 2. AI Analysis Engine + Report | 0/3 | Not started | - |
+| 2. AI Analysis Engine + Report | 0/5 | Not started | - |
 | 3. Dashboard + Team | 0/3 | Not started | - |
 | 4. Expansion + Advanced Analysis | 0/2 | Not started | - |
