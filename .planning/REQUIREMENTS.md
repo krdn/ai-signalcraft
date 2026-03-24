@@ -29,18 +29,18 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Core Analysis
 
-- [ ] **ANLZ-01**: 감성 분석 (긍정/부정/중립 분류, 감정 비율 산출)
-- [ ] **ANLZ-02**: 연관어/키워드 분석 (반복 키워드 추출, 연관어 네트워크)
-- [ ] **ANLZ-03**: 시계열 트렌드 분석 (일별 언급량, 감성 추이, 변곡점 탐지)
-- [ ] **ANLZ-04**: 집단별 반응 분석 (플랫폼별, 담론 클러스터별 세분화)
+- [x] **ANLZ-01**: 감성 분석 (긍정/부정/중립 분류, 감정 비율 산출)
+- [x] **ANLZ-02**: 연관어/키워드 분석 (반복 키워드 추출, 연관어 네트워크)
+- [x] **ANLZ-03**: 시계열 트렌드 분석 (일별 언급량, 감성 추이, 변곡점 탐지)
+- [x] **ANLZ-04**: 집단별 반응 분석 (플랫폼별, 담론 클러스터별 세분화)
 
 ### Deep Analysis
 
-- [ ] **DEEP-01**: 프레임 분석 (프레임 유형 분류, 긍정/부정 프레임 TOP5, 충돌 구조)
-- [ ] **DEEP-02**: 메시지 효과 분석 (여론 변화 유발 발언/콘텐츠 식별, 성공 vs 실패 메시지)
-- [ ] **DEEP-03**: 리스크 분석 (Top 3 리스크 + 영향도 + 확산 가능성)
-- [ ] **DEEP-04**: 기회 분석 (확장 가능한 긍정 요소, 미활용 영역)
-- [ ] **DEEP-05**: 전략 도출 (타겟/메시지/콘텐츠/리스크 대응 전략)
+- [x] **DEEP-01**: 프레임 분석 (프레임 유형 분류, 긍정/부정 프레임 TOP5, 충돌 구조)
+- [x] **DEEP-02**: 메시지 효과 분석 (여론 변화 유발 발언/콘텐츠 식별, 성공 vs 실패 메시지)
+- [x] **DEEP-03**: 리스크 분석 (Top 3 리스크 + 영향도 + 확산 가능성)
+- [x] **DEEP-04**: 기회 분석 (확장 가능한 긍정 요소, 미활용 영역)
+- [x] **DEEP-05**: 전략 도출 (타겟/메시지/콘텐츠/리스크 대응 전략)
 
 ### Advanced Analysis
 
@@ -51,8 +51,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Report Generation
 
-- [ ] **REPT-01**: AI 종합 분석 리포트 자동 생성 (8개 분석 모듈 결과 통합)
-- [ ] **REPT-02**: 최종 전략 요약 (현재 상태 + 승부 핵심 한 줄 요약)
+- [x] **REPT-01**: AI 종합 분석 리포트 자동 생성 (8개 분석 모듈 결과 통합)
+- [x] **REPT-02**: 최종 전략 요약 (현재 상태 + 승부 핵심 한 줄 요약)
 - [ ] **REPT-03**: 리포트 PDF/마크다운 내보내기
 
 ### Dashboard
@@ -114,21 +114,21 @@ Deferred to future release. Tracked but not in current roadmap.
 | COLL-08 | Phase 4 | Pending |
 | COLL-09 | Phase 1 | Complete |
 | COLL-10 | Phase 1 | Complete |
-| ANLZ-01 | Phase 2 | Pending |
-| ANLZ-02 | Phase 2 | Pending |
-| ANLZ-03 | Phase 2 | Pending |
-| ANLZ-04 | Phase 2 | Pending |
-| DEEP-01 | Phase 2 | Pending |
-| DEEP-02 | Phase 2 | Pending |
-| DEEP-03 | Phase 2 | Pending |
-| DEEP-04 | Phase 2 | Pending |
-| DEEP-05 | Phase 2 | Pending |
+| ANLZ-01 | Phase 2 | Complete |
+| ANLZ-02 | Phase 2 | Complete |
+| ANLZ-03 | Phase 2 | Complete |
+| ANLZ-04 | Phase 2 | Complete |
+| DEEP-01 | Phase 2 | Complete |
+| DEEP-02 | Phase 2 | Complete |
+| DEEP-03 | Phase 2 | Complete |
+| DEEP-04 | Phase 2 | Complete |
+| DEEP-05 | Phase 2 | Complete |
 | ADVN-01 | Phase 4 | Pending |
 | ADVN-02 | Phase 4 | Pending |
 | ADVN-03 | Phase 4 | Pending |
 | ADVN-04 | Phase 4 | Pending |
-| REPT-01 | Phase 2 | Pending |
-| REPT-02 | Phase 2 | Pending |
+| REPT-01 | Phase 2 | Complete |
+| REPT-02 | Phase 2 | Complete |
 | REPT-03 | Phase 2 | Pending |
 | DASH-01 | Phase 3 | Pending |
 | DASH-02 | Phase 3 | Pending |

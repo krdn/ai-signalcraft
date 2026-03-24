@@ -52,7 +52,7 @@ Plans:
 **Plans**: 5 plans
 
 Plans:
-- [ ] 02-01-PLAN.md -- 분석 DB 스키마 + AnalysisModule 인터페이스/타입 + AI Gateway 확장
+- [x] 02-01-PLAN.md -- 분석 DB 스키마 + AnalysisModule 인터페이스/타입 + AI Gateway 확장
 - [ ] 02-02-PLAN.md -- Stage 1 분석 모듈 4개 (macro-view, segmentation, sentiment-framing, message-impact)
 - [ ] 02-03-PLAN.md -- Stage 2 분석 모듈 4개 (risk-map, opportunity, strategy, final-summary)
 - [ ] 02-04-PLAN.md -- 분석 실행 러너 + BullMQ Flow 확장 + Worker 핸들러
@@ -99,6 +99,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation + Core Data Collection | 5/6 | In Progress|  |
-| 2. AI Analysis Engine + Report | 0/5 | Not started | - |
+| 2. AI Analysis Engine + Report | 1/5 | In Progress|  |
 | 3. Dashboard + Team | 0/3 | Not started | - |
 | 4. Expansion + Advanced Analysis | 0/2 | Not started | - |
