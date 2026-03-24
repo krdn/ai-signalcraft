@@ -1,5 +1,5 @@
 // 정규화된 데이터를 DB에 upsert (D-07: 중복 제거)
-import { db } from '../db';
+import { getDb } from '../db';
 import { articles, videos, comments, collectionJobs } from '../db/schema/collections';
 import { sql } from 'drizzle-orm';
 
@@ -9,7 +9,7 @@ import { sql } from 'drizzle-orm';
  */
 export async function persistArticles(data: (typeof articles.$inferInsert)[]) {
   if (data.length === 0) return [];
-  return db
+  return getDb()
     .insert(articles)
     .values(data)
     .onConflictDoUpdate({
@@ -30,7 +30,7 @@ export async function persistArticles(data: (typeof articles.$inferInsert)[]) {
  */
 export async function persistVideos(data: (typeof videos.$inferInsert)[]) {
   if (data.length === 0) return [];
-  return db
+  return getDb()
     .insert(videos)
     .values(data)
     .onConflictDoUpdate({
@@ -51,7 +51,7 @@ export async function persistVideos(data: (typeof videos.$inferInsert)[]) {
  */
 export async function persistComments(data: (typeof comments.$inferInsert)[]) {
   if (data.length === 0) return [];
-  return db
+  return getDb()
     .insert(comments)
     .values(data)
     .onConflictDoUpdate({
@@ -75,7 +75,7 @@ export async function updateJobProgress(
   progress: Record<string, unknown>,
   status?: 'pending' | 'running' | 'completed' | 'partial_failure' | 'failed',
 ) {
-  return db
+  return getDb()
     .update(collectionJobs)
     .set({
       progress: progress as any,
@@ -94,7 +94,7 @@ export async function createCollectionJob(params: {
   endDate: Date;
   limits?: Record<string, number>;
 }) {
-  const [job] = await db
+  const [job] = await getDb()
     .insert(collectionJobs)
     .values({
       keyword: params.keyword,

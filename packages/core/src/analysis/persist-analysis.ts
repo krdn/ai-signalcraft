@@ -1,5 +1,5 @@
 // 분석 결과 및 리포트를 DB에 저장
-import { db } from '../db';
+import { getDb } from '../db';
 import { analysisResults, analysisReports } from '../db/schema/analysis';
 import { sql } from 'drizzle-orm';
 
@@ -8,7 +8,7 @@ import { sql } from 'drizzle-orm';
  * 동일 작업+모듈 조합이 이미 있으면 결과를 업데이트
  */
 export async function persistAnalysisResult(data: typeof analysisResults.$inferInsert) {
-  const [result] = await db
+  const [result] = await getDb()
     .insert(analysisResults)
     .values(data)
     .onConflictDoUpdate({
@@ -30,7 +30,7 @@ export async function persistAnalysisResult(data: typeof analysisResults.$inferI
  * 기존 리포트가 있으면 갱신, 없으면 삽입
  */
 export async function persistAnalysisReport(data: typeof analysisReports.$inferInsert) {
-  const [report] = await db
+  const [report] = await getDb()
     .insert(analysisReports)
     .values(data)
     .onConflictDoUpdate({

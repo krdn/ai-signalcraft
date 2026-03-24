@@ -1,5 +1,5 @@
 // DB에서 jobId 기반으로 수집 데이터를 로드하여 AnalysisInput 형식으로 변환
-import { db } from '../db';
+import { getDb } from '../db';
 import { articles, videos, comments, collectionJobs } from '../db/schema/collections';
 import { eq, desc } from 'drizzle-orm';
 import type { AnalysisInput } from './types';
@@ -15,7 +15,7 @@ const MAX_COMMENTS = 500;
  */
 export async function loadAnalysisInput(jobId: number): Promise<AnalysisInput> {
   // 작업 정보 조회
-  const [job] = await db
+  const [job] = await getDb()
     .select()
     .from(collectionJobs)
     .where(eq(collectionJobs.id, jobId))
@@ -26,7 +26,7 @@ export async function loadAnalysisInput(jobId: number): Promise<AnalysisInput> {
   }
 
   // 기사 로드
-  const articleRows = await db
+  const articleRows = await getDb()
     .select({
       title: articles.title,
       content: articles.content,
@@ -38,7 +38,7 @@ export async function loadAnalysisInput(jobId: number): Promise<AnalysisInput> {
     .where(eq(articles.jobId, jobId));
 
   // 영상 로드
-  const videoRows = await db
+  const videoRows = await getDb()
     .select({
       title: videos.title,
       description: videos.description,
@@ -51,7 +51,7 @@ export async function loadAnalysisInput(jobId: number): Promise<AnalysisInput> {
     .where(eq(videos.jobId, jobId));
 
   // 댓글 로드 (좋아요순 상위 N개)
-  const commentRows = await db
+  const commentRows = await getDb()
     .select({
       content: comments.content,
       source: comments.source,
