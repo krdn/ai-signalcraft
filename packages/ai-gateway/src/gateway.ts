@@ -9,6 +9,7 @@ export interface AIGatewayOptions {
   provider?: AIProvider;
   model?: string;
   maxOutputTokens?: number;
+  systemPrompt?: string;  // 분석 모듈별 시스템 프롬프트
 }
 
 const DEFAULT_MODELS: Record<AIProvider, string> = {
@@ -26,30 +27,42 @@ function getModel(provider: AIProvider, model?: string) {
   }
 }
 
-// 텍스트 분석 (Phase 2에서 프롬프트와 연결)
+// 텍스트 분석 -- systemPrompt + usage 반환 지원
 export async function analyzeText(
   prompt: string,
   options: AIGatewayOptions = {},
 ) {
   const provider = options.provider ?? 'anthropic';
-  return generateText({
+  const result = await generateText({
     model: getModel(provider, options.model),
+    ...(options.systemPrompt ? { system: options.systemPrompt } : {}),
     prompt,
     maxOutputTokens: options.maxOutputTokens ?? 4096,
   });
+  return {
+    text: result.text,
+    usage: result.usage,
+    finishReason: result.finishReason,
+  };
 }
 
-// 구조화 분석 (Phase 2에서 Zod 스키마와 연결)
+// 구조화 분석 -- systemPrompt + usage 반환 지원
 export async function analyzeStructured<T>(
   prompt: string,
   schema: z.ZodType<T>,
   options: AIGatewayOptions = {},
 ) {
   const provider = options.provider ?? 'anthropic';
-  return generateObject({
+  const result = await generateObject({
     model: getModel(provider, options.model),
+    ...(options.systemPrompt ? { system: options.systemPrompt } : {}),
     prompt,
     schema,
     maxOutputTokens: options.maxOutputTokens ?? 4096,
   });
+  return {
+    object: result.object,
+    usage: result.usage,
+    finishReason: result.finishReason,
+  };
 }
