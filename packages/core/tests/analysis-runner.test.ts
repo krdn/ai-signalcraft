@@ -7,6 +7,11 @@ vi.mock('@ai-signalcraft/ai-gateway', () => ({
     usage: { promptTokens: 100, completionTokens: 50, totalTokens: 150 },
     finishReason: 'stop',
   }),
+  analyzeText: vi.fn().mockResolvedValue({
+    text: '# 종합 분석 리포트\n\n리포트 내용',
+    usage: { promptTokens: 500, completionTokens: 1000, totalTokens: 1500 },
+    finishReason: 'stop',
+  }),
 }));
 
 vi.mock('../src/analysis/data-loader', () => ({
@@ -22,6 +27,7 @@ vi.mock('../src/analysis/data-loader', () => ({
 
 vi.mock('../src/analysis/persist-analysis', () => ({
   persistAnalysisResult: vi.fn().mockResolvedValue({ id: 1 }),
+  persistAnalysisReport: vi.fn().mockResolvedValue({ id: 1 }),
 }));
 
 describe('analysis/runner', () => {
@@ -103,5 +109,18 @@ describe('analysis/runner', () => {
     expect(result.failedModules).toBeDefined();
     // 8개 모듈 모두 실행됨 (Stage1: 4 + Stage2: 3 + Final: 1)
     expect(Object.keys(result.results)).toHaveLength(8);
+  });
+
+  it('runAnalysisPipeline이 report 필드를 포함한 결과를 반환한다', async () => {
+    const { runAnalysisPipeline } = await import('../src/analysis/runner');
+    const result = await runAnalysisPipeline(1);
+
+    // 리포트 필드 검증
+    expect(result.report).toBeDefined();
+    expect(result.report.markdownContent).toBeDefined();
+    expect(typeof result.report.markdownContent).toBe('string');
+    expect(typeof result.report.oneLiner).toBe('string');
+    expect(typeof result.report.totalTokens).toBe('number');
+    expect(result.report.totalTokens).toBeGreaterThan(0);
   });
 });

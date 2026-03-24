@@ -6,3 +6,4 @@ export { triggerCollection, createCollectorWorker, createPipelineWorker, redisCo
 export * from './types';
 export * from './pipeline';
 export * from './analysis';
+export * from './report';

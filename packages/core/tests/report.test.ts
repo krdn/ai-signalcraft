@@ -14,6 +14,19 @@ vi.mock('@ai-signalcraft/ai-gateway', () => ({
   }),
 }));
 
+// Playwright mock -- 실제 브라우저 실행 방지
+vi.mock('playwright', () => ({
+  chromium: {
+    launch: vi.fn().mockResolvedValue({
+      newPage: vi.fn().mockResolvedValue({
+        setContent: vi.fn().mockResolvedValue(undefined),
+        pdf: vi.fn().mockResolvedValue(undefined),
+      }),
+      close: vi.fn().mockResolvedValue(undefined),
+    }),
+  },
+}));
+
 // DB persist mock
 vi.mock('../src/analysis/persist-analysis', () => ({
   persistAnalysisResult: vi.fn().mockResolvedValue({ id: 1 }),

@@ -1,5 +1,6 @@
 // 분석 실행 러너 -- 3단계 병렬/순차 오케스트레이션 (D-10)
 import { analyzeStructured } from '@ai-signalcraft/ai-gateway';
+import { generateIntegratedReport } from '../report/generator';
 import {
   macroViewModule,
   segmentationModule,
@@ -104,6 +105,7 @@ export async function runAnalysisPipeline(jobId: number): Promise<{
   results: Record<string, AnalysisModuleResult>;
   completedModules: string[];
   failedModules: string[];
+  report: { markdownContent: string; oneLiner: string; totalTokens: number };
 }> {
   const input = await loadAnalysisInput(jobId);
   const allResults: Record<string, AnalysisModuleResult> = {};
@@ -144,5 +146,15 @@ export async function runAnalysisPipeline(jobId: number): Promise<{
     .filter((r) => r.status === 'failed')
     .map((r) => r.module);
 
-  return { results: allResults, completedModules, failedModules };
+  // D-04: 모든 분석 완료 후 통합 리포트 생성
+  const report = await generateIntegratedReport({
+    jobId: input.jobId,
+    keyword: input.keyword,
+    dateRange: input.dateRange,
+    results: allResults,
+    completedModules,
+    failedModules,
+  });
+
+  return { results: allResults, completedModules, failedModules, report };
 }
