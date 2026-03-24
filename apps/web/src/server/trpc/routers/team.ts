@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { protectedProcedure, adminProcedure, router } from '../init';
 import { teams, teamMembers, invitations, users } from '@ai-signalcraft/core';
-import { eq, and, gt } from 'drizzle-orm';
+import { eq, and, gt, isNull } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { sendInviteEmail } from '../../email';
 
@@ -301,7 +301,7 @@ export const teamRouter = router({
       return { success: true };
     }),
 
-  // 대기 중인 초대 목록 (Admin만)
+  // 대기 중인 초대 목록 (Admin만) -- FLOW-01: acceptedAt IS NULL 조건 추가
   getPendingInvites: adminProcedure.query(async ({ ctx }) => {
     const pending = await ctx.db
       .select({
@@ -316,10 +316,10 @@ export const teamRouter = router({
         and(
           eq(invitations.teamId, ctx.teamId),
           gt(invitations.expiresAt, new Date()),
+          isNull(invitations.acceptedAt),
         ),
       );
 
-    // acceptedAt이 null인 것만 필터
-    return pending.filter((inv) => !inv.expiresAt || inv.expiresAt > new Date());
+    return pending;
   }),
 });
