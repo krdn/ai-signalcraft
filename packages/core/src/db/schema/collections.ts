@@ -1,8 +1,10 @@
 import { pgTable, text, timestamp, integer, jsonb, uniqueIndex } from 'drizzle-orm/pg-core';
+import { teams } from './auth';
 
 // 수집 작업 (D-06: 소스별 상세 추적)
 export const collectionJobs = pgTable('collection_jobs', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+  teamId: integer('team_id').references(() => teams.id),
   keyword: text('keyword').notNull(),
   startDate: timestamp('start_date').notNull(),
   endDate: timestamp('end_date').notNull(),
