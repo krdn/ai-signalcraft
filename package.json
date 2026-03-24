@@ -1,0 +1,23 @@
+{
+  "name": "ai-signalcraft",
+  "private": true,
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev": "pnpm --filter @ai-signalcraft/web dev",
+    "test": "pnpm -r test",
+    "db:push": "pnpm --filter @ai-signalcraft/core db:push",
+    "db:studio": "pnpm --filter @ai-signalcraft/core db:studio",
+    "worker": "pnpm --filter @ai-signalcraft/core worker"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.0",
+    "vitest": "^3.0.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "msgpackr-extract",
+      "sharp"
+    ]
+  }
+}

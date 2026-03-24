@@ -1,0 +1,26 @@
+{
+  "name": "@ai-signalcraft/core",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio",
+    "worker": "tsx watch src/queue/worker.ts"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.40.0",
+    "pg": "^8.13.0",
+    "ioredis": "^5.4.0",
+    "bullmq": "^5.0.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.30.0",
+    "@types/pg": "^8.11.0",
+    "tsx": "^4.19.0"
+  }
+}

@@ -1,0 +1,23 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: ais-dev-postgres
+    ports:
+      - "5437:5432"
+    environment:
+      POSTGRES_DB: ai_signalcraft_dev
+      POSTGRES_PASSWORD: devpassword
+    volumes:
+      - ais-dev-pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    container_name: ais-dev-redis
+    ports:
+      - "6384:6379"
+    volumes:
+      - ais-dev-redis:/data
+
+volumes:
+  ais-dev-pgdata:
+  ais-dev-redis:
