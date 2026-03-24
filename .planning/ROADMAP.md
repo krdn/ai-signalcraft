@@ -106,15 +106,15 @@ Plans:
   2. Stage 4 ADVN 분석 완료 후 리포트 재생성 시 기존 리포트가 갱신(upsert)된다
   3. callbackUrl이 포함된 로그인 시 해당 URL로 리다이렉트되어 초대 수락 플로우가 완료된다
   4. getPendingInvites가 acceptedAt IS NULL 조건으로 정확히 미수락 초대만 반환한다
-**Plans**: 0 plans (to be planned)
+**Plans**: 1 plan
 
 Plans:
-- [ ] 05-01-PLAN.md -- sources 필드 전달 + 리포트 upsert + 로그인 callbackUrl + 초대 필터 수정
+- [ ] 05-01-PLAN.md -- INT-01 sources 전달 + INT-02 리포트 upsert + FLOW-01 callbackUrl + getPendingInvites 필터
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
