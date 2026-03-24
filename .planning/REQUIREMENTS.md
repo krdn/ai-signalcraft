@@ -9,23 +9,23 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Foundation
 
-- [ ] **FOUND-01**: 프로젝트 스캐폴딩 (Next.js + TypeScript 모노리포 구조)
-- [ ] **FOUND-02**: PostgreSQL 스키마 설계 및 운영 서버(192.168.0.5) DB 구성
-- [ ] **FOUND-03**: BullMQ 기반 파이프라인 오케스트레이터 (수동 트리거, 작업 상태 관리)
-- [ ] **FOUND-04**: AI Gateway 추상화 레이어 (Claude, GPT 등 다중 모델 라우팅)
+- [x] **FOUND-01**: 프로젝트 스캐폴딩 (Next.js + TypeScript 모노리포 구조)
+- [x] **FOUND-02**: PostgreSQL 스키마 설계 및 운영 서버(192.168.0.5) DB 구성
+- [x] **FOUND-03**: BullMQ 기반 파이프라인 오케스트레이터 (수동 트리거, 작업 상태 관리)
+- [x] **FOUND-04**: AI Gateway 추상화 레이어 (Claude, GPT 등 다중 모델 라우팅)
 
 ### Data Collection
 
-- [ ] **COLL-01**: 네이버 뉴스 기사 수집기 (키워드 검색, 기간 필터)
-- [ ] **COLL-02**: 네이버 뉴스 댓글 수집기 (비공식 API 기반)
-- [ ] **COLL-03**: 유튜브 영상 메타데이터 수집기 (YouTube Data API v3)
-- [ ] **COLL-04**: 유튜브 댓글 수집기 (YouTube Data API v3)
+- [x] **COLL-01**: 네이버 뉴스 기사 수집기 (키워드 검색, 기간 필터)
+- [x] **COLL-02**: 네이버 뉴스 댓글 수집기 (비공식 API 기반)
+- [x] **COLL-03**: 유튜브 영상 메타데이터 수집기 (YouTube Data API v3)
+- [x] **COLL-04**: 유튜브 댓글 수집기 (YouTube Data API v3)
 - [ ] **COLL-05**: X(트위터) 트윗 및 반응 수집기 (X API Basic)
 - [ ] **COLL-06**: DC갤러리 게시글/댓글 수집기 (스크래핑)
 - [ ] **COLL-07**: 에펨코리아 게시글/댓글 수집기 (스크래핑)
 - [ ] **COLL-08**: 클리앙 게시글/댓글 수집기 (스크래핑)
-- [ ] **COLL-09**: Adapter Pattern 기반 수집기 공통 인터페이스 (소스 독립적)
-- [ ] **COLL-10**: 수집 데이터 정규화 및 중복 제거 파이프라인
+- [x] **COLL-09**: Adapter Pattern 기반 수집기 공통 인터페이스 (소스 독립적)
+- [x] **COLL-10**: 수집 데이터 정규화 및 중복 제거 파이프라인
 
 ### Core Analysis
 
@@ -100,20 +100,20 @@ Deferred to future release. Tracked but not in current roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FOUND-01 | Phase 1 | Pending |
-| FOUND-02 | Phase 1 | Pending |
-| FOUND-03 | Phase 1 | Pending |
-| FOUND-04 | Phase 1 | Pending |
-| COLL-01 | Phase 1 | Pending |
-| COLL-02 | Phase 1 | Pending |
-| COLL-03 | Phase 1 | Pending |
-| COLL-04 | Phase 1 | Pending |
+| FOUND-01 | Phase 1 | Complete |
+| FOUND-02 | Phase 1 | Complete |
+| FOUND-03 | Phase 1 | Complete |
+| FOUND-04 | Phase 1 | Complete |
+| COLL-01 | Phase 1 | Complete |
+| COLL-02 | Phase 1 | Complete |
+| COLL-03 | Phase 1 | Complete |
+| COLL-04 | Phase 1 | Complete |
 | COLL-05 | Phase 4 | Pending |
 | COLL-06 | Phase 4 | Pending |
 | COLL-07 | Phase 4 | Pending |
 | COLL-08 | Phase 4 | Pending |
-| COLL-09 | Phase 1 | Pending |
-| COLL-10 | Phase 1 | Pending |
+| COLL-09 | Phase 1 | Complete |
+| COLL-10 | Phase 1 | Complete |
 | ANLZ-01 | Phase 2 | Pending |
 | ANLZ-02 | Phase 2 | Pending |
 | ANLZ-03 | Phase 2 | Pending |
