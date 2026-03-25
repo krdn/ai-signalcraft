@@ -4,3 +4,4 @@ export * from './persist-analysis';
 export * from './modules';
 export * from './runner';
 export * from './schemas';
+export * from './model-config';

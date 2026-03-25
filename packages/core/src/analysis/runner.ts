@@ -17,6 +17,7 @@ import {
 } from './modules';
 import { loadAnalysisInput } from './data-loader';
 import { persistAnalysisResult } from './persist-analysis';
+import { getModuleModelConfig } from './model-config';
 import type { AnalysisModule, AnalysisInput, AnalysisModuleResult } from './types';
 
 // Stage 1: 병렬 실행 (독립 모듈)
@@ -47,14 +48,17 @@ export async function runModule<T>(
   priorResults?: Record<string, unknown>,
 ): Promise<AnalysisModuleResult<T>> {
   try {
+    // DB 설정 우선, 없으면 모듈 기본값 폴백
+    const config = await getModuleModelConfig(module.name);
+
     const prompt =
       priorResults && module.buildPromptWithContext
         ? module.buildPromptWithContext(input, priorResults)
         : module.buildPrompt(input);
 
     const result = await analyzeStructured(prompt, module.schema, {
-      provider: module.provider,
-      model: module.model,
+      provider: config.provider,
+      model: config.model,
       systemPrompt: module.buildSystemPrompt(),
       maxOutputTokens: 8192,
     });
@@ -74,8 +78,8 @@ export async function runModule<T>(
           (result.usage as any)?.outputTokens ??
           0,
         totalTokens: (result.usage as any)?.totalTokens ?? 0,
-        provider: module.provider,
-        model: module.model,
+        provider: config.provider,
+        model: config.model,
       },
     };
 
