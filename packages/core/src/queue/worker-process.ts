@@ -37,7 +37,7 @@ import {
   registerCollector,
   getCollector,
 } from '@ai-signalcraft/collectors';
-import type { NaverComment, CommunityPost } from '@ai-signalcraft/collectors';
+import type { NaverComment, YoutubeComment, CommunityPost } from '@ai-signalcraft/collectors';
 import {
   normalizeNaverArticle,
   normalizeNaverComment,
@@ -243,6 +243,70 @@ const pipelineWorker = createPipelineWorker(async (job: Job) => {
             articles: articles.length,
             comments: allComments.length,
             articleDetails,
+          }
+        });
+      }
+    }
+
+    // normalize-youtube: 영상 수집 결과에서 videoId 추출 후 댓글 순차 수집
+    if (job.name === 'normalize-youtube' && results['youtube-videos']) {
+      const videos = (results['youtube-videos'] as { items: Array<{ sourceId: string; title?: string }> }).items;
+      const maxComments = (job.data.maxComments as number) ?? 500;
+      const commentsCollector = new YoutubeCommentsCollector();
+      const allComments: YoutubeComment[] = [];
+
+      // 영상별 댓글 수집 진행 추적
+      const videoDetails: Array<{ title: string; status: string; comments: number }> = videos
+        .filter(v => v.sourceId)
+        .map(v => ({ title: (v.title || v.sourceId).slice(0, 50), status: 'pending', comments: 0 }));
+
+      for (let i = 0; i < videos.length; i++) {
+        const video = videos[i];
+        if (!video.sourceId) continue;
+
+        const detail = videoDetails[i];
+        detail.status = 'running';
+        let videoCommentCount = 0;
+
+        try {
+          for await (const chunk of commentsCollector.collect({ keyword: video.sourceId, startDate: job.data.startDate ?? '', endDate: job.data.endDate ?? '', maxComments })) {
+            allComments.push(...chunk);
+            videoCommentCount += chunk.length;
+            detail.comments = videoCommentCount;
+
+            // DB: 영상별 댓글 실시간 진행
+            if (dbJobId) {
+              await updateJobProgress(dbJobId, {
+                youtube: {
+                  status: 'running',
+                  videos: videos.length,
+                  comments: allComments.length,
+                  videoDetails,
+                }
+              });
+            }
+          }
+          detail.status = 'completed';
+        } catch (err) {
+          // 부분 실패 허용 -- 개별 영상 댓글 실패 시 로깅 후 계속
+          console.warn(`[youtube-comments] 영상 댓글 수집 실패 (${video.sourceId}):`, err instanceof Error ? err.message : err);
+          detail.status = 'failed';
+        }
+        await job.updateProgress({ commentsCollected: allComments.length });
+      }
+
+      if (allComments.length > 0) {
+        results['youtube-comments'] = { source: 'youtube-comments', items: allComments, count: allComments.length };
+      }
+
+      // 유튜브 수집 완료 상태로 업데이트
+      if (dbJobId) {
+        await updateJobProgress(dbJobId, {
+          youtube: {
+            status: 'completed',
+            videos: videos.length,
+            comments: allComments.length,
+            videoDetails,
           }
         });
       }

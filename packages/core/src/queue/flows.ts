@@ -45,15 +45,11 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
     children.push({
       name: 'normalize-youtube',
       queueName: 'pipeline',
-      data: { source: 'youtube', flowId, dbJobId },
+      data: { source: 'youtube', flowId, dbJobId, maxComments: limits.commentsPerItem, startDate: params.startDate, endDate: params.endDate },
       children: [{
         name: 'collect-youtube-videos',
         queueName: 'collectors',
         data: { ...params, source: 'youtube-videos', maxItems: limits.youtubeVideos, flowId, dbJobId },
-      }, {
-        name: 'collect-youtube-comments',
-        queueName: 'collectors',
-        data: { ...params, source: 'youtube-comments', maxComments: limits.commentsPerItem, flowId, dbJobId },
       }],
     });
   }
