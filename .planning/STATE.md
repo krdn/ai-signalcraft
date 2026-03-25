@@ -66,9 +66,10 @@ None.
 | 260325-r8r | 분석 실행 화면에서 자세한 도움말 추가 | 2026-03-25 | 673b5b8 | [260325-r8r-analysis-help](./quick/260325-r8r-analysis-help/) |
 | 260325-rht | 유튜브 수집 파이프라인 E2E 테스트 (성공) | 2026-03-25 | - | [260325-rht-youtube-test](./quick/260325-rht-youtube-test/) |
 | 260325-tge | AI 모델 설정 UI (모듈별 프로바이더/모델 동적 변경) | 2026-03-25 | e083269 | [260325-tge-ai-llm](./quick/260325-tge-ai-llm/) |
+| 260325-pvk | LLM 프로바이더 API 키 관리 (암호화 저장, 연결 테스트, 모델 선택) | 2026-03-25 | fef0124 | - |
 
 ## Session Continuity
 
-Last activity: 2026-03-25 - Completed quick task 260325-tge: AI 모델 설정 UI
-Stopped at: Completed quick-260325-tge
+Last activity: 2026-03-25 - Completed: LLM 프로바이더 API 키 관리 기능 추가
+Stopped at: Completed provider-keys feature
 Resume file: None
