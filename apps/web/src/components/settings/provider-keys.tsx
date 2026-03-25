@@ -366,7 +366,14 @@ function KeyCard({
       const result = await trpcClient.settings.providerKeys.test.mutate({ id: item.id });
       if (result.success) {
         toast.success(`연결 성공! ${result.models.length}개 모델 발견`);
-        setModels(result.models);
+        let fetchedModels = result.models;
+        // 현재 선택된 모델이 목록에 없으면 맨 앞에 추가
+        if (item.selectedModel && !fetchedModels.includes(item.selectedModel)) {
+          fetchedModels = [item.selectedModel, ...fetchedModels];
+        }
+        setModels(fetchedModels);
+        // 현재 선택된 모델로 자동 채움
+        setPendingModel(item.selectedModel || (fetchedModels.length > 0 ? fetchedModels[0] : ''));
         setShowModels(true);
       } else {
         toast.error(result.error ?? '연결 테스트 실패');
