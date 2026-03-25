@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { usePipelineStatus } from '@/hooks/use-pipeline-status';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -37,9 +37,17 @@ interface PipelineMonitorProps {
 export function PipelineMonitor({ jobId, onComplete, onRetry }: PipelineMonitorProps) {
   const { data, isLoading } = usePipelineStatus(jobId);
 
-  // 완료 시 toast + 탭 전환
+  // 완료 시 toast + 탭 전환 (진행 중→완료 전환 시에만 동작, 이미 완료된 상태에서 마운트 시 무시)
+  const prevStatusRef = useRef(data?.status);
   useEffect(() => {
-    if (data?.status === 'completed' || data?.hasReport) {
+    const prevStatus = prevStatusRef.current;
+    prevStatusRef.current = data?.status;
+
+    // 이전 상태가 진행 중이었고 완료로 변경된 경우에만 자동 전환
+    const wasInProgress = prevStatus === 'running' || prevStatus === 'pending';
+    const isNowComplete = data?.status === 'completed' || data?.hasReport;
+
+    if (wasInProgress && isNowComplete) {
       toast.success('분석이 완료되었습니다');
       onComplete?.();
     }
