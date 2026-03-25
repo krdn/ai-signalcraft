@@ -18,10 +18,33 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
-import { LogOut, Moon, Sun, Users } from 'lucide-react';
+import {
+  Activity,
+  Brain,
+  Database,
+  FileText,
+  History,
+  LayoutDashboard,
+  LogOut,
+  Moon,
+  Play,
+  Settings,
+  Sun,
+  Users,
+} from 'lucide-react';
 import { TeamSettings } from '@/components/team/team-settings';
+import { ModelSettings } from '@/components/settings/model-settings';
+import { cn } from '@/lib/utils';
+import type { LucideIcon } from 'lucide-react';
 
-const TAB_LABELS = ['분석 실행', '결과 대시보드', '수집 데이터', 'AI 리포트', '히스토리', '고급 분석'] as const;
+const TABS: { label: string; icon: LucideIcon }[] = [
+  { label: '분석 실행', icon: Play },
+  { label: '결과 대시보드', icon: LayoutDashboard },
+  { label: '수집 데이터', icon: Database },
+  { label: 'AI 리포트', icon: FileText },
+  { label: '히스토리', icon: History },
+  { label: '고급 분석', icon: Brain },
+];
 
 interface TopNavProps {
   activeTab: number;
@@ -36,35 +59,60 @@ export function TopNav({ activeTab, onTabChange }: TopNavProps) {
   const isDark = theme === 'dark';
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 flex h-12 items-center border-b bg-card px-8">
+    <nav className="fixed top-0 left-0 right-0 z-50 flex h-14 items-center border-b bg-card px-8">
       {/* 로고 */}
-      <span className="text-lg font-semibold text-accent shrink-0">
-        SignalCraft
-      </span>
+      <div className="flex items-center gap-1.5 shrink-0">
+        <Activity className="h-5 w-5 text-primary" />
+        <span className="text-lg font-semibold text-primary">
+          SignalCraft
+        </span>
+      </div>
 
       {/* 탭 네비게이션 */}
       <div className="flex items-center justify-center flex-1 gap-1">
-        {TAB_LABELS.map((label, index) => (
-          <button
-            key={label}
-            onClick={() => onTabChange(index)}
-            className={`h-10 px-4 text-sm font-semibold transition-colors relative ${
-              activeTab === index
-                ? 'text-accent'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {label}
-            {activeTab === index && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent" />
-            )}
-          </button>
-        ))}
+        {TABS.map(({ label, icon: Icon }, index) => {
+          const isActive = activeTab === index;
+          return (
+            <button
+              key={label}
+              onClick={() => onTabChange(index)}
+              className={cn(
+                'relative flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200',
+                isActive
+                  ? 'text-primary bg-primary/10'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50',
+              )}
+            >
+              <Icon className="h-4 w-4" />
+              <span>{label}</span>
+              {isActive && (
+                <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-primary rounded-full" />
+              )}
+            </button>
+          );
+        })}
       </div>
+
+      {/* AI 모델 설정 */}
+      <Dialog>
+        <DialogTrigger
+          render={
+            <button className="shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:text-foreground hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary">
+              <Settings className="h-4 w-4" />
+            </button>
+          }
+        />
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>AI 모델 설정</DialogTitle>
+          </DialogHeader>
+          <ModelSettings />
+        </DialogContent>
+      </Dialog>
 
       {/* 사용자 메뉴 */}
       <DropdownMenu>
-        <DropdownMenuTrigger className="shrink-0 rounded-full focus:outline-none focus:ring-2 focus:ring-accent">
+        <DropdownMenuTrigger className="shrink-0 rounded-full focus:outline-none focus:ring-2 focus:ring-primary">
           <Avatar className="h-8 w-8">
             <AvatarFallback className="text-xs">
               {userInitial.toUpperCase()}

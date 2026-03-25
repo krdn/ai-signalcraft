@@ -5,6 +5,7 @@ import { historyRouter } from './routers/history';
 import { teamRouter } from './routers/team';
 import { reportRouter } from './routers/report';
 import { collectedDataRouter } from './routers/collected-data';
+import { settingsRouter } from './routers/settings';
 
 export const appRouter = router({
   analysis: analysisRouter,
@@ -13,5 +14,6 @@ export const appRouter = router({
   team: teamRouter,
   report: reportRouter,
   collectedData: collectedDataRouter,
+  settings: settingsRouter,
 });
 export type AppRouter = typeof appRouter;
