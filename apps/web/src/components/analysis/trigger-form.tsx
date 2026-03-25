@@ -10,8 +10,13 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import { toast } from 'sonner';
-import { Loader2, CalendarIcon } from 'lucide-react';
+import { Loader2, CalendarIcon, HelpCircle, ChevronDown } from 'lucide-react';
 import { format, subDays } from 'date-fns';
 import { ko } from 'date-fns/locale';
 
@@ -38,6 +43,7 @@ interface TriggerFormProps {
 export function TriggerForm({ onJobStarted }: TriggerFormProps) {
   const [keyword, setKeyword] = useState('');
   const [sources, setSources] = useState<SourceId[]>(['naver', 'youtube']);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [startDate, setStartDate] = useState<Date>(subDays(new Date(), 7));
   const [endDate, setEndDate] = useState<Date>(new Date());
 
@@ -189,6 +195,62 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
               '분석 실행'
             )}
           </Button>
+
+          {/* 도움말 토글 */}
+          <Collapsible open={isHelpOpen} onOpenChange={setIsHelpOpen}>
+            <CollapsibleTrigger
+              className="w-full flex items-center justify-center gap-1 rounded-md px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer"
+            >
+              <HelpCircle className="h-4 w-4" />
+              도움말
+              <ChevronDown
+                className={`h-4 w-4 transition-transform duration-200 ${isHelpOpen ? 'rotate-180' : ''}`}
+              />
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="mt-3 rounded-lg bg-muted/50 p-4 text-sm space-y-3">
+                <div>
+                  <p className="font-medium text-foreground mb-1">키워드</p>
+                  <p className="text-muted-foreground">
+                    분석하려는 인물명 또는 주요 키워드를 입력하세요.
+                  </p>
+                  <p className="text-muted-foreground mt-1">
+                    예: &quot;이재명&quot;, &quot;윤석열&quot;, &quot;삼성전자&quot;, &quot;갤럭시 S25&quot;
+                  </p>
+                </div>
+                <div>
+                  <p className="font-medium text-foreground mb-1">소스별 특성</p>
+                  <ul className="space-y-1 text-muted-foreground">
+                    <li>• <span className="text-foreground">네이버 뉴스</span> — 뉴스 기사 본문 + 댓글 수집</li>
+                    <li>• <span className="text-foreground">유튜브</span> — 관련 영상 댓글 수집</li>
+                    <li>• <span className="text-foreground">커뮤니티</span> (DC갤러리/에펨코리아/클리앙) — 게시글 + 댓글 수집</li>
+                  </ul>
+                </div>
+                <div>
+                  <p className="font-medium text-foreground mb-1">분석 기간</p>
+                  <p className="text-muted-foreground">
+                    <span className="text-foreground font-medium">권장: 1~2주.</span>{' '}
+                    기간이 길수록 수집 시간이 증가합니다. 이슈 발생 직전~직후 기간으로 좁히면 더 정확한 분석이 가능합니다.
+                  </p>
+                </div>
+                <div>
+                  <p className="font-medium text-foreground mb-1">분석 프로세스</p>
+                  <div className="flex items-center gap-1 text-muted-foreground flex-wrap">
+                    <span className="rounded bg-muted px-2 py-0.5 text-xs">수집</span>
+                    <span>→</span>
+                    <span className="rounded bg-muted px-2 py-0.5 text-xs">전처리</span>
+                    <span>→</span>
+                    <span className="rounded bg-muted px-2 py-0.5 text-xs">AI 분석</span>
+                    <span>→</span>
+                    <span className="rounded bg-muted px-2 py-0.5 text-xs">리포트 생성</span>
+                  </div>
+                  <p className="text-muted-foreground mt-1">
+                    소스 수와 기간에 따라 수 분에서 수십 분이 소요될 수 있습니다.
+                  </p>
+                </div>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
         </form>
       </CardContent>
     </Card>
