@@ -106,7 +106,8 @@ function AddKeyForm({
   const [apiKey, setApiKey] = useState('');
   const [baseUrl, setBaseUrl] = useState('');
 
-  const needsKey = providerType !== 'ollama';
+  const needsKey = true; // 모든 프로바이더에서 키 입력 허용 (Ollama도 Open WebUI 인증 키 필요 가능)
+  const keyRequired = providerType !== 'ollama'; // Ollama만 키가 선택 사항
   const needsUrl = ['ollama', 'custom', 'openrouter'].includes(providerType);
 
   const addMutation = useMutation({
@@ -126,7 +127,7 @@ function AddKeyForm({
       toast.error('이름을 입력해주세요');
       return;
     }
-    if (needsKey && !apiKey.trim()) {
+    if (keyRequired && !apiKey.trim()) {
       toast.error('API 키를 입력해주세요');
       return;
     }
@@ -153,14 +154,12 @@ function AddKeyForm({
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
-        {needsKey && (
-          <Input
-            type="password"
-            placeholder="API 키"
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-          />
-        )}
+        <Input
+          type="password"
+          placeholder={keyRequired ? 'API 키' : 'API 키 (Open WebUI 사용 시 토큰 입력)'}
+          value={apiKey}
+          onChange={(e) => setApiKey(e.target.value)}
+        />
         {needsUrl && (
           <Input
             placeholder={providerType === 'ollama' ? 'http://localhost:11434' : 'Base URL'}

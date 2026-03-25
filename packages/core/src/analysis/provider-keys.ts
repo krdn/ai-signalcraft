@@ -222,17 +222,38 @@ export async function testProviderConnection(
       }
 
       case 'ollama': {
-        // Ollama: 여러 엔드포인트 시도
-        const ollamaBase = baseUrl || 'http://localhost:11434';
-        const endpoints = ['/api/tags', '/api/models', '/v1/models'];
+        // Ollama: 여러 엔드포인트 시도 (직접/Open WebUI 프록시 포함)
+        const rawBase = (baseUrl || 'http://localhost:11434').replace(/\/+$/, '');
+        // origin 추출 (https://ollama.krdn.kr/api → https://ollama.krdn.kr)
+        let origin: string;
+        try { origin = new URL(rawBase).origin; } catch { origin = rawBase; }
+
+        // baseUrl 자체 + origin 기반으로 다양한 경로 시도
+        const candidateUrls = [
+          `${rawBase}/tags`,           // baseUrl이 이미 /api를 포함하는 경우
+          `${rawBase}/models`,
+          `${origin}/api/tags`,        // 직접 Ollama
+          `${origin}/api/models`,
+          `${origin}/v1/models`,       // OpenAI 호환
+          `${origin}/ollama/api/tags`, // Open WebUI 프록시
+        ];
+        // 중복 제거
+        const endpoints = [...new Set(candidateUrls)];
+
+        const headers: Record<string, string> = {};
+        if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
 
         for (const ep of endpoints) {
           try {
-            const res = await fetch(`${ollamaBase}${ep}`, {
+            const res = await fetch(ep, {
+              headers,
               signal: AbortSignal.timeout(5000),
             });
             if (!res.ok) continue;
-            const data = (await res.json()) as {
+            // HTML 응답 건너뛰기 (Open WebUI가 200 OK + HTML을 반환하는 경우)
+            const text = await res.text();
+            if (text.trim().startsWith('<')) continue;
+            const data = JSON.parse(text) as {
               models?: Array<{ name?: string; model?: string; id?: string }>;
               data?: Array<{ id: string }>;
             };
@@ -328,15 +349,49 @@ export async function chatWithProvider(
 
       case 'ollama': {
         const model = selectedModel || 'llama3';
-        const ollamaBase = baseUrl || 'http://localhost:11434';
-        const res = await fetch(`${ollamaBase}/api/chat`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}) },
-          body: JSON.stringify({ model, messages: [{ role: 'user', content: prompt }], stream: false }),
-        });
-        const data = (await res.json()) as { message?: { content: string }; error?: string };
-        if (!res.ok) throw new Error(data.error || `API 오류: ${res.status}`);
-        return { response: data.message?.content || '', model };
+        const rawChatBase = (baseUrl || 'http://localhost:11434').replace(/\/+$/, '');
+        let chatOrigin: string;
+        try { chatOrigin = new URL(rawChatBase).origin; } catch { chatOrigin = rawChatBase; }
+        const chatHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (apiKey) chatHeaders['Authorization'] = `Bearer ${apiKey}`;
+
+        // 여러 채팅 엔드포인트 시도
+        const chatEndpoints = [...new Set([
+          `${rawChatBase}/chat`,              // baseUrl이 /api를 포함하는 경우
+          `${chatOrigin}/api/chat`,           // 직접 Ollama
+          `${chatOrigin}/ollama/api/chat`,    // Open WebUI 프록시
+          `${chatOrigin}/v1/chat/completions`, // OpenAI 호환
+        ])];
+
+        for (const ep of chatEndpoints) {
+          try {
+            const isOpenAICompat = ep.includes('/v1/chat/completions');
+            const body = isOpenAICompat
+              ? { model, messages: [{ role: 'user', content: prompt }] }
+              : { model, messages: [{ role: 'user', content: prompt }], stream: false };
+
+            const res = await fetch(ep, {
+              method: 'POST',
+              headers: chatHeaders,
+              body: JSON.stringify(body),
+              signal: AbortSignal.timeout(30000),
+            });
+            if (!res.ok) continue;
+
+            const data = (await res.json()) as {
+              message?: { content: string };
+              choices?: Array<{ message: { content: string } }>;
+              error?: string;
+            };
+            const text = isOpenAICompat
+              ? data.choices?.[0]?.message?.content || ''
+              : data.message?.content || '';
+            if (text) return { response: text, model };
+          } catch {
+            continue;
+          }
+        }
+        throw new Error('Ollama 서버에 연결할 수 없습니다. URL을 확인해주세요.');
       }
 
       default: {
