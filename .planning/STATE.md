@@ -57,15 +57,17 @@ None.
 
 - X API Basic 티어 $200/월 비용 — v2 결정 사항
 - 운영 서버 DB push 미완료 (환경변수 설정 필요)
+- YouTube API 키 인증 실패 — 현재 키가 YouTube Data API v3용이 아님, GCP에서 새 키 발급 필요
 
 ### Quick Tasks Completed
 
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
-| 260325-r8r | 분석 실행 화면에서 자세한 도움말 추가 | 2026-03-25 | pending | [260325-r8r-analysis-help](./quick/260325-r8r-analysis-help/) |
+| 260325-r8r | 분석 실행 화면에서 자세한 도움말 추가 | 2026-03-25 | 673b5b8 | [260325-r8r-analysis-help](./quick/260325-r8r-analysis-help/) |
+| 260325-rht | 유튜브 수집 파이프라인 E2E 테스트 (API 키 인증 실패 발견) | 2026-03-25 | - | [260325-rht-youtube-test](./quick/260325-rht-youtube-test/) |
 
 ## Session Continuity
 
-Last activity: 2026-03-25 - Completed quick task 260325-r8r: 분석 실행 화면에서 자세한 도움말 추가
+Last activity: 2026-03-25 - Completed quick task 260325-rht: 유튜브 수집 파이프라인 E2E 테스트
 Stopped at: Completed 06-01-PLAN.md
 Resume file: None
