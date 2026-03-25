@@ -1,6 +1,13 @@
 // 수집 트리거 CLI 스크립트
 // 사용법: pnpm trigger <keyword> [days=7]
-import 'dotenv/config';
+import { config } from 'dotenv';
+import { resolve } from 'path';
+
+// apps/web/.env.local 우선 로드 (시스템 환경변수 override)
+const scriptDir = new URL('.', import.meta.url).pathname;
+config({ path: resolve(scriptDir, '..', 'apps/web/.env.local'), override: true });
+config({ path: resolve(scriptDir, '..', '.env') });
+
 import { triggerCollection, CollectionTriggerSchema } from '@ai-signalcraft/core';
 import { createCollectionJob } from '@ai-signalcraft/core';
 

@@ -9,9 +9,15 @@ import { sql } from 'drizzle-orm';
  */
 export async function persistArticles(data: (typeof articles.$inferInsert)[]) {
   if (data.length === 0) return [];
+  // 같은 batch 내 source+sourceId 중복 제거 (마지막 것 유지)
+  const seen = new Map<string, typeof articles.$inferInsert>();
+  for (const row of data) {
+    seen.set(`${row.source}:${row.sourceId}`, row);
+  }
+  const deduped = [...seen.values()];
   return getDb()
     .insert(articles)
-    .values(data)
+    .values(deduped)
     .onConflictDoUpdate({
       target: [articles.source, articles.sourceId],
       set: {
@@ -51,9 +57,15 @@ export async function persistVideos(data: (typeof videos.$inferInsert)[]) {
  */
 export async function persistComments(data: (typeof comments.$inferInsert)[]) {
   if (data.length === 0) return [];
+  // 같은 batch 내 source+sourceId 중복 제거
+  const seen = new Map<string, typeof comments.$inferInsert>();
+  for (const row of data) {
+    seen.set(`${row.source}:${row.sourceId}`, row);
+  }
+  const deduped = [...seen.values()];
   return getDb()
     .insert(comments)
-    .values(data)
+    .values(deduped)
     .onConflictDoUpdate({
       target: [comments.source, comments.sourceId],
       set: {

@@ -5,6 +5,14 @@ import type { articles, videos, comments } from '../db/schema/collections';
 /** 커뮤니티 소스 타입 */
 export type CommunitySource = 'dcinside' | 'fmkorea' | 'clien';
 
+/** BullMQ 직렬화로 문자열이 된 Date를 복원 */
+function toDate(value: Date | string | null | undefined): Date | null {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+  const d = new Date(value);
+  return isNaN(d.getTime()) ? null : d;
+}
+
 /** NaverArticle -> articles 테이블 insert 형식 */
 export function normalizeNaverArticle(
   article: NaverArticle,
@@ -19,7 +27,7 @@ export function normalizeNaverArticle(
     content: article.content,
     author: article.author,
     publisher: article.publisher,
-    publishedAt: article.publishedAt,
+    publishedAt: toDate(article.publishedAt),
     rawData: article.rawData,
   };
 }
@@ -41,7 +49,7 @@ export function normalizeNaverComment(
     author: comment.author,
     likeCount: comment.likeCount,
     dislikeCount: comment.dislikeCount,
-    publishedAt: comment.publishedAt,
+    publishedAt: toDate(comment.publishedAt),
     rawData: comment.rawData,
   };
 }
@@ -63,7 +71,7 @@ export function normalizeYoutubeVideo(
     viewCount: video.viewCount,
     likeCount: video.likeCount,
     commentCount: video.commentCount,
-    publishedAt: video.publishedAt,
+    publishedAt: toDate(video.publishedAt),
     rawData: video.rawData,
   };
 }
@@ -85,7 +93,7 @@ export function normalizeYoutubeComment(
     author: comment.author,
     likeCount: comment.likeCount,
     dislikeCount: 0,
-    publishedAt: comment.publishedAt,
+    publishedAt: toDate(comment.publishedAt),
     rawData: comment.rawData,
   };
 }
@@ -105,7 +113,7 @@ export function normalizeCommunityPost(
     content: post.content,
     author: post.author,
     publisher: post.boardName, // 갤러리/게시판 이름을 publisher로 매핑
-    publishedAt: post.publishedAt,
+    publishedAt: toDate(post.publishedAt),
     rawData: post.rawData,
   };
 }
@@ -128,7 +136,7 @@ export function normalizeCommunityComment(
     author: comment.author,
     likeCount: comment.likeCount,
     dislikeCount: comment.dislikeCount,
-    publishedAt: comment.publishedAt,
+    publishedAt: toDate(comment.publishedAt),
     rawData: comment.rawData,
   };
 }

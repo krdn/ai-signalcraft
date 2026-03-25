@@ -7,10 +7,11 @@ let youtubeClient: youtube_v3.Youtube | null = null;
  * googleapis YouTube 클라이언트 싱글턴 반환
  * YOUTUBE_API_KEY 환경변수 필수
  */
-export function getYoutubeClient(): youtube_v3.Youtube {
+export function getYoutubeClient(): youtube_v3.Youtube | null {
   if (!youtubeClient) {
     if (!process.env.YOUTUBE_API_KEY) {
-      throw new Error('YOUTUBE_API_KEY 환경변수가 설정되지 않았습니다');
+      console.warn('[YouTube] YOUTUBE_API_KEY 미설정 -- 수집 건너뜀');
+      return null;
     }
     youtubeClient = google.youtube({
       version: 'v3',

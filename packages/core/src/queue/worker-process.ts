@@ -18,9 +18,9 @@ function findMonorepoRoot(startDir: string): string {
 
 const root = findMonorepoRoot(process.cwd());
 
-// dotenv 로드: 루트 .env (공통) + apps/web/.env.local (개발 설정)
-// override: false -> 먼저 로드된 값이 우선 (apps/web/.env.local 우선)
-config({ path: resolve(root, 'apps/web/.env.local') });
+// dotenv 로드: apps/web/.env.local이 시스템 환경변수보다 우선
+// override: true -> .env.local 값이 시스템 환경변수를 덮어씀
+config({ path: resolve(root, 'apps/web/.env.local'), override: true });
 config({ path: resolve(root, '.env') });
 import { Job, Worker } from 'bullmq';
 import { createCollectorWorker, createPipelineWorker } from './workers';
@@ -53,6 +53,20 @@ import {
 import type { CommunitySource } from '../pipeline/normalize';
 import { runAnalysisPipeline } from '../analysis/runner';
 
+// AI API 키 검증 -- 분석 파이프라인에 필수
+const requiredApiKeys = [
+  { name: 'OPENAI_API_KEY', prefix: 'sk-', usage: 'Stage 1 분석 (gpt-4o-mini)' },
+  { name: 'ANTHROPIC_API_KEY', prefix: 'sk-ant-', usage: 'Stage 2~3 분석 + 리포트 생성 (Claude)' },
+];
+for (const key of requiredApiKeys) {
+  const value = process.env[key.name];
+  if (!value) {
+    console.warn(`[WARNING] ${key.name} 미설정 -- ${key.usage} 실패 예상. apps/web/.env.local에 추가하세요.`);
+  } else if (key.prefix && !value.startsWith(key.prefix)) {
+    console.warn(`[WARNING] ${key.name} 형식 의심 (${key.prefix}로 시작하지 않음) -- ${key.usage} 실패 가능`);
+  }
+}
+
 // 수집기 등록
 registerCollector(new NaverNewsCollector());
 registerCollector(new NaverCommentsCollector());
@@ -66,19 +80,23 @@ registerCollector(new ClienCollector());
 const COMMUNITY_SOURCES: CommunitySource[] = ['dcinside', 'fmkorea', 'clien'];
 
 // 수집 Worker -- collectors 큐
+// D-04: 부분 실패 허용 -- 개별 소스 실패 시 빈 결과 반환 (파이프라인 중단 방지)
 const collectorWorker = createCollectorWorker(async (job: Job) => {
   const { source, keyword, startDate, endDate, maxItems, maxComments } = job.data;
   const collector = getCollector(source);
   if (!collector) throw new Error(`Unknown source: ${source}`);
 
-  const allItems: unknown[] = [];
-  for await (const chunk of collector.collect({ keyword, startDate, endDate, maxItems, maxComments })) {
-    allItems.push(...chunk);
-    // D-06: 진행률 업데이트
-    await job.updateProgress({ collected: allItems.length });
+  try {
+    const allItems: unknown[] = [];
+    for await (const chunk of collector.collect({ keyword, startDate, endDate, maxItems, maxComments })) {
+      allItems.push(...chunk);
+      await job.updateProgress({ collected: allItems.length });
+    }
+    return { source, items: allItems, count: allItems.length };
+  } catch (err) {
+    console.warn(`[${source}] 수집 실패 (부분 실패 허용):`, err instanceof Error ? err.message : err);
+    return { source, items: [], count: 0 };
   }
-
-  return { source, items: allItems, count: allItems.length };
 });
 
 // 파이프라인 Worker -- pipeline 큐 (normalize + persist)

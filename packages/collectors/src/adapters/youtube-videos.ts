@@ -42,6 +42,7 @@ export class YoutubeVideosCollector implements Collector<YoutubeVideo> {
    */
   async *collect(options: CollectionOptions): AsyncGenerator<YoutubeVideo[], void, unknown> {
     const youtube = getYoutubeClient();
+    if (!youtube) return; // API 키 미설정 시 빈 결과
     const maxItems = options.maxItems ?? DEFAULT_MAX_ITEMS;
     let totalCollected = 0;
     let nextPageToken: string | undefined;

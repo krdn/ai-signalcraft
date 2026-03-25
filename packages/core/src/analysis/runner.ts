@@ -162,14 +162,25 @@ export async function runAnalysisPipeline(jobId: number): Promise<{
     .map((r) => r.module);
 
   // D-04: 기본 분석 완료 후 통합 리포트 생성
-  let report = await generateIntegratedReport({
-    jobId: input.jobId,
-    keyword: input.keyword,
-    dateRange: input.dateRange,
-    results: allResults,
-    completedModules: getCompletedModules(),
-    failedModules: getFailedModules(),
-  });
+  // 부분 실패 허용 -- 리포트 생성 실패 시에도 분석 결과는 반환
+  let report: { markdownContent: string; oneLiner: string; totalTokens: number };
+  try {
+    report = await generateIntegratedReport({
+      jobId: input.jobId,
+      keyword: input.keyword,
+      dateRange: input.dateRange,
+      results: allResults,
+      completedModules: getCompletedModules(),
+      failedModules: getFailedModules(),
+    });
+  } catch (reportError) {
+    console.error('리포트 생성 실패 (부분 결과로 계속 진행):', reportError);
+    report = {
+      markdownContent: `# ${input.keyword} 분석 리포트\n\n> 리포트 자동 생성에 실패했습니다. 개별 모듈 분석 결과를 확인하세요.\n\n## 완료된 모듈\n${getCompletedModules().map(m => `- ${m}`).join('\n')}\n\n## 실패한 모듈\n${getFailedModules().map(m => `- ${m}`).join('\n')}`,
+      oneLiner: '리포트 생성 실패 -- 개별 모듈 결과 참조',
+      totalTokens: 0,
+    };
+  }
 
   // Stage 4: 고급 분석 (ADVN 모듈) -- 실패해도 기존 리포트에 영향 없음
   // Stage 4a: ADVN-01(approval-rating), ADVN-02(frame-war) 병렬 실행
@@ -199,14 +210,19 @@ export async function runAnalysisPipeline(jobId: number): Promise<{
     .some(m => allResults[m.name]?.status === 'completed');
 
   if (advnCompleted) {
-    report = await generateIntegratedReport({
-      jobId: input.jobId,
-      keyword: input.keyword,
-      dateRange: input.dateRange,
-      results: allResults,
-      completedModules: getCompletedModules(),
-      failedModules: getFailedModules(),
-    });
+    try {
+      report = await generateIntegratedReport({
+        jobId: input.jobId,
+        keyword: input.keyword,
+        dateRange: input.dateRange,
+        results: allResults,
+        completedModules: getCompletedModules(),
+        failedModules: getFailedModules(),
+      });
+    } catch (reportError) {
+      console.error('고급 분석 리포트 재생성 실패 (기존 리포트 유지):', reportError);
+      // 기존 report 유지 -- Stage 4 실패가 기존 리포트를 덮어쓰지 않음
+    }
   }
 
   return {

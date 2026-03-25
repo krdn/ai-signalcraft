@@ -7,8 +7,8 @@
  *   - https://news.naver.com/main/read.nhn?oid=xxx&aid=xxx
  */
 export function parseNaverArticleUrl(url: string): { oid: string; aid: string } | null {
-  // 패턴 1: https://n.news.naver.com/article/{oid}/{aid}
-  const match1 = url.match(/n\.news\.naver\.com\/article\/(\d+)\/(\d+)/);
+  // 패턴 1: https://n.news.naver.com/article/{oid}/{aid} 또는 /mnews/article/{oid}/{aid}
+  const match1 = url.match(/n\.news\.naver\.com\/(?:mnews\/)?article\/(\d+)\/(\d+)/);
   if (match1) return { oid: match1[1], aid: match1[2] };
 
   // 패턴 2: https://news.naver.com/main/read.nhn?oid=xxx&aid=xxx (레거시)

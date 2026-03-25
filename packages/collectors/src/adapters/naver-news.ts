@@ -119,45 +119,95 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
 
   /**
    * 검색 결과 HTML에서 기사 목록 파싱
+   * 2026-03 기준: 네이버가 동적 해시 클래스(sds-comps-*)를 사용하므로
+   * n.news.naver.com 링크 존재 여부로 뉴스 블록을 판별하고,
+   * 블록 내 텍스트 구조로 제목/언론사/날짜를 추출
    */
   private parseSearchResults(html: string): NaverArticle[] {
     const $ = cheerio.load(html);
     const articles: NaverArticle[] = [];
+    const seen = new Set<string>();
 
-    // 네이버 뉴스 검색 결과의 기사 블록
-    $('.news_area, .news_wrap, .bx').each((_, element) => {
-      const $el = $(element);
+    // 전략: n.news.naver.com 링크를 포함하는 블록을 기사 단위로 처리
+    // 각 네이버뉴스 링크의 상위 블록(5단계)에서 제목/언론사 추출
+    $('a[href*="n.news.naver.com"]').each((_, el) => {
+      const naverUrl = $(el).attr('href') ?? '';
+      const parsed = parseNaverArticleUrl(naverUrl);
+      if (!parsed) return;
 
-      // 기사 제목과 URL 추출
-      const $titleLink = $el.find('.news_tit, a.news_tit').first();
-      const title = $titleLink.text().trim();
-      const url = $titleLink.attr('href') ?? '';
+      const sourceId = `${parsed.oid}_${parsed.aid}`;
+      if (seen.has(sourceId)) return; // 중복 제거
+      seen.add(sourceId);
 
-      if (!title || !url) return;
+      // 기사 블록 탐색 -- 네이버뉴스 링크의 5단계 상위를 기사 블록으로 사용
+      let block = $(el);
+      for (let i = 0; i < 5; i++) block = block.parent();
 
-      // 언론사 추출
-      const publisher =
-        $el.find('.info.press, .info_group .press, .news_info .info.press').first().text().trim() || '알 수 없음';
+      // 제목: 블록 내 첫 번째 긴 텍스트 a 태그 (외부 링크)
+      let title = '';
+      let originalUrl = ''; // 원본 언론사 URL (참고용)
+      block.find('a').each((_, a) => {
+        if (title) return;
+        const text = $(a).text().trim();
+        const href = $(a).attr('href') ?? '';
+        if (text.length > 10 && href.startsWith('http') && !href.includes('n.news.naver.com')) {
+          title = text;
+          originalUrl = href;
+        }
+      });
 
-      // 날짜 추출
-      const dateText = $el.find('.info_group span.info').last().text().trim();
-      const publishedAt = this.parseDateText(dateText);
+      // 제목을 못 찾았으면 블록 텍스트에서 추출
+      if (!title) {
+        const blockText = block.text().trim();
+        // 언론사명, 날짜 등을 제외한 가장 긴 텍스트 조각
+        const segments = blockText.split('\n').map(s => s.trim()).filter(s => s.length > 15);
+        title = segments[0] ?? blockText.substring(0, 100);
+      }
 
-      // oid/aid 추출하여 sourceId 생성
-      const parsed = parseNaverArticleUrl(url);
-      const sourceId = parsed ? `${parsed.oid}_${parsed.aid}` : url;
+      if (!title) return;
+
+      // 언론사: 블록 텍스트에서 "N분 전", "N시간 전" 앞의 텍스트
+      const blockText = block.text();
+      const pubMatch = blockText.match(/([가-힣A-Za-z0-9\s]+?)(?:\d+(?:분|시간|일)\s*전|네이버뉴스)/);
+      const publisher = pubMatch?.[1]?.trim() || '알 수 없음';
+
+      // 날짜
+      const dateMatch = blockText.match(/(\d+)(분|시간|일)\s*전/);
+      const publishedAt = dateMatch ? this.parseDateText(`${dateMatch[1]}${dateMatch[2]} 전`) : null;
 
       articles.push({
         sourceId,
-        url,
+        url: naverUrl, // 네이버 뉴스 URL 유지 (댓글 수집에 필요)
         title,
-        content: null, // 본문은 별도로 수집
+        content: null,
         author: null,
         publisher,
         publishedAt,
-        rawData: { dateText },
+        rawData: { naverUrl, originalUrl: originalUrl || undefined },
       });
     });
+
+    // 폴백: 기존 셀렉터 (레거시 네이버 구조 대응)
+    if (articles.length === 0) {
+      $('.news_area, .news_wrap, .bx').each((_, element) => {
+        const $el = $(element);
+        const $titleLink = $el.find('.news_tit, a.news_tit').first();
+        const title = $titleLink.text().trim();
+        const url = $titleLink.attr('href') ?? '';
+        if (!title || !url) return;
+
+        const publisher = $el.find('.info.press').first().text().trim() || '알 수 없음';
+        const dateText = $el.find('.info_group span.info').last().text().trim();
+        const parsedUrl = parseNaverArticleUrl(url);
+        const sourceId = parsedUrl ? `${parsedUrl.oid}_${parsedUrl.aid}` : url;
+
+        articles.push({
+          sourceId, url, title, content: null, author: null,
+          publisher, publishedAt: this.parseDateText(dateText),
+          rawData: { dateText },
+        });
+      });
+    }
 
     return articles;
   }
