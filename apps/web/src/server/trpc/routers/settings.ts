@@ -10,6 +10,7 @@ import {
   updateProviderKey,
   deleteProviderKey,
   testProviderConnection,
+  chatWithProvider,
 } from '@ai-signalcraft/core';
 
 export const settingsRouter = router({
@@ -104,6 +105,13 @@ export const settingsRouter = router({
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
         return testProviderConnection(input.id);
+      }),
+
+    // LLM 채팅 테스트 (Playground)
+    chat: protectedProcedure
+      .input(z.object({ id: z.number(), prompt: z.string().min(1).max(4000) }))
+      .mutation(async ({ input }) => {
+        return chatWithProvider(input.id, input.prompt);
       }),
   }),
 });

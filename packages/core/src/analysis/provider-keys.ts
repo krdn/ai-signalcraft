@@ -263,6 +263,108 @@ export async function testProviderConnection(
   }
 }
 
+/**
+ * LLM 채팅 테스트 (Playground)
+ * 등록된 프로바이더 키로 프롬프트를 보내 응답을 확인
+ */
+export async function chatWithProvider(
+  id: number,
+  prompt: string,
+): Promise<{ response: string; model: string; error?: string }> {
+  const db = getDb();
+  const [row] = await db
+    .select({
+      providerType: providerKeys.providerType,
+      encryptedKey: providerKeys.encryptedKey,
+      baseUrl: providerKeys.baseUrl,
+      selectedModel: providerKeys.selectedModel,
+    })
+    .from(providerKeys)
+    .where(eq(providerKeys.id, id))
+    .limit(1);
+
+  if (!row) return { response: '', model: '', error: '프로바이더 키를 찾을 수 없습니다' };
+
+  const apiKey = row.encryptedKey ? decrypt(row.encryptedKey) : '';
+  const { providerType, baseUrl, selectedModel } = row;
+
+  try {
+    switch (providerType) {
+      case 'anthropic': {
+        const model = selectedModel || 'claude-sonnet-4-20250514';
+        const endpoint = baseUrl || 'https://api.anthropic.com/v1';
+        const res = await fetch(`${endpoint}/messages`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey,
+            'anthropic-version': '2023-06-01',
+          },
+          body: JSON.stringify({
+            model,
+            max_tokens: 1024,
+            messages: [{ role: 'user', content: prompt }],
+          }),
+        });
+        const data = (await res.json()) as { content?: Array<{ text: string }>; error?: { message: string } };
+        if (!res.ok) throw new Error(data.error?.message || `API 오류: ${res.status}`);
+        return { response: data.content?.[0]?.text || '', model };
+      }
+
+      case 'gemini': {
+        const model = selectedModel || 'gemini-1.5-pro';
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+          },
+        );
+        const data = (await res.json()) as { candidates?: Array<{ content: { parts: Array<{ text: string }> } }>; error?: { message: string } };
+        if (!res.ok) throw new Error(data.error?.message || `API 오류: ${res.status}`);
+        return { response: data.candidates?.[0]?.content?.parts?.[0]?.text || '', model };
+      }
+
+      case 'ollama': {
+        const model = selectedModel || 'llama3';
+        const ollamaBase = baseUrl || 'http://localhost:11434';
+        const res = await fetch(`${ollamaBase}/api/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}) },
+          body: JSON.stringify({ model, messages: [{ role: 'user', content: prompt }], stream: false }),
+        });
+        const data = (await res.json()) as { message?: { content: string }; error?: string };
+        if (!res.ok) throw new Error(data.error || `API 오류: ${res.status}`);
+        return { response: data.message?.content || '', model };
+      }
+
+      default: {
+        // OpenAI 호환 (openai, deepseek, xai, openrouter, custom)
+        const model = selectedModel || 'gpt-4o-mini';
+        const endpoint = baseUrl || getDefaultBaseUrl(providerType);
+        const res = await fetch(`${endpoint}/v1/chat/completions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model,
+            messages: [{ role: 'user', content: prompt }],
+          }),
+        });
+        const data = (await res.json()) as { choices?: Array<{ message: { content: string } }>; error?: { message: string } };
+        if (!res.ok) throw new Error(data.error?.message || `API 오류: ${res.status}`);
+        return { response: data.choices?.[0]?.message?.content || '', model };
+      }
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : '알 수 없는 오류';
+    return { response: '', model: selectedModel || '', error: message };
+  }
+}
+
 /** 프로바이더별 기본 Base URL */
 function getDefaultBaseUrl(providerType: string): string {
   switch (providerType) {

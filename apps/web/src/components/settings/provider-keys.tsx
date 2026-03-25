@@ -6,6 +6,7 @@ import { trpcClient } from '@/lib/trpc';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -25,6 +26,11 @@ import {
   Check,
   X,
   Key,
+  MessageSquare,
+  Send,
+  ChevronDown,
+  ChevronUp,
+  PlusCircle,
 } from 'lucide-react';
 
 // 프로바이더 정의
@@ -157,11 +163,7 @@ function AddKeyForm({
         )}
         {needsUrl && (
           <Input
-            placeholder={
-              providerType === 'ollama'
-                ? 'http://localhost:11434'
-                : 'Base URL'
-            }
+            placeholder={providerType === 'ollama' ? 'http://localhost:11434' : 'Base URL'}
             value={baseUrl}
             onChange={(e) => setBaseUrl(e.target.value)}
           />
@@ -170,19 +172,150 @@ function AddKeyForm({
           <Button variant="ghost" size="sm" onClick={onCancel}>
             취소
           </Button>
-          <Button
-            size="sm"
-            onClick={handleSubmit}
-            disabled={addMutation.isPending}
-          >
-            {addMutation.isPending && (
-              <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-            )}
+          <Button size="sm" onClick={handleSubmit} disabled={addMutation.isPending}>
+            {addMutation.isPending && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
             추가
           </Button>
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+// LLM Playground (채팅 테스트)
+function Playground({ keyId, providerType, selectedModel }: { keyId: number; providerType: string; selectedModel: string | null }) {
+  const [prompt, setPrompt] = useState('');
+  const [response, setResponse] = useState('');
+  const [usedModel, setUsedModel] = useState('');
+
+  const chatMutation = useMutation({
+    mutationFn: (input: { id: number; prompt: string }) =>
+      trpcClient.settings.providerKeys.chat.mutate(input),
+    onSuccess: (data) => {
+      if (data.error) {
+        toast.error(data.error);
+        setResponse('');
+      } else {
+        setResponse(data.response);
+        setUsedModel(data.model);
+      }
+    },
+    onError: (error: { message?: string }) => {
+      toast.error(error.message ?? '채팅 오류');
+    },
+  });
+
+  const handleSend = () => {
+    if (!prompt.trim()) return;
+    setResponse('');
+    chatMutation.mutate({ id: keyId, prompt: prompt.trim() });
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <MessageSquare className="h-3 w-3" />
+        <span>모델: <strong className="text-foreground">{selectedModel || '기본값'}</strong></span>
+      </div>
+      <Textarea
+        rows={3}
+        placeholder="테스트 프롬프트를 입력하세요 (예: 안녕하세요, 어떤 모델이신가요?)"
+        value={prompt}
+        onChange={(e) => setPrompt(e.target.value)}
+        className="resize-none text-sm"
+      />
+      <Button
+        size="sm"
+        onClick={handleSend}
+        disabled={chatMutation.isPending || !prompt.trim()}
+        className="gap-1"
+      >
+        {chatMutation.isPending ? (
+          <Loader2 className="h-3 w-3 animate-spin" />
+        ) : (
+          <Send className="h-3 w-3" />
+        )}
+        전송
+      </Button>
+      {response && (
+        <div className="rounded-md border bg-muted/30 p-3 text-sm whitespace-pre-wrap leading-relaxed max-h-[200px] overflow-y-auto">
+          {usedModel && (
+            <div className="mb-2 text-[10px] text-muted-foreground">
+              응답 모델: {usedModel}
+            </div>
+          )}
+          {response}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// 수정 폼
+function EditForm({
+  item,
+  onCancel,
+  onSaved,
+}: {
+  item: ProviderKeyItem;
+  onCancel: () => void;
+  onSaved: () => void;
+}) {
+  const [name, setName] = useState(item.name);
+  const [apiKey, setApiKey] = useState('');
+  const [baseUrl, setBaseUrl] = useState(item.baseUrl ?? '');
+
+  const updateMutation = useMutation({
+    mutationFn: (input: Parameters<typeof trpcClient.settings.providerKeys.update.mutate>[0]) =>
+      trpcClient.settings.providerKeys.update.mutate(input),
+    onSuccess: () => {
+      toast.success('수정되었습니다');
+      onSaved();
+    },
+    onError: (error: { message?: string }) => {
+      toast.error(error.message ?? '수정에 실패했습니다');
+    },
+  });
+
+  const handleSave = () => {
+    const data: Parameters<typeof trpcClient.settings.providerKeys.update.mutate>[0] = { id: item.id };
+    if (name.trim() !== item.name) data.name = name.trim();
+    if (apiKey.trim()) data.key = apiKey.trim();
+    if (baseUrl !== (item.baseUrl ?? '')) data.baseUrl = baseUrl.trim();
+    updateMutation.mutate(data);
+  };
+
+  return (
+    <div className="space-y-2 border-t pt-3 mt-3">
+      <Input
+        placeholder="이름"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        className="text-sm"
+      />
+      <Input
+        type="password"
+        placeholder="새 API 키 (변경하지 않으려면 비워두세요)"
+        value={apiKey}
+        onChange={(e) => setApiKey(e.target.value)}
+        className="text-sm"
+      />
+      <Input
+        placeholder="Base URL"
+        value={baseUrl}
+        onChange={(e) => setBaseUrl(e.target.value)}
+        className="text-sm"
+      />
+      <div className="flex justify-end gap-2">
+        <Button variant="ghost" size="sm" onClick={onCancel}>
+          취소
+        </Button>
+        <Button size="sm" onClick={handleSave} disabled={updateMutation.isPending}>
+          {updateMutation.isPending && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
+          저장
+        </Button>
+      </div>
+    </div>
   );
 }
 
@@ -199,6 +332,9 @@ function KeyCard({
   const [testing, setTesting] = useState(false);
   const [models, setModels] = useState<string[]>([]);
   const [showModels, setShowModels] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [showPlayground, setShowPlayground] = useState(false);
+  const [customModel, setCustomModel] = useState('');
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) =>
@@ -227,19 +363,15 @@ function KeyCard({
   const handleTest = async () => {
     setTesting(true);
     try {
-      const result = await trpcClient.settings.providerKeys.test.mutate({
-        id: item.id,
-      });
+      const result = await trpcClient.settings.providerKeys.test.mutate({ id: item.id });
       if (result.success) {
-        toast.success(
-          `연결 성공! ${result.models.length}개 모델 발견`,
-        );
+        toast.success(`연결 성공! ${result.models.length}개 모델 발견`);
         setModels(result.models);
         setShowModels(true);
       } else {
         toast.error(result.error ?? '연결 테스트 실패');
       }
-    } catch (err) {
+    } catch {
       toast.error('연결 테스트 중 오류 발생');
     } finally {
       setTesting(false);
@@ -252,21 +384,29 @@ function KeyCard({
     setShowModels(false);
   };
 
+  const handleAddCustomModel = () => {
+    const trimmed = customModel.trim();
+    if (!trimmed) return;
+    if (!models.includes(trimmed)) {
+      setModels((prev) => [trimmed, ...prev]);
+    }
+    setCustomModel('');
+    toast.success(`모델 "${trimmed}" 추가됨`);
+  };
+
   return (
     <Card>
       <CardContent className="p-4">
         <div className="flex items-start justify-between">
-          <div className="space-y-1">
+          <div className="space-y-1 min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <Key className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-sm font-medium">{item.name}</span>
+              <Key className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <span className="text-sm font-medium truncate">{item.name}</span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <ProviderBadge type={item.providerType} />
               {item.maskedKey && (
-                <code className="text-xs text-muted-foreground">
-                  {item.maskedKey}
-                </code>
+                <code className="text-xs text-muted-foreground">{item.maskedKey}</code>
               )}
             </div>
             {item.selectedModel && (
@@ -281,14 +421,23 @@ function KeyCard({
               </div>
             )}
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 shrink-0">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0"
+              onClick={() => setShowPlayground(!showPlayground)}
+              title="LLM 테스트"
+            >
+              <MessageSquare className="h-3.5 w-3.5" />
+            </Button>
             <Button
               variant="ghost"
               size="sm"
               className="h-7 w-7 p-0"
               onClick={handleTest}
               disabled={testing}
-              title="연결 테스트"
+              title="연결 테스트 & 모델 조회"
             >
               {testing ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -299,8 +448,21 @@ function KeyCard({
             <Button
               variant="ghost"
               size="sm"
+              className="h-7 w-7 p-0"
+              onClick={() => setEditing(!editing)}
+              title="수정"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
               className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-              onClick={() => deleteMutation.mutate(item.id)}
+              onClick={() => {
+                if (confirm('이 API 키를 삭제하시겠습니까?')) {
+                  deleteMutation.mutate(item.id);
+                }
+              }}
               disabled={deleteMutation.isPending}
               title="삭제"
             >
@@ -309,11 +471,23 @@ function KeyCard({
           </div>
         </div>
 
-        {/* 모델 선택 드롭다운 (테스트 성공 후) */}
+        {/* 수정 폼 */}
+        {editing && (
+          <EditForm
+            item={item}
+            onCancel={() => setEditing(false)}
+            onSaved={() => {
+              setEditing(false);
+              onUpdated();
+            }}
+          />
+        )}
+
+        {/* 모델 선택 (테스트 성공 후) */}
         {showModels && models.length > 0 && (
-          <div className="mt-3 border-t pt-3">
-            <p className="mb-2 text-xs text-muted-foreground">
-              기본 모델을 선택하세요:
+          <div className="mt-3 border-t pt-3 space-y-2">
+            <p className="text-xs text-muted-foreground">
+              기본 모델을 선택하세요 ({models.length}개 발견):
             </p>
             <Select onValueChange={handleModelSelect}>
               <SelectTrigger className="w-full" size="sm">
@@ -327,6 +501,37 @@ function KeyCard({
                 ))}
               </SelectContent>
             </Select>
+            {/* 모델 직접 추가 */}
+            <div className="flex gap-2">
+              <Input
+                placeholder="모델명 직접 입력 (예: gpt-4o)"
+                value={customModel}
+                onChange={(e) => setCustomModel(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddCustomModel()}
+                className="text-xs h-8"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 shrink-0 gap-1"
+                onClick={handleAddCustomModel}
+                disabled={!customModel.trim()}
+              >
+                <PlusCircle className="h-3 w-3" />
+                추가
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* LLM 테스트 Playground */}
+        {showPlayground && (
+          <div className="mt-3 border-t pt-3">
+            <Playground
+              keyId={item.id}
+              providerType={item.providerType}
+              selectedModel={item.selectedModel}
+            />
           </div>
         )}
       </CardContent>
