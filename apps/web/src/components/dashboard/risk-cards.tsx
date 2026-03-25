@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { CardHelp, DASHBOARD_HELP } from './card-help';
 
 interface Risk {
   title: string;
@@ -61,7 +62,10 @@ export function RiskCards({ risks }: RiskCardsProps) {
   return (
     <Card className="min-h-[280px]">
       <CardHeader>
-        <CardTitle className="text-lg font-semibold">리스크 분석</CardTitle>
+        <div className="flex items-center gap-2">
+          <CardTitle className="text-lg font-semibold">리스크 분석</CardTitle>
+          <CardHelp {...DASHBOARD_HELP.risk} />
+        </div>
       </CardHeader>
       <CardContent>
         {!risks || risks.length === 0 ? (

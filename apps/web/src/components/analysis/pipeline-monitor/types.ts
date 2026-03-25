@@ -3,10 +3,18 @@
 export type StageStatus = 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
 export type ModuleStatus = 'pending' | 'running' | 'completed' | 'failed';
 
+export interface ItemDetail {
+  title: string;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  comments: number;
+}
+
 export interface SourceDetail {
   status: string;
   count: number;
   label: string;
+  articleDetails?: ItemDetail[];
+  videoDetails?: ItemDetail[];
 }
 
 export interface ModuleUsage {

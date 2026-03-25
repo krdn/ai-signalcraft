@@ -81,16 +81,23 @@ export async function persistComments(data: (typeof comments.$inferInsert)[]) {
 
 /**
  * 수집 작업 상태 업데이트 (D-06: 소스별 상세 추적)
+ * JSONB 머지 방식: 기존 progress 값을 보존하면서 새 값을 병합
+ * 예: { naver: { status: 'running', articles: 5 } }만 전달하면 youtube 등 다른 소스는 유지
  */
 export async function updateJobProgress(
   jobId: number,
   progress: Record<string, unknown>,
   status?: 'pending' | 'running' | 'completed' | 'partial_failure' | 'failed',
 ) {
+  // progress가 비어있으면 머지하지 않음 (status만 업데이트할 때)
+  const hasProgress = Object.keys(progress).length > 0;
+
   return getDb()
     .update(collectionJobs)
     .set({
-      progress: progress as any,
+      ...(hasProgress
+        ? { progress: sql`COALESCE(progress, '{}'::jsonb) || ${JSON.stringify(progress)}::jsonb` as any }
+        : {}),
       ...(status ? { status } : {}),
       updatedAt: new Date(),
     })

@@ -278,6 +278,13 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
       });
     }
 
+    // 네이버뉴스 URL이 있는 기사를 우선 정렬 (댓글 수집 가능한 기사 우선)
+    articles.sort((a, b) => {
+      const aHasNaver = a.url.includes('n.news.naver.com') ? 0 : 1;
+      const bHasNaver = b.url.includes('n.news.naver.com') ? 0 : 1;
+      return aHasNaver - bHasNaver;
+    });
+
     return articles;
   }
 

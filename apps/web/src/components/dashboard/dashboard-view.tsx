@@ -88,59 +88,93 @@ export function DashboardView({ jobId }: DashboardViewProps) {
   const riskMap = parseModuleResult(moduleResults, 'risk-map');
   const opportunity = parseModuleResult(moduleResults, 'opportunity');
 
-  // 감성 비율 데이터
+  // 감성 비율 데이터 — sentiment-framing.sentimentRatio (일치)
   const sentimentData = sentimentFraming?.sentimentRatio as {
     positive: number;
     negative: number;
     neutral: number;
   } | undefined;
 
-  // 시계열 트렌드 데이터
-  const trendData = sentimentFraming?.dailyMentionTrend as Array<{
+  // 시계열 트렌드 데이터 — macro-view.dailyMentionTrend (수정: sentiment-framing → macro-view)
+  const rawTrend = macroView?.dailyMentionTrend as Array<{
     date: string;
-    mentions: number;
-    positive: number;
-    negative: number;
-    neutral: number;
+    count: number;
+    sentimentRatio: { positive: number; negative: number; neutral: number };
   }> | undefined;
+  // TrendChart 형식으로 변환
+  const trendData = rawTrend?.map((t) => ({
+    date: t.date,
+    mentions: t.count,
+    positive: Math.round(t.count * (t.sentimentRatio?.positive ?? 0)),
+    negative: Math.round(t.count * (t.sentimentRatio?.negative ?? 0)),
+    neutral: Math.round(t.count * (t.sentimentRatio?.neutral ?? 0)),
+  })) ?? null;
 
-  // 키워드 데이터 (macro-view의 keyTopics)
-  const keyTopics = macroView?.keyTopics as Array<{ topic: string; count: number }> | undefined;
-  const wordCloudData = keyTopics?.map((t) => ({ text: t.topic, value: t.count })) ?? null;
+  // 키워드 데이터 — sentiment-framing.topKeywords (수정: macro-view.keyTopics → sentiment-framing.topKeywords)
+  const topKeywords = sentimentFraming?.topKeywords as Array<{
+    keyword: string;
+    count: number;
+    sentiment: string;
+  }> | undefined;
+  const wordCloudData = topKeywords?.map((t) => ({ text: t.keyword, value: t.count })) ?? null;
 
-  // 플랫폼 비교 데이터 (segmentation의 sentimentByPlatform)
-  const platformData = segmentation?.sentimentByPlatform as Array<{
+  // 플랫폼 비교 데이터 — segmentation.platformSegments (수정: sentimentByPlatform → platformSegments)
+  const platformSegments = segmentation?.platformSegments as Array<{
     platform: string;
-    positive: number;
-    negative: number;
-    neutral: number;
+    sentiment: string;
+    volume: number;
+    keyTopics: string[];
+    characteristics: string;
   }> | undefined;
+  // sentiment enum을 수치로 변환
+  const platformData = platformSegments?.map((seg) => ({
+    platform: seg.platform,
+    positive: seg.sentiment === 'positive' ? seg.volume : seg.sentiment === 'mixed' ? Math.round(seg.volume * 0.4) : 0,
+    negative: seg.sentiment === 'negative' ? seg.volume : seg.sentiment === 'mixed' ? Math.round(seg.volume * 0.3) : 0,
+    neutral: seg.sentiment === 'mixed' ? Math.round(seg.volume * 0.3) : 0,
+  })) ?? null;
 
-  // 리스크 데이터
-  const risks = riskMap?.risks as Array<{
+  // 리스크 데이터 — risk-map.topRisks (수정: risks → topRisks, 구조 변환)
+  const topRisks = riskMap?.topRisks as Array<{
+    rank: number;
     title: string;
     description: string;
-    impact: number;
-    urgency: string;
-    spreadPotential: string;
+    impactLevel: string;
+    spreadProbability: number;
+    currentStatus: string;
+    triggerConditions: string[];
   }> | undefined;
+  const risks = topRisks?.map((r) => ({
+    title: r.title,
+    description: r.description,
+    impact: r.impactLevel === 'critical' ? 90 : r.impactLevel === 'high' ? 70 : r.impactLevel === 'medium' ? 45 : 20,
+    urgency: r.impactLevel,
+    spreadPotential: `${Math.round(r.spreadProbability * 100)}%`,
+  })) ?? null;
 
-  // 기회 데이터
-  const opportunities = opportunity?.opportunities as Array<{
+  // 기회 데이터 — opportunity.positiveAssets (수정: opportunities → positiveAssets, 구조 변환)
+  const positiveAssets = opportunity?.positiveAssets as Array<{
     title: string;
     description: string;
-    impact: number;
-    feasibility: string;
+    expandability: string;
+    currentUtilization: string;
+    recommendation: string;
   }> | undefined;
+  const opportunities = positiveAssets?.map((a) => ({
+    title: a.title,
+    description: `${a.description}\n추천: ${a.recommendation}`,
+    impact: a.expandability === 'high' ? 80 : a.expandability === 'medium' ? 50 : 25,
+    feasibility: a.expandability,
+  })) ?? null;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
       <SentimentChart data={sentimentData ?? null} />
-      <TrendChart data={trendData ?? null} />
+      <TrendChart data={trendData} />
       <WordCloud words={wordCloudData} />
-      <PlatformCompare data={platformData ?? null} />
-      <RiskCards risks={risks ?? null} />
-      <OpportunityCards opportunities={opportunities ?? null} />
+      <PlatformCompare data={platformData} />
+      <RiskCards risks={risks} />
+      <OpportunityCards opportunities={opportunities} />
     </div>
   );
 }

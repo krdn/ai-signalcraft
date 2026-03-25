@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import {
@@ -8,10 +9,19 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { AlertCircle, Info } from 'lucide-react';
+import {
+  AlertCircle,
+  Info,
+  CheckCircle2,
+  Loader2,
+  Clock,
+  ChevronDown,
+  ChevronRight,
+  MessageSquare,
+} from 'lucide-react';
 import { SOURCE_HELP } from './constants';
 import { calcRate } from './utils';
-import type { PipelineStatusData, SourceDetail } from './types';
+import type { PipelineStatusData, SourceDetail, ItemDetail } from './types';
 
 interface CollectionTabProps {
   data: PipelineStatusData;
@@ -40,6 +50,73 @@ function sourceStatusBadge(status: string) {
   }
 }
 
+function itemStatusIcon(status: string) {
+  switch (status) {
+    case 'completed':
+      return <CheckCircle2 className="h-3 w-3 text-green-500 shrink-0" />;
+    case 'running':
+      return <Loader2 className="h-3 w-3 animate-spin text-blue-500 shrink-0" />;
+    case 'failed':
+      return <AlertCircle className="h-3 w-3 text-red-500 shrink-0" />;
+    default:
+      return <Clock className="h-3 w-3 text-muted-foreground/50 shrink-0" />;
+  }
+}
+
+/** 기사/영상별 댓글 수집 상세 리스트 */
+function ItemDetailsSection({
+  items,
+  label,
+}: {
+  items: ItemDetail[];
+  label: string; // "기사" 또는 "영상"
+}) {
+  // 10건 이상이면 기본 접힘
+  const [expanded, setExpanded] = useState(items.length < 10);
+
+  const completedCount = items.filter(i => i.status === 'completed').length;
+  const totalComments = items.reduce((sum, i) => sum + i.comments, 0);
+
+  return (
+    <div className="space-y-1.5">
+      {/* 접기/펼치기 헤더 */}
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors w-full"
+      >
+        {expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+        <MessageSquare className="h-3 w-3" />
+        <span>{label}별 댓글 수집 현황</span>
+        <span className="ml-auto font-mono">
+          {completedCount}/{items.length}건 완료 · 댓글 {totalComments.toLocaleString()}건
+        </span>
+      </button>
+
+      {/* 상세 리스트 */}
+      {expanded && (
+        <div className="ml-4 space-y-0.5 max-h-[200px] overflow-y-auto">
+          {items.map((item, idx) => (
+            <div
+              key={idx}
+              className={`flex items-center gap-2 text-[11px] py-0.5 px-1.5 rounded ${
+                item.status === 'running' ? 'bg-blue-50/50 dark:bg-blue-950/20' : ''
+              }`}
+            >
+              {itemStatusIcon(item.status)}
+              <span className="truncate flex-1 min-w-0">{item.title}</span>
+              <span className={`font-mono shrink-0 ${
+                item.status === 'running' ? 'text-blue-600 dark:text-blue-400' : 'text-muted-foreground'
+              }`}>
+                {item.comments > 0 ? `${item.comments}건` : item.status === 'pending' ? '대기' : '-'}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function CollectionTab({ data }: CollectionTabProps) {
   const sources = Object.entries(data.sourceDetails);
   const errorDetails = data.errorDetails as Record<string, string> | null;
@@ -61,6 +138,8 @@ export function CollectionTab({ data }: CollectionTabProps) {
           const help = SOURCE_HELP[key];
           const isRunning = detail.status === 'running';
           const isFailed = detail.status === 'failed';
+          const hasArticleDetails = detail.articleDetails && detail.articleDetails.length > 0;
+          const hasVideoDetails = detail.videoDetails && detail.videoDetails.length > 0;
 
           return (
             <div
@@ -105,6 +184,16 @@ export function CollectionTab({ data }: CollectionTabProps) {
               {/* 진행 중 프로그레스 바 */}
               {isRunning && (
                 <Progress value={null} className="h-1 animate-pulse" />
+              )}
+
+              {/* 기사별 댓글 수집 현황 */}
+              {hasArticleDetails && (
+                <ItemDetailsSection items={detail.articleDetails!} label="기사" />
+              )}
+
+              {/* 영상별 댓글 수집 현황 */}
+              {hasVideoDetails && (
+                <ItemDetailsSection items={detail.videoDetails!} label="영상" />
               )}
 
               {/* 에러 상세 (인라인) */}

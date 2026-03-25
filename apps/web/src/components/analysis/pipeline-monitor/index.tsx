@@ -77,6 +77,9 @@ export function PipelineMonitor({ jobId, onComplete, onRetry }: PipelineMonitorP
 
   const hasFailed = data.status === 'failed';
   const isRunning = data.status === 'running' || data.status === 'pending';
+  // 분석 진행 중 여부 (수집 완료 후 분석 단계)
+  const isAnalysisRunning = data.pipelineStages?.analysis?.status === 'running';
+  const isInProgress = isRunning || isAnalysisRunning || data.pipelineStages?.report?.status === 'running';
 
   return (
     <Card className="mx-auto max-w-3xl mt-4">
@@ -87,7 +90,7 @@ export function PipelineMonitor({ jobId, onComplete, onRetry }: PipelineMonitorP
           </CardTitle>
           <div className="flex items-center gap-2">
             {/* 경과 시간 */}
-            {data.elapsedSeconds != null && isRunning && (
+            {data.elapsedSeconds != null && isInProgress && (
               <span className="text-xs font-mono text-muted-foreground flex items-center gap-1">
                 <Clock className="h-3 w-3" />
                 {formatElapsed(data.elapsedSeconds)}
@@ -107,7 +110,7 @@ export function PipelineMonitor({ jobId, onComplete, onRetry }: PipelineMonitorP
         <PipelineSteps stages={data.pipelineStages} />
 
         {/* 전체 진행률 바 */}
-        {isRunning && (
+        {isInProgress && (
           <div className="space-y-1">
             <div className="flex items-center justify-between text-[10px] text-muted-foreground">
               <span>전체 진행률</span>
@@ -118,7 +121,7 @@ export function PipelineMonitor({ jobId, onComplete, onRetry }: PipelineMonitorP
         )}
 
         {/* 경과 시간 (완료 상태) */}
-        {data.elapsedSeconds != null && !isRunning && (
+        {data.elapsedSeconds != null && !isInProgress && (
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-mono">
             <Clock className="h-3 w-3" />
             <span>총 소요시간: {formatElapsed(data.elapsedSeconds)}</span>

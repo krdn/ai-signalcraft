@@ -10,6 +10,7 @@ import {
   type ChartConfig,
 } from '@/components/ui/chart';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { CardHelp, DASHBOARD_HELP } from './card-help';
 
 interface TrendDataPoint {
   date: string;
@@ -51,7 +52,10 @@ export function TrendChart({ data }: TrendChartProps) {
   return (
     <Card className="min-h-[280px]">
       <CardHeader>
-        <CardTitle className="text-lg font-semibold">시계열 트렌드</CardTitle>
+        <div className="flex items-center gap-2">
+          <CardTitle className="text-lg font-semibold">시계열 트렌드</CardTitle>
+          <CardHelp {...DASHBOARD_HELP.trend} />
+        </div>
       </CardHeader>
       <CardContent>
         {!data || data.length === 0 ? (

@@ -11,6 +11,7 @@ import {
   type ChartConfig,
 } from '@/components/ui/chart';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { CardHelp, DASHBOARD_HELP } from './card-help';
 
 interface SentimentChartProps {
   data: { positive: number; negative: number; neutral: number } | null;
@@ -50,7 +51,10 @@ export function SentimentChart({ data }: SentimentChartProps) {
   return (
     <Card className="min-h-[280px]">
       <CardHeader>
-        <CardTitle className="text-lg font-semibold">감성 비율</CardTitle>
+        <div className="flex items-center gap-2">
+          <CardTitle className="text-lg font-semibold">감성 비율</CardTitle>
+          <CardHelp {...DASHBOARD_HELP.sentiment} />
+        </div>
       </CardHeader>
       <CardContent>
         {!data || (data.positive === 0 && data.negative === 0 && data.neutral === 0) ? (

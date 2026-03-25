@@ -11,6 +11,7 @@ import {
   type ChartConfig,
 } from '@/components/ui/chart';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { CardHelp, DASHBOARD_HELP } from './card-help';
 
 // 소스별 한국어 레이블 매핑
 const SOURCE_LABELS: Record<string, string> = {
@@ -59,7 +60,10 @@ export function PlatformCompare({ data }: PlatformCompareProps) {
   return (
     <Card className="min-h-[280px]">
       <CardHeader>
-        <CardTitle className="text-lg font-semibold">소스별 감성 비교</CardTitle>
+        <div className="flex items-center gap-2">
+          <CardTitle className="text-lg font-semibold">소스별 감성 비교</CardTitle>
+          <CardHelp {...DASHBOARD_HELP.platform} />
+        </div>
       </CardHeader>
       <CardContent>
         {!chartData || chartData.length === 0 ? (

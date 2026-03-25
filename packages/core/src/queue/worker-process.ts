@@ -79,22 +79,71 @@ registerCollector(new ClienCollector());
 // 커뮤니티 소스 목록 (normalize/persist에서 공통 처리)
 const COMMUNITY_SOURCES: CommunitySource[] = ['dcinside', 'fmkorea', 'clien'];
 
+// 소스별 수집 건수 카운트 유틸리티
+function countBySourceType(source: string, items: unknown[]): Record<string, number> {
+  const count = items.length;
+  // 소스에 따라 articles/videos/posts 필드 매핑
+  if (source === 'naver-news') return { articles: count, comments: 0 };
+  if (source === 'youtube-videos') return { videos: count, comments: 0 };
+  if (source === 'youtube-comments') return { comments: count };
+  // 커뮤니티 소스: 게시글 수 + 내장 댓글 수
+  const posts = count;
+  const commentCount = items.reduce<number>((sum, item: any) => sum + (item?.comments?.length ?? 0), 0);
+  return { posts, comments: commentCount };
+}
+
+// progress JSONB 키 매핑 (소스명 → progress 키)
+function progressKey(source: string): string {
+  if (source === 'naver-news') return 'naver';
+  if (source === 'youtube-videos' || source === 'youtube-comments') return 'youtube';
+  return source; // dcinside, fmkorea, clien
+}
+
 // 수집 Worker -- collectors 큐
 // D-04: 부분 실패 허용 -- 개별 소스 실패 시 빈 결과 반환 (파이프라인 중단 방지)
 const collectorWorker = createCollectorWorker(async (job: Job) => {
-  const { source, keyword, startDate, endDate, maxItems, maxComments } = job.data;
+  const { source, keyword, startDate, endDate, maxItems, maxComments, dbJobId } = job.data;
   const collector = getCollector(source);
   if (!collector) throw new Error(`Unknown source: ${source}`);
 
+  const pKey = progressKey(source);
+
   try {
+    // DB: 수집 시작 상태
+    if (dbJobId) {
+      await updateJobProgress(dbJobId, {
+        [pKey]: { status: 'running', ...countBySourceType(source, []) }
+      }, 'running');
+    }
+
     const allItems: unknown[] = [];
     for await (const chunk of collector.collect({ keyword, startDate, endDate, maxItems, maxComments })) {
       allItems.push(...chunk);
       await job.updateProgress({ collected: allItems.length });
+      // DB: 실시간 진행 업데이트
+      if (dbJobId) {
+        await updateJobProgress(dbJobId, {
+          [pKey]: { status: 'running', ...countBySourceType(source, allItems) }
+        });
+      }
     }
+
+    // DB: 수집 완료
+    if (dbJobId) {
+      await updateJobProgress(dbJobId, {
+        [pKey]: { status: 'completed', ...countBySourceType(source, allItems) }
+      });
+    }
+
     return { source, items: allItems, count: allItems.length };
   } catch (err) {
     console.warn(`[${source}] 수집 실패 (부분 실패 허용):`, err instanceof Error ? err.message : err);
+    // DB: 수집 실패
+    if (dbJobId) {
+      await updateJobProgress(dbJobId, {
+        [pKey]: { status: 'failed', ...countBySourceType(source, []) }
+      });
+    }
     return { source, items: [], count: 0 };
   }
 });
@@ -117,26 +166,85 @@ const pipelineWorker = createPipelineWorker(async (job: Job) => {
 
     // normalize-naver: 기사 수집 결과에서 URL 추출 후 댓글 수집
     if (job.name === 'normalize-naver' && results['naver-news']) {
-      const articles = (results['naver-news'] as { items: Array<{ url: string }> }).items;
+      const articles = (results['naver-news'] as { items: Array<{ url: string; title?: string }> }).items;
       const maxComments = (job.data.maxComments as number) ?? 500;
       const commentsCollector = new NaverCommentsCollector();
       const allComments: NaverComment[] = [];
 
-      for (const article of articles) {
+      // 기사별 댓글 수집 진행 추적
+      const articleDetails: Array<{ title: string; status: string; comments: number }> = articles
+        .filter(a => a.url)
+        .map(a => ({ title: (a.title || a.url).slice(0, 50), status: 'pending', comments: 0 }));
+
+      for (let i = 0; i < articles.length; i++) {
+        const article = articles[i];
         if (!article.url) continue;
+
+        const detail = articleDetails[i];
+
+        // 네이버 뉴스 URL이 아닌 기사는 댓글 수집 스킵 (외부 언론사 URL은 네이버 댓글 API 미지원)
+        if (!article.url.includes('n.news.naver.com')) {
+          detail.status = 'completed';
+          detail.comments = 0;
+          continue;
+        }
+
+        detail.status = 'running';
+        let articleCommentCount = 0;
+
         try {
           for await (const chunk of commentsCollector.collectForArticle(article.url, { maxComments })) {
             allComments.push(...chunk);
+            articleCommentCount += chunk.length;
+            detail.comments = articleCommentCount;
+
+            // DB: 기사별 댓글 실시간 진행
+            if (dbJobId) {
+              await updateJobProgress(dbJobId, {
+                naver: {
+                  status: 'running',
+                  articles: articles.length,
+                  comments: allComments.length,
+                  articleDetails,
+                }
+              });
+            }
           }
+          detail.status = 'completed';
         } catch (err) {
           // D-04: 부분 실패 허용 -- 개별 기사 댓글 실패 시 로깅 후 계속
           console.warn(`댓글 수집 실패 (${article.url}):`, err);
+          detail.status = 'failed';
         }
         await job.updateProgress({ commentsCollected: allComments.length });
+
+        // DB: 기사 완료/실패 후 진행 업데이트
+        if (dbJobId) {
+          await updateJobProgress(dbJobId, {
+            naver: {
+              status: 'running',
+              articles: articles.length,
+              comments: allComments.length,
+              articleDetails,
+            }
+          });
+        }
       }
 
       if (allComments.length > 0) {
         results['naver-comments'] = { source: 'naver-comments', items: allComments, count: allComments.length };
+      }
+
+      // 네이버 수집 완료 상태로 업데이트
+      if (dbJobId) {
+        await updateJobProgress(dbJobId, {
+          naver: {
+            status: 'completed',
+            articles: articles.length,
+            comments: allComments.length,
+            articleDetails,
+          }
+        });
       }
     }
 

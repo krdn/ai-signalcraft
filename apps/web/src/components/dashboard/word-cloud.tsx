@@ -1,19 +1,8 @@
 'use client';
 
-import dynamic from 'next/dynamic';
 import { useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-
-// SSR 비활성화 -- d3-cloud 기반 컴포넌트는 브라우저 전용
-const ReactWordCloud = dynamic(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  () => import('@isoterik/react-word-cloud').then((mod) => mod as any),
-  { ssr: false, loading: () => <div className="h-[250px] w-full animate-pulse bg-muted rounded" /> }
-) as React.ComponentType<{
-  words: Array<{ text: string; value: number }>;
-  callbacks?: Record<string, unknown>;
-  options?: Record<string, unknown>;
-}>;
+import { CardHelp, DASHBOARD_HELP } from './card-help';
 
 interface WordCloudProps {
   words: Array<{ text: string; value: number }> | null;
@@ -29,38 +18,36 @@ const WORD_COLORS = [
 ];
 
 export function WordCloud({ words }: WordCloudProps) {
-  const callbacks = useMemo(
-    () => ({
-      getWordColor: (word: { value: number }) => {
-        // value 기반으로 색상 선택 (큰 값 = 진한 색)
-        if (!words || words.length === 0) return WORD_COLORS[2];
-        const maxValue = Math.max(...words.map((w) => w.value));
-        const ratio = word.value / maxValue;
-        const index = Math.min(Math.floor(ratio * WORD_COLORS.length), WORD_COLORS.length - 1);
-        return WORD_COLORS[index];
-      },
-      getWordTooltip: (word: { text: string; value: number }) =>
-        `${word.text}: ${word.value}`,
-    }),
-    [words]
-  );
+  const styledWords = useMemo(() => {
+    if (!words || words.length === 0) return [];
+    const maxValue = Math.max(...words.map((w) => w.value));
+    const minValue = Math.min(...words.map((w) => w.value));
+    const range = maxValue - minValue || 1;
 
-  const options = useMemo(
-    () => ({
-      rotations: 2,
-      rotationAngles: [0, 90] as [number, number],
-      fontSizes: [14, 48] as [number, number],
-      padding: 2,
-      spiral: 'archimedean' as const,
-      deterministic: true,
-    }),
-    []
-  );
+    return words.slice(0, 20).map((word) => {
+      const ratio = (word.value - minValue) / range;
+      const fontSize = 14 + ratio * 28; // 14px ~ 42px
+      const colorIndex = Math.min(
+        Math.floor(ratio * WORD_COLORS.length),
+        WORD_COLORS.length - 1,
+      );
+      return {
+        text: word.text,
+        value: word.value,
+        fontSize,
+        color: WORD_COLORS[colorIndex],
+        fontWeight: ratio > 0.5 ? 700 : 400,
+      };
+    });
+  }, [words]);
 
   return (
     <Card className="min-h-[280px]">
       <CardHeader>
-        <CardTitle className="text-lg font-semibold">키워드 / 연관어</CardTitle>
+        <div className="flex items-center gap-2">
+          <CardTitle className="text-lg font-semibold">키워드 / 연관어</CardTitle>
+          <CardHelp {...DASHBOARD_HELP.keywords} />
+        </div>
       </CardHeader>
       <CardContent>
         {!words || words.length === 0 ? (
@@ -68,8 +55,22 @@ export function WordCloud({ words }: WordCloudProps) {
             키워드 없음
           </div>
         ) : (
-          <div className="h-[250px] w-full">
-            <ReactWordCloud words={words} callbacks={callbacks} options={options} />
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 h-[220px] overflow-hidden">
+            {styledWords.map((word) => (
+              <span
+                key={word.text}
+                className="inline-block cursor-default transition-opacity hover:opacity-70"
+                style={{
+                  fontSize: `${word.fontSize}px`,
+                  color: word.color,
+                  fontWeight: word.fontWeight,
+                  lineHeight: 1.2,
+                }}
+                title={`${word.text}: ${word.value}`}
+              >
+                {word.text}
+              </span>
+            ))}
           </div>
         )}
       </CardContent>
