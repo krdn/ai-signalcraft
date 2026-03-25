@@ -394,79 +394,81 @@ function KeyCard({
     toast.success(`모델 "${trimmed}" 추가됨`);
   };
 
+  // 모델 선택 상태 (드롭다운 + Save Model용)
+  const [pendingModel, setPendingModel] = useState<string>('');
+
+  const handleSaveModel = () => {
+    if (!pendingModel) return;
+    updateMutation.mutate({ id: item.id, selectedModel: pendingModel });
+    setShowModels(false);
+    setPendingModel('');
+  };
+
   return (
     <Card>
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between">
-          <div className="space-y-1 min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <Key className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              <span className="text-sm font-medium truncate">{item.name}</span>
-            </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <ProviderBadge type={item.providerType} />
-              {item.maskedKey && (
-                <code className="text-xs text-muted-foreground">{item.maskedKey}</code>
-              )}
-            </div>
-            {item.selectedModel && (
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Check className="h-3 w-3 text-green-500" />
-                <span>{item.selectedModel}</span>
-              </div>
+      <CardContent className="p-4 space-y-0">
+        {/* 상단: 이름 (큰 제목) */}
+        <h3 className="text-base font-semibold mb-2">{item.name}</h3>
+
+        {/* 중단: 메타 정보 + 액션 버튼 (한 줄) */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 flex-wrap min-w-0 text-xs">
+            <ProviderBadge type={item.providerType} />
+            {item.maskedKey && (
+              <code className="text-muted-foreground">{item.maskedKey}</code>
             )}
             {item.baseUrl && (
-              <div className="text-xs text-muted-foreground truncate max-w-[250px]">
-                {item.baseUrl}
-              </div>
+              <span className="text-muted-foreground truncate max-w-[180px]">{item.baseUrl}</span>
+            )}
+            {item.selectedModel ? (
+              <span className="text-green-500 font-medium">
+                Model: <strong>{item.selectedModel}</strong>
+              </span>
+            ) : (
+              <span className="text-destructive">No model selected</span>
             )}
           </div>
-          <div className="flex items-center gap-1 shrink-0">
+          <div className="flex items-center gap-1.5 shrink-0">
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
-              className="h-7 w-7 p-0"
-              onClick={() => setShowPlayground(!showPlayground)}
-              title="LLM 테스트"
+              className="h-7 px-2.5 text-xs"
+              onClick={() => { setEditing(!editing); setShowModels(false); setShowPlayground(false); }}
             >
-              <MessageSquare className="h-3.5 w-3.5" />
+              Edit
             </Button>
             <Button
-              variant="ghost"
+              variant={showModels ? 'secondary' : 'outline'}
               size="sm"
-              className="h-7 w-7 p-0"
-              onClick={handleTest}
+              className="h-7 px-2.5 text-xs"
+              onClick={() => {
+                if (showModels) {
+                  setShowModels(false);
+                } else {
+                  handleTest();
+                }
+                setEditing(false);
+                setShowPlayground(false);
+              }}
               disabled={testing}
-              title="연결 테스트 & 모델 조회"
             >
               {testing ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <TestTube className="h-3.5 w-3.5" />
-              )}
+                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+              ) : null}
+              {showModels ? 'Close' : 'Test & Select'}
             </Button>
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
-              className="h-7 w-7 p-0"
-              onClick={() => setEditing(!editing)}
-              title="수정"
-            >
-              <Pencil className="h-3.5 w-3.5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+              className="h-7 px-2.5 text-xs text-destructive border-destructive/50 hover:bg-destructive/10"
               onClick={() => {
                 if (confirm('이 API 키를 삭제하시겠습니까?')) {
                   deleteMutation.mutate(item.id);
                 }
               }}
               disabled={deleteMutation.isPending}
-              title="삭제"
             >
-              <Trash2 className="h-3.5 w-3.5" />
+              Delete
             </Button>
           </div>
         </div>
@@ -483,50 +485,85 @@ function KeyCard({
           />
         )}
 
-        {/* 모델 선택 (테스트 성공 후) */}
+        {/* 연결 테스트 성공 → 모델 선택 패널 */}
         {showModels && models.length > 0 && (
-          <div className="mt-3 border-t pt-3 space-y-2">
-            <p className="text-xs text-muted-foreground">
-              기본 모델을 선택하세요 ({models.length}개 발견):
+          <div className="mt-3 rounded-lg border border-green-500/20 bg-green-500/5 p-4 space-y-3">
+            <p className="text-sm font-medium text-green-500">
+              ✅ Connection Successful! Fetched {models.length} models.
             </p>
-            <Select onValueChange={handleModelSelect}>
-              <SelectTrigger className="w-full" size="sm">
-                <SelectValue placeholder="모델 선택..." />
-              </SelectTrigger>
-              <SelectContent>
-                {models.map((model) => (
-                  <SelectItem key={model} value={model}>
-                    {model}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+
+            <div>
+              <p className="text-xs text-muted-foreground mb-2">Select Default Model</p>
+              <div className="flex gap-2">
+                <Select
+                  value={pendingModel || item.selectedModel || ''}
+                  onValueChange={(v) => setPendingModel(v ?? '')}
+                >
+                  <SelectTrigger className="flex-1 bg-background" size="sm">
+                    <SelectValue placeholder="-- Choose a Model --" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {models.map((model) => (
+                      <SelectItem key={model} value={model}>
+                        {model}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  size="sm"
+                  onClick={handleSaveModel}
+                  disabled={!pendingModel || updateMutation.isPending}
+                >
+                  {updateMutation.isPending ? (
+                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                  ) : null}
+                  Save Model
+                </Button>
+              </div>
+            </div>
+
             {/* 모델 직접 추가 */}
-            <div className="flex gap-2">
-              <Input
-                placeholder="모델명 직접 입력 (예: gpt-4o)"
-                value={customModel}
-                onChange={(e) => setCustomModel(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleAddCustomModel()}
-                className="text-xs h-8"
-              />
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 shrink-0 gap-1"
-                onClick={handleAddCustomModel}
-                disabled={!customModel.trim()}
-              >
-                <PlusCircle className="h-3 w-3" />
-                추가
-              </Button>
+            <div>
+              <p className="text-xs text-muted-foreground mb-2">Or add a model manually</p>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="모델명 직접 입력 (예: gpt-4o, llama3:8b)"
+                  value={customModel}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomModel(e.target.value)}
+                  onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && handleAddCustomModel()}
+                  className="text-xs h-8 bg-background"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 shrink-0 gap-1"
+                  onClick={handleAddCustomModel}
+                  disabled={!customModel.trim()}
+                >
+                  <PlusCircle className="h-3 w-3" />
+                  Add
+                </Button>
+              </div>
             </div>
           </div>
         )}
 
-        {/* LLM 테스트 Playground */}
+        {/* LLM Playground 버튼 (하단) */}
+        <div className="mt-2 pt-2 border-t">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full justify-center gap-1 text-xs text-muted-foreground h-7"
+            onClick={() => { setShowPlayground(!showPlayground); setEditing(false); setShowModels(false); }}
+          >
+            <MessageSquare className="h-3 w-3" />
+            {showPlayground ? 'Close Playground' : 'Test Prompt (Playground)'}
+          </Button>
+        </div>
+
         {showPlayground && (
-          <div className="mt-3 border-t pt-3">
+          <div className="mt-2">
             <Playground
               keyId={item.id}
               providerType={item.providerType}
