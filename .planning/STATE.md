@@ -4,7 +4,7 @@ milestone: v1.0
 milestone_name: milestone
 status: Phase 6 added — Pipeline Visualization
 stopped_at: Completed 06-01-PLAN.md
-last_updated: "2026-03-25T03:33:53.048Z"
+last_updated: "2026-03-25T12:22:19Z"
 progress:
   total_phases: 1
   completed_phases: 1
@@ -65,9 +65,10 @@ None.
 |---|-------------|------|--------|-----------|
 | 260325-r8r | 분석 실행 화면에서 자세한 도움말 추가 | 2026-03-25 | 673b5b8 | [260325-r8r-analysis-help](./quick/260325-r8r-analysis-help/) |
 | 260325-rht | 유튜브 수집 파이프라인 E2E 테스트 (성공) | 2026-03-25 | - | [260325-rht-youtube-test](./quick/260325-rht-youtube-test/) |
+| 260325-tge | AI 모델 설정 UI (모듈별 프로바이더/모델 동적 변경) | 2026-03-25 | e083269 | [260325-tge-ai-llm](./quick/260325-tge-ai-llm/) |
 
 ## Session Continuity
 
-Last activity: 2026-03-25 - Completed quick task 260325-rht: 유튜브 수집 파이프라인 E2E 테스트
-Stopped at: Completed 06-01-PLAN.md
+Last activity: 2026-03-25 - Completed quick task 260325-tge: AI 모델 설정 UI
+Stopped at: Completed quick-260325-tge
 Resume file: None
