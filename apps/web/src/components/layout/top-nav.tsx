@@ -32,8 +32,10 @@ import {
   Sun,
   Users,
 } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { TeamSettings } from '@/components/team/team-settings';
 import { ModelSettings } from '@/components/settings/model-settings';
+import { ProviderKeys } from '@/components/settings/provider-keys';
 import { cn } from '@/lib/utils';
 import type { LucideIcon } from 'lucide-react';
 
@@ -104,9 +106,20 @@ export function TopNav({ activeTab, onTabChange }: TopNavProps) {
         />
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>AI 모델 설정</DialogTitle>
+            <DialogTitle>AI 설정</DialogTitle>
           </DialogHeader>
-          <ModelSettings />
+          <Tabs defaultValue="provider-keys">
+            <TabsList className="w-full">
+              <TabsTrigger value="provider-keys">API 키 관리</TabsTrigger>
+              <TabsTrigger value="model-settings">모듈별 모델 설정</TabsTrigger>
+            </TabsList>
+            <TabsContent value="provider-keys" className="mt-4">
+              <ProviderKeys />
+            </TabsContent>
+            <TabsContent value="model-settings" className="mt-4">
+              <ModelSettings />
+            </TabsContent>
+          </Tabs>
         </DialogContent>
       </Dialog>
 
