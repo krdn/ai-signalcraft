@@ -9,6 +9,7 @@ import { RecentJobs } from '@/components/analysis/recent-jobs';
 import { HistoryTable } from '@/components/analysis/history-table';
 import { ReportView } from '@/components/report/report-view';
 import { DashboardView } from '@/components/dashboard/dashboard-view';
+import { CollectedDataView } from '@/components/dashboard/collected-data-view';
 import { AdvancedView } from '@/components/advanced/advanced-view';
 
 // 분석 실행 탭 -- 트리거 폼 + 파이프라인 모니터 + 최근 작업
@@ -53,6 +54,11 @@ function HistoryTabPanel({ onViewResult }: { onViewResult: (jobId: number) => vo
   return <HistoryTable onViewResult={onViewResult} />;
 }
 
+// 수집 데이터 탭 -- 기사/댓글 상세 뷰어
+function CollectedDataTab({ jobId }: { jobId: number | null }) {
+  return <CollectedDataView jobId={jobId} />;
+}
+
 // 고급 분석 탭 -- AI 지지율/프레임 전쟁/위기 시나리오/승리 시뮬레이션
 function AdvancedTab({ jobId }: { jobId: number | null }) {
   return <AdvancedView jobId={jobId} />;
@@ -87,6 +93,7 @@ export default function Home() {
             onSelectJob={handleSelectJob}
           />,
           <DashboardTab key="dashboard" jobId={activeJobId} />,
+          <CollectedDataTab key="collected" jobId={activeJobId} />,
           <ReportTab key="report" jobId={activeJobId} />,
           <HistoryTabPanel key="history" onViewResult={handleSelectJob} />,
           <AdvancedTab key="advanced" jobId={activeJobId} />,
