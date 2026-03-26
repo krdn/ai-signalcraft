@@ -367,7 +367,7 @@ export function ModelSettings() {
             {/* 프로바이더 + 모델 선택 */}
             <div className="flex items-center gap-2">
               <Select
-                value={hasProviders && availableProviders.includes(item.provider) ? item.provider : undefined}
+                value={hasProviders && availableProviders.includes(item.provider) ? item.provider : ''}
                 onValueChange={(val) => handleProviderChange(item, val)}
                 disabled={isPending || !hasProviders}
               >
@@ -384,7 +384,7 @@ export function ModelSettings() {
               </Select>
 
               <Select
-                value={isModelAvailable ? item.model : undefined}
+                value={isModelAvailable ? item.model : ''}
                 onValueChange={(val) => handleModelChange(item, val)}
                 disabled={isPending || !hasProviders || currentModels.length === 0}
               >
