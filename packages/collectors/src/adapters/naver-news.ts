@@ -1,9 +1,11 @@
-// 네이버 뉴스 기사 수집기 (Playwright + Cheerio)
-import { type Browser, type Page } from 'playwright';
-import { launchBrowser } from '../utils/browser';
+// 네이버 뉴스 기사 수집기 (BrowserCollector 상속 + Cheerio 파싱)
+import type { Page } from 'playwright';
 import * as cheerio from 'cheerio';
-import type { Collector, CollectionOptions } from './base';
+import type { CollectionOptions } from './base';
+import { BrowserCollector, type BrowserCollectorConfig } from './browser-collector';
 import { buildNaverSearchUrl, parseNaverArticleUrl } from '../utils/naver-parser';
+import { parseDateTextOrNull } from '../utils/community-parser';
+import { sleep } from '../utils/browser';
 
 /** 수집된 네이버 뉴스 기사 */
 export interface NaverArticle {
@@ -17,21 +19,6 @@ export interface NaverArticle {
   rawData: Record<string, unknown>;
 }
 
-// 페이지 간 딜레이 (rate limit 대응)
-const PAGE_DELAY_MS = 1500;
-// 기본 최대 수집 건수
-const DEFAULT_MAX_ITEMS = 100;
-// 네이버 검색 최대 페이지 (약 400건 / 40페이지)
-const MAX_SEARCH_PAGES = 40;
-
-/**
- * 랜덤 딜레이 (min ~ max ms)
- */
-function delay(minMs: number, maxMs?: number): Promise<void> {
-  const ms = maxMs ? minMs + Math.random() * (maxMs - minMs) : minMs;
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 /**
  * NaverNewsCollector
  *
@@ -39,84 +26,75 @@ function delay(minMs: number, maxMs?: number): Promise<void> {
  * Cheerio로 기사 목록을 파싱한다.
  * AsyncGenerator로 페이지 단위(최대 10건)로 yield한다.
  */
-export class NaverNewsCollector implements Collector<NaverArticle> {
+export class NaverNewsCollector extends BrowserCollector<NaverArticle> {
   readonly source = 'naver-news';
+
+  protected readonly config: BrowserCollectorConfig = {
+    pageDelay: { min: 1500, max: 2000 },
+    postDelay: { min: 500, max: 1000 },
+    defaultMaxItems: 100,
+    maxSearchPages: 40,
+  };
 
   /**
    * 키워드 기반 네이버 뉴스 기사 수집
    * 페이지 단위(10건)로 yield
    */
-  async *collect(options: CollectionOptions): AsyncGenerator<NaverArticle[], void, unknown> {
-    const maxItems = options.maxItems ?? DEFAULT_MAX_ITEMS;
+  protected async *doCollect(page: Page, options: CollectionOptions): AsyncGenerator<NaverArticle[], void, unknown> {
+    const maxItems = options.maxItems ?? this.config.defaultMaxItems;
     let totalCollected = 0;
-    let browser: Browser | null = null;
 
-    try {
-      browser = await launchBrowser();
-      const context = await browser.newContext({
-        locale: 'ko-KR',
-        timezoneId: 'Asia/Seoul',
-        userAgent:
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    for (let pageNum = 1; pageNum <= this.config.maxSearchPages; pageNum++) {
+      if (totalCollected >= maxItems) break;
+
+      const searchUrl = buildNaverSearchUrl({
+        keyword: options.keyword,
+        startDate: options.startDate,
+        endDate: options.endDate,
+        page: pageNum,
+        sort: 1, // 최신순
       });
-      const page = await context.newPage();
 
-      for (let pageNum = 1; pageNum <= MAX_SEARCH_PAGES; pageNum++) {
+      await page.goto(searchUrl, { waitUntil: 'domcontentloaded' });
+      // SDS 컴포넌트 렌더링 대기 (동적 해시 클래스 로드 필요)
+      try {
+        await page.waitForSelector('[class*="sds-comps-text-type-headline1"], .news_tit', { timeout: 5000 });
+      } catch {
+        // 셀렉터 대기 실패 시 고정 대기
+      }
+      await page.waitForTimeout(1500);
+
+      const html = await page.content();
+      const articles = this.parseSearchResults(html);
+
+      if (articles.length === 0) break; // 검색 결과 없음 -- 종료
+
+      // 각 기사의 본문 수집
+      const enrichedArticles: NaverArticle[] = [];
+      for (const article of articles) {
         if (totalCollected >= maxItems) break;
 
-        const searchUrl = buildNaverSearchUrl({
-          keyword: options.keyword,
-          startDate: options.startDate,
-          endDate: options.endDate,
-          page: pageNum,
-          sort: 1, // 최신순
-        });
-
-        await page.goto(searchUrl, { waitUntil: 'domcontentloaded' });
-        // SDS 컴포넌트 렌더링 대기 (동적 해시 클래스 로드 필요)
+        // 네이버뉴스 URL 또는 원본 언론사 URL로 본문 수집 시도
         try {
-          await page.waitForSelector('[class*="sds-comps-text-type-headline1"], .news_tit', { timeout: 5000 });
-        } catch {
-          // 셀렉터 대기 실패 시 고정 대기
+          const content = await this.fetchArticleContent(page, article.url);
+          article.content = content;
+        } catch (err) {
+          // 개별 기사 본문 수집 실패 시 content를 null로 유지 (부분 실패 허용)
+          article.content = null;
+          article.rawData.fetchError = err instanceof Error ? err.message : String(err);
         }
-        await page.waitForTimeout(1500);
+        await sleep(this.config.postDelay.min, this.config.postDelay.max);
 
-        const html = await page.content();
-        const articles = this.parseSearchResults(html);
-
-        if (articles.length === 0) break; // 검색 결과 없음 -- 종료
-
-        // 각 기사의 본문 수집
-        const enrichedArticles: NaverArticle[] = [];
-        for (const article of articles) {
-          if (totalCollected >= maxItems) break;
-
-          // 네이버뉴스 URL 또는 원본 언론사 URL로 본문 수집 시도
-          try {
-            const content = await this.fetchArticleContent(page, article.url);
-            article.content = content;
-          } catch (err) {
-            // 개별 기사 본문 수집 실패 시 content를 null로 유지 (부분 실패 허용)
-            article.content = null;
-            article.rawData.fetchError = err instanceof Error ? err.message : String(err);
-          }
-          await delay(500, 1000); // 기사 간 딜레이
-
-          enrichedArticles.push(article);
-          totalCollected++;
-        }
-
-        if (enrichedArticles.length > 0) {
-          yield enrichedArticles;
-        }
-
-        // 페이지 간 딜레이 (rate limit 대응)
-        await delay(PAGE_DELAY_MS, PAGE_DELAY_MS + 500);
+        enrichedArticles.push(article);
+        totalCollected++;
       }
-    } finally {
-      if (browser) {
-        await browser.close();
+
+      if (enrichedArticles.length > 0) {
+        yield enrichedArticles;
       }
+
+      // 페이지 간 딜레이 (rate limit 대응)
+      await sleep(this.config.pageDelay.min, this.config.pageDelay.max);
     }
   }
 
@@ -126,7 +104,7 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
    *
    * 전략:
    * 1차) headline1 셀렉터로 제목 요소를 찾고, 부모 a 태그에서 기사 URL 추출
-   *      → n.news.naver.com 링크가 있으면 네이버뉴스 URL, 없으면 원본 언론사 URL
+   *      -> n.news.naver.com 링크가 있으면 네이버뉴스 URL, 없으면 원본 언론사 URL
    * 2차) n.news.naver.com 링크 기반 탐색 (1차에서 못 잡은 기사 보완)
    * 3차) 레거시 셀렉터 폴백 (.news_area, .news_tit 등)
    */
@@ -171,7 +149,7 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
       // 날짜: 블록 내 "N분 전", "N시간 전" 등
       const blockText = $block.text();
       const dateMatch = blockText.match(/(\d+)(분|시간|일)\s*전/);
-      const publishedAt = dateMatch ? this.parseDateText(`${dateMatch[1]}${dateMatch[2]} 전`) : null;
+      const publishedAt = dateMatch ? parseDateTextOrNull(`${dateMatch[1]}${dateMatch[2]} 전`) : null;
 
       // 네이버뉴스 URL 확인: 같은 블록 안에 n.news.naver.com 링크가 있는지
       let naverUrl: string | null = null;
@@ -243,7 +221,7 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
       const pubMatch = blockText.match(/([가-힣A-Za-z0-9\s]+?)(?:\d+(?:분|시간|일)\s*전|네이버뉴스)/);
       const publisher = pubMatch?.[1]?.trim() || '알 수 없음';
       const dateMatch = blockText.match(/(\d+)(분|시간|일)\s*전/);
-      const publishedAt = dateMatch ? this.parseDateText(`${dateMatch[1]}${dateMatch[2]} 전`) : null;
+      const publishedAt = dateMatch ? parseDateTextOrNull(`${dateMatch[1]}${dateMatch[2]} 전`) : null;
 
       articles.push({
         sourceId,
@@ -273,7 +251,7 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
 
         articles.push({
           sourceId, url, title, content: null, author: null,
-          publisher, publishedAt: this.parseDateText(dateText),
+          publisher, publishedAt: parseDateTextOrNull(dateText),
           rawData: { dateText },
         });
       });
@@ -332,34 +310,6 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
       if (content && content.length > 50) {
         return content;
       }
-    }
-
-    return null;
-  }
-
-  /**
-   * 날짜 텍스트를 Date 객체로 변환
-   * "2026.03.24." 또는 "3시간 전" 등의 형식을 처리
-   */
-  private parseDateText(text: string): Date | null {
-    if (!text) return null;
-
-    // YYYY.MM.DD. 형식
-    const dateMatch = text.match(/(\d{4})\.(\d{2})\.(\d{2})/);
-    if (dateMatch) {
-      return new Date(`${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}`);
-    }
-
-    // "N시간 전", "N분 전", "N일 전" 형식
-    const relativeMatch = text.match(/(\d+)(시간|분|일)\s*전/);
-    if (relativeMatch) {
-      const now = new Date();
-      const amount = parseInt(relativeMatch[1], 10);
-      const unit = relativeMatch[2];
-      if (unit === '시간') now.setHours(now.getHours() - amount);
-      else if (unit === '분') now.setMinutes(now.getMinutes() - amount);
-      else if (unit === '일') now.setDate(now.getDate() - amount);
-      return now;
     }
 
     return null;
