@@ -34,8 +34,13 @@ ENV PORT=3000
 EXPOSE 3000
 CMD ["node", "apps/web/server.js"]
 
-# Stage 4: Worker 실행 (BullMQ)
+# Stage 4: Worker 실행 (BullMQ + Playwright)
 FROM node:24-slim AS worker
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    chromium \
+    fonts-noto-cjk \
+    && rm -rf /var/lib/apt/lists/*
+ENV PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium
 RUN corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
