@@ -1,0 +1,76 @@
+// 커뮤니티(clien/dcinside/fmkorea) 공통 수집 로직 -- 페이지 순회 + 게시글 수집 루프
+import type { Page } from 'playwright';
+import type { CollectionOptions } from './base';
+import type { CommunityPost } from '../types/community';
+import { sleep } from '../utils/browser';
+import { BrowserCollector, type BrowserCollectorConfig } from './browser-collector';
+
+export interface SiteSelectors {
+  list: string[];
+  content: string[];
+  comment: string[];
+}
+
+export abstract class CommunityBaseCollector extends BrowserCollector<CommunityPost> {
+  protected abstract readonly selectors: SiteSelectors;
+  protected abstract readonly baseUrl: string;
+
+  protected abstract buildSearchUrl(keyword: string, page: number): string;
+  protected abstract parseSearchResults(html: string): { url: string; title: string }[];
+  protected abstract fetchPost(page: Page, url: string, title: string, maxComments: number): Promise<CommunityPost | null>;
+
+  // 차단 감지 -- 기본 false, clien/fmkorea에서 override
+  protected detectBlocked(html: string): boolean {
+    return false;
+  }
+
+  protected async *doCollect(page: Page, options: CollectionOptions): AsyncGenerator<CommunityPost[], void, unknown> {
+    const maxItems = options.maxItems ?? this.config.defaultMaxItems;
+    const maxComments = options.maxComments ?? 100;
+    let totalCollected = 0;
+
+    for (let pageNum = 1; pageNum <= this.config.maxSearchPages; pageNum++) {
+      if (totalCollected >= maxItems) break;
+
+      const searchUrl = this.buildSearchUrl(options.keyword, pageNum);
+      try {
+        await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+      } catch (navErr) {
+        console.warn(`${this.source} 검색 페이지 로드 실패 (page ${pageNum}):`, navErr);
+        break;
+      }
+      await page.waitForTimeout(this.config.pageDelay.min + Math.random() * 1000);
+
+      const html = await page.content();
+      const postLinks = this.parseSearchResults(html);
+
+      if (postLinks.length === 0) {
+        if (this.detectBlocked(html)) {
+          console.warn(`${this.source} 검색 차단 감지 -- 수집 중단`);
+        }
+        break;
+      }
+
+      const posts: CommunityPost[] = [];
+      for (const link of postLinks) {
+        if (totalCollected >= maxItems) break;
+        try {
+          const post = await this.fetchPost(page, link.url, link.title, maxComments);
+          if (post) {
+            posts.push(post);
+            totalCollected++;
+          }
+        } catch (err) {
+          console.warn(`${this.source} 게시글 수집 실패 (${link.url}):`, err);
+        }
+        await sleep(this.config.postDelay.min, this.config.postDelay.max);
+      }
+
+      if (posts.length > 0) {
+        yield posts;
+      }
+
+      await sleep(this.config.pageDelay.min, this.config.pageDelay.max);
+    }
+  }
+}
