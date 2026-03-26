@@ -104,19 +104,19 @@ export function TopNav({ activeTab, onTabChange }: TopNavProps) {
             </button>
           }
         />
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>AI 설정</DialogTitle>
           </DialogHeader>
-          <Tabs defaultValue="provider-keys">
-            <TabsList className="w-full">
+          <Tabs defaultValue="provider-keys" className="flex flex-col min-h-0 flex-1">
+            <TabsList className="w-full shrink-0">
               <TabsTrigger value="provider-keys">API 키 관리</TabsTrigger>
               <TabsTrigger value="model-settings">모듈별 모델 설정</TabsTrigger>
             </TabsList>
-            <TabsContent value="provider-keys" className="mt-4">
+            <TabsContent value="provider-keys" className="mt-4 overflow-y-auto min-h-0">
               <ProviderKeys />
             </TabsContent>
-            <TabsContent value="model-settings" className="mt-4">
+            <TabsContent value="model-settings" className="mt-4 overflow-y-auto min-h-0">
               <ModelSettings />
             </TabsContent>
           </Tabs>

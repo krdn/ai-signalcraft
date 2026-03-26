@@ -1,6 +1,6 @@
 // 파이프라인 모니터 공유 타입
 
-export type StageStatus = 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
+export type StageStatus = 'pending' | 'running' | 'completed' | 'failed' | 'skipped' | 'cancelled' | 'paused';
 export type ModuleStatus = 'pending' | 'running' | 'completed' | 'failed';
 
 export interface ItemDetail {
@@ -73,6 +73,9 @@ export interface PipelineStatusData {
   sourceDetails: Record<string, SourceDetail>;
   analysisModules: Array<{ module: string; status: ModuleStatus; label: string }>;
   elapsedSeconds: number;
+  // 제어 관련 필드
+  costLimitUsd: number | null;
+  skippedModules: string[];
   // 확장 필드
   overallProgress: number;
   tokenUsage: TokenUsage;

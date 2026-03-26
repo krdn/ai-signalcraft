@@ -51,7 +51,7 @@ export function usePipelineStatus(jobId: number | null) {
 
         // 완료 상태 + 리포트 생성 완료 시 SSE 종료
         // (서버 측에서도 종료하지만 클라이언트에서도 정리)
-        const isDone = parsed.status === 'failed' ||
+        const isDone = parsed.status === 'failed' || parsed.status === 'cancelled' ||
           (parsed.hasReport && !parsed.analysisModulesDetailed?.some(
             (m: { status: string }) => m.status === 'running' || m.status === 'pending',
           ));

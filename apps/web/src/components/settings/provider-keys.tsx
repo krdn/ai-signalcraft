@@ -53,6 +53,7 @@ type ProviderKeyItem = {
   maskedKey: string | null;
   baseUrl: string | null;
   selectedModel: string | null;
+  availableModels: string[] | null;
   isActive: boolean;
   createdAt: Date | string;
   updatedAt: Date | string;
@@ -153,12 +154,14 @@ function AddKeyForm({
           placeholder="이름 (예: Production Key)"
           value={name}
           onChange={(e) => setName(e.target.value)}
+          autoComplete="off"
         />
         <Input
           type="password"
           placeholder={keyRequired ? 'API 키' : 'API 키 (Open WebUI 사용 시 토큰 입력)'}
           value={apiKey}
           onChange={(e) => setApiKey(e.target.value)}
+          autoComplete="new-password"
         />
         {needsUrl && (
           <Input
@@ -291,6 +294,7 @@ function EditForm({
         value={name}
         onChange={(e) => setName(e.target.value)}
         className="text-sm"
+        autoComplete="off"
       />
       <Input
         type="password"
@@ -298,6 +302,7 @@ function EditForm({
         value={apiKey}
         onChange={(e) => setApiKey(e.target.value)}
         className="text-sm"
+        autoComplete="new-password"
       />
       <Input
         placeholder="Base URL"

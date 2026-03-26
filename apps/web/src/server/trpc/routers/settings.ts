@@ -103,11 +103,15 @@ export const settingsRouter = router({
         return { success: true };
       }),
 
-    // 연결 테스트 + 모델 목록 조회
+    // 연결 테스트 + 모델 목록 조회 (성공 시 availableModels를 DB에 저장)
     test: protectedProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
-        return testProviderConnection(input.id);
+        const result = await testProviderConnection(input.id);
+        if (result.success && result.models.length > 0) {
+          await updateProviderKey(input.id, { availableModels: result.models });
+        }
+        return result;
       }),
 
     // LLM 채팅 테스트 (Playground)

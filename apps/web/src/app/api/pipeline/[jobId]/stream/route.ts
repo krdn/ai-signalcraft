@@ -66,8 +66,8 @@ export async function GET(
             send(status);
           }
 
-          // 완료/실패 시 스트림 종료
-          if (status.status === 'completed' || status.status === 'failed' || status.status === 'partial_failure') {
+          // 완료/실패/취소 시 스트림 종료
+          if (status.status === 'completed' || status.status === 'failed' || status.status === 'partial_failure' || status.status === 'cancelled') {
             // 분석이 아직 진행 중이면 종료하지 않음
             const analysisRunning = status.analysisModulesDetailed.some(
               (m: { status: string }) => m.status === 'running' || m.status === 'pending',

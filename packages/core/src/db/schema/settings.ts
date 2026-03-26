@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, integer, uniqueIndex, boolean } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, integer, uniqueIndex, boolean, jsonb } from 'drizzle-orm/pg-core';
 
 // 모듈별 AI 모델 설정 (DB 기반 동적 설정)
 export const modelSettings = pgTable('model_settings', {
@@ -21,6 +21,7 @@ export const providerKeys = pgTable('provider_keys', {
   maskedKey: text('masked_key'),                    // 'sk-...xxx' 형태
   baseUrl: text('base_url'),                        // 커스텀 엔드포인트
   selectedModel: text('selected_model'),            // Test & Select로 선택한 기본 모델
+  availableModels: jsonb('available_models').$type<string[]>(), // Test 시 조회된 전체 모델 목록
   isActive: boolean('is_active').default(true).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),

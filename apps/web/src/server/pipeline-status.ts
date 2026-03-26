@@ -76,6 +76,8 @@ export async function getPipelineStatus(jobId: number) {
     .from(analysisReports).where(eq(analysisReports.jobId, jobId)).limit(1);
 
   // --- 4단계 파이프라인 상태 파생 ---
+  const isCancelled = job.status === 'cancelled';
+  const isPaused = job.status === 'paused';
   const collectionDone = job.status === 'completed' || job.status === 'partial_failure';
   const collectionFailed = job.status === 'failed';
   const normalizationDone = collectionDone;
@@ -207,7 +209,11 @@ export async function getPipelineStatus(jobId: number) {
     }
   }
 
-  if (collectionDone) {
+  if (isCancelled) {
+    events.push({ timestamp: timeline.jobUpdatedAt, level: 'warn', message: '파이프라인이 사용자에 의해 중지되었습니다' });
+  } else if (isPaused) {
+    events.push({ timestamp: timeline.jobUpdatedAt, level: 'warn', message: '파이프라인이 일시정지 중입니다' });
+  } else if (collectionDone) {
     const totalCount = Object.values(sourceDetails).reduce((sum, s) => sum + s.count, 0);
     events.push({
       timestamp: timeline.jobUpdatedAt,
@@ -276,6 +282,8 @@ export async function getPipelineStatus(jobId: number) {
     progress: job.progress,
     errorDetails: job.errorDetails,
     keyword: job.keyword,
+    costLimitUsd: (job as any).costLimitUsd ?? null,
+    skippedModules: (job as any).skippedModules ?? [],
     pipelineStages,
     analysisModuleCount: { total: analysisRows.length, completed: completedModulesCount },
     hasReport: reportDone,

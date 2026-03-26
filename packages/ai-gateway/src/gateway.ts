@@ -1,6 +1,6 @@
 import { generateText, generateObject } from 'ai';
-import { anthropic } from '@ai-sdk/anthropic';
-import { openai } from '@ai-sdk/openai';
+import { createAnthropic } from '@ai-sdk/anthropic';
+import { createOpenAI } from '@ai-sdk/openai';
 import { z } from 'zod';
 
 export type AIProvider = 'anthropic' | 'openai' | 'gemini' | 'ollama' | 'deepseek' | 'xai' | 'openrouter' | 'custom';
@@ -9,7 +9,9 @@ export interface AIGatewayOptions {
   provider?: AIProvider;
   model?: string;
   maxOutputTokens?: number;
-  systemPrompt?: string;  // 분석 모듈별 시스템 프롬프트
+  systemPrompt?: string;
+  baseUrl?: string;
+  apiKey?: string;
 }
 
 const DEFAULT_MODELS: Partial<Record<AIProvider, string>> = {
@@ -17,17 +19,55 @@ const DEFAULT_MODELS: Partial<Record<AIProvider, string>> = {
   openai: 'gpt-4o-mini',
 };
 
-function getModel(provider: AIProvider, model?: string) {
+/** 프로바이더별 기본 Base URL */
+const DEFAULT_BASE_URLS: Partial<Record<AIProvider, string>> = {
+  openai: 'https://api.openai.com/v1',
+  deepseek: 'https://api.deepseek.com/v1',
+  xai: 'https://api.x.ai/v1',
+  openrouter: 'https://openrouter.ai/api/v1',
+  ollama: 'http://localhost:11434/v1',
+};
+
+function getModel(provider: AIProvider, model?: string, baseUrl?: string, apiKey?: string) {
   const modelName = model ?? DEFAULT_MODELS[provider] ?? 'gpt-4o-mini';
+  console.log(`[ai-gateway] getModel: provider=${provider}, model=${modelName}, baseUrl=${baseUrl ?? 'none'}, hasApiKey=${!!apiKey}`);
   switch (provider) {
-    case 'anthropic':
-      return anthropic(modelName);
+    case 'anthropic': {
+      const client = createAnthropic({
+        ...(apiKey ? { apiKey } : {}),
+        ...(baseUrl ? { baseURL: baseUrl } : {}),
+      });
+      return client(modelName);
+    }
+    case 'ollama':
+    case 'deepseek':
+    case 'xai':
+    case 'openrouter':
+    case 'custom': {
+      // OpenAI 호환 프로바이더 — Chat Completions API 사용 (/v1/chat/completions)
+      // 중요: client(modelName)은 Responses API(/v1/responses)를 사용하므로 Ollama에서 405 발생
+      // client.chat(modelName)을 사용해야 Chat Completions API로 요청됨
+      let resolvedBaseUrl: string;
+      if (baseUrl) {
+        const cleaned = baseUrl.replace(/\/+$/, '');
+        resolvedBaseUrl = cleaned.endsWith('/v1') ? cleaned : `${cleaned}/v1`;
+      } else {
+        resolvedBaseUrl = DEFAULT_BASE_URLS[provider] ?? 'http://localhost:11434/v1';
+      }
+      const client = createOpenAI({
+        baseURL: resolvedBaseUrl,
+        apiKey: apiKey || 'ollama',
+      });
+      return client.chat(modelName);
+    }
     case 'openai':
-      // OpenAI 호환 프로바이더 (deepseek, xai, openrouter, custom 등)는
-      // provider-keys에서 설정된 baseUrl과 API 키로 실제 연결됨
-      // 여기서는 AI SDK의 openai 프로바이더를 사용
-    default:
-      return openai(modelName);
+    default: {
+      const client = createOpenAI({
+        ...(apiKey ? { apiKey } : {}),
+        ...(baseUrl ? { baseURL: baseUrl } : {}),
+      });
+      return client(modelName);
+    }
   }
 }
 
@@ -38,7 +78,7 @@ export async function analyzeText(
 ) {
   const provider = options.provider ?? 'anthropic';
   const result = await generateText({
-    model: getModel(provider, options.model),
+    model: getModel(provider, options.model, options.baseUrl, options.apiKey),
     ...(options.systemPrompt ? { system: options.systemPrompt } : {}),
     prompt,
     maxOutputTokens: options.maxOutputTokens ?? 4096,
@@ -58,7 +98,7 @@ export async function analyzeStructured<T>(
 ) {
   const provider = options.provider ?? 'anthropic';
   const result = await generateObject({
-    model: getModel(provider, options.model),
+    model: getModel(provider, options.model, options.baseUrl, options.apiKey),
     ...(options.systemPrompt ? { system: options.systemPrompt } : {}),
     prompt,
     schema,

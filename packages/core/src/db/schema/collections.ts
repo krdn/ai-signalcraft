@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, integer, jsonb, uniqueIndex } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, integer, jsonb, uniqueIndex, real } from 'drizzle-orm/pg-core';
 import { teams } from './auth';
 
 // 수집 작업 (D-06: 소스별 상세 추적)
@@ -9,7 +9,7 @@ export const collectionJobs = pgTable('collection_jobs', {
   startDate: timestamp('start_date').notNull(),
   endDate: timestamp('end_date').notNull(),
   status: text('status', {
-    enum: ['pending', 'running', 'completed', 'partial_failure', 'failed'],
+    enum: ['pending', 'running', 'completed', 'partial_failure', 'failed', 'cancelled', 'paused'],
   }).notNull().default('pending'),
   progress: jsonb('progress').$type<
     Record<string, { status: string; posts?: number; articles?: number; videos?: number; comments: number }>
@@ -21,6 +21,8 @@ export const collectionJobs = pgTable('collection_jobs', {
     commentsPerItem: number;
   }>(),
   errorDetails: jsonb('error_details').$type<Record<string, string>>(),
+  costLimitUsd: real('cost_limit_usd'),  // 비용 한도 (USD) — 초과 시 자동 중지
+  skippedModules: jsonb('skipped_modules').$type<string[]>(),  // 스킵할 분석 모듈 목록
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });

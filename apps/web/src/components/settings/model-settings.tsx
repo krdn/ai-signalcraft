@@ -222,9 +222,29 @@ export function ModelSettings() {
   });
 
   // 등록된 프로바이더 목록과 프로바이더별 모델 목록 구성
+  // availableModels(Test 시 조회된 전체 목록)에서 주요 모델만 필터링
   const { availableProviders, providerModels } = useMemo(() => {
     if (!providerKeysList || providerKeysList.length === 0) {
       return { availableProviders: [] as string[], providerModels: {} as Record<string, string[]> };
+    }
+
+    // 주요 모델 패턴 — 이 패턴에 매칭되는 모델만 드롭다운에 표시
+    const MAIN_MODEL_PATTERNS = [
+      /^gpt-4/,        // gpt-4o, gpt-4o-mini, gpt-4.1, gpt-4.1-mini 등
+      /^gpt-5/,        // gpt-5 시리즈
+      /^gpt-3\.5/,     // gpt-3.5-turbo
+      /^o[1-9]/,       // o1, o3, o4 등 reasoning 모델
+      /^claude/,       // claude 시리즈
+      /^gemini/,       // gemini 시리즈
+      /^qwen/,         // qwen 시리즈 (Ollama)
+      /^llama/,        // llama 시리즈 (Ollama)
+      /^mistral/,      // mistral 시리즈
+      /^deepseek/,     // deepseek 시리즈
+      /^codestral/,    // codestral
+      /^command/,      // cohere command
+    ];
+    function isMainModel(model: string): boolean {
+      return MAIN_MODEL_PATTERNS.some((p) => p.test(model));
     }
 
     const modelsMap: Record<string, Set<string>> = {};
@@ -233,6 +253,13 @@ export function ModelSettings() {
       if (!modelsMap[key.providerType]) {
         modelsMap[key.providerType] = new Set();
       }
+      const models = (key as any).availableModels as string[] | null;
+      if (models && models.length > 0) {
+        for (const m of models) {
+          if (isMainModel(m)) modelsMap[key.providerType].add(m);
+        }
+      }
+      // selectedModel은 항상 포함 (필터에 해당하지 않아도)
       if (key.selectedModel) {
         modelsMap[key.providerType].add(key.selectedModel);
       }

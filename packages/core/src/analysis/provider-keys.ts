@@ -13,6 +13,7 @@ export interface ProviderKeyInfo {
   maskedKey: string | null;
   baseUrl: string | null;
   selectedModel: string | null;
+  availableModels: string[] | null;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -40,6 +41,7 @@ export async function getAllProviderKeys(): Promise<ProviderKeyInfo[]> {
       maskedKey: providerKeys.maskedKey,
       baseUrl: providerKeys.baseUrl,
       selectedModel: providerKeys.selectedModel,
+      availableModels: providerKeys.availableModels,
       isActive: providerKeys.isActive,
       createdAt: providerKeys.createdAt,
       updatedAt: providerKeys.updatedAt,
@@ -47,7 +49,7 @@ export async function getAllProviderKeys(): Promise<ProviderKeyInfo[]> {
     .from(providerKeys)
     .orderBy(providerKeys.createdAt);
 
-  return rows;
+  return rows as ProviderKeyInfo[];
 }
 
 /**
@@ -83,12 +85,13 @@ export async function addProviderKey(data: {
       maskedKey: providerKeys.maskedKey,
       baseUrl: providerKeys.baseUrl,
       selectedModel: providerKeys.selectedModel,
+      availableModels: providerKeys.availableModels,
       isActive: providerKeys.isActive,
       createdAt: providerKeys.createdAt,
       updatedAt: providerKeys.updatedAt,
     });
 
-  return row;
+  return row as ProviderKeyInfo;
 }
 
 /**
@@ -102,6 +105,7 @@ export async function updateProviderKey(
     key?: string;
     baseUrl?: string;
     selectedModel?: string;
+    availableModels?: string[];
   },
 ): Promise<ProviderKeyInfo> {
   const db = getDb();
@@ -113,6 +117,7 @@ export async function updateProviderKey(
   if (data.name !== undefined) updateData.name = data.name;
   if (data.baseUrl !== undefined) updateData.baseUrl = data.baseUrl;
   if (data.selectedModel !== undefined) updateData.selectedModel = data.selectedModel;
+  if (data.availableModels !== undefined) updateData.availableModels = data.availableModels;
 
   if (data.key) {
     updateData.encryptedKey = encrypt(data.key);
@@ -131,13 +136,14 @@ export async function updateProviderKey(
       maskedKey: providerKeys.maskedKey,
       baseUrl: providerKeys.baseUrl,
       selectedModel: providerKeys.selectedModel,
+      availableModels: providerKeys.availableModels,
       isActive: providerKeys.isActive,
       createdAt: providerKeys.createdAt,
       updatedAt: providerKeys.updatedAt,
     });
 
   if (!row) throw new Error(`프로바이더 키 ID ${id}를 찾을 수 없습니다`);
-  return row;
+  return row as ProviderKeyInfo;
 }
 
 /**

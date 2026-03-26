@@ -11,13 +11,14 @@ const scenarioBase = {
 };
 
 // ADVN-03: 위기 대응 시나리오 스키마
-// 3개 시나리오 고정: spread(확산/worst), control(통제/moderate), reverse(역전/best)
+// 3개 시나리오: spread(확산/worst), control(통제/moderate), reverse(역전/best)
+const scenarioSchema = z.object({
+  type: z.enum(['spread', 'control', 'reverse']),
+  ...scenarioBase,
+});
+
 export const CrisisScenarioSchema = z.object({
-  scenarios: z.tuple([
-    z.object({ type: z.literal('spread'), ...scenarioBase }),
-    z.object({ type: z.literal('control'), ...scenarioBase }),
-    z.object({ type: z.literal('reverse'), ...scenarioBase }),
-  ]),
+  scenarios: z.array(scenarioSchema).min(3).max(3),
   currentRiskLevel: z.enum(['critical', 'high', 'medium', 'low']),
   recommendedAction: z.string(),
 });

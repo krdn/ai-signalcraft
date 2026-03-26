@@ -13,6 +13,8 @@ import {
   Clock,
   XCircle,
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { trpcClient } from '@/lib/trpc';
 import { MODULE_HELP, STAGE_LABELS } from './constants';
 import { formatTokens, formatElapsed } from './utils';
 import { CostSummary } from './cost-summary';
@@ -48,9 +50,25 @@ function moduleCardClass(status: ModuleStatus): string {
   }
 }
 
-function ModuleCard({ mod }: { mod: AnalysisModuleDetailed }) {
+// 프로바이더 타입 → 표시명 매핑
+const PROVIDER_DISPLAY: Record<string, string> = {
+  openai: 'OpenAI',
+  anthropic: 'Anthropic',
+  gemini: 'Gemini',
+  ollama: 'Ollama',
+  deepseek: 'DeepSeek',
+  xai: 'xAI',
+  openrouter: 'OpenRouter',
+  custom: 'Custom',
+};
+
+function ModuleCard({ mod, modelSetting }: { mod: AnalysisModuleDetailed; modelSetting?: { provider: string; model: string } }) {
   const help = MODULE_HELP[mod.module];
   const totalTokens = mod.usage ? mod.usage.input + mod.usage.output : 0;
+
+  // 실제 사용/설정된 모델 정보: usage(실행 후) > modelSetting(DB 설정) > help(하드코딩 폴백)
+  const displayProvider = mod.usage?.provider ?? modelSetting?.provider ?? help?.provider ?? '';
+  const displayModel = mod.usage?.model ?? modelSetting?.model ?? help?.model ?? '';
 
   const card = (
     <div
@@ -92,7 +110,7 @@ function ModuleCard({ mod }: { mod: AnalysisModuleDetailed }) {
           <p className="text-muted-foreground leading-relaxed">{help.description}</p>
           <div className="flex items-center gap-2 text-[10px] text-muted-foreground pt-1 border-t">
             <Badge variant="outline" className="text-[10px] px-1.5">{help.stageLabel}</Badge>
-            <span>{help.provider} / {help.model}</span>
+            <span>{PROVIDER_DISPLAY[displayProvider] ?? displayProvider} / {displayModel}</span>
           </div>
         </div>
       </HoverCardContent>
@@ -102,6 +120,15 @@ function ModuleCard({ mod }: { mod: AnalysisModuleDetailed }) {
 
 export function AnalysisTab({ data }: AnalysisTabProps) {
   const modules = data.analysisModulesDetailed;
+
+  // DB에서 모듈별 모델 설정 가져오기
+  const { data: modelSettings } = useQuery({
+    queryKey: [['settings', 'list']],
+    queryFn: () => trpcClient.settings.list.query(),
+  });
+  const settingsMap = new Map(
+    (modelSettings ?? []).map((s) => [s.moduleName, { provider: s.provider, model: s.model }]),
+  );
 
   if (modules.length === 0) {
     return (
@@ -155,7 +182,7 @@ export function AnalysisTab({ data }: AnalysisTabProps) {
               )}
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                 {mods.map((mod) => (
-                  <ModuleCard key={mod.module} mod={mod} />
+                  <ModuleCard key={mod.module} mod={mod} modelSetting={settingsMap.get(mod.module)} />
                 ))}
               </div>
             </div>

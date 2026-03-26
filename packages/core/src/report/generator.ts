@@ -1,8 +1,8 @@
 // 통합 리포트 마크다운 생성기 (D-04 2단계)
 import { analyzeText } from '@ai-signalcraft/ai-gateway';
 import { persistAnalysisReport } from '../analysis/persist-analysis';
+import { getModuleModelConfig } from '../analysis/model-config';
 import type { AnalysisModuleResult } from '../analysis/types';
-import { MODULE_MODEL_MAP } from '../analysis/types';
 
 export interface ReportGenerationInput {
   jobId: number;
@@ -69,7 +69,7 @@ export async function generateIntegratedReport(input: ReportGenerationInput): Pr
     ? (finalSummaryResult.result as any).oneLiner ?? ''
     : '';
 
-  const config = MODULE_MODEL_MAP['integrated-report'];
+  const config = await getModuleModelConfig('integrated-report');
 
   const prompt = `당신은 정치·여론·미디어 전략 보고서를 작성하는 최고 수준의 데이터 전략가입니다.
 
@@ -102,6 +102,8 @@ ${resultsJson}
   const result = await analyzeText(prompt, {
     provider: config.provider,
     model: config.model,
+    baseUrl: config.baseUrl,
+    apiKey: config.apiKey,
     systemPrompt: '당신은 정치·여론·미디어 전략을 설계하는 최고 수준의 데이터 전략가이자 선거 캠프 수석 분석관입니다. 단순 요약이 아니라, 실제 의사결정자가 즉시 전략을 실행할 수 있는 수준의 분석 보고서를 작성합니다.',
     maxOutputTokens: 16384,
   });
