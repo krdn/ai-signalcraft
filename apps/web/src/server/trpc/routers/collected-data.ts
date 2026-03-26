@@ -34,6 +34,9 @@ export const collectedDataRouter = router({
           publisher: articles.publisher,
           publishedAt: articles.publishedAt,
           collectedAt: articles.collectedAt,
+          sentiment: articles.sentiment,
+          sentimentScore: articles.sentimentScore,
+          summary: articles.summary,
         })
           .from(articles)
           .where(eq(articles.jobId, input.jobId))
@@ -86,6 +89,8 @@ export const collectedDataRouter = router({
           dislikeCount: comments.dislikeCount,
           publishedAt: comments.publishedAt,
           articleId: comments.articleId,
+          sentiment: comments.sentiment,
+          sentimentScore: comments.sentimentScore,
         })
           .from(comments)
           .where(whereCondition)

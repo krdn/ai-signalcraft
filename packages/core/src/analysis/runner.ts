@@ -19,6 +19,10 @@ import { loadAnalysisInput } from './data-loader';
 import { persistAnalysisResult } from './persist-analysis';
 import { getModuleModelConfig } from './model-config';
 import { isPipelineCancelled, waitIfPaused, checkCostLimit, getSkippedModules } from '../pipeline/control';
+import { analyzeItems } from './item-analyzer';
+import { getDb } from '../db';
+import { collectionJobs } from '../db/schema/collections';
+import { eq } from 'drizzle-orm';
 import type { AnalysisModule, AnalysisInput, AnalysisModuleResult } from './types';
 
 // Stage 1: 병렬 실행 (독립 모듈)
@@ -173,6 +177,26 @@ export async function runAnalysisPipeline(jobId: number): Promise<{
       errorMessage: '사용자에 의해 스킵됨',
     });
     allResults[moduleName] = { module: moduleName, status: 'failed', errorMessage: '사용자에 의해 스킵됨' };
+  }
+
+  // Stage 0: 개별 기사/댓글 감정 분석 (옵션 활성화 시만)
+  const [jobRow] = await getDb()
+    .select({ options: collectionJobs.options })
+    .from(collectionJobs)
+    .where(eq(collectionJobs.id, jobId))
+    .limit(1);
+
+  if (jobRow?.options?.enableItemAnalysis) {
+    if (!await preRunCheck()) {
+      return buildResult(allResults, cancelledByUser, costLimitExceeded, input);
+    }
+    try {
+      console.log(`[runner] 개별 항목 분석 시작: job=${jobId}`);
+      await analyzeItems(jobId);
+      console.log(`[runner] 개별 항목 분석 완료: job=${jobId}`);
+    } catch (error) {
+      console.error(`[runner] 개별 항목 분석 실패 (집계 분석은 계속 진행):`, error);
+    }
   }
 
   // Stage 1: 병렬 실행 (모듈 1~4, 독립)

@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "build": "pnpm -r build",
+    "typecheck": "pnpm -r build",
     "dev": "pnpm --filter @ai-signalcraft/web dev",
     "dev:all": "pnpm --filter @ai-signalcraft/web dev & pnpm --filter @ai-signalcraft/core worker & wait",
     "test": "pnpm -r test",

@@ -21,6 +21,24 @@ import {
   ArrowLeft,
 } from 'lucide-react';
 
+// 감정 분석 뱃지 설정
+const SENTIMENT_CONFIG: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; className: string }> = {
+  positive: { label: '긍정', variant: 'default', className: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 border-blue-200 dark:border-blue-800' },
+  negative: { label: '부정', variant: 'destructive', className: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300 border-red-200 dark:border-red-800' },
+  neutral: { label: '중립', variant: 'secondary', className: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 border-gray-200 dark:border-gray-700' },
+};
+
+function SentimentBadge({ sentiment, score }: { sentiment: string | null; score: number | null }) {
+  if (!sentiment) return null;
+  const config = SENTIMENT_CONFIG[sentiment];
+  if (!config) return null;
+  return (
+    <Badge variant="outline" className={`text-[10px] h-5 ${config.className}`}>
+      {config.label}{score != null ? ` ${Math.round(score * 100)}%` : ''}
+    </Badge>
+  );
+}
+
 // 소스 한글 라벨
 const SOURCE_LABELS: Record<string, string> = {
   'naver-news': '네이버 뉴스',
@@ -263,9 +281,13 @@ function ArticlesView({
                   {article.publisher && (
                     <span className="text-xs text-muted-foreground truncate">{article.publisher}</span>
                   )}
+                  <SentimentBadge sentiment={article.sentiment} score={article.sentimentScore} />
                 </div>
                 <h3 className="font-medium text-sm leading-snug line-clamp-2">{article.title}</h3>
-                {article.content && (
+                {article.summary && (
+                  <p className="text-xs text-primary/80 mt-1">AI 요약: {article.summary}</p>
+                )}
+                {article.content && !article.summary && (
                   <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{article.content.substring(0, 200)}</p>
                 )}
                 <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
@@ -384,7 +406,12 @@ function CommentsView({
 
       <div className="space-y-2">
         {data.items.map((comment) => (
-          <Card key={comment.id} className="border-l-2 border-l-transparent hover:border-l-primary transition-colors">
+          <Card key={comment.id} className={`border-l-2 transition-colors ${
+            comment.sentiment === 'positive' ? 'border-l-blue-400' :
+            comment.sentiment === 'negative' ? 'border-l-red-400' :
+            comment.sentiment === 'neutral' ? 'border-l-gray-300' :
+            'border-l-transparent'
+          } hover:bg-accent/30`}>
             <CardContent className="p-3">
               <p className="text-sm leading-relaxed">{comment.content}</p>
               <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
@@ -403,6 +430,7 @@ function CommentsView({
                 <Badge variant="outline" className="text-[10px] h-4">
                   {SOURCE_LABELS[comment.source] ?? comment.source}
                 </Badge>
+                <SentimentBadge sentiment={comment.sentiment} score={comment.sentimentScore} />
               </div>
             </CardContent>
           </Card>

@@ -68,9 +68,10 @@ None.
 | 260325-tge | AI 모델 설정 UI (모듈별 프로바이더/모델 동적 변경) | 2026-03-25 | e083269 | [260325-tge-ai-llm](./quick/260325-tge-ai-llm/) |
 | 260325-pvk | LLM 프로바이더 API 키 관리 (암호화 저장, 연결 테스트, 모델 선택) | 2026-03-25 | fef0124 | - |
 | 260326-d4v | API 키 관리와 모듈별 모델 설정 연동 | 2026-03-26 | - | [260326-d4v-api-api-llm](./quick/260326-d4v-api-api-llm/) |
+| 260326-cicd | GitHub Actions CI/CD 파이프라인 (CI + Docker 배포) | 2026-03-26 | - | [260326-cicd-github-actions](./quick/260326-cicd-github-actions/) |
 
 ## Session Continuity
 
-Last activity: 2026-03-26 - Completed quick task 260326-d4v: API 키 관리와 모듈별 모델 설정 연동
-Stopped at: Completed provider-model integration
+Last activity: 2026-03-26 - GitHub Actions CI/CD 파이프라인 구현
+Stopped at: CI/CD 워크플로우 + Dockerfile 완료
 Resume file: None
