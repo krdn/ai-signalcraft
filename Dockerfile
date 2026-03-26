@@ -46,9 +46,15 @@ COPY --from=builder /app/packages/core/dist ./packages/core/dist
 COPY --from=builder /app/packages/core/package.json ./packages/core/
 COPY --from=builder /app/packages/core/src ./packages/core/src
 COPY --from=builder /app/packages/collectors/dist ./packages/collectors/dist
+COPY --from=builder /app/packages/collectors/src ./packages/collectors/src
 COPY --from=builder /app/packages/collectors/package.json ./packages/collectors/
+COPY --from=builder /app/packages/collectors/tsconfig.json ./packages/collectors/
 COPY --from=builder /app/packages/ai-gateway/dist ./packages/ai-gateway/dist
+COPY --from=builder /app/packages/ai-gateway/src ./packages/ai-gateway/src
 COPY --from=builder /app/packages/ai-gateway/package.json ./packages/ai-gateway/
+COPY --from=builder /app/packages/ai-gateway/tsconfig.json ./packages/ai-gateway/
+COPY --from=builder /app/packages/core/tsconfig.json ./packages/core/
+COPY --from=builder /app/tsconfig.base.json ./
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/pnpm-workspace.yaml ./
 # tsx로 워커 실행
