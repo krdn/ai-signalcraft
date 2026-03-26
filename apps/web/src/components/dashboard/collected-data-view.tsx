@@ -104,11 +104,6 @@ export function CollectedDataView({ jobId }: CollectedDataViewProps) {
           jobId={jobId}
           page={articlePage}
           onPageChange={setArticlePage}
-          onViewComments={(articleId) => {
-            setSelectedArticleId(articleId);
-            setCommentPage(1);
-            setView('comments');
-          }}
         />
       )}
       {view === 'comments' && (
@@ -231,13 +226,12 @@ function ArticlesView({
   jobId,
   page,
   onPageChange,
-  onViewComments,
 }: {
   jobId: number;
   page: number;
   onPageChange: (page: number) => void;
-  onViewComments: (articleId: number) => void;
 }) {
+  const [expandedArticleId, setExpandedArticleId] = useState<number | null>(null);
   const { data, isLoading } = useQuery({
     queryKey: ['collectedData', 'getArticles', jobId, page],
     queryFn: () => trpcClient.collectedData.getArticles.query({ jobId, page, perPage: 10 }),
@@ -269,68 +263,153 @@ function ArticlesView({
         총 {data.total}건의 기사 (페이지 {data.page}/{data.totalPages})
       </p>
 
-      {data.items.map((article) => (
-        <Card key={article.id} className="hover:bg-accent/50 transition-colors">
-          <CardContent className="p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <Badge variant="outline" className="text-xs shrink-0">
-                    {SOURCE_LABELS[article.source] ?? article.source}
-                  </Badge>
-                  {article.publisher && (
-                    <span className="text-xs text-muted-foreground truncate">{article.publisher}</span>
+      {data.items.map((article) => {
+        const isExpanded = expandedArticleId === article.id;
+        const commentCount = (article as typeof article & { commentCount?: number }).commentCount ?? 0;
+
+        return (
+          <Card key={article.id} className="transition-colors overflow-hidden">
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Badge variant="outline" className="text-xs shrink-0">
+                      {SOURCE_LABELS[article.source] ?? article.source}
+                    </Badge>
+                    {article.publisher && (
+                      <span className="text-xs text-muted-foreground truncate">{article.publisher}</span>
+                    )}
+                    <SentimentBadge sentiment={article.sentiment} score={article.sentimentScore} />
+                  </div>
+                  <h3 className="font-medium text-sm leading-snug line-clamp-2">{article.title}</h3>
+                  {article.summary && (
+                    <p className="text-xs text-primary/80 mt-1">AI 요약: {article.summary}</p>
                   )}
-                  <SentimentBadge sentiment={article.sentiment} score={article.sentimentScore} />
-                </div>
-                <h3 className="font-medium text-sm leading-snug line-clamp-2">{article.title}</h3>
-                {article.summary && (
-                  <p className="text-xs text-primary/80 mt-1">AI 요약: {article.summary}</p>
-                )}
-                {article.content && !article.summary && (
-                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{article.content.substring(0, 200)}</p>
-                )}
-                <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                  {article.publishedAt && (
-                    <span>{new Date(article.publishedAt).toLocaleDateString('ko-KR')}</span>
+                  {article.content && !article.summary && (
+                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{article.content.substring(0, 200)}</p>
                   )}
-                  {article.author && <span>· {article.author}</span>}
+                  <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                    {article.publishedAt && (
+                      <span>{new Date(article.publishedAt).toLocaleDateString('ko-KR')}</span>
+                    )}
+                    {article.author && <span>· {article.author}</span>}
+                  </div>
                 </div>
-              </div>
-              <div className="flex flex-col gap-1 shrink-0">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 text-xs"
-                  onClick={() => onViewComments(article.id)}
-                >
-                  <MessageSquare className="h-3 w-3 mr-1" />
-                  댓글
-                </Button>
-                {article.url && (
-                  <a
-                    href={article.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center h-7 px-2 text-xs rounded-md hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+                <div className="flex flex-col gap-1 shrink-0">
+                  <Button
+                    variant={isExpanded ? 'default' : 'ghost'}
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={() => setExpandedArticleId(isExpanded ? null : article.id)}
                   >
-                    <ExternalLink className="h-3 w-3 mr-1" />
-                    원문
-                  </a>
-                )}
+                    <MessageSquare className="h-3 w-3 mr-1" />
+                    {commentCount > 0 ? `${commentCount}` : '댓글'}
+                  </Button>
+                  {article.url && (
+                    <a
+                      href={article.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center h-7 px-2 text-xs rounded-md hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+                    >
+                      <ExternalLink className="h-3 w-3 mr-1" />
+                      원문
+                    </a>
+                  )}
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+            </CardContent>
+
+            {/* 인라인 댓글 아코디언 */}
+            {isExpanded && (
+              <div className="border-t bg-muted/30 px-4 py-3">
+                <InlineCommentsView jobId={jobId} articleId={article.id} />
+              </div>
+            )}
+          </Card>
+        );
+      })}
 
       {/* 페이지네이션 */}
       {data.totalPages > 1 && (
         <Pagination
           page={data.page}
           totalPages={data.totalPages}
-          onPageChange={onPageChange}
+          onPageChange={(p) => { setExpandedArticleId(null); onPageChange(p); }}
         />
+      )}
+    </div>
+  );
+}
+
+// 기사 내 인라인 댓글 뷰
+function InlineCommentsView({ jobId, articleId }: { jobId: number; articleId: number }) {
+  const [page, setPage] = useState(1);
+  const { data, isLoading } = useQuery({
+    queryKey: ['collectedData', 'getComments', jobId, articleId, page],
+    queryFn: () => trpcClient.collectedData.getComments.query({
+      jobId,
+      articleId,
+      page,
+      perPage: 10,
+    }),
+  });
+
+  if (isLoading) {
+    return (
+      <div className="space-y-2">
+        {[1, 2, 3].map((i) => (
+          <Skeleton key={i} className="h-10" />
+        ))}
+      </div>
+    );
+  }
+
+  if (!data || data.items.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground text-center py-4">
+        이 기사에 수집된 댓글이 없습니다.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <p className="text-xs text-muted-foreground">
+        댓글 {data.total}건 {data.totalPages > 1 ? `(${data.page}/${data.totalPages})` : ''}
+      </p>
+
+      {data.items.map((comment) => (
+        <div
+          key={comment.id}
+          className={`rounded-md border bg-background p-3 border-l-2 ${
+            comment.sentiment === 'positive' ? 'border-l-blue-400' :
+            comment.sentiment === 'negative' ? 'border-l-red-400' :
+            comment.sentiment === 'neutral' ? 'border-l-gray-300' :
+            'border-l-transparent'
+          }`}
+        >
+          <p className="text-sm leading-relaxed">{comment.content}</p>
+          <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">{comment.author ?? '익명'}</span>
+            {comment.publishedAt && (
+              <span>{new Date(comment.publishedAt).toLocaleDateString('ko-KR')}</span>
+            )}
+            <span className="flex items-center gap-0.5">
+              <ThumbsUp className="h-3 w-3" /> {comment.likeCount ?? 0}
+            </span>
+            {(comment.dislikeCount ?? 0) > 0 && (
+              <span className="flex items-center gap-0.5">
+                <ThumbsDown className="h-3 w-3" /> {comment.dislikeCount}
+              </span>
+            )}
+            <SentimentBadge sentiment={comment.sentiment} score={comment.sentimentScore} />
+          </div>
+        </div>
+      ))}
+
+      {data.totalPages > 1 && (
+        <Pagination page={data.page} totalPages={data.totalPages} onPageChange={setPage} />
       )}
     </div>
   );

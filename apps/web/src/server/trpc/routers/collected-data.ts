@@ -22,6 +22,16 @@ export const collectedDataRouter = router({
 
       const offset = (input.page - 1) * input.perPage;
 
+      const commentCountSq = ctx.db
+        .select({
+          articleId: comments.articleId,
+          count: sql<number>`count(*)::int`.as('comment_count'),
+        })
+        .from(comments)
+        .where(eq(comments.jobId, input.jobId))
+        .groupBy(comments.articleId)
+        .as('comment_counts');
+
       const [rows, countResult] = await Promise.all([
         ctx.db.select({
           id: articles.id,
@@ -37,8 +47,10 @@ export const collectedDataRouter = router({
           sentiment: articles.sentiment,
           sentimentScore: articles.sentimentScore,
           summary: articles.summary,
+          commentCount: sql<number>`coalesce(${commentCountSq.count}, 0)`.mapWith(Number),
         })
           .from(articles)
+          .leftJoin(commentCountSq, eq(articles.id, commentCountSq.articleId))
           .where(eq(articles.jobId, input.jobId))
           .orderBy(desc(articles.publishedAt))
           .limit(input.perPage)
