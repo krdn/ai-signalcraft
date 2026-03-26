@@ -4,7 +4,7 @@ services:
       context: ..
       dockerfile: Dockerfile
       target: web
-    container_name: ais-web
+    container_name: ais-prod-web
     restart: unless-stopped
     ports:
       - "3200:3000"
@@ -14,14 +14,14 @@ services:
       - postgres
       - redis
     networks:
-      - ais-network
+      - ais-prod-network
 
   worker:
     build:
       context: ..
       dockerfile: Dockerfile
       target: worker
-    container_name: ais-worker
+    container_name: ais-prod-worker
     restart: unless-stopped
     env_file:
       - ../.env.production
@@ -29,38 +29,38 @@ services:
       - postgres
       - redis
     networks:
-      - ais-network
+      - ais-prod-network
 
   postgres:
     image: postgres:16
-    container_name: ais-postgres
+    container_name: ais-prod-postgres
     restart: unless-stopped
     ports:
-      - "5437:5432"
+      - "5438:5432"
     environment:
       POSTGRES_DB: ai_signalcraft
       POSTGRES_USER: ${POSTGRES_USER:-ais}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - ais-pgdata:/var/lib/postgresql/data
+      - ais-prod-pgdata:/var/lib/postgresql/data
     networks:
-      - ais-network
+      - ais-prod-network
 
   redis:
     image: redis:7
-    container_name: ais-redis
+    container_name: ais-prod-redis
     restart: unless-stopped
     ports:
-      - "6384:6379"
+      - "6385:6379"
     volumes:
-      - ais-redis:/data
+      - ais-prod-redis:/data
     networks:
-      - ais-network
+      - ais-prod-network
 
 volumes:
-  ais-pgdata:
-  ais-redis:
+  ais-prod-pgdata:
+  ais-prod-redis:
 
 networks:
-  ais-network:
+  ais-prod-network:
     driver: bridge
