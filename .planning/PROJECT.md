@@ -36,8 +36,13 @@
 
 ### Active
 
-- [ ] X(트위터) 트윗 및 반응 수집 v2 — v1.0에서 이월
-- [ ] (다음 마일스톤에서 정의)
+- [ ] Collector 추상화 클래스 (BaseCollector) 도입 — v1.1
+- [ ] Core 대형 파일 분할 (worker-process, provider-keys, runner) — v1.1
+- [ ] 에러 처리 패턴 통일 — v1.1
+- [ ] 타입 정의 중앙화 — v1.1
+- [ ] ai-gateway 테스트 추가 — v1.1
+- [ ] 대형 테스트 파일 분할 — v1.1
+- [ ] X(트위터) 트윗 및 반응 수집 v2 — v1.0에서 이월 (v1.1 범위 외)
 
 ### Out of Scope
 
@@ -78,16 +83,17 @@
 | window.print() PDF | 서버 Playwright 대신 클라이언트 인쇄 | ⚠️ Revisit — pdf-exporter 미사용 |
 | X 수집기 v2 이월 | API $200/월 비용, 우선순위 낮음 | — Pending (v2에서 결정) |
 
-## Next Milestone Goals
+## Current Milestone: v1.1 코드베이스 리팩토링
 
-> `/gsd:new-milestone`로 v1.1 시작 시 정의
+**Goal:** 코드 품질 5.3→8/10 개선 — 기능 변경 없이 내부 구조만 개선
 
-잠재 영역:
-- X 수집기 v2 본격 구현
-- 운영 서버 Docker 배포 자동화
-- 기술 부채 해소 (13개 항목)
-- 경쟁 인물 비교 분석
-- 분석 스케줄링/알림
+**Target features:**
+- Collector 추상화 클래스 도입 (4개 커뮤니티 어댑터 중복 제거 ~620줄)
+- Core 대형 파일 분할 (worker-process 451줄, provider-keys 443줄, runner 383줄)
+- 에러 처리 패턴 통일 (공통 에러 클래스 + 로거)
+- 타입 정의 중앙화
+- ai-gateway 테스트 추가 (현재 0%)
+- 대형 테스트 파일 분할
 
 ## Evolution
 
@@ -107,4 +113,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-24 after v1.0 milestone — 5 phases, 21 plans, 40 requirements shipped*
+*Last updated: 2026-03-27 — v1.1 리팩토링 마일스톤 시작*
