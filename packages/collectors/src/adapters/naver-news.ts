@@ -1,5 +1,6 @@
 // 네이버 뉴스 기사 수집기 (Playwright + Cheerio)
-import { chromium, type Browser, type Page } from 'playwright';
+import { type Browser, type Page } from 'playwright';
+import { launchBrowser } from '../utils/browser';
 import * as cheerio from 'cheerio';
 import type { Collector, CollectionOptions } from './base';
 import { buildNaverSearchUrl, parseNaverArticleUrl } from '../utils/naver-parser';
@@ -51,7 +52,7 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
     let browser: Browser | null = null;
 
     try {
-      browser = await chromium.launch({ headless: true });
+      browser = await launchBrowser();
       const context = await browser.newContext({
         locale: 'ko-KR',
         timezoneId: 'Asia/Seoul',

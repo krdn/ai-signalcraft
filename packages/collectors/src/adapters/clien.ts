@@ -1,5 +1,6 @@
 // 클리앙 수집기 (Playwright + Cheerio)
-import { chromium, type Browser } from 'playwright';
+import { type Browser } from 'playwright';
+import { launchBrowser } from '../utils/browser';
 import * as cheerio from 'cheerio';
 import type { Collector, CollectionOptions } from './base';
 import type { CommunityPost, CommunityComment } from '../types/community';
@@ -45,7 +46,7 @@ export class ClienCollector implements Collector<CommunityPost> {
     let browser: Browser | null = null;
 
     try {
-      browser = await chromium.launch({ headless: true });
+      browser = await launchBrowser();
       const userAgent = USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
       const context = await browser.newContext({
         locale: 'ko-KR',
