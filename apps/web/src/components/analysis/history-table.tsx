@@ -15,8 +15,12 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  TooltipProvider,
+} from '@/components/ui/tooltip';
 import { format } from 'date-fns';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, FileText, MessageSquare } from 'lucide-react';
+import { SourceBadges, extractSources, summarizeCounts, formatDuration } from './source-icons';
 
 const STATUS_BADGE: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string }> = {
   completed: { variant: 'default', label: '완료' },
@@ -76,83 +80,100 @@ export function HistoryTable({ onViewResult }: HistoryTableProps) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg font-semibold">분석 히스토리</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>날짜</TableHead>
-              <TableHead>키워드</TableHead>
-              <TableHead>상태</TableHead>
-              <TableHead>소스</TableHead>
-              <TableHead className="text-right">보기</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {data.items.map((job) => {
-              const badgeInfo = STATUS_BADGE[job.status ?? 'pending'] ?? STATUS_BADGE.pending;
-              // progress JSONB에서 소스 정보 추출
-              const sources: string[] = [];
-              if (job.progress) {
-                const p = job.progress as Record<string, unknown>;
-                if (p.naver) sources.push('N');
-                if (p.youtube) sources.push('Y');
-              }
-              return (
-                <TableRow key={job.id}>
-                  <TableCell className="font-mono text-xs">
-                    {format(new Date(job.createdAt), 'yyyy-MM-dd')}
-                  </TableCell>
-                  <TableCell className="font-medium">{job.keyword}</TableCell>
-                  <TableCell>
-                    <Badge variant={badgeInfo.variant}>{badgeInfo.label}</Badge>
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
-                    {sources.length > 0 ? sources.join(', ') : '-'}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onViewResult?.(job.id)}
-                    >
-                      보기
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+    <TooltipProvider>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold">분석 히스토리</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>날짜</TableHead>
+                <TableHead>키워드</TableHead>
+                <TableHead>소스</TableHead>
+                <TableHead>수집</TableHead>
+                <TableHead>상태</TableHead>
+                <TableHead className="text-right">보기</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.items.map((job) => {
+                const badgeInfo = STATUS_BADGE[job.status ?? 'pending'] ?? STATUS_BADGE.pending;
+                const sources = extractSources(job.progress);
+                const counts = summarizeCounts(job.progress);
+                const isCompleted = job.status === 'completed' || job.status === 'partial_failure';
+                return (
+                  <TableRow key={job.id}>
+                    <TableCell className="font-mono text-xs whitespace-nowrap">
+                      <div>{format(new Date(job.createdAt), 'yyyy-MM-dd HH:mm')}</div>
+                      {isCompleted && (
+                        <div className="flex items-center gap-0.5 text-muted-foreground mt-0.5">
+                          <Clock className="h-3 w-3" />
+                          <span>{formatDuration(job.createdAt, job.updatedAt)}</span>
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell className="font-medium">{job.keyword}</TableCell>
+                    <TableCell>
+                      <SourceBadges sources={sources} />
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                      {counts.items > 0 ? (
+                        <div className="flex flex-col gap-0.5">
+                          <span className="flex items-center gap-0.5">
+                            <FileText className="h-3 w-3" />{counts.items}
+                          </span>
+                          <span className="flex items-center gap-0.5">
+                            <MessageSquare className="h-3 w-3" />{counts.comments}
+                          </span>
+                        </div>
+                      ) : '-'}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={badgeInfo.variant}>{badgeInfo.label}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onViewResult?.(job.id)}
+                      >
+                        보기
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
 
-        {/* 페이지네이션 */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-2 mt-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="text-sm text-muted-foreground font-mono">
-              {page} / {totalPages}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          {/* 페이지네이션 */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-sm text-muted-foreground font-mono">
+                {page} / {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </TooltipProvider>
   );
 }
