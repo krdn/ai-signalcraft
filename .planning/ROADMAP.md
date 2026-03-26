@@ -47,7 +47,7 @@
 Plans:
 - [x] 07-01-PLAN.md — browser.ts 유틸 확장 + BrowserCollector/CommunityBaseCollector 추상 클래스 생성
 - [ ] 07-02-PLAN.md — clien/dcinside/fmkorea 3개 어댑터 CommunityBaseCollector 마이그레이션
-- [ ] 07-03-PLAN.md — naver-news BrowserCollector 마이그레이션 + community-parser 타입 강화 + index.ts 정리
+- [x] 07-03-PLAN.md — naver-news BrowserCollector 마이그레이션 + community-parser 타입 강화 + index.ts 정리
 
 ### Phase 8: Core 구조 정리
 **Goal**: packages/core의 대형 파일 3개(worker-process 451줄, provider-keys 443줄, runner 383줄)를 분할하고 에러 처리를 통일한다
