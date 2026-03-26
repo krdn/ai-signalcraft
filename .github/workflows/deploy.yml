@@ -12,6 +12,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Copy env file
+        run: cp ~/projects/ai/ai-signalcraft/.env.production .env.production
+
       - name: Build & Deploy (Docker Compose)
         working-directory: docker
         run: |
