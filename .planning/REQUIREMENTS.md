@@ -49,26 +49,26 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| COL-01 | — | Pending |
-| COL-02 | — | Pending |
-| COL-03 | — | Pending |
-| COL-04 | — | Pending |
-| COL-05 | — | Pending |
-| CORE-01 | — | Pending |
-| CORE-02 | — | Pending |
-| CORE-03 | — | Pending |
-| CORE-04 | — | Pending |
-| CORE-05 | — | Pending |
-| TYPE-01 | — | Pending |
-| TYPE-02 | — | Pending |
-| TYPE-03 | — | Pending |
-| TYPE-04 | — | Pending |
+| COL-01 | Phase 7 | Pending |
+| COL-02 | Phase 7 | Pending |
+| COL-03 | Phase 7 | Pending |
+| COL-04 | Phase 7 | Pending |
+| COL-05 | Phase 7 | Pending |
+| CORE-01 | Phase 8 | Pending |
+| CORE-02 | Phase 8 | Pending |
+| CORE-03 | Phase 8 | Pending |
+| CORE-04 | Phase 8 | Pending |
+| CORE-05 | Phase 8 | Pending |
+| TYPE-01 | Phase 9 | Pending |
+| TYPE-02 | Phase 9 | Pending |
+| TYPE-03 | Phase 9 | Pending |
+| TYPE-04 | Phase 9 | Pending |
 
 **Coverage:**
 - v1.1 requirements: 14 total
-- Mapped to phases: 0
-- Unmapped: 14 ⚠️
+- Mapped to phases: 14/14
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-27*
-*Last updated: 2026-03-27 after initial definition*
+*Last updated: 2026-03-27 after roadmap creation*
