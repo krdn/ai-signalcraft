@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: 코드베이스 리팩토링
 status: executing
-stopped_at: Completed 07-02-PLAN.md
-last_updated: "2026-03-26T23:44:19.347Z"
+stopped_at: All plans complete — awaiting verification
+last_updated: "2026-03-27T00:00:00.000Z"
 last_activity: 2026-03-26
 progress:
   total_phases: 3
   completed_phases: 0
   total_plans: 3
-  completed_plans: 2
+  completed_plans: 3
   percent: 0
 ---
 
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-03-27 — v1.1 리팩토링 마일스톤
 ## Current Position
 
 Phase: 07 (collector) — EXECUTING
-Plan: 2 of 3
-Status: Ready to execute
-Last activity: 2026-03-26
+Plan: 3 of 3
+Status: All plans complete — verifying
+Last activity: 2026-03-27 — Phase 07 Wave 2 완료
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -47,6 +47,7 @@ Progress: [░░░░░░░░░░] 0%
 **Total:** 21 plans, ~5min avg, 118 commits, 24,443 LOC
 | Phase 07 P01 | 3min | 2 tasks | 3 files |
 | Phase 07 P02 | 2min | 2 tasks | 3 files |
+| Phase 07 P03 | 3min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -58,6 +59,7 @@ Archived to PROJECT.md Key Decisions table.
 - [v1.1]: 리팩토링 전용 마일스톤 — 기능 변경 없이 코드 품질 개선만
 - [Phase 07]: sleep 함수를 browser.ts에 추가, community-parser.ts 기존 sleep 유지 (import 호환성)
 - [Phase 07]: selectors를 인스턴스 프로퍼티로 참조, detectBlocked는 clien/fmkorea만 override
+- [Phase 07]: parseDateTextOrNull은 파싱 실패 시 null 반환 -- 기존 parseDateText(new Date() fallback)와 구분
 
 ### Pending Todos
 
@@ -83,5 +85,5 @@ None.
 ## Session Continuity
 
 Last activity: 2026-03-27 — Roadmap v1.1 생성 완료
-Stopped at: Completed 07-02-PLAN.md
+Stopped at: Phase 07 all plans complete — verifying
 Resume file: None

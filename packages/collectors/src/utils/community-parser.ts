@@ -90,6 +90,53 @@ export function sanitizeContent(html: string): string {
 }
 
 /**
+ * 날짜 텍스트를 Date 객체로 변환 -- 파싱 실패 시 null 반환
+ * naver-news 등 null 체크가 필요한 곳에서 사용
+ */
+export function parseDateTextOrNull(text: string): Date | null {
+  if (!text) return null;
+
+  // "N시간 전", "N분 전", "N일 전" 형식
+  const relativeMatch = text.match(/(\d+)(시간|분|일)\s*전/);
+  if (relativeMatch) {
+    const now = new Date();
+    const amount = parseInt(relativeMatch[1], 10);
+    const unit = relativeMatch[2];
+    if (unit === '시간') now.setHours(now.getHours() - amount);
+    else if (unit === '분') now.setMinutes(now.getMinutes() - amount);
+    else if (unit === '일') now.setDate(now.getDate() - amount);
+    return now;
+  }
+
+  // "YYYY.MM.DD" 형식 (시간 포함 가능: "YYYY.MM.DD HH:mm")
+  const fullDateMatch = text.match(/(\d{4})\.(\d{1,2})\.(\d{1,2})(?:\s+(\d{1,2}):(\d{1,2}))?/);
+  if (fullDateMatch) {
+    const year = parseInt(fullDateMatch[1], 10);
+    const month = parseInt(fullDateMatch[2], 10) - 1;
+    const day = parseInt(fullDateMatch[3], 10);
+    const hour = fullDateMatch[4] ? parseInt(fullDateMatch[4], 10) : 0;
+    const min = fullDateMatch[5] ? parseInt(fullDateMatch[5], 10) : 0;
+    return new Date(year, month, day, hour, min);
+  }
+
+  // "MM.DD HH:mm" 형식
+  const shortDateMatch = text.match(/^(\d{1,2})\.(\d{1,2})\s+(\d{1,2}):(\d{1,2})$/);
+  if (shortDateMatch) {
+    const now = new Date();
+    return new Date(now.getFullYear(), parseInt(shortDateMatch[1], 10) - 1, parseInt(shortDateMatch[2], 10), parseInt(shortDateMatch[3], 10), parseInt(shortDateMatch[4], 10));
+  }
+
+  // "MM/DD HH:mm" 형식
+  const slashDateMatch = text.match(/^(\d{1,2})\/(\d{1,2})\s+(\d{1,2}):(\d{1,2})$/);
+  if (slashDateMatch) {
+    const now = new Date();
+    return new Date(now.getFullYear(), parseInt(slashDateMatch[1], 10) - 1, parseInt(slashDateMatch[2], 10), parseInt(slashDateMatch[3], 10), parseInt(slashDateMatch[4], 10));
+  }
+
+  return null;
+}
+
+/**
  * 사이트별 검색 URL 생성
  */
 export function buildSearchUrl(
