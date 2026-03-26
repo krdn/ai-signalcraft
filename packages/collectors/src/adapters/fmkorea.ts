@@ -22,8 +22,13 @@ const USER_AGENTS = [
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
 ];
 
-// 게시글 목록 셀렉터 (XE/Rhymix 기반)
-const LIST_SELECTORS = ['.fm_best_widget li a.title', '.li.li_best a.title', '.searchResult .title a'];
+// 게시글 목록 셀렉터 (XE/Rhymix 통합 검색 결과)
+const LIST_SELECTORS = [
+  '.searchResult .title a',         // IS 모듈 검색 결과
+  '.search_list .title a',          // 대체 검색 결과 셀렉터
+  'li.searchResult a.title',        // 리스트 아이템 형식
+  '.fm_best_widget li a.title',     // 위젯 형식 (fallback)
+];
 // 본문 셀렉터
 const CONTENT_SELECTORS = ['.xe_content', '.rd_body .xe_content', '#xe_content'];
 // 댓글 셀렉터
@@ -59,13 +64,26 @@ export class FMKoreaCollector implements Collector<CommunityPost> {
         if (totalCollected >= maxItems) break;
 
         const searchUrl = buildSearchUrl('fmkorea', options.keyword, pageNum);
-        await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
-        await page.waitForTimeout(1500);
+        try {
+          await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+        } catch (navErr) {
+          console.warn(`FM 검색 페이지 로드 실패 (page ${pageNum}):`, navErr);
+          break;
+        }
+        // 검색 결과 렌더링 대기 (반봇 대응)
+        await page.waitForTimeout(2000 + Math.random() * 1000);
 
         const html = await page.content();
         const postLinks = this.parseSearchResults(html);
 
-        if (postLinks.length === 0) break;
+        if (postLinks.length === 0) {
+          // 검색 결과가 없는 경우 vs 차단된 경우 구분 로그
+          const blocked = html.includes('자동등록방지') || html.includes('captcha') || html.includes('접근이 제한');
+          if (blocked) {
+            console.warn('FM 검색 차단 감지 — 수집 중단');
+          }
+          break;
+        }
 
         const posts: CommunityPost[] = [];
         for (const link of postLinks) {
@@ -102,6 +120,7 @@ export class FMKoreaCollector implements Collector<CommunityPost> {
     const $ = cheerio.load(html);
     const results: { url: string; title: string }[] = [];
 
+    // 1차: 전용 셀렉터 시도
     for (const selector of LIST_SELECTORS) {
       $(selector).each((_, el) => {
         const href = $(el).attr('href');
@@ -112,6 +131,22 @@ export class FMKoreaCollector implements Collector<CommunityPost> {
         }
       });
       if (results.length > 0) break;
+    }
+
+    // 2차: 셀렉터 매칭 실패 시, 게시글 링크 패턴으로 폴백
+    if (results.length === 0) {
+      $('a[href]').each((_, el) => {
+        const href = $(el).attr('href') ?? '';
+        const title = $(el).text().trim();
+        // 에펨코리아 게시글 URL 패턴: /숫자 또는 /index.php?document_srl=숫자
+        if (title.length > 5 && (href.match(/\/\d{6,}/) || href.includes('document_srl='))) {
+          const url = href.startsWith('http') ? href : `https://www.fmkorea.com${href}`;
+          // 중복 제거
+          if (!results.some((r) => r.url === url)) {
+            results.push({ url, title });
+          }
+        }
+      });
     }
 
     return results;

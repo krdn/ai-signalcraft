@@ -104,7 +104,8 @@ export function buildSearchUrl(
       return `https://search.dcinside.com/post/p/${page}/sort/accuracy/q/${encoded}`;
 
     case 'fmkorea':
-      return `https://www.fmkorea.com/?mid=politics&act=IS&is_keyword=${encoded}&where=document&page=${page}`;
+      // mid 생략 → 전체 통합 검색 (XE/Rhymix IS 모듈)
+      return `https://www.fmkorea.com/index.php?act=IS&is_keyword=${encoded}&where=document&page=${page}`;
 
     case 'clien':
       return `https://www.clien.net/service/search?q=${encoded}&sort=recency&p=${page - 1}`;
