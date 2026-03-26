@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, integer, jsonb, uniqueIndex, real } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, integer, jsonb, uniqueIndex, real, index } from 'drizzle-orm/pg-core';
 import { teams } from './auth';
 
 // 수집 작업 (D-06: 소스별 상세 추적)
@@ -23,6 +23,9 @@ export const collectionJobs = pgTable('collection_jobs', {
   errorDetails: jsonb('error_details').$type<Record<string, string>>(),
   costLimitUsd: real('cost_limit_usd'),  // 비용 한도 (USD) — 초과 시 자동 중지
   skippedModules: jsonb('skipped_modules').$type<string[]>(),  // 스킵할 분석 모듈 목록
+  options: jsonb('options').$type<{
+    enableItemAnalysis?: boolean;  // 개별 기사/댓글 감정 분석 활성화
+  }>(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
@@ -39,6 +42,9 @@ export const articles = pgTable('articles', {
   author: text('author'),
   publisher: text('publisher'),
   publishedAt: timestamp('published_at'),
+  sentiment: text('sentiment'),  // 개별 감정 분석 결과: positive | negative | neutral
+  sentimentScore: real('sentiment_score'),  // 감정 확신도 (0~1)
+  summary: text('summary'),  // AI 한 줄 요약
   rawData: jsonb('raw_data'),
   collectedAt: timestamp('collected_at').defaultNow().notNull(),
 }, (table) => [
@@ -80,6 +86,8 @@ export const comments = pgTable('comments', {
   likeCount: integer('like_count').default(0),
   dislikeCount: integer('dislike_count').default(0),
   publishedAt: timestamp('published_at'),
+  sentiment: text('sentiment'),  // 개별 감정 분석 결과: positive | negative | neutral
+  sentimentScore: real('sentiment_score'),  // 감정 확신도 (0~1)
   rawData: jsonb('raw_data'),
   collectedAt: timestamp('collected_at').defaultNow().notNull(),
 }, (table) => [

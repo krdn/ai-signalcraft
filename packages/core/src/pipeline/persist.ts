@@ -21,6 +21,7 @@ export async function persistArticles(data: (typeof articles.$inferInsert)[]) {
     .onConflictDoUpdate({
       target: [articles.source, articles.sourceId],
       set: {
+        jobId: sql`excluded.job_id`,
         title: sql`excluded.title`,
         content: sql`excluded.content`,
         rawData: sql`excluded.raw_data`,
@@ -42,6 +43,7 @@ export async function persistVideos(data: (typeof videos.$inferInsert)[]) {
     .onConflictDoUpdate({
       target: [videos.source, videos.sourceId],
       set: {
+        jobId: sql`excluded.job_id`,
         viewCount: sql`excluded.view_count`,
         likeCount: sql`excluded.like_count`,
         commentCount: sql`excluded.comment_count`,
@@ -69,6 +71,7 @@ export async function persistComments(data: (typeof comments.$inferInsert)[]) {
     .onConflictDoUpdate({
       target: [comments.source, comments.sourceId],
       set: {
+        jobId: sql`excluded.job_id`,
         content: sql`excluded.content`,
         likeCount: sql`excluded.like_count`,
         dislikeCount: sql`excluded.dislike_count`,

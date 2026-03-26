@@ -46,6 +46,7 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [startDate, setStartDate] = useState<Date>(subDays(new Date(), 7));
   const [endDate, setEndDate] = useState<Date>(new Date());
+  const [enableItemAnalysis, setEnableItemAnalysis] = useState(false);
 
   const triggerMutation = useMutation({
     mutationFn: (input: {
@@ -53,6 +54,7 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
       sources: SourceId[];
       startDate: string;
       endDate: string;
+      options?: { enableItemAnalysis?: boolean };
     }) => trpcClient.analysis.trigger.mutate(input),
     onSuccess: (data) => {
       toast.success('분석이 시작되었습니다');
@@ -84,6 +86,7 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
       sources,
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
+      options: enableItemAnalysis ? { enableItemAnalysis: true } : undefined,
     });
   };
 
@@ -178,6 +181,25 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
                 </PopoverContent>
               </Popover>
             </div>
+          </div>
+
+          {/* 분석 옵션 */}
+          <div className="space-y-2">
+            <Label>분석 옵션</Label>
+            <label className="flex items-start gap-2 cursor-pointer rounded-lg border p-3 hover:bg-accent/50 transition-colors">
+              <Checkbox
+                checked={enableItemAnalysis}
+                onCheckedChange={(checked) => setEnableItemAnalysis(!!checked)}
+                disabled={triggerMutation.isPending}
+                className="mt-0.5"
+              />
+              <div className="space-y-1">
+                <span className="text-sm font-medium">개별 기사/댓글 감정 분석</span>
+                <p className="text-xs text-muted-foreground">
+                  각 기사와 댓글에 대해 긍정/부정/중립 감정을 개별 판정합니다. 추가 API 비용이 발생합니다.
+                </p>
+              </div>
+            </label>
           </div>
 
           {/* 실행 버튼 */}

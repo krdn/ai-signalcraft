@@ -11,6 +11,9 @@ export const analysisRouter = router({
       sources: z.array(z.enum(['naver', 'youtube', 'dcinside', 'fmkorea', 'clien'])).min(1),
       startDate: z.string(), // ISO date string
       endDate: z.string(),
+      options: z.object({
+        enableItemAnalysis: z.boolean().optional(),
+      }).optional(),
     }))
     .mutation(async ({ input, ctx }) => {
       // 1. collectionJobs 레코드 생성 (팀 ID 포함)
@@ -20,6 +23,7 @@ export const analysisRouter = router({
         endDate: new Date(input.endDate),
         status: 'pending',
         teamId: ctx.teamId ?? null,
+        options: input.options ?? null,
       }).returning();
 
       // 2. BullMQ 트리거 -- CollectionTrigger 형식 (INT-01: sources 전달)

@@ -295,11 +295,12 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
   private urlToSourceId(url: string): string {
     try {
       const u = new URL(url);
-      // 호스트 + 경로를 합쳐서 고유 ID 생성
-      const pathId = u.pathname.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 80);
-      return `ext_${u.hostname.replace(/\./g, '_')}_${pathId}`;
+      // 호스트 + 경로 + 쿼리 파라미터를 합쳐서 고유 ID 생성
+      // 쿼리 파라미터에 기사 ID가 포함되므로 반드시 포함해야 중복 방지
+      const fullPath = (u.pathname + u.search).replace(/[^a-zA-Z0-9]/g, '_').substring(0, 120);
+      return `ext_${u.hostname.replace(/\./g, '_')}_${fullPath}`;
     } catch {
-      return `ext_${url.substring(0, 100).replace(/[^a-zA-Z0-9]/g, '_')}`;
+      return `ext_${url.substring(0, 150).replace(/[^a-zA-Z0-9]/g, '_')}`;
     }
   }
 
