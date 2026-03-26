@@ -42,10 +42,10 @@
   3. 브라우저 유틸(launchBrowser, delay, contextOptions)이 단일 공통 모듈에서 export된다
   4. community-parser에 중복 파싱 로직이 없고 파싱 함수에 타입이 명시되어 있다
   5. 기존 collector 관련 테스트가 리팩토링 후 모두 통과한다
-**Plans:** 3 plans
+**Plans:** 1/3 plans executed
 
 Plans:
-- [ ] 07-01-PLAN.md — browser.ts 유틸 확장 + BrowserCollector/CommunityBaseCollector 추상 클래스 생성
+- [x] 07-01-PLAN.md — browser.ts 유틸 확장 + BrowserCollector/CommunityBaseCollector 추상 클래스 생성
 - [ ] 07-02-PLAN.md — clien/dcinside/fmkorea 3개 어댑터 CommunityBaseCollector 마이그레이션
 - [ ] 07-03-PLAN.md — naver-news BrowserCollector 마이그레이션 + community-parser 타입 강화 + index.ts 정리
 
@@ -85,6 +85,6 @@ Phases execute in numeric order: 7 → 8 → 9
 | 4. Expansion + Advanced Analysis | v1.0 | 3/3 | Complete | 2026-03-24 |
 | 5. Integration & Flow Gap Closure | v1.0 | 1/1 | Complete | 2026-03-24 |
 | 6. Pipeline Visualization | post-MVP | 0/? | Planned | — |
-| 7. Collector 추상화 | v1.1 | 0/3 | Planned | — |
+| 7. Collector 추상화 | v1.1 | 1/3 | In Progress|  |
 | 8. Core 구조 정리 | v1.1 | 0/? | Not started | — |
 | 9. 타입 & 테스트 강화 | v1.1 | 0/? | Not started | — |

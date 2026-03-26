@@ -7,9 +7,9 @@
 
 ### Collector 추상화 (COL)
 
-- [ ] **COL-01**: BaseCollector 추상 클래스를 도입하여 브라우저 초기화/페이지 순회/딜레이/에러처리 공통 패턴을 추출한다
+- [x] **COL-01**: BaseCollector 추상 클래스를 도입하여 브라우저 초기화/페이지 순회/딜레이/에러처리 공통 패턴을 추출한다
 - [ ] **COL-02**: clien/dcinside/fmkorea/naver-news 어댑터가 BaseCollector를 상속하여 fetchPage()만 구현한다
-- [ ] **COL-03**: 브라우저 유틸(launchBrowser, delay, contextOptions)을 공통 모듈로 통합한다
+- [x] **COL-03**: 브라우저 유틸(launchBrowser, delay, contextOptions)을 공통 모듈로 통합한다
 - [ ] **COL-04**: community-parser의 중복 파싱 로직을 제거하고 타입을 강화한다
 - [ ] **COL-05**: 기존 collector 테스트가 리팩토링 후에도 모두 통과한다
 
@@ -49,9 +49,9 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| COL-01 | Phase 7 | Pending |
+| COL-01 | Phase 7 | Complete |
 | COL-02 | Phase 7 | Pending |
-| COL-03 | Phase 7 | Pending |
+| COL-03 | Phase 7 | Complete |
 | COL-04 | Phase 7 | Pending |
 | COL-05 | Phase 7 | Pending |
 | CORE-01 | Phase 8 | Pending |
