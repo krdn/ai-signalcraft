@@ -9,9 +9,18 @@ on:
 jobs:
   check:
     name: Typecheck & Build
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -22,6 +31,6 @@ jobs:
       - name: Build (web)
         run: pnpm --filter @ai-signalcraft/web build
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          REDIS_URL: ${{ secrets.REDIS_URL }}
-          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+          DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
+          REDIS_URL: redis://localhost:6379
+          AUTH_SECRET: ci-test-secret
