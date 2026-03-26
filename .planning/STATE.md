@@ -69,9 +69,10 @@ None.
 | 260325-pvk | LLM 프로바이더 API 키 관리 (암호화 저장, 연결 테스트, 모델 선택) | 2026-03-25 | fef0124 | - |
 | 260326-d4v | API 키 관리와 모듈별 모델 설정 연동 | 2026-03-26 | - | [260326-d4v-api-api-llm](./quick/260326-d4v-api-api-llm/) |
 | 260326-cicd | GitHub Actions CI/CD 파이프라인 (CI + Docker 배포) | 2026-03-26 | - | [260326-cicd-github-actions](./quick/260326-cicd-github-actions/) |
+| 260327-0b8 | 최근 분석 UI 개선 (날짜+시분, 소스 아이콘, 수집 건수, 소요 시간) | 2026-03-27 | - | [260327-0b8-ui](./quick/260327-0b8-ui/) |
 
 ## Session Continuity
 
-Last activity: 2026-03-26 - GitHub Actions CI/CD 파이프라인 구현
-Stopped at: CI/CD 워크플로우 + Dockerfile 완료
+Last activity: 2026-03-27 - 최근 분석 UI 개선 (날짜+시분, 소스 아이콘, 수집 건수, 소요 시간)
+Stopped at: Quick task 260327-0b8 완료
 Resume file: None
