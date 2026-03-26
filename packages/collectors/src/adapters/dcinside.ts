@@ -22,8 +22,8 @@ const USER_AGENTS = [
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
 ];
 
-// 게시글 목록 셀렉터 (DOM 변경 대응용 fallback 배열)
-const LIST_SELECTORS = ['.ub-content .gall_tit a', '.gall_list .ub-content .gall_tit a'];
+// 검색 결과 페이지 셀렉터 (search.dcinside.com, DOM 변경 대응용 fallback 배열)
+const LIST_SELECTORS = ['.sch_result_list a.tit_txt', '.sch_result_list li > a'];
 // 본문 셀렉터
 const CONTENT_SELECTORS = ['.write_div', '.writing_view_box', '#container .write_div'];
 // 댓글 셀렉터
