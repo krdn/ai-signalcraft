@@ -1,33 +1,9 @@
-// DC갤러리 수집기 (Playwright + Cheerio)
-import { type Browser } from 'playwright';
-import { launchBrowser } from '../utils/browser';
+// DC갤러리 수집기 -- CommunityBaseCollector 상속
 import * as cheerio from 'cheerio';
-import type { Collector, CollectionOptions } from './base';
 import type { CommunityPost, CommunityComment } from '../types/community';
-import { parseDateText, sleep, sanitizeContent, buildSearchUrl } from '../utils/community-parser';
-
-// 페이지 간 딜레이 (반봇 대응)
-const PAGE_DELAY = { min: 2000, max: 3000 };
-// 게시글 간 딜레이
-const POST_DELAY = { min: 1000, max: 2000 };
-// 기본 최대 수집 건수
-const DEFAULT_MAX_ITEMS = 50;
-// 최대 검색 페이지
-const MAX_SEARCH_PAGES = 20;
-
-// User-Agent 로테이션
-const USER_AGENTS = [
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-];
-
-// 검색 결과 페이지 셀렉터 (search.dcinside.com, DOM 변경 대응용 fallback 배열)
-const LIST_SELECTORS = ['.sch_result_list a.tit_txt', '.sch_result_list li > a'];
-// 본문 셀렉터
-const CONTENT_SELECTORS = ['.write_div', '.writing_view_box', '#container .write_div'];
-// 댓글 셀렉터
-const COMMENT_SELECTORS = ['.reply_content .usertxt', '.cmt_txt_cont .usertxt'];
+import { parseDateText, sanitizeContent, buildSearchUrl } from '../utils/community-parser';
+import { CommunityBaseCollector, type SiteSelectors } from './community-base-collector';
+import type { BrowserCollectorConfig } from './browser-collector';
 
 /**
  * DC갤러리 수집기
@@ -36,80 +12,40 @@ const COMMENT_SELECTORS = ['.reply_content .usertxt', '.cmt_txt_cont .usertxt'];
  * Cheerio로 게시글/댓글을 파싱한다.
  * 마이너 갤러리(/mgallery/) 자동 감지.
  */
-export class DCInsideCollector implements Collector<CommunityPost> {
+export class DCInsideCollector extends CommunityBaseCollector {
   readonly source = 'dcinside';
+  protected readonly baseUrl = 'https://gall.dcinside.com';
 
-  async *collect(options: CollectionOptions): AsyncGenerator<CommunityPost[], void, unknown> {
-    const maxItems = options.maxItems ?? DEFAULT_MAX_ITEMS;
-    const maxComments = options.maxComments ?? 100;
-    let totalCollected = 0;
-    let browser: Browser | null = null;
+  protected readonly config: BrowserCollectorConfig = {
+    pageDelay: { min: 2000, max: 3000 },
+    postDelay: { min: 1000, max: 2000 },
+    defaultMaxItems: 50,
+    maxSearchPages: 20,
+  };
 
-    try {
-      browser = await launchBrowser();
-      const userAgent = USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
-      const context = await browser.newContext({
-        locale: 'ko-KR',
-        timezoneId: 'Asia/Seoul',
-        userAgent,
-      });
-      const page = await context.newPage();
+  protected readonly selectors: SiteSelectors = {
+    list: ['.sch_result_list a.tit_txt', '.sch_result_list li > a'],
+    content: ['.write_div', '.writing_view_box', '#container .write_div'],
+    comment: ['.reply_content .usertxt', '.cmt_txt_cont .usertxt'],
+  };
 
-      for (let pageNum = 1; pageNum <= MAX_SEARCH_PAGES; pageNum++) {
-        if (totalCollected >= maxItems) break;
-
-        const searchUrl = buildSearchUrl('dcinside', options.keyword, pageNum);
-        await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
-        await page.waitForTimeout(1500);
-
-        const html = await page.content();
-        const postLinks = this.parseSearchResults(html);
-
-        if (postLinks.length === 0) break;
-
-        const posts: CommunityPost[] = [];
-        for (const link of postLinks) {
-          if (totalCollected >= maxItems) break;
-
-          try {
-            const post = await this.fetchPost(page, link.url, link.title, maxComments);
-            if (post) {
-              posts.push(post);
-              totalCollected++;
-            }
-          } catch (err) {
-            // 개별 게시글 수집 실패 시 건너뜀 (부분 실패 허용)
-            console.warn(`DC 게시글 수집 실패 (${link.url}):`, err);
-          }
-          await sleep(POST_DELAY.min, POST_DELAY.max);
-        }
-
-        if (posts.length > 0) {
-          yield posts;
-        }
-
-        await sleep(PAGE_DELAY.min, PAGE_DELAY.max);
-      }
-    } finally {
-      if (browser) {
-        await browser.close();
-      }
-    }
+  protected buildSearchUrl(keyword: string, page: number): string {
+    return buildSearchUrl('dcinside', keyword, page);
   }
 
   /** 검색 결과 HTML에서 게시글 링크 목록 추출 */
-  private parseSearchResults(html: string): { url: string; title: string }[] {
+  protected parseSearchResults(html: string): { url: string; title: string }[] {
     const $ = cheerio.load(html);
     const results: { url: string; title: string }[] = [];
 
     // fallback 셀렉터 순회
-    for (const selector of LIST_SELECTORS) {
+    for (const selector of this.selectors.list) {
       $(selector).each((_, el) => {
         const href = $(el).attr('href');
         const title = $(el).text().trim();
         if (href && title) {
           // 상대 URL -> 절대 URL
-          const url = href.startsWith('http') ? href : `https://gall.dcinside.com${href}`;
+          const url = href.startsWith('http') ? href : `${this.baseUrl}${href}`;
           results.push({ url, title });
         }
       });
@@ -120,7 +56,7 @@ export class DCInsideCollector implements Collector<CommunityPost> {
   }
 
   /** 게시글 상세 페이지에서 본문 + 댓글 수집 */
-  private async fetchPost(
+  protected async fetchPost(
     page: import('playwright').Page,
     url: string,
     title: string,
@@ -134,7 +70,7 @@ export class DCInsideCollector implements Collector<CommunityPost> {
 
     // 본문 추출 (fallback 셀렉터)
     let content = '';
-    for (const selector of CONTENT_SELECTORS) {
+    for (const selector of this.selectors.content) {
       content = sanitizeContent($(selector).html() ?? '');
       if (content.length > 10) break;
     }
@@ -179,7 +115,7 @@ export class DCInsideCollector implements Collector<CommunityPost> {
   ): CommunityComment[] {
     const comments: CommunityComment[] = [];
 
-    for (const selector of COMMENT_SELECTORS) {
+    for (const selector of this.selectors.comment) {
       $(selector).each((i, el) => {
         if (comments.length >= maxComments) return;
 
