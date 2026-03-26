@@ -7,7 +7,7 @@ services:
     container_name: ais-prod-web
     restart: unless-stopped
     ports:
-      - "3200:3000"
+      - "3300:3000"
     env_file:
       - ../.env.production
     depends_on:

@@ -24,4 +24,4 @@ jobs:
       - name: Health Check
         run: |
           sleep 10
-          curl -sf http://localhost:3200 > /dev/null && echo "Web OK" || echo "Web FAILED"
+          curl -sf http://localhost:3300 > /dev/null && echo "Web OK" || echo "Web FAILED"
