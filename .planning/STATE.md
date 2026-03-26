@@ -67,9 +67,10 @@ None.
 | 260325-rht | 유튜브 수집 파이프라인 E2E 테스트 (성공) | 2026-03-25 | - | [260325-rht-youtube-test](./quick/260325-rht-youtube-test/) |
 | 260325-tge | AI 모델 설정 UI (모듈별 프로바이더/모델 동적 변경) | 2026-03-25 | e083269 | [260325-tge-ai-llm](./quick/260325-tge-ai-llm/) |
 | 260325-pvk | LLM 프로바이더 API 키 관리 (암호화 저장, 연결 테스트, 모델 선택) | 2026-03-25 | fef0124 | - |
+| 260326-d4v | API 키 관리와 모듈별 모델 설정 연동 | 2026-03-26 | - | [260326-d4v-api-api-llm](./quick/260326-d4v-api-api-llm/) |
 
 ## Session Continuity
 
-Last activity: 2026-03-25 - Completed: LLM 프로바이더 API 키 관리 기능 추가
-Stopped at: Completed provider-keys feature
+Last activity: 2026-03-26 - Completed quick task 260326-d4v: API 키 관리와 모듈별 모델 설정 연동
+Stopped at: Completed provider-model integration
 Resume file: None

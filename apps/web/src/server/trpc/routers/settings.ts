@@ -26,7 +26,10 @@ export const settingsRouter = router({
     .input(
       z.object({
         moduleName: z.string().min(1),
-        provider: z.enum(['anthropic', 'openai']),
+        provider: z.enum([
+          'anthropic', 'openai', 'gemini', 'ollama',
+          'deepseek', 'xai', 'openrouter', 'custom',
+        ]),
         model: z.string().min(1),
       }),
     )

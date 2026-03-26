@@ -1,10 +1,10 @@
 import { z } from 'zod';
 
-// AI 프로바이더 타입 (분석 실행용 -- ai-gateway 지원 프로바이더)
-export type AIProvider = 'anthropic' | 'openai';
+// AI 프로바이더 타입 (모든 프로바이더 — API 키 관리 + 분석 실행 통합)
+export type AIProvider = 'anthropic' | 'openai' | 'gemini' | 'ollama' | 'deepseek' | 'xai' | 'openrouter' | 'custom';
 
-// 확장 프로바이더 타입 (API 키 관리용 -- 모든 프로바이더)
-export type ProviderType = 'anthropic' | 'openai' | 'gemini' | 'ollama' | 'deepseek' | 'xai' | 'openrouter' | 'custom';
+// 호환성을 위한 별칭
+export type ProviderType = AIProvider;
 
 // 분석 모듈 공통 인터페이스 (D-01)
 export interface AnalysisModule<T = unknown> {
