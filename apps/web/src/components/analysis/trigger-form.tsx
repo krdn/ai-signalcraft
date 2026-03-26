@@ -42,7 +42,7 @@ interface TriggerFormProps {
 
 export function TriggerForm({ onJobStarted }: TriggerFormProps) {
   const [keyword, setKeyword] = useState('');
-  const [sources, setSources] = useState<SourceId[]>(['naver', 'youtube']);
+  const [sources, setSources] = useState<SourceId[]>([...ALL_SOURCES]);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [startDate, setStartDate] = useState<Date>(subDays(new Date(), 7));
   const [endDate, setEndDate] = useState<Date>(new Date());

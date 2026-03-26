@@ -19,6 +19,8 @@ import {
   Users,
   BarChart3,
   ArrowLeft,
+  Video,
+  Eye,
 } from 'lucide-react';
 
 // 감정 분석 뱃지 설정
@@ -53,8 +55,9 @@ interface CollectedDataViewProps {
 }
 
 export function CollectedDataView({ jobId }: CollectedDataViewProps) {
-  const [view, setView] = useState<'summary' | 'articles' | 'comments'>('summary');
+  const [view, setView] = useState<'summary' | 'articles' | 'videos' | 'comments'>('summary');
   const [articlePage, setArticlePage] = useState(1);
+  const [videoPage, setVideoPage] = useState(1);
   const [commentPage, setCommentPage] = useState(1);
   const [selectedArticleId, setSelectedArticleId] = useState<number | null>(null);
 
@@ -89,6 +92,14 @@ export function CollectedDataView({ jobId }: CollectedDataViewProps) {
           기사
         </Button>
         <Button
+          variant={view === 'videos' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => { setView('videos'); setVideoPage(1); }}
+        >
+          <Video className="h-4 w-4 mr-1" />
+          영상
+        </Button>
+        <Button
           variant={view === 'comments' ? 'default' : 'outline'}
           size="sm"
           onClick={() => { setView('comments'); setCommentPage(1); setSelectedArticleId(null); }}
@@ -104,6 +115,13 @@ export function CollectedDataView({ jobId }: CollectedDataViewProps) {
           jobId={jobId}
           page={articlePage}
           onPageChange={setArticlePage}
+        />
+      )}
+      {view === 'videos' && (
+        <VideosView
+          jobId={jobId}
+          page={videoPage}
+          onPageChange={setVideoPage}
         />
       )}
       {view === 'comments' && (
@@ -141,7 +159,7 @@ function SummaryView({ jobId }: { jobId: number }) {
   return (
     <div className="space-y-4">
       {/* 통계 카드 */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center gap-3">
@@ -150,7 +168,20 @@ function SummaryView({ jobId }: { jobId: number }) {
               </div>
               <div>
                 <p className="text-2xl font-bold">{data.totalArticles}</p>
-                <p className="text-sm text-muted-foreground">수집된 기사</p>
+                <p className="text-sm text-muted-foreground">기사/게시글</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-red-100 dark:bg-red-950">
+                <Video className="h-5 w-5 text-red-600 dark:text-red-400" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{data.totalVideos ?? 0}</p>
+                <p className="text-sm text-muted-foreground">영상</p>
               </div>
             </div>
           </CardContent>
@@ -163,7 +194,7 @@ function SummaryView({ jobId }: { jobId: number }) {
               </div>
               <div>
                 <p className="text-2xl font-bold">{data.totalComments}</p>
-                <p className="text-sm text-muted-foreground">수집된 댓글</p>
+                <p className="text-sm text-muted-foreground">댓글</p>
               </div>
             </div>
           </CardContent>
@@ -186,24 +217,27 @@ function SummaryView({ jobId }: { jobId: number }) {
       {/* 소스별 분포 */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">소스별 기사 분포</CardTitle>
+          <CardTitle className="text-base">소스별 수집 분포</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {data.sourceBreakdown.map((s) => (
-              <div key={s.source} className="flex items-center justify-between">
-                <span className="text-sm font-medium">{SOURCE_LABELS[s.source] ?? s.source}</span>
-                <div className="flex items-center gap-2">
-                  <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-primary rounded-full"
-                      style={{ width: `${Math.min(100, (s.count / data.totalArticles) * 100)}%` }}
-                    />
+            {(() => {
+              const totalItems = data.totalArticles + (data.totalVideos ?? 0);
+              return data.sourceBreakdown.map((s) => (
+                <div key={s.source} className="flex items-center justify-between">
+                  <span className="text-sm font-medium">{SOURCE_LABELS[s.source] ?? s.source}</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-primary rounded-full"
+                        style={{ width: `${totalItems > 0 ? Math.min(100, (s.count / totalItems) * 100) : 0}%` }}
+                      />
+                    </div>
+                    <span className="text-sm text-muted-foreground w-12 text-right">{s.count}건</span>
                   </div>
-                  <span className="text-sm text-muted-foreground w-12 text-right">{s.count}건</span>
                 </div>
-              </div>
-            ))}
+              ));
+            })()}
           </div>
         </CardContent>
       </Card>
@@ -369,6 +403,205 @@ function InlineCommentsView({ jobId, articleId }: { jobId: number; articleId: nu
     return (
       <p className="text-sm text-muted-foreground text-center py-4">
         이 기사에 수집된 댓글이 없습니다.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <p className="text-xs text-muted-foreground">
+        댓글 {data.total}건 {data.totalPages > 1 ? `(${data.page}/${data.totalPages})` : ''}
+      </p>
+
+      {data.items.map((comment) => (
+        <div
+          key={comment.id}
+          className={`rounded-md border bg-background p-3 border-l-2 ${
+            comment.sentiment === 'positive' ? 'border-l-blue-400' :
+            comment.sentiment === 'negative' ? 'border-l-red-400' :
+            comment.sentiment === 'neutral' ? 'border-l-gray-300' :
+            'border-l-transparent'
+          }`}
+        >
+          <p className="text-sm leading-relaxed">{comment.content}</p>
+          <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">{comment.author ?? '익명'}</span>
+            {comment.publishedAt && (
+              <span>{new Date(comment.publishedAt).toLocaleDateString('ko-KR')}</span>
+            )}
+            <span className="flex items-center gap-0.5">
+              <ThumbsUp className="h-3 w-3" /> {comment.likeCount ?? 0}
+            </span>
+            {(comment.dislikeCount ?? 0) > 0 && (
+              <span className="flex items-center gap-0.5">
+                <ThumbsDown className="h-3 w-3" /> {comment.dislikeCount}
+              </span>
+            )}
+            <SentimentBadge sentiment={comment.sentiment} score={comment.sentimentScore} />
+          </div>
+        </div>
+      ))}
+
+      {data.totalPages > 1 && (
+        <Pagination page={data.page} totalPages={data.totalPages} onPageChange={setPage} />
+      )}
+    </div>
+  );
+}
+
+// 영상 목록 뷰
+function VideosView({
+  jobId,
+  page,
+  onPageChange,
+}: {
+  jobId: number;
+  page: number;
+  onPageChange: (page: number) => void;
+}) {
+  const [expandedVideoId, setExpandedVideoId] = useState<number | null>(null);
+  const { data, isLoading } = useQuery({
+    queryKey: ['collectedData', 'getVideos', jobId, page],
+    queryFn: () => trpcClient.collectedData.getVideos.query({ jobId, page, perPage: 10 }),
+  });
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        {[1, 2, 3].map((i) => (
+          <Card key={i}><CardContent className="p-4"><Skeleton className="h-16" /></CardContent></Card>
+        ))}
+      </div>
+    );
+  }
+
+  if (!data || data.items.length === 0) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center text-muted-foreground">
+          수집된 영상이 없습니다.
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground">
+        총 {data.total}건의 영상 (페이지 {data.page}/{data.totalPages})
+      </p>
+
+      {data.items.map((video) => {
+        const isExpanded = expandedVideoId === video.id;
+        const commentCount = video.commentCount ?? 0;
+
+        return (
+          <Card key={video.id} className="transition-colors overflow-hidden">
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Badge variant="outline" className="text-xs shrink-0 bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800">
+                      유튜브
+                    </Badge>
+                    {video.channelTitle && (
+                      <span className="text-xs text-muted-foreground truncate">{video.channelTitle}</span>
+                    )}
+                  </div>
+                  <h3 className="font-medium text-sm leading-snug line-clamp-2">{video.title}</h3>
+                  {video.description && (
+                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{video.description.substring(0, 200)}</p>
+                  )}
+                  <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                    {video.publishedAt && (
+                      <span>{new Date(video.publishedAt).toLocaleDateString('ko-KR')}</span>
+                    )}
+                    {video.viewCount != null && (
+                      <span className="flex items-center gap-0.5">
+                        <Eye className="h-3 w-3" /> {video.viewCount.toLocaleString()}
+                      </span>
+                    )}
+                    {video.likeCount != null && (
+                      <span className="flex items-center gap-0.5">
+                        <ThumbsUp className="h-3 w-3" /> {video.likeCount.toLocaleString()}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1 shrink-0">
+                  <Button
+                    variant={isExpanded ? 'default' : 'ghost'}
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={() => setExpandedVideoId(isExpanded ? null : video.id)}
+                  >
+                    <MessageSquare className="h-3 w-3 mr-1" />
+                    {commentCount > 0 ? `${commentCount}` : '댓글'}
+                  </Button>
+                  {video.url && (
+                    <a
+                      href={video.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center h-7 px-2 text-xs rounded-md hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+                    >
+                      <ExternalLink className="h-3 w-3 mr-1" />
+                      원문
+                    </a>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+
+            {/* 인라인 댓글 아코디언 */}
+            {isExpanded && (
+              <div className="border-t bg-muted/30 px-4 py-3">
+                <InlineVideoCommentsView jobId={jobId} videoId={video.id} />
+              </div>
+            )}
+          </Card>
+        );
+      })}
+
+      {/* 페이지네이션 */}
+      {data.totalPages > 1 && (
+        <Pagination
+          page={data.page}
+          totalPages={data.totalPages}
+          onPageChange={(p) => { setExpandedVideoId(null); onPageChange(p); }}
+        />
+      )}
+    </div>
+  );
+}
+
+// 영상 내 인라인 댓글 뷰
+function InlineVideoCommentsView({ jobId, videoId }: { jobId: number; videoId: number }) {
+  const [page, setPage] = useState(1);
+  const { data, isLoading } = useQuery({
+    queryKey: ['collectedData', 'getComments', jobId, 'video', videoId, page],
+    queryFn: () => trpcClient.collectedData.getComments.query({
+      jobId,
+      videoId,
+      page,
+      perPage: 10,
+    }),
+  });
+
+  if (isLoading) {
+    return (
+      <div className="space-y-2">
+        {[1, 2, 3].map((i) => (
+          <Skeleton key={i} className="h-10" />
+        ))}
+      </div>
+    );
+  }
+
+  if (!data || data.items.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground text-center py-4">
+        이 영상에 수집된 댓글이 없습니다.
       </p>
     );
   }

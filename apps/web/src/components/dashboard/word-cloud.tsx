@@ -56,9 +56,9 @@ export function WordCloud({ words }: WordCloudProps) {
           </div>
         ) : (
           <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 h-[220px] overflow-hidden">
-            {styledWords.map((word) => (
+            {styledWords.map((word, idx) => (
               <span
-                key={word.text}
+                key={`${word.text}-${idx}`}
                 className="inline-block cursor-default transition-opacity hover:opacity-70"
                 style={{
                   fontSize: `${word.fontSize}px`,
