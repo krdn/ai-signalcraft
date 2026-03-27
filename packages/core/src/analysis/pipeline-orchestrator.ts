@@ -10,7 +10,22 @@ import { analyzeItems } from './item-analyzer';
 import { getDb } from '../db';
 import { collectionJobs } from '../db/schema/collections';
 import { eq } from 'drizzle-orm';
-import type { AnalysisModuleResult, AnalysisInput } from './types';
+import type { AnalysisModule, AnalysisModuleResult, AnalysisInput } from './types';
+
+/** 동시성 제한 병렬 실행 (rate limit 방지) */
+async function runWithConcurrency<T>(
+  modules: AnalysisModule[],
+  fn: (m: AnalysisModule) => Promise<AnalysisModuleResult>,
+  concurrency: number = 2,
+): Promise<PromiseSettledResult<AnalysisModuleResult>[]> {
+  const results: PromiseSettledResult<AnalysisModuleResult>[] = [];
+  for (let i = 0; i < modules.length; i += concurrency) {
+    const batch = modules.slice(i, i + concurrency);
+    const batchResults = await Promise.allSettled(batch.map(fn));
+    results.push(...batchResults);
+  }
+  return results;
+}
 
 /**
  * 전체 분석 파이프라인 실행 (D-10: 3단계)
@@ -104,8 +119,10 @@ export async function runAnalysisPipeline(jobId: number): Promise<{
   const stage1Skipped = STAGE1_MODULES.filter(m => isSkipped(m.name));
   for (const m of stage1Skipped) await markSkipped(m.name);
 
-  const stage1Settled = await Promise.allSettled(
-    stage1Active.map((m) => runModule(m, input)),
+  const stage1Settled = await runWithConcurrency(
+    stage1Active,
+    (m) => runModule(m, input),
+    2,
   );
 
   const priorResults: Record<string, unknown> = {};
@@ -183,8 +200,10 @@ export async function runAnalysisPipeline(jobId: number): Promise<{
     const stage4aSkipped = STAGE4_PARALLEL.filter(m => isSkipped(m.name));
     for (const m of stage4aSkipped) await markSkipped(m.name);
 
-    const stage4aSettled = await Promise.allSettled(
-      stage4aActive.map((m) => runModule(m, input, priorResults)),
+    const stage4aSettled = await runWithConcurrency(
+      stage4aActive,
+      (m) => runModule(m, input, priorResults),
+      2,
     );
     for (const settled of stage4aSettled) {
       if (settled.status === 'fulfilled') {
