@@ -1,6 +1,7 @@
 // DB에서 jobId 기반으로 수집 데이터를 로드하여 AnalysisInput 형식으로 변환
+// N:M 조인 테이블 경유 조회
 import { getDb } from '../db';
-import { articles, videos, comments, collectionJobs } from '../db/schema/collections';
+import { articles, videos, comments, collectionJobs, articleJobs, videoJobs, commentJobs } from '../db/schema/collections';
 import { eq, desc } from 'drizzle-orm';
 import type { AnalysisInput } from './types';
 
@@ -10,6 +11,7 @@ const MAX_COMMENTS = 500;
 
 /**
  * 수집 작업 데이터를 분석 입력 형식으로 로드
+ * - 조인 테이블(articleJobs/videoJobs/commentJobs) 경유 조회
  * - 기사 본문 500자 제한 (토큰 절약)
  * - 댓글 좋아요순 상위 500개 제한
  */
@@ -25,7 +27,7 @@ export async function loadAnalysisInput(jobId: number): Promise<AnalysisInput> {
     throw new Error(`Collection job not found: ${jobId}`);
   }
 
-  // 기사 로드
+  // 기사 로드 (조인 테이블 경유)
   const articleRows = await getDb()
     .select({
       title: articles.title,
@@ -35,9 +37,10 @@ export async function loadAnalysisInput(jobId: number): Promise<AnalysisInput> {
       source: articles.source,
     })
     .from(articles)
-    .where(eq(articles.jobId, jobId));
+    .innerJoin(articleJobs, eq(articles.id, articleJobs.articleId))
+    .where(eq(articleJobs.jobId, jobId));
 
-  // 영상 로드
+  // 영상 로드 (조인 테이블 경유)
   const videoRows = await getDb()
     .select({
       title: videos.title,
@@ -48,9 +51,10 @@ export async function loadAnalysisInput(jobId: number): Promise<AnalysisInput> {
       publishedAt: videos.publishedAt,
     })
     .from(videos)
-    .where(eq(videos.jobId, jobId));
+    .innerJoin(videoJobs, eq(videos.id, videoJobs.videoId))
+    .where(eq(videoJobs.jobId, jobId));
 
-  // 댓글 로드 (좋아요순 상위 N개)
+  // 댓글 로드 (조인 테이블 경유, 좋아요순 상위 N개)
   const commentRows = await getDb()
     .select({
       content: comments.content,
@@ -61,7 +65,8 @@ export async function loadAnalysisInput(jobId: number): Promise<AnalysisInput> {
       publishedAt: comments.publishedAt,
     })
     .from(comments)
-    .where(eq(comments.jobId, jobId))
+    .innerJoin(commentJobs, eq(comments.id, commentJobs.commentId))
+    .where(eq(commentJobs.jobId, jobId))
     .orderBy(desc(comments.likeCount))
     .limit(MAX_COMMENTS);
 

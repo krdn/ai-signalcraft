@@ -16,10 +16,8 @@ function toDate(value: Date | string | null | undefined): Date | null {
 /** NaverArticle -> articles 테이블 insert 형식 */
 export function normalizeNaverArticle(
   article: NaverArticle,
-  jobId: number,
 ): typeof articles.$inferInsert {
   return {
-    jobId,
     source: 'naver-news',
     sourceId: article.sourceId,
     url: article.url,
@@ -35,11 +33,9 @@ export function normalizeNaverArticle(
 /** NaverComment -> comments 테이블 insert 형식 */
 export function normalizeNaverComment(
   comment: NaverComment,
-  jobId: number,
   articleDbId?: number,
 ): typeof comments.$inferInsert {
   return {
-    jobId,
     source: 'naver-news',
     sourceId: comment.sourceId,
     parentId: comment.parentId,
@@ -57,10 +53,8 @@ export function normalizeNaverComment(
 /** YoutubeVideo -> videos 테이블 insert 형식 */
 export function normalizeYoutubeVideo(
   video: YoutubeVideo,
-  jobId: number,
 ): typeof videos.$inferInsert {
   return {
-    jobId,
     source: 'youtube',
     sourceId: video.sourceId,
     url: video.url,
@@ -79,11 +73,9 @@ export function normalizeYoutubeVideo(
 /** YoutubeComment -> comments 테이블 insert 형식 */
 export function normalizeYoutubeComment(
   comment: YoutubeComment,
-  jobId: number,
   videoDbId?: number,
 ): typeof comments.$inferInsert {
   return {
-    jobId,
     source: 'youtube',
     sourceId: comment.sourceId,
     parentId: comment.parentId,
@@ -101,11 +93,9 @@ export function normalizeYoutubeComment(
 /** CommunityPost -> articles 테이블 insert 형식 */
 export function normalizeCommunityPost(
   post: CommunityPost,
-  jobId: number,
   source: CommunitySource,
 ): typeof articles.$inferInsert {
   return {
-    jobId,
     source,
     sourceId: post.sourceId,
     url: post.url,
@@ -121,12 +111,10 @@ export function normalizeCommunityPost(
 /** CommunityComment -> comments 테이블 insert 형식 */
 export function normalizeCommunityComment(
   comment: CommunityComment,
-  jobId: number,
   source: CommunitySource,
   articleDbId?: number,
 ): typeof comments.$inferInsert {
   return {
-    jobId,
     source,
     sourceId: comment.sourceId,
     parentId: comment.parentId,

@@ -93,3 +93,31 @@ export const comments = pgTable('comments', {
 }, (table) => [
   uniqueIndex('comments_source_id_idx').on(table.source, table.sourceId),
 ]);
+
+// N:M 조인 테이블 — 기사/영상/댓글이 여러 수집 작업에서 참조 가능
+export const articleJobs = pgTable('article_jobs', {
+  articleId: integer('article_id').references(() => articles.id, { onDelete: 'cascade' }).notNull(),
+  jobId: integer('job_id').references(() => collectionJobs.id, { onDelete: 'cascade' }).notNull(),
+  collectedAt: timestamp('collected_at').defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex('article_jobs_pk').on(table.articleId, table.jobId),
+  index('article_jobs_job_id_idx').on(table.jobId),
+]);
+
+export const videoJobs = pgTable('video_jobs', {
+  videoId: integer('video_id').references(() => videos.id, { onDelete: 'cascade' }).notNull(),
+  jobId: integer('job_id').references(() => collectionJobs.id, { onDelete: 'cascade' }).notNull(),
+  collectedAt: timestamp('collected_at').defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex('video_jobs_pk').on(table.videoId, table.jobId),
+  index('video_jobs_job_id_idx').on(table.jobId),
+]);
+
+export const commentJobs = pgTable('comment_jobs', {
+  commentId: integer('comment_id').references(() => comments.id, { onDelete: 'cascade' }).notNull(),
+  jobId: integer('job_id').references(() => collectionJobs.id, { onDelete: 'cascade' }).notNull(),
+  collectedAt: timestamp('collected_at').defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex('comment_jobs_pk').on(table.commentId, table.jobId),
+  index('comment_jobs_job_id_idx').on(table.jobId),
+]);

@@ -214,8 +214,8 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
         // Step 1: 기사 persist -> sourceId->dbId 매핑 생성
         if (results['naver-news']) {
           const articleItems = (results['naver-news'] as any).items || [];
-          const normalized = articleItems.map((a: any) => normalizeNaverArticle(a, jobIdForDb));
-          const persisted = await persistArticles(normalized);
+          const normalized = articleItems.map((a: any) => normalizeNaverArticle(a));
+          const persisted = await persistArticles(jobIdForDb, normalized);
           for (const row of persisted) {
             articleSourceToDbId.set(row.sourceId, row.id);
           }
@@ -224,8 +224,8 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
         // Step 2: 영상 persist -> sourceId->dbId 매핑 생성
         if (results['youtube-videos']) {
           const videoItems = (results['youtube-videos'] as any).items || [];
-          const normalized = videoItems.map((v: any) => normalizeYoutubeVideo(v, jobIdForDb));
-          const persisted = await persistVideos(normalized);
+          const normalized = videoItems.map((v: any) => normalizeYoutubeVideo(v));
+          const persisted = await persistVideos(jobIdForDb, normalized);
           for (const row of persisted) {
             videoSourceToDbId.set(row.sourceId, row.id);
           }
@@ -236,9 +236,9 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
           const commentItems = (results['naver-comments'] as any).items || [];
           const normalized = commentItems.map((c: any) => {
             const articleDbId = articleSourceToDbId.get(c.articleSourceId);
-            return normalizeNaverComment(c, jobIdForDb, articleDbId);
+            return normalizeNaverComment(c, articleDbId);
           });
-          await persistComments(normalized);
+          await persistComments(jobIdForDb, normalized);
         }
 
         // Step 4: 유튜브 댓글 persist -- videoSourceToDbId 매핑으로 FK 연결
@@ -246,9 +246,9 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
           const commentItems = (results['youtube-comments'] as any).items || [];
           const normalized = commentItems.map((c: any) => {
             const videoDbId = videoSourceToDbId.get(c.videoSourceId);
-            return normalizeYoutubeComment(c, jobIdForDb, videoDbId);
+            return normalizeYoutubeComment(c, videoDbId);
           });
-          await persistComments(normalized);
+          await persistComments(jobIdForDb, normalized);
         }
 
         // Step 5: 커뮤니티 게시글+댓글 persist
@@ -258,9 +258,9 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
           const postItems = (results[communitySource] as any).items as CommunityPost[] || [];
           // Step 5a: 게시글 persist -> sourceId->dbId 매핑
           const normalizedPosts = postItems.map((p: CommunityPost) =>
-            normalizeCommunityPost(p, jobIdForDb, communitySource),
+            normalizeCommunityPost(p, communitySource),
           );
-          const persistedPosts = await persistArticles(normalizedPosts);
+          const persistedPosts = await persistArticles(jobIdForDb, normalizedPosts);
           const communityArticleMap = new Map<string, number>();
           for (const row of persistedPosts) {
             communityArticleMap.set(row.sourceId, row.id);
@@ -270,11 +270,11 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
           const allCommunityComments = postItems.flatMap((p: CommunityPost) =>
             (p.comments || []).map((c) => {
               const articleDbId = communityArticleMap.get(p.sourceId);
-              return normalizeCommunityComment(c, jobIdForDb, communitySource, articleDbId);
+              return normalizeCommunityComment(c, communitySource, articleDbId);
             }),
           );
           if (allCommunityComments.length > 0) {
-            await persistComments(allCommunityComments);
+            await persistComments(jobIdForDb, allCommunityComments);
           }
         }
       }

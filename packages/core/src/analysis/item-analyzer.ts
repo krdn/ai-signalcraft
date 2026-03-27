@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { eq } from 'drizzle-orm';
 import { analyzeStructured } from '@ai-signalcraft/ai-gateway';
 import { getDb } from '../db';
-import { articles, comments, collectionJobs } from '../db/schema/collections';
+import { articles, comments, collectionJobs, articleJobs, commentJobs } from '../db/schema/collections';
 import { getModuleModelConfig } from './model-config';
 import { MODULE_MODEL_MAP } from './types';
 
@@ -117,7 +117,7 @@ export async function analyzeItems(jobId: number): Promise<{
 
   if (!job) throw new Error(`Job not found: ${jobId}`);
 
-  // --- 기사 분석 ---
+  // --- 기사 분석 --- (조인 테이블 경유)
   const articleRows = await db
     .select({
       id: articles.id,
@@ -125,7 +125,8 @@ export async function analyzeItems(jobId: number): Promise<{
       content: articles.content,
     })
     .from(articles)
-    .where(eq(articles.jobId, jobId));
+    .innerJoin(articleJobs, eq(articles.id, articleJobs.articleId))
+    .where(eq(articleJobs.jobId, jobId));
 
   let articlesAnalyzed = 0;
   const articleBatches = chunk(articleRows, ARTICLE_BATCH_SIZE);
@@ -166,14 +167,15 @@ export async function analyzeItems(jobId: number): Promise<{
     }
   }
 
-  // --- 댓글 분석 ---
+  // --- 댓글 분석 --- (조인 테이블 경유)
   const commentRows = await db
     .select({
       id: comments.id,
       content: comments.content,
     })
     .from(comments)
-    .where(eq(comments.jobId, jobId));
+    .innerJoin(commentJobs, eq(comments.id, commentJobs.commentId))
+    .where(eq(commentJobs.jobId, jobId));
 
   let commentsAnalyzed = 0;
   const commentBatches = chunk(commentRows, COMMENT_BATCH_SIZE);

@@ -18,10 +18,9 @@ describe('Normalize - NaverArticle', () => {
       publishedAt: new Date('2026-03-20'),
       rawData: {},
     };
-    const result = normalizeNaverArticle(article, 1);
+    const result = normalizeNaverArticle(article);
     expect(result.source).toBe('naver-news');
     expect(result.sourceId).toBe('016-0002042395');
-    expect(result.jobId).toBe(1);
     expect(result.title).toBe('테스트 기사');
     expect(result.publisher).toBe('헤럴드경제');
   });
@@ -40,7 +39,7 @@ describe('Normalize - NaverComment', () => {
       publishedAt: new Date('2026-03-20'),
       rawData: {},
     };
-    const result = normalizeNaverComment(comment, 1, 42);
+    const result = normalizeNaverComment(comment, 42);
     expect(result.source).toBe('naver-news');
     expect(result.articleId).toBe(42);
     expect(result.videoId).toBeNull();
@@ -59,7 +58,7 @@ describe('Normalize - NaverComment', () => {
       publishedAt: null,
       rawData: {},
     };
-    const result = normalizeNaverComment(comment, 1);
+    const result = normalizeNaverComment(comment);
     expect(result.articleId).toBeNull();
   });
 });
@@ -79,7 +78,7 @@ describe('Normalize - YoutubeVideo', () => {
       publishedAt: new Date('2026-03-20'),
       rawData: {},
     };
-    const result = normalizeYoutubeVideo(video, 1);
+    const result = normalizeYoutubeVideo(video);
     expect(result.source).toBe('youtube');
     expect(result.sourceId).toBe('dQw4w9WgXcQ');
     expect(result.viewCount).toBe(1000);
@@ -99,10 +98,10 @@ describe('Normalize - YoutubeComment', () => {
       publishedAt: new Date('2026-03-20'),
       rawData: {},
     };
-    const result = normalizeYoutubeComment(comment, 1, 99);
+    const result = normalizeYoutubeComment(comment, 99);
     expect(result.source).toBe('youtube');
     expect(result.videoId).toBe(99);
     expect(result.articleId).toBeNull();
-    expect(result.dislikeCount).toBe(0); // YouTube는 dislike 미제공
+    expect(result.dislikeCount).toBe(0);
   });
 });

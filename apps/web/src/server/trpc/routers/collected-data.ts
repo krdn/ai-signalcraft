@@ -1,11 +1,11 @@
 import { z } from 'zod';
 import { protectedProcedure, router } from '../init';
-import { articles, videos, comments, collectionJobs } from '@ai-signalcraft/core';
+import { articles, videos, comments, collectionJobs, articleJobs, videoJobs, commentJobs } from '@ai-signalcraft/core';
 import { eq, and, desc, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 
 export const collectedDataRouter = router({
-  // 수집된 기사 목록 조회
+  // 수집된 기사 목록 조회 (조인 테이블 경유)
   getArticles: protectedProcedure
     .input(z.object({
       jobId: z.number(),
@@ -22,13 +22,15 @@ export const collectedDataRouter = router({
 
       const offset = (input.page - 1) * input.perPage;
 
+      // 댓글 수 서브쿼리 (조인 테이블 경유)
       const commentCountSq = ctx.db
         .select({
           articleId: comments.articleId,
           count: sql<number>`count(*)::int`.as('comment_count'),
         })
         .from(comments)
-        .where(eq(comments.jobId, input.jobId))
+        .innerJoin(commentJobs, eq(comments.id, commentJobs.commentId))
+        .where(eq(commentJobs.jobId, input.jobId))
         .groupBy(comments.articleId)
         .as('comment_counts');
 
@@ -50,14 +52,15 @@ export const collectedDataRouter = router({
           commentCount: sql<number>`coalesce(${commentCountSq.count}, 0)`.mapWith(Number),
         })
           .from(articles)
+          .innerJoin(articleJobs, eq(articles.id, articleJobs.articleId))
           .leftJoin(commentCountSq, eq(articles.id, commentCountSq.articleId))
-          .where(eq(articles.jobId, input.jobId))
+          .where(eq(articleJobs.jobId, input.jobId))
           .orderBy(desc(articles.publishedAt))
           .limit(input.perPage)
           .offset(offset),
         ctx.db.select({ count: sql<number>`count(*)::int` })
-          .from(articles)
-          .where(eq(articles.jobId, input.jobId)),
+          .from(articleJobs)
+          .where(eq(articleJobs.jobId, input.jobId)),
       ]);
 
       return {
@@ -69,7 +72,7 @@ export const collectedDataRouter = router({
       };
     }),
 
-  // 수집된 영상 목록 조회 (유튜브)
+  // 수집된 영상 목록 조회 (조인 테이블 경유)
   getVideos: protectedProcedure
     .input(z.object({
       jobId: z.number(),
@@ -85,13 +88,15 @@ export const collectedDataRouter = router({
 
       const offset = (input.page - 1) * input.perPage;
 
+      // 영상별 댓글 수 서브쿼리 (조인 테이블 경유)
       const videoCommentCountSq = ctx.db
         .select({
           videoId: comments.videoId,
           cnt: sql<number>`count(*)::int`.as('vid_comment_cnt'),
         })
         .from(comments)
-        .where(eq(comments.jobId, input.jobId))
+        .innerJoin(commentJobs, eq(comments.id, commentJobs.commentId))
+        .where(eq(commentJobs.jobId, input.jobId))
         .groupBy(comments.videoId)
         .as('vid_comment_counts');
 
@@ -111,14 +116,15 @@ export const collectedDataRouter = router({
           commentCount: sql<number>`coalesce(${videoCommentCountSq.cnt}, 0)`.mapWith(Number),
         })
           .from(videos)
+          .innerJoin(videoJobs, eq(videos.id, videoJobs.videoId))
           .leftJoin(videoCommentCountSq, eq(videos.id, videoCommentCountSq.videoId))
-          .where(eq(videos.jobId, input.jobId))
+          .where(eq(videoJobs.jobId, input.jobId))
           .orderBy(desc(videos.publishedAt))
           .limit(input.perPage)
           .offset(offset),
         ctx.db.select({ count: sql<number>`count(*)::int` })
-          .from(videos)
-          .where(eq(videos.jobId, input.jobId)),
+          .from(videoJobs)
+          .where(eq(videoJobs.jobId, input.jobId)),
       ]);
 
       return {
@@ -130,7 +136,7 @@ export const collectedDataRouter = router({
       };
     }),
 
-  // 수집된 댓글 목록 조회 (특정 기사/영상의 댓글 또는 전체)
+  // 수집된 댓글 목록 조회 (조인 테이블 경유)
   getComments: protectedProcedure
     .input(z.object({
       jobId: z.number(),
@@ -149,11 +155,13 @@ export const collectedDataRouter = router({
 
       const offset = (input.page - 1) * input.perPage;
 
+      // 기본 조건: 조인 테이블 경유 jobId 필터
+      const baseCondition = eq(commentJobs.jobId, input.jobId);
       const whereCondition = input.articleId
-        ? and(eq(comments.jobId, input.jobId), eq(comments.articleId, input.articleId))
+        ? and(baseCondition, eq(comments.articleId, input.articleId))
         : input.videoId
-          ? and(eq(comments.jobId, input.jobId), eq(comments.videoId, input.videoId))
-          : eq(comments.jobId, input.jobId);
+          ? and(baseCondition, eq(comments.videoId, input.videoId))
+          : baseCondition;
 
       const [rows, countResult] = await Promise.all([
         ctx.db.select({
@@ -169,12 +177,14 @@ export const collectedDataRouter = router({
           sentimentScore: comments.sentimentScore,
         })
           .from(comments)
+          .innerJoin(commentJobs, eq(comments.id, commentJobs.commentId))
           .where(whereCondition)
           .orderBy(desc(comments.likeCount))
           .limit(input.perPage)
           .offset(offset),
         ctx.db.select({ count: sql<number>`count(*)::int` })
           .from(comments)
+          .innerJoin(commentJobs, eq(comments.id, commentJobs.commentId))
           .where(whereCondition),
       ]);
 
@@ -187,7 +197,7 @@ export const collectedDataRouter = router({
       };
     }),
 
-  // 수집 통계 요약
+  // 수집 통계 요약 (조인 테이블 경유)
   getSummary: protectedProcedure
     .input(z.object({ jobId: z.number() }))
     .query(async ({ input, ctx }) => {
@@ -199,24 +209,29 @@ export const collectedDataRouter = router({
 
       const [articleCount, videoCount, commentCount, articleSourceBreakdown, videoSourceBreakdown] = await Promise.all([
         ctx.db.select({ count: sql<number>`count(*)::int` })
-          .from(articles).where(eq(articles.jobId, input.jobId)),
+          .from(articleJobs)
+          .where(eq(articleJobs.jobId, input.jobId)),
         ctx.db.select({ count: sql<number>`count(*)::int` })
-          .from(videos).where(eq(videos.jobId, input.jobId)),
+          .from(videoJobs)
+          .where(eq(videoJobs.jobId, input.jobId)),
         ctx.db.select({ count: sql<number>`count(*)::int` })
-          .from(comments).where(eq(comments.jobId, input.jobId)),
+          .from(commentJobs)
+          .where(eq(commentJobs.jobId, input.jobId)),
         ctx.db.select({
           source: articles.source,
           count: sql<number>`count(*)::int`,
         })
           .from(articles)
-          .where(eq(articles.jobId, input.jobId))
+          .innerJoin(articleJobs, eq(articles.id, articleJobs.articleId))
+          .where(eq(articleJobs.jobId, input.jobId))
           .groupBy(articles.source),
         ctx.db.select({
           source: videos.source,
           count: sql<number>`count(*)::int`,
         })
           .from(videos)
-          .where(eq(videos.jobId, input.jobId))
+          .innerJoin(videoJobs, eq(videos.id, videoJobs.videoId))
+          .where(eq(videoJobs.jobId, input.jobId))
           .groupBy(videos.source),
       ]);
 
