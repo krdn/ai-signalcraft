@@ -26,7 +26,7 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
   // D-01: 통합 키워드 수집 -- 모든 소스 동시 실행
   // D-04: 부분 실패 허용 -- 소스별 독립 실행
   // INT-01: sources 필드 기반 조건부 수집기 실행
-  const enabledSources = params.sources ?? ['naver', 'youtube', 'dcinside', 'fmkorea', 'clien', 'twitter'];
+  const enabledSources = params.sources ?? ['naver', 'youtube', 'dcinside', 'fmkorea', 'clien'];
 
   const children = [];
   if (enabledSources.includes('naver')) {

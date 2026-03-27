@@ -38,7 +38,7 @@ const SOURCE_OPTIONS = [
   { group: '뉴스/영상/SNS', items: [
     { id: 'naver' as SourceId, label: '네이버 뉴스' },
     { id: 'youtube' as SourceId, label: '유튜브' },
-    { id: 'twitter' as SourceId, label: 'X(Twitter)' },
+    // { id: 'twitter' as SourceId, label: 'X(Twitter)' }, // Nitter 세션 설정 후 활성화
   ]},
   { group: '커뮤니티', items: [
     { id: 'dcinside' as SourceId, label: 'DC갤러리' },
@@ -47,7 +47,7 @@ const SOURCE_OPTIONS = [
   ]},
 ];
 
-const ALL_SOURCES: SourceId[] = ['naver', 'youtube', 'dcinside', 'fmkorea', 'clien', 'twitter'];
+const ALL_SOURCES: SourceId[] = ['naver', 'youtube', 'dcinside', 'fmkorea', 'clien'];
 
 interface TriggerFormProps {
   onJobStarted: (jobId: number) => void;
