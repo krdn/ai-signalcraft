@@ -15,14 +15,11 @@ jobs:
       - name: Copy env file
         run: cp ~/projects/ai/ai-signalcraft/.env.production .env.production
 
-      - name: Setup pnpm
-        run: corepack enable && corepack prepare pnpm@latest --activate
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
       - name: DB Schema Push
+        shell: bash -l {0}
         run: |
+          source ~/.nvm/nvm.sh
+          pnpm install --frozen-lockfile
           export DATABASE_URL=$(grep DATABASE_URL .env.production | sed 's/DATABASE_URL=//' | sed 's/@postgres:5432/@localhost:5438/')
           pnpm --filter @ai-signalcraft/core db:push
           echo "DB schema synced"
