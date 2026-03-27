@@ -37,8 +37,8 @@ describe('naver comments pipeline integration', () => {
     expect(flowsContent).toContain("name: 'collect-naver-articles'");
   });
 
-  it('worker-process.ts에서 normalize-naver 시 collectForArticle을 호출한다', () => {
-    const workerContent = readFileSync(resolve(__dirname, '../src/queue/worker-process.ts'), 'utf-8');
+  it('pipeline-worker.ts에서 normalize-naver 시 collectForArticle을 호출한다', () => {
+    const workerContent = readFileSync(resolve(__dirname, '../src/queue/pipeline-worker.ts'), 'utf-8');
     expect(workerContent).toContain('collectForArticle');
     expect(workerContent).toContain("job.name === 'normalize-naver'");
   });
