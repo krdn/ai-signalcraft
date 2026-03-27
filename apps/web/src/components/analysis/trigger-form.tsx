@@ -38,7 +38,7 @@ const SOURCE_OPTIONS = [
   { group: '뉴스/영상/SNS', items: [
     { id: 'naver' as SourceId, label: '네이버 뉴스' },
     { id: 'youtube' as SourceId, label: '유튜브' },
-    { id: 'twitter' as SourceId, label: 'X(Twitter)', disabled: true },
+    // { id: 'twitter' as SourceId, label: 'X(Twitter)' }, // Nitter 세션 설정 후 활성화
   ]},
   { group: '커뮤니티', items: [
     { id: 'dcinside' as SourceId, label: 'DC갤러리' },
@@ -150,20 +150,16 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
                 <div key={group.group} className="space-y-1">
                   <p className="text-xs font-medium text-muted-foreground">{group.group}</p>
                   <div className="flex items-center gap-4 pl-2">
-                    {group.items.map((item) => {
-                      const isDisabled = 'disabled' in item && item.disabled;
-                      return (
-                        <label key={item.id} className={`flex items-center gap-2 ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
-                          <Checkbox
-                            checked={!isDisabled && sources.includes(item.id)}
-                            onCheckedChange={(checked) => !isDisabled && handleSourceToggle(item.id, !!checked)}
-                            disabled={triggerMutation.isPending || isDisabled}
-                          />
-                          <span className="text-sm">{item.label}</span>
-                          {isDisabled && <span className="text-xs text-muted-foreground">(준비 중)</span>}
-                        </label>
-                      );
-                    })}
+                    {group.items.map((item) => (
+                      <label key={item.id} className="flex items-center gap-2 cursor-pointer">
+                        <Checkbox
+                          checked={sources.includes(item.id)}
+                          onCheckedChange={(checked) => handleSourceToggle(item.id, !!checked)}
+                          disabled={triggerMutation.isPending}
+                        />
+                        <span className="text-sm">{item.label}</span>
+                      </label>
+                    ))}
                   </div>
                 </div>
               ))}
