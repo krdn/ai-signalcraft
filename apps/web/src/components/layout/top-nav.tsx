@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useTheme } from 'next-themes';
 import { signOut, useSession } from 'next-auth/react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -17,6 +18,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+  SheetClose,
+} from '@/components/ui/sheet';
 import { Switch } from '@/components/ui/switch';
 import {
   Activity,
@@ -26,6 +35,7 @@ import {
   History,
   LayoutDashboard,
   LogOut,
+  Menu,
   Moon,
   Play,
   Settings,
@@ -56,12 +66,61 @@ interface TopNavProps {
 export function TopNav({ activeTab, onTabChange }: TopNavProps) {
   const { theme, setTheme } = useTheme();
   const { data: session } = useSession();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const userInitial = session?.user?.name?.[0] ?? session?.user?.email?.[0] ?? '?';
   const isDark = theme === 'dark';
 
+  const handleMobileTabChange = (index: number) => {
+    onTabChange(index);
+    setMobileMenuOpen(false);
+  };
+
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 flex h-14 items-center border-b bg-card px-8">
+    <nav className="fixed top-0 left-0 right-0 z-50 flex h-14 items-center border-b bg-card px-4 md:px-8">
+      {/* 모바일 햄버거 메뉴 */}
+      <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+        <SheetTrigger
+          render={
+            <button className="mr-2 shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:text-foreground hover:bg-muted/50 md:hidden">
+              <Menu className="h-5 w-5" />
+            </button>
+          }
+        />
+        <SheetContent side="left" className="w-72 p-0">
+          <SheetHeader className="border-b px-4 py-3">
+            <SheetTitle className="flex items-center gap-1.5">
+              <Activity className="h-5 w-5 text-primary" />
+              <span className="text-primary">SignalCraft</span>
+            </SheetTitle>
+          </SheetHeader>
+          <div className="flex flex-col py-2">
+            {TABS.map(({ label, icon: Icon }, index) => {
+              const isActive = activeTab === index;
+              return (
+                <SheetClose
+                  key={label}
+                  render={
+                    <button
+                      onClick={() => handleMobileTabChange(index)}
+                      className={cn(
+                        'flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors',
+                        isActive
+                          ? 'text-primary bg-primary/10 border-r-2 border-primary'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-muted/50',
+                      )}
+                    >
+                      <Icon className="h-4 w-4" />
+                      <span>{label}</span>
+                    </button>
+                  }
+                />
+              );
+            })}
+          </div>
+        </SheetContent>
+      </Sheet>
+
       {/* 로고 */}
       <div className="flex items-center gap-1.5 shrink-0">
         <Activity className="h-5 w-5 text-primary" />
@@ -70,8 +129,8 @@ export function TopNav({ activeTab, onTabChange }: TopNavProps) {
         </span>
       </div>
 
-      {/* 탭 네비게이션 */}
-      <div className="flex items-center justify-center flex-1 gap-1">
+      {/* 탭 네비게이션 -- 데스크톱만 표시 */}
+      <div className="hidden md:flex items-center justify-center flex-1 gap-1">
         {TABS.map(({ label, icon: Icon }, index) => {
           const isActive = activeTab === index;
           return (
@@ -93,6 +152,13 @@ export function TopNav({ activeTab, onTabChange }: TopNavProps) {
             </button>
           );
         })}
+      </div>
+
+      {/* 모바일에서 중앙 현재 탭 표시 */}
+      <div className="flex-1 md:hidden text-center">
+        <span className="text-sm font-medium text-foreground">
+          {TABS[activeTab].label}
+        </span>
       </div>
 
       {/* AI 모델 설정 */}
