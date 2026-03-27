@@ -10,7 +10,6 @@ import {
   DCInsideCollector,
   FMKoreaCollector,
   ClienCollector,
-  TwitterCollector,
   registerCollector,
 } from '@ai-signalcraft/collectors';
 import type { CommunitySource } from '../pipeline/normalize';
@@ -62,7 +61,6 @@ export function registerAllCollectors(): void {
   registerCollector(new DCInsideCollector());
   registerCollector(new FMKoreaCollector());
   registerCollector(new ClienCollector());
-  registerCollector(new TwitterCollector());
 }
 
 // 커뮤니티 소스 목록 (normalize/persist에서 공통 처리)
@@ -74,10 +72,6 @@ export function countBySourceType(source: string, items: unknown[]): Record<stri
   if (source === 'naver-news') return { articles: count, comments: 0 };
   if (source === 'youtube-videos') return { videos: count, comments: 0 };
   if (source === 'youtube-comments') return { comments: count };
-  if (source === 'twitter') {
-    const replyCount = items.reduce<number>((sum, item: any) => sum + (item?.replies?.length ?? 0), 0);
-    return { tweets: count, comments: replyCount };
-  }
   // 커뮤니티 소스: 게시글 수 + 내장 댓글 수
   const posts = count;
   const commentCount = items.reduce<number>((sum, item: any) => sum + (item?.comments?.length ?? 0), 0);

@@ -8,7 +8,7 @@ export const analysisRouter = router({
   trigger: protectedProcedure
     .input(z.object({
       keyword: z.string().min(1).max(50),
-      sources: z.array(z.enum(['naver', 'youtube', 'dcinside', 'fmkorea', 'clien', 'twitter'])).min(1),
+      sources: z.array(z.enum(['naver', 'youtube', 'dcinside', 'fmkorea', 'clien'])).min(1),
       startDate: z.string(), // ISO date string
       endDate: z.string(),
       options: z.object({

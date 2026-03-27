@@ -1,5 +1,5 @@
 // 수집 데이터를 DB 스키마에 맞게 정규화
-import type { NaverArticle, NaverComment, YoutubeVideo, YoutubeComment, CommunityPost, CommunityComment, Tweet, TweetReply } from '@ai-signalcraft/collectors';
+import type { NaverArticle, NaverComment, YoutubeVideo, YoutubeComment, CommunityPost, CommunityComment } from '@ai-signalcraft/collectors';
 import type { articles, videos, comments } from '../db/schema/collections';
 import type { CommunitySource } from '../types/pipeline';
 
@@ -138,46 +138,5 @@ export function normalizeCommunityComment(
     dislikeCount: comment.dislikeCount,
     publishedAt: toDate(comment.publishedAt),
     rawData: comment.rawData,
-  };
-}
-
-/** Tweet -> articles 테이블 insert 형식 */
-export function normalizeTweet(
-  tweet: Tweet,
-  jobId: number,
-): typeof articles.$inferInsert {
-  return {
-    jobId,
-    source: 'twitter',
-    sourceId: tweet.sourceId,
-    url: tweet.url,
-    title: `@${tweet.authorHandle}`,
-    content: tweet.content,
-    author: tweet.author,
-    publisher: 'X(Twitter)',
-    publishedAt: toDate(tweet.publishedAt),
-    rawData: tweet.rawData,
-  };
-}
-
-/** TweetReply -> comments 테이블 insert 형식 */
-export function normalizeTweetReply(
-  reply: TweetReply,
-  jobId: number,
-  articleDbId?: number,
-): typeof comments.$inferInsert {
-  return {
-    jobId,
-    source: 'twitter',
-    sourceId: reply.sourceId,
-    parentId: reply.parentId,
-    articleId: articleDbId ?? null,
-    videoId: null,
-    content: reply.content,
-    author: reply.author,
-    likeCount: reply.likeCount,
-    dislikeCount: 0,
-    publishedAt: toDate(reply.publishedAt),
-    rawData: reply.rawData,
   };
 }

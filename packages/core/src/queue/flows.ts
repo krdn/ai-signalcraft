@@ -90,18 +90,6 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
       }],
     });
   }
-  if (enabledSources.includes('twitter')) {
-    children.push({
-      name: 'normalize-twitter',
-      queueName: 'pipeline',
-      data: { source: 'twitter', flowId, dbJobId },
-      children: [{
-        name: 'collect-twitter',
-        queueName: 'collectors',
-        data: { ...params, source: 'twitter', maxItems: limits.communityPosts, maxComments: limits.commentsPerItem, flowId, dbJobId },
-      }],
-    });
-  }
 
   const flow = await getFlowProducer().add({
     name: 'persist',

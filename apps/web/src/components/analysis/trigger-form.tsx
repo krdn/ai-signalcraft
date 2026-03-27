@@ -32,13 +32,12 @@ const DATE_PRESETS = [
   }},
 ] as const;
 
-type SourceId = 'naver' | 'youtube' | 'dcinside' | 'fmkorea' | 'clien' | 'twitter';
+type SourceId = 'naver' | 'youtube' | 'dcinside' | 'fmkorea' | 'clien';
 
 const SOURCE_OPTIONS = [
-  { group: '뉴스/영상/SNS', items: [
+  { group: '뉴스/영상', items: [
     { id: 'naver' as SourceId, label: '네이버 뉴스' },
     { id: 'youtube' as SourceId, label: '유튜브' },
-    // { id: 'twitter' as SourceId, label: 'X(Twitter)' }, // Nitter 세션 설정 후 활성화
   ]},
   { group: '커뮤니티', items: [
     { id: 'dcinside' as SourceId, label: 'DC갤러리' },
