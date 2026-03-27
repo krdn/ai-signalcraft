@@ -7,6 +7,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertCircle } from 'lucide-react';
 
+import { KpiCards } from './kpi-cards';
+import { InsightSummary } from './insight-summary';
 import { SentimentChart } from './sentiment-chart';
 import { TrendChart } from './trend-chart';
 import { WordCloud } from './word-cloud';
@@ -87,6 +89,7 @@ export function DashboardView({ jobId }: DashboardViewProps) {
   const segmentation = parseModuleResult(moduleResults, 'segmentation');
   const riskMap = parseModuleResult(moduleResults, 'risk-map');
   const opportunity = parseModuleResult(moduleResults, 'opportunity');
+  const finalSummary = parseModuleResult(moduleResults, 'final-summary');
 
   // 감성 비율 데이터 — sentiment-framing.sentimentRatio (일치)
   const sentimentData = sentimentFraming?.sentimentRatio as {
@@ -167,14 +170,46 @@ export function DashboardView({ jobId }: DashboardViewProps) {
     feasibility: a.expandability,
   })) ?? null;
 
+  // KPI 데이터
+  const totalMentions = rawTrend?.reduce((sum, t) => sum + t.count, 0) ?? null;
+  const topKeywordText = topKeywords?.[0]?.keyword ?? null;
+  const overallDirection = (macroView?.overallDirection as 'positive' | 'negative' | 'mixed') ?? null;
+
+  // 인사이트 요약 데이터 (final-summary 모듈)
+  const insightOneLiner = (finalSummary?.oneLiner as string) ?? null;
+  const insightCurrentState = finalSummary?.currentState as {
+    summary: string; sentiment: string; keyFactor: string;
+  } | null ?? null;
+  const insightActions = finalSummary?.criticalActions as Array<{
+    priority: number; action: string; expectedImpact: string; timeline: string;
+  }> | null ?? null;
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-      <SentimentChart data={sentimentData ?? null} />
-      <TrendChart data={trendData} />
-      <WordCloud words={wordCloudData} />
-      <PlatformCompare data={platformData} />
-      <RiskCards risks={risks} />
-      <OpportunityCards opportunities={opportunities} />
+    <div className="space-y-6">
+      {/* KPI 카드 — 핵심 지표 한눈에 */}
+      <KpiCards
+        totalMentions={totalMentions}
+        sentimentRatio={sentimentData ?? null}
+        topKeyword={topKeywordText}
+        overallDirection={overallDirection}
+      />
+
+      {/* AI 인사이트 요약 */}
+      <InsightSummary
+        oneLiner={insightOneLiner}
+        currentState={insightCurrentState}
+        criticalActions={insightActions}
+      />
+
+      {/* 차트 그리드 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <SentimentChart data={sentimentData ?? null} />
+        <TrendChart data={trendData} />
+        <WordCloud words={wordCloudData} />
+        <PlatformCompare data={platformData} />
+        <RiskCards risks={risks} />
+        <OpportunityCards opportunities={opportunities} />
+      </div>
     </div>
   );
 }
