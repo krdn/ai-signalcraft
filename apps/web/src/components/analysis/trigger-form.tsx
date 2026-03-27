@@ -17,8 +17,19 @@ import {
 } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
 import { Loader2, CalendarIcon, HelpCircle, ChevronDown } from 'lucide-react';
-import { format, subDays } from 'date-fns';
+import { format, subDays, startOfWeek, endOfWeek, subWeeks } from 'date-fns';
 import { ko } from 'date-fns/locale';
+
+const DATE_PRESETS = [
+  { label: '최근 7일', getDates: () => ({ start: subDays(new Date(), 7), end: new Date() }) },
+  { label: '최근 14일', getDates: () => ({ start: subDays(new Date(), 14), end: new Date() }) },
+  { label: '최근 30일', getDates: () => ({ start: subDays(new Date(), 30), end: new Date() }) },
+  { label: '이번 주', getDates: () => ({ start: startOfWeek(new Date(), { weekStartsOn: 1 }), end: new Date() }) },
+  { label: '지난 주', getDates: () => {
+    const lastWeek = subWeeks(new Date(), 1);
+    return { start: startOfWeek(lastWeek, { weekStartsOn: 1 }), end: endOfWeek(lastWeek, { weekStartsOn: 1 }) };
+  }},
+] as const;
 
 type SourceId = 'naver' | 'youtube' | 'dcinside' | 'fmkorea' | 'clien';
 
@@ -146,6 +157,27 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
           </div>
 
           {/* 기간 선택 */}
+          <div className="space-y-2">
+            <Label>빠른 선택</Label>
+            <div className="flex flex-wrap gap-2">
+              {DATE_PRESETS.map((preset) => (
+                <Button
+                  key={preset.label}
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={triggerMutation.isPending}
+                  onClick={() => {
+                    const { start, end } = preset.getDates();
+                    setStartDate(start);
+                    setEndDate(end);
+                  }}
+                >
+                  {preset.label}
+                </Button>
+              ))}
+            </div>
+          </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>시작일</Label>
