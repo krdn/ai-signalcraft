@@ -25,10 +25,10 @@ export class FMKoreaCollector extends CommunityBaseCollector {
 
   protected readonly selectors: SiteSelectors = {
     list: [
-      '.searchResult .title a',         // IS 모듈 검색 결과
+      'ul.searchResult li dt a',        // IS 모듈 검색 결과 (ul > li > dl > dt > a)
+      '.searchResult .title a',         // 이전 구조 (fallback)
       '.search_list .title a',          // 대체 검색 결과 셀렉터
       'li.searchResult a.title',        // 리스트 아이템 형식
-      '.fm_best_widget li a.title',     // 위젯 형식 (fallback)
     ],
     content: ['.xe_content', '.rd_body .xe_content', '#xe_content'],
     comment: ['.fdb_lst_ul .xe_content', '.comment_content .xe_content'],
