@@ -28,7 +28,7 @@ const DEFAULT_BASE_URLS: Partial<Record<AIProvider, string>> = {
   ollama: 'http://localhost:11434/v1',
 };
 
-function getModel(provider: AIProvider, model?: string, baseUrl?: string, apiKey?: string) {
+export function getModel(provider: AIProvider, model?: string, baseUrl?: string, apiKey?: string) {
   const modelName = model ?? DEFAULT_MODELS[provider] ?? 'gpt-4o-mini';
   console.log(`[ai-gateway] getModel: provider=${provider}, model=${modelName}, baseUrl=${baseUrl ?? 'none'}, hasApiKey=${!!apiKey}`);
   switch (provider) {
