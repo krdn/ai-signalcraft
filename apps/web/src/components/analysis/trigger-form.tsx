@@ -16,8 +16,9 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Loader2, CalendarIcon, HelpCircle, ChevronDown } from 'lucide-react';
-import { format, subDays, startOfWeek, endOfWeek, subWeeks } from 'date-fns';
+import { format, subDays, addDays, startOfWeek, endOfWeek, subWeeks } from 'date-fns';
 import { ko } from 'date-fns/locale';
 
 const DATE_PRESETS = [
@@ -58,6 +59,10 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
   const [startDate, setStartDate] = useState<Date>(subDays(new Date(), 7));
   const [endDate, setEndDate] = useState<Date>(new Date());
   const [enableItemAnalysis, setEnableItemAnalysis] = useState(false);
+  const [dateMode, setDateMode] = useState<'period' | 'event'>('period');
+  const [eventName, setEventName] = useState('');
+  const [eventDate, setEventDate] = useState<Date>(new Date());
+  const [eventRadius, setEventRadius] = useState(3); // 전후 N일
 
   const triggerMutation = useMutation({
     mutationFn: (input: {
@@ -92,11 +97,15 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
     e.preventDefault();
     if (!keyword.trim() || sources.length === 0) return;
 
+    // 이벤트 모드: 이벤트 날짜 전후 N일로 자동 계산
+    const resolvedStart = dateMode === 'event' ? subDays(eventDate, eventRadius) : startDate;
+    const resolvedEnd = dateMode === 'event' ? addDays(eventDate, eventRadius) : endDate;
+
     triggerMutation.mutate({
       keyword: keyword.trim(),
       sources,
-      startDate: startDate.toISOString(),
-      endDate: endDate.toISOString(),
+      startDate: resolvedStart.toISOString(),
+      endDate: resolvedEnd.toISOString(),
       options: enableItemAnalysis ? { enableItemAnalysis: true } : undefined,
     });
   };
@@ -157,63 +166,126 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
           </div>
 
           {/* 기간 선택 */}
-          <div className="space-y-2">
-            <Label>빠른 선택</Label>
-            <div className="flex flex-wrap gap-2">
-              {DATE_PRESETS.map((preset) => (
-                <Button
-                  key={preset.label}
-                  type="button"
-                  variant="outline"
-                  size="sm"
+          <Tabs value={dateMode} onValueChange={(v) => setDateMode(v as 'period' | 'event')}>
+            <TabsList className="w-full">
+              <TabsTrigger value="period" className="flex-1">기간 선택</TabsTrigger>
+              <TabsTrigger value="event" className="flex-1">이벤트 중심</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="period" className="space-y-3 mt-3">
+              <div className="space-y-2">
+                <Label>빠른 선택</Label>
+                <div className="flex flex-wrap gap-2">
+                  {DATE_PRESETS.map((preset) => (
+                    <Button
+                      key={preset.label}
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={triggerMutation.isPending}
+                      onClick={() => {
+                        const { start, end } = preset.getDates();
+                        setStartDate(start);
+                        setEndDate(end);
+                      }}
+                    >
+                      {preset.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>시작일</Label>
+                  <Popover>
+                    <PopoverTrigger className="inline-flex w-full items-center justify-start rounded-lg border bg-card px-3 py-2 text-sm font-normal text-foreground hover:bg-accent hover:text-accent-foreground">
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {format(startDate, 'yyyy-MM-dd', { locale: ko })}
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={startDate}
+                        onSelect={(date) => date && setStartDate(date)}
+                        disabled={triggerMutation.isPending}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div className="space-y-2">
+                  <Label>종료일</Label>
+                  <Popover>
+                    <PopoverTrigger className="inline-flex w-full items-center justify-start rounded-lg border bg-card px-3 py-2 text-sm font-normal text-foreground hover:bg-accent hover:text-accent-foreground">
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {format(endDate, 'yyyy-MM-dd', { locale: ko })}
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={endDate}
+                        onSelect={(date) => date && setEndDate(date)}
+                        disabled={triggerMutation.isPending}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="event" className="space-y-3 mt-3">
+              <div className="space-y-2">
+                <Label htmlFor="eventName">이벤트명</Label>
+                <Input
+                  id="eventName"
+                  placeholder="예: 기자회견, 발언 논란, 정책 발표"
+                  value={eventName}
+                  onChange={(e) => setEventName(e.target.value)}
                   disabled={triggerMutation.isPending}
-                  onClick={() => {
-                    const { start, end } = preset.getDates();
-                    setStartDate(start);
-                    setEndDate(end);
-                  }}
-                >
-                  {preset.label}
-                </Button>
-              ))}
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>시작일</Label>
-              <Popover>
-                <PopoverTrigger className="inline-flex w-full items-center justify-start rounded-lg border bg-card px-3 py-2 text-sm font-normal text-foreground hover:bg-accent hover:text-accent-foreground">
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {format(startDate, 'yyyy-MM-dd', { locale: ko })}
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={startDate}
-                    onSelect={(date) => date && setStartDate(date)}
-                    disabled={triggerMutation.isPending}
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-            <div className="space-y-2">
-              <Label>종료일</Label>
-              <Popover>
-                <PopoverTrigger className="inline-flex w-full items-center justify-start rounded-lg border bg-card px-3 py-2 text-sm font-normal text-foreground hover:bg-accent hover:text-accent-foreground">
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {format(endDate, 'yyyy-MM-dd', { locale: ko })}
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={endDate}
-                    onSelect={(date) => date && setEndDate(date)}
-                    disabled={triggerMutation.isPending}
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-          </div>
+                  maxLength={100}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>이벤트 날짜</Label>
+                  <Popover>
+                    <PopoverTrigger className="inline-flex w-full items-center justify-start rounded-lg border bg-card px-3 py-2 text-sm font-normal text-foreground hover:bg-accent hover:text-accent-foreground">
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {format(eventDate, 'yyyy-MM-dd', { locale: ko })}
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={eventDate}
+                        onSelect={(date) => date && setEventDate(date)}
+                        disabled={triggerMutation.isPending}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="eventRadius">전후 분석 범위</Label>
+                  <div className="flex items-center gap-2">
+                    <select
+                      id="eventRadius"
+                      value={eventRadius}
+                      onChange={(e) => setEventRadius(Number(e.target.value))}
+                      disabled={triggerMutation.isPending}
+                      className="flex h-9 w-full rounded-lg border bg-card px-3 text-sm"
+                    >
+                      <option value={1}>전후 1일</option>
+                      <option value={3}>전후 3일</option>
+                      <option value={5}>전후 5일</option>
+                      <option value={7}>전후 7일</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                분석 범위: {format(subDays(eventDate, eventRadius), 'MM/dd')} ~ {format(addDays(eventDate, eventRadius), 'MM/dd')}
+                ({eventRadius * 2 + 1}일간)
+              </p>
+            </TabsContent>
+          </Tabs>
 
           {/* 분석 옵션 */}
           <div className="space-y-2">
