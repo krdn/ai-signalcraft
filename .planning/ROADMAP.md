@@ -75,7 +75,12 @@ Plans:
   2. ai-gateway 패키지에 기본 테스트가 존재하며 주요 함수에 대한 단위 테스트가 통과한다
   3. 300줄 이상이었던 테스트 파일이 모듈별로 분할되어 각 파일이 300줄 이하이다
   4. 모든 패키지(collectors, core, ai-gateway, web)의 기존 테스트가 통과한다
-**Plans**: TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 09-01-PLAN.md — 타입 중앙화 (5개 인라인 타입 -> types/ 디렉토리) + AIProvider 중복 제거
+- [ ] 09-02-PLAN.md — ai-gateway 단위 테스트 추가 (getModel/analyzeText/analyzeStructured)
+- [ ] 09-03-PLAN.md — advn-schema.test.ts 5개 파일 분할 + Phase 9 전체 검증
 
 ## Progress
 
@@ -92,4 +97,4 @@ Phases execute in numeric order: 7 → 8 → 9
 | 6. Pipeline Visualization | post-MVP | 0/? | Planned | — |
 | 7. Collector 추상화 | v1.1 | 3/3 | In Progress|  |
 | 8. Core 구조 정리 | v1.1 | 0/3 | Planned | — |
-| 9. 타입 & 테스트 강화 | v1.1 | 0/? | Not started | — |
+| 9. 타입 & 테스트 강화 | v1.1 | 0/3 | Not started | — |
