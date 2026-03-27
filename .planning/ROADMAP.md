@@ -59,7 +59,12 @@ Plans:
   3. runner.ts의 3단계 오케스트레이션(수집/분석/리포트)이 모듈별로 분리되어 있다
   4. 공통 에러 클래스(AnalysisError 등)와 통일된 로거가 도입되어 throw/catch 패턴이 일관적이다
   5. 기존 파이프라인 E2E 동작이 리팩토링 후에도 동일하게 유지된다
-**Plans**: TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 08-01-PLAN.md — 에러 클래스/로거 도입 + provider-keys.ts CRUD/테스트 분리
+- [ ] 08-02-PLAN.md — runner.ts를 runModule(단일 실행) + pipeline-orchestrator(오케스트레이션) 분리
+- [ ] 08-03-PLAN.md — worker-process.ts 5개 파일 분할 + 전체 테스트 검증
 
 ### Phase 9: 타입 & 테스트 강화
 **Goal**: 분산된 타입 정의를 중앙화하고 ai-gateway 테스트를 추가하며 대형 테스트 파일을 분할한다
@@ -86,5 +91,5 @@ Phases execute in numeric order: 7 → 8 → 9
 | 5. Integration & Flow Gap Closure | v1.0 | 1/1 | Complete | 2026-03-24 |
 | 6. Pipeline Visualization | post-MVP | 0/? | Planned | — |
 | 7. Collector 추상화 | v1.1 | 3/3 | In Progress|  |
-| 8. Core 구조 정리 | v1.1 | 0/? | Not started | — |
+| 8. Core 구조 정리 | v1.1 | 0/3 | Planned | — |
 | 9. 타입 & 테스트 강화 | v1.1 | 0/? | Not started | — |
