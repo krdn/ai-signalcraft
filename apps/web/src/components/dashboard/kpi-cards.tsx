@@ -2,6 +2,7 @@
 
 import { Card, CardContent } from '@/components/ui/card';
 import { TrendingUp, TrendingDown, Minus, MessageSquare, BarChart3, Hash, Activity } from 'lucide-react';
+import { CardHelp, DASHBOARD_HELP } from './card-help';
 
 interface KpiCardsProps {
   totalMentions: number | null;
@@ -65,7 +66,8 @@ export function KpiCards({ totalMentions, sentimentRatio, topKeyword, overallDir
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-muted-foreground mb-2">
               <card.icon className="h-4 w-4" />
-              <span className="text-xs font-medium">{card.title}</span>
+              <span className="text-xs font-medium flex-1">{card.title}</span>
+              {card.title === '총 수집량' && <CardHelp {...DASHBOARD_HELP.kpi} />}
             </div>
             <p className={`text-xl font-bold truncate ${card.valueColor ?? ''}`}>
               {card.value}

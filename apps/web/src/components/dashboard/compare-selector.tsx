@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { GitCompareArrows, Check } from 'lucide-react';
 import { format } from 'date-fns';
+import { CardHelp, DASHBOARD_HELP } from './card-help';
 
 interface CompareSelectorProps {
   currentJobId: number;
@@ -66,6 +67,7 @@ export function CompareSelector({ currentJobId, compareJobId, onSelect }: Compar
           비교 해제
         </Button>
       )}
+      <CardHelp {...DASHBOARD_HELP.compare} />
     </div>
   );
 }

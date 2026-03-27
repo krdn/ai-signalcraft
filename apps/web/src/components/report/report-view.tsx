@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { trpcClient } from '@/lib/trpc';
 import { SectionNav, type Section } from './section-nav';
 import { ReportViewer } from './report-viewer';
+import { ReportHelp } from './report-help';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FileDown, FileText } from 'lucide-react';
@@ -109,7 +110,7 @@ export function ReportView({ jobId }: ReportViewProps) {
 
   return (
     <div className="flex flex-col">
-      {/* 상단: 리포트 메타데이터 + PDF 내보내기 */}
+      {/* 상단: 리포트 메타데이터 + 도움말/PDF */}
       <div className="flex items-start justify-between px-4 py-4 md:px-8 border-b print:hidden">
         <div className="space-y-1">
           <h1 className="text-[28px] font-semibold leading-tight">
@@ -126,15 +127,18 @@ export function ReportView({ jobId }: ReportViewProps) {
             </p>
           )}
         </div>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={handleExportPdf}
-          className="shrink-0 gap-2"
-        >
-          <FileDown className="h-4 w-4" />
-          PDF 내보내기
-        </Button>
+        <div className="flex items-center gap-2 shrink-0">
+          <ReportHelp />
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleExportPdf}
+            className="gap-2"
+          >
+            <FileDown className="h-4 w-4" />
+            PDF 내보내기
+          </Button>
+        </div>
       </div>
 
       {/* 본문: 섹션 네비 + 마크다운 뷰어 */}

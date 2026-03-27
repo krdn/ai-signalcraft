@@ -11,6 +11,7 @@ import { ApprovalRatingCard } from './approval-rating-card';
 import { FrameWarChart } from './frame-war-chart';
 import { CrisisScenarios } from './crisis-scenarios';
 import { WinSimulationCard } from './win-simulation-card';
+import { AdvancedHelp } from './advanced-help';
 
 interface AdvancedViewProps {
   jobId: number | null;
@@ -105,11 +106,19 @@ export function AdvancedView({ jobId }: AdvancedViewProps) {
   const winSimulation = parseModuleResult(moduleResults, 'win-simulation');
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <ApprovalRatingCard data={approvalRating ?? null} />
-      <FrameWarChart data={frameWar ?? null} />
-      <CrisisScenarios data={crisisScenario ?? null} />
-      <WinSimulationCard data={winSimulation ?? null} />
+    <div className="space-y-4">
+      {/* 상단 가이드 버튼 */}
+      <div className="flex justify-end">
+        <AdvancedHelp />
+      </div>
+
+      {/* 카드 그리드 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <ApprovalRatingCard data={approvalRating ?? null} />
+        <FrameWarChart data={frameWar ?? null} />
+        <CrisisScenarios data={crisisScenario ?? null} />
+        <WinSimulationCard data={winSimulation ?? null} />
+      </div>
     </div>
   );
 }

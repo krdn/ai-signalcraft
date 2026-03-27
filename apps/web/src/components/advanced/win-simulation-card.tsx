@@ -9,6 +9,7 @@ import {
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Check, Minus, X, AlertTriangle } from 'lucide-react';
+import { AdvancedCardHelp, ADVANCED_HELP } from './advanced-help';
 
 interface WinCondition {
   condition: string;
@@ -108,7 +109,10 @@ export function WinSimulationCard({ data }: WinSimulationCardProps) {
     <Card className="min-h-[320px]">
       <CardHeader>
         <CardTitle className="text-lg font-semibold flex items-center justify-between">
-          승리 시뮬레이션
+          <span className="flex items-center gap-1.5">
+            승리 시뮬레이션
+            <AdvancedCardHelp {...ADVANCED_HELP.winSimulation} />
+          </span>
           {parsed && getConfidenceBadge(parsed.confidenceLevel)}
         </CardTitle>
       </CardHeader>

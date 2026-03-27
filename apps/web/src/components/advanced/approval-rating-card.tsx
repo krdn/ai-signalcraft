@@ -11,6 +11,7 @@ import {
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import { AdvancedCardHelp, ADVANCED_HELP } from './advanced-help';
 
 interface ApprovalRatingData {
   estimatedRange: { min: number; max: number };
@@ -77,7 +78,10 @@ export function ApprovalRatingCard({ data }: ApprovalRatingCardProps) {
     <Card className="min-h-[320px]">
       <CardHeader>
         <CardTitle className="text-lg font-semibold flex items-center justify-between">
-          AI 지지율 추정
+          <span className="flex items-center gap-1.5">
+            AI 지지율 추정
+            <AdvancedCardHelp {...ADVANCED_HELP.approvalRating} />
+          </span>
           {parsed && getConfidenceBadge(parsed.confidence)}
         </CardTitle>
       </CardHeader>

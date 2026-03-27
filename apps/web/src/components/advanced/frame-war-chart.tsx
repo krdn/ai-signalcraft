@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/chart';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { AdvancedCardHelp, ADVANCED_HELP } from './advanced-help';
 
 interface DominantFrame {
   name: string;
@@ -80,7 +81,10 @@ export function FrameWarChart({ data }: FrameWarChartProps) {
   return (
     <Card className="min-h-[320px]">
       <CardHeader>
-        <CardTitle className="text-lg font-semibold">프레임 전쟁</CardTitle>
+        <CardTitle className="text-lg font-semibold flex items-center gap-1.5">
+          프레임 전쟁
+          <AdvancedCardHelp {...ADVANCED_HELP.frameWar} />
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {!parsed ? (

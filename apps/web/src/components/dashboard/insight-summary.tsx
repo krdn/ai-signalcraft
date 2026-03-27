@@ -2,6 +2,7 @@
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Lightbulb } from 'lucide-react';
+import { CardHelp, DASHBOARD_HELP } from './card-help';
 
 interface CriticalAction {
   priority: number;
@@ -26,7 +27,8 @@ export function InsightSummary({ oneLiner, currentState, criticalActions }: Insi
       <CardContent className="p-4 space-y-3">
         <div className="flex items-center gap-2 text-amber-500">
           <Lightbulb className="h-4 w-4" />
-          <span className="text-sm font-semibold">핵심 인사이트</span>
+          <span className="text-sm font-semibold flex-1">핵심 인사이트</span>
+          <CardHelp {...DASHBOARD_HELP.insight} />
         </div>
 
         {oneLiner && (

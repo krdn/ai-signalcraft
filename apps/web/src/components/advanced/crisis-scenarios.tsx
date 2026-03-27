@@ -3,6 +3,7 @@
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, Shield, TrendingUp } from 'lucide-react';
+import { AdvancedCardHelp, ADVANCED_HELP } from './advanced-help';
 
 interface Scenario {
   type: 'spread' | 'control' | 'reverse';
@@ -78,7 +79,10 @@ export function CrisisScenarios({ data }: CrisisscenariosProps) {
     <Card className="min-h-[320px] lg:col-span-2">
       <CardHeader>
         <CardTitle className="text-lg font-semibold flex items-center justify-between">
-          위기 시나리오
+          <span className="flex items-center gap-1.5">
+            위기 시나리오
+            <AdvancedCardHelp {...ADVANCED_HELP.crisisScenario} />
+          </span>
           {parsed && getRiskBadge(parsed.currentRiskLevel)}
         </CardTitle>
       </CardHeader>
