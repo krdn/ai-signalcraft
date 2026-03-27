@@ -104,6 +104,16 @@ export function DashboardView({ jobId }: DashboardViewProps) {
     count: number;
     sentimentRatio: { positive: number; negative: number; neutral: number };
   }> | undefined;
+  // 이벤트 마커 데이터 — macro-view.inflectionPoints
+  const inflectionPoints = macroView?.inflectionPoints as Array<{
+    date: string;
+    description: string;
+  }> | undefined;
+  const trendEvents = inflectionPoints?.map((p) => ({
+    date: p.date,
+    label: p.description.length > 15 ? p.description.slice(0, 15) + '…' : p.description,
+  })) ?? null;
+
   // TrendChart 형식으로 변환
   const trendData = rawTrend?.map((t) => ({
     date: t.date,
@@ -204,7 +214,7 @@ export function DashboardView({ jobId }: DashboardViewProps) {
       {/* 차트 그리드 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <SentimentChart data={sentimentData ?? null} />
-        <TrendChart data={trendData} />
+        <TrendChart data={trendData} events={trendEvents} />
         <WordCloud words={wordCloudData} />
         <PlatformCompare data={platformData} />
         <RiskCards risks={risks} />

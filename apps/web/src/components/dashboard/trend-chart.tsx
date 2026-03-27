@@ -1,6 +1,6 @@
 'use client';
 
-import { Line, LineChart, CartesianGrid, XAxis, YAxis } from 'recharts';
+import { Line, LineChart, CartesianGrid, XAxis, YAxis, ReferenceLine } from 'recharts';
 import {
   ChartContainer,
   ChartTooltip,
@@ -20,8 +20,14 @@ interface TrendDataPoint {
   neutral: number;
 }
 
+interface EventMarker {
+  date: string;
+  label: string;
+}
+
 interface TrendChartProps {
   data: TrendDataPoint[] | null;
+  events?: EventMarker[] | null;
 }
 
 const chartConfig = {
@@ -43,7 +49,7 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-export function TrendChart({ data }: TrendChartProps) {
+export function TrendChart({ data, events }: TrendChartProps) {
   // prefers-reduced-motion 시 애니메이션 비활성화
   const prefersReducedMotion =
     typeof window !== 'undefined' &&
@@ -109,6 +115,21 @@ export function TrendChart({ data }: TrendChartProps) {
                 dot={false}
                 isAnimationActive={!prefersReducedMotion}
               />
+              {events?.map((evt) => (
+                <ReferenceLine
+                  key={evt.date}
+                  x={evt.date}
+                  stroke="hsl(280 70% 55%)"
+                  strokeDasharray="4 4"
+                  strokeWidth={1.5}
+                  label={{
+                    value: evt.label,
+                    position: 'top',
+                    fontSize: 10,
+                    fill: 'hsl(280 70% 55%)',
+                  }}
+                />
+              ))}
               <ChartLegend content={<ChartLegendContent />} />
             </LineChart>
           </ChartContainer>
