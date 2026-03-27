@@ -80,7 +80,7 @@ Plans:
 Plans:
 - [x] 09-01-PLAN.md — 타입 중앙화 (5개 인라인 타입 -> types/ 디렉토리) + AIProvider 중복 제거
 - [x] 09-02-PLAN.md — ai-gateway 단위 테스트 추가 (getModel/analyzeText/analyzeStructured)
-- [ ] 09-03-PLAN.md — advn-schema.test.ts 5개 파일 분할 + Phase 9 전체 검증
+- [x] 09-03-PLAN.md — advn-schema.test.ts 5개 파일 분할 + Phase 9 전체 검증
 
 ## Progress
 

@@ -25,8 +25,8 @@
 
 - [ ] **TYPE-01**: 분산된 타입 정의(5곳)를 패키지별 types/로 중앙화한다
 - [ ] **TYPE-02**: ai-gateway 패키지에 기본 테스트를 추가한다 (현재 0%)
-- [ ] **TYPE-03**: 300줄 이상 테스트 파일을 모듈별로 분할한다
-- [ ] **TYPE-04**: 모든 패키지의 기존 테스트가 통과한다
+- [x] **TYPE-03**: 300줄 이상 테스트 파일을 모듈별로 분할한다
+- [x] **TYPE-04**: 모든 패키지의 기존 테스트가 통과한다
 
 ## v2 Requirements
 
@@ -61,8 +61,8 @@
 | CORE-05 | Phase 8 | Pending |
 | TYPE-01 | Phase 9 | Pending |
 | TYPE-02 | Phase 9 | Pending |
-| TYPE-03 | Phase 9 | Pending |
-| TYPE-04 | Phase 9 | Pending |
+| TYPE-03 | Phase 9 | Complete |
+| TYPE-04 | Phase 9 | Complete |
 
 **Coverage:**
 - v1.1 requirements: 14 total
