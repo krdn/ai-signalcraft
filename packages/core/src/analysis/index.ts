@@ -3,6 +3,7 @@ export * from './data-loader';
 export * from './persist-analysis';
 export * from './modules';
 export * from './runner';
+export * from './pipeline-orchestrator';
 export * from './item-analyzer';
 export * from './schemas';
 export * from './model-config';
