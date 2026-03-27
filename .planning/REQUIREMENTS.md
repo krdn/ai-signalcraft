@@ -15,16 +15,16 @@
 
 ### Core 구조 정리 (CORE)
 
-- [ ] **CORE-01**: worker-process.ts(451줄)를 config/handlers/start 3~4개 파일로 분할한다
-- [ ] **CORE-02**: provider-keys.ts(443줄)를 CRUD와 테스트로 분리하여 각 파일 200줄 이하로 줄인다
-- [ ] **CORE-03**: runner.ts(383줄)의 3단계 오케스트레이션을 모듈화한다
-- [ ] **CORE-04**: 공통 에러 클래스(AnalysisError 등)와 통일된 로거를 도입한다
-- [ ] **CORE-05**: 기존 파이프라인 E2E 동작이 리팩토링 후에도 동일하게 유지된다
+- [x] **CORE-01**: worker-process.ts(451줄)를 config/handlers/start 3~4개 파일로 분할한다
+- [x] **CORE-02**: provider-keys.ts(443줄)를 CRUD와 테스트로 분리하여 각 파일 200줄 이하로 줄인다
+- [x] **CORE-03**: runner.ts(383줄)의 3단계 오케스트레이션을 모듈화한다
+- [x] **CORE-04**: 공통 에러 클래스(AnalysisError 등)와 통일된 로거를 도입한다
+- [x] **CORE-05**: 기존 파이프라인 E2E 동작이 리팩토링 후에도 동일하게 유지된다
 
 ### 타입 & 테스트 (TYPE)
 
-- [ ] **TYPE-01**: 분산된 타입 정의(5곳)를 패키지별 types/로 중앙화한다
-- [ ] **TYPE-02**: ai-gateway 패키지에 기본 테스트를 추가한다 (현재 0%)
+- [x] **TYPE-01**: 분산된 타입 정의(5곳)를 패키지별 types/로 중앙화한다
+- [x] **TYPE-02**: ai-gateway 패키지에 기본 테스트를 추가한다 (현재 0%)
 - [x] **TYPE-03**: 300줄 이상 테스트 파일을 모듈별로 분할한다
 - [x] **TYPE-04**: 모든 패키지의 기존 테스트가 통과한다
 
@@ -54,13 +54,13 @@
 | COL-03 | Phase 7 | Complete |
 | COL-04 | Phase 7 | Complete |
 | COL-05 | Phase 7 | Complete |
-| CORE-01 | Phase 8 | Pending |
-| CORE-02 | Phase 8 | Pending |
-| CORE-03 | Phase 8 | Pending |
-| CORE-04 | Phase 8 | Pending |
-| CORE-05 | Phase 8 | Pending |
-| TYPE-01 | Phase 9 | Pending |
-| TYPE-02 | Phase 9 | Pending |
+| CORE-01 | Phase 8 | Complete |
+| CORE-02 | Phase 8 | Complete |
+| CORE-03 | Phase 8 | Complete |
+| CORE-04 | Phase 8 | Complete |
+| CORE-05 | Phase 8 | Complete |
+| TYPE-01 | Phase 9 | Complete |
+| TYPE-02 | Phase 9 | Complete |
 | TYPE-03 | Phase 9 | Complete |
 | TYPE-04 | Phase 9 | Complete |
 
