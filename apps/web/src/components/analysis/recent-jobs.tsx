@@ -17,7 +17,7 @@ import {
   TooltipProvider,
 } from '@/components/ui/tooltip';
 import { format } from 'date-fns';
-import { Clock, FileText, MessageSquare } from 'lucide-react';
+import { CalendarRange, Clock, FileText, MessageSquare } from 'lucide-react';
 import { SourceBadges, extractSources, summarizeCounts, formatDuration } from './source-icons';
 
 const STATUS_BADGE: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string }> = {
@@ -106,6 +106,12 @@ export function RecentJobs({ onSelectJob }: RecentJobsProps) {
                         <div className="flex items-center gap-0.5 text-muted-foreground mt-0.5">
                           <Clock className="h-3 w-3" />
                           <span>{formatDuration(job.createdAt, job.updatedAt)}</span>
+                        </div>
+                      )}
+                      {job.startDate && job.endDate && (
+                        <div className="flex items-center gap-0.5 text-muted-foreground mt-0.5">
+                          <CalendarRange className="h-3 w-3" />
+                          <span>{format(new Date(job.startDate), 'MM.dd')}~{format(new Date(job.endDate), 'MM.dd')}</span>
                         </div>
                       )}
                     </TableCell>

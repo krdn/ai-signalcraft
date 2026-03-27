@@ -162,3 +162,23 @@ Do not make direct repo edits outside a GSD workflow unless the user explicitly 
 > Profile not yet configured. Run `/gsd:profile-user` to generate your developer profile.
 > This section is managed by `generate-claude-profile` -- do not edit manually.
 <!-- GSD:profile-end -->
+
+## Debugging
+
+버그 수정 시 반드시 실제 근본 원인(root cause)을 먼저 파악한다. 증상만 고치지 말고, 전체 실행 경로(DB → API → Worker → Frontend)를 추적한 후 변경을 제안한다.
+
+## Tech Stack
+
+이 프로젝트는 TypeScript + Next.js 기반이다. API/DB 변경 시 SQL 쿼리의 모호한 컬럼 참조(ambiguous column reference)를 항상 확인하고, 전체 스택(API → SSE → Frontend) 간 타입 호환성을 보장한다.
+
+## Frontend / UI
+
+탭 전환, 콜백(onComplete 등), 상태 리셋이 포함된 UI 변경 후에는 다른 콜백이 의도된 동작을 덮어쓰지 않는지 확인한다. 새 컴포넌트만이 아니라 전체 사용자 플로우를 테스트한다.
+
+## Git / Workflow
+
+병렬 worktree 실행이나 multi-wave 플랜에서는 STATE.md, REQUIREMENTS.md, 트래킹 파일에서 merge conflict가 발생할 수 있다. worktree 간 cherry-pick 전에 트래킹 파일 변경사항을 stash 또는 commit한다.
+
+## Data Collection / Scrapers
+
+외부 스크래퍼가 깨지면 근본 원인은 거의 항상 대상 사이트의 CSS 셀렉터 또는 URL 패턴 변경이다. 다른 원인을 조사하기 전에 셀렉터부터 확인한다.
