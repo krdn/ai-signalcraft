@@ -62,8 +62,8 @@ Plans:
 **Plans:** 3 plans
 
 Plans:
-- [ ] 08-01-PLAN.md — 에러 클래스/로거 도입 + provider-keys.ts CRUD/테스트 분리
-- [ ] 08-02-PLAN.md — runner.ts를 runModule(단일 실행) + pipeline-orchestrator(오케스트레이션) 분리
+- [x] 08-01-PLAN.md — 에러 클래스/로거 도입 + provider-keys.ts CRUD/테스트 분리
+- [x] 08-02-PLAN.md — runner.ts를 runModule(단일 실행) + pipeline-orchestrator(오케스트레이션) 분리
 - [ ] 08-03-PLAN.md — worker-process.ts 5개 파일 분할 + 전체 테스트 검증
 
 ### Phase 9: 타입 & 테스트 강화
