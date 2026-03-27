@@ -55,7 +55,7 @@ Plans:
 **Requirements**: CORE-01, CORE-02, CORE-03, CORE-04, CORE-05
 **Success Criteria** (what must be TRUE):
   1. worker-process.ts가 config/handlers/start 등 3~4개 파일로 분할되어 각 파일이 200줄 이하이다
-  2. provider-keys.ts의 CRUD 함수가 제네릭화되어 파일이 200줄 이하이다
+  2. provider-keys.ts가 CRUD와 테스트로 분리되어 각 파일이 200줄 이하이다
   3. runner.ts의 3단계 오케스트레이션(수집/분석/리포트)이 모듈별로 분리되어 있다
   4. 공통 에러 클래스(AnalysisError 등)와 통일된 로거가 도입되어 throw/catch 패턴이 일관적이다
   5. 기존 파이프라인 E2E 동작이 리팩토링 후에도 동일하게 유지된다

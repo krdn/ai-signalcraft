@@ -16,7 +16,7 @@
 ### Core 구조 정리 (CORE)
 
 - [ ] **CORE-01**: worker-process.ts(451줄)를 config/handlers/start 3~4개 파일로 분할한다
-- [ ] **CORE-02**: provider-keys.ts(443줄)의 CRUD 함수를 제네릭화하여 200줄 이하로 줄인다
+- [ ] **CORE-02**: provider-keys.ts(443줄)를 CRUD와 테스트로 분리하여 각 파일 200줄 이하로 줄인다
 - [ ] **CORE-03**: runner.ts(383줄)의 3단계 오케스트레이션을 모듈화한다
 - [ ] **CORE-04**: 공통 에러 클래스(AnalysisError 등)와 통일된 로거를 도입한다
 - [ ] **CORE-05**: 기존 파이프라인 E2E 동작이 리팩토링 후에도 동일하게 유지된다
