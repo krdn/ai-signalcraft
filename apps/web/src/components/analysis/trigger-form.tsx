@@ -32,12 +32,13 @@ const DATE_PRESETS = [
   }},
 ] as const;
 
-type SourceId = 'naver' | 'youtube' | 'dcinside' | 'fmkorea' | 'clien';
+type SourceId = 'naver' | 'youtube' | 'dcinside' | 'fmkorea' | 'clien' | 'twitter';
 
 const SOURCE_OPTIONS = [
-  { group: '뉴스/영상', items: [
+  { group: '뉴스/영상/SNS', items: [
     { id: 'naver' as SourceId, label: '네이버 뉴스' },
     { id: 'youtube' as SourceId, label: '유튜브' },
+    { id: 'twitter' as SourceId, label: 'X(Twitter)' },
   ]},
   { group: '커뮤니티', items: [
     { id: 'dcinside' as SourceId, label: 'DC갤러리' },
@@ -46,7 +47,7 @@ const SOURCE_OPTIONS = [
   ]},
 ];
 
-const ALL_SOURCES: SourceId[] = ['naver', 'youtube', 'dcinside', 'fmkorea', 'clien'];
+const ALL_SOURCES: SourceId[] = ['naver', 'youtube', 'dcinside', 'fmkorea', 'clien', 'twitter'];
 
 interface TriggerFormProps {
   onJobStarted: (jobId: number) => void;

@@ -7,6 +7,7 @@ import { YoutubeCommentsCollector } from './adapters/youtube-comments';
 import { DCInsideCollector } from './adapters/dcinside';
 import { FMKoreaCollector } from './adapters/fmkorea';
 import { ClienCollector } from './adapters/clien';
+import { TwitterCollector } from './adapters/twitter';
 
 registerCollector(new NaverNewsCollector());
 registerCollector(new NaverCommentsCollector());
@@ -15,3 +16,4 @@ registerCollector(new YoutubeCommentsCollector());
 registerCollector(new DCInsideCollector());
 registerCollector(new FMKoreaCollector());
 registerCollector(new ClienCollector());
+registerCollector(new TwitterCollector());

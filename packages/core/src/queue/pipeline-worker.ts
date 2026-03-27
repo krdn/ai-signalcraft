@@ -4,7 +4,7 @@ import {
   NaverCommentsCollector,
   YoutubeCommentsCollector,
 } from '@ai-signalcraft/collectors';
-import type { NaverComment, YoutubeComment, CommunityPost } from '@ai-signalcraft/collectors';
+import type { NaverComment, YoutubeComment, CommunityPost, Tweet } from '@ai-signalcraft/collectors';
 import {
   normalizeNaverArticle,
   normalizeNaverComment,
@@ -12,6 +12,8 @@ import {
   normalizeYoutubeComment,
   normalizeCommunityPost,
   normalizeCommunityComment,
+  normalizeTweet,
+  normalizeTweetReply,
   persistArticles,
   persistVideos,
   persistComments,
@@ -190,7 +192,11 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
       // normalize-community: 커뮤니티 수집 결과 (게시글에 댓글이 이미 포함됨)
       if (job.name.startsWith('normalize-community')) {
         // 커뮤니티 수집기는 게시글+댓글을 함께 수집하므로 별도 댓글 수집 불필요
-        // results에 각 커뮤니티 소스 결과가 담겨 있음
+      }
+
+      // normalize-twitter: 트윗 수집 결과 (리플은 현재 빈 배열)
+      if (job.name === 'normalize-twitter') {
+        // Twitter 수집기는 트윗을 직접 수집하므로 별도 처리 불필요
       }
 
       return { source, dbJobId, normalized: true, results };
@@ -275,6 +281,27 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
           );
           if (allCommunityComments.length > 0) {
             await persistComments(allCommunityComments);
+          }
+        }
+
+        // Step 6: Twitter 트윗 persist
+        if (results['twitter']) {
+          const tweetItems = (results['twitter'] as any).items as Tweet[] || [];
+          const normalizedTweets = tweetItems.map((t: Tweet) => normalizeTweet(t, jobIdForDb));
+          const persistedTweets = await persistArticles(normalizedTweets);
+          const tweetArticleMap = new Map<string, number>();
+          for (const row of persistedTweets) {
+            tweetArticleMap.set(row.sourceId, row.id);
+          }
+          // 리플 persist (현재 빈 배열이지만 향후 확장 대비)
+          const allReplies = tweetItems.flatMap((t: Tweet) =>
+            (t.replies || []).map((r) => {
+              const articleDbId = tweetArticleMap.get(t.sourceId);
+              return normalizeTweetReply(r, jobIdForDb, articleDbId);
+            }),
+          );
+          if (allReplies.length > 0) {
+            await persistComments(allReplies);
           }
         }
       }

@@ -26,7 +26,7 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
   // D-01: 통합 키워드 수집 -- 모든 소스 동시 실행
   // D-04: 부분 실패 허용 -- 소스별 독립 실행
   // INT-01: sources 필드 기반 조건부 수집기 실행
-  const enabledSources = params.sources ?? ['naver', 'youtube', 'dcinside', 'fmkorea', 'clien'];
+  const enabledSources = params.sources ?? ['naver', 'youtube', 'dcinside', 'fmkorea', 'clien', 'twitter'];
 
   const children = [];
   if (enabledSources.includes('naver')) {
@@ -87,6 +87,18 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
         name: 'collect-clien',
         queueName: 'collectors',
         data: { ...params, source: 'clien', maxItems: limits.communityPosts, maxComments: limits.commentsPerItem, flowId, dbJobId },
+      }],
+    });
+  }
+  if (enabledSources.includes('twitter')) {
+    children.push({
+      name: 'normalize-twitter',
+      queueName: 'pipeline',
+      data: { source: 'twitter', flowId, dbJobId },
+      children: [{
+        name: 'collect-twitter',
+        queueName: 'collectors',
+        data: { ...params, source: 'twitter', maxItems: limits.communityPosts, maxComments: limits.commentsPerItem, flowId, dbJobId },
       }],
     });
   }

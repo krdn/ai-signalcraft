@@ -9,4 +9,6 @@ export { YoutubeCommentsCollector, type YoutubeComment } from './youtube-comment
 export { DCInsideCollector } from './dcinside';
 export { FMKoreaCollector } from './fmkorea';
 export { ClienCollector } from './clien';
+export { TwitterCollector } from './twitter';
 export type { CommunityPost, CommunityComment } from '../types/community';
+export type { Tweet, TweetReply } from '../types/twitter';

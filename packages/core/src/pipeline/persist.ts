@@ -130,6 +130,7 @@ export async function createCollectionJob(params: {
         dcinside: { status: 'pending', posts: 0, comments: 0 },
         fmkorea: { status: 'pending', posts: 0, comments: 0 },
         clien: { status: 'pending', posts: 0, comments: 0 },
+        twitter: { status: 'pending', tweets: 0, comments: 0 },
       } as any,
     })
     .returning();

@@ -1,4 +1,4 @@
-import { Newspaper, CirclePlay, MessageSquareMore, Monitor, Users } from 'lucide-react';
+import { Newspaper, CirclePlay, MessageSquareMore, Monitor, Users, AtSign } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -36,10 +36,15 @@ export const SOURCE_META: Record<string, {
     icon: MessageSquareMore,
     color: 'text-sky-500',
   },
+  twitter: {
+    label: 'X(Twitter)',
+    icon: AtSign,
+    color: 'text-zinc-800 dark:text-zinc-200',
+  },
 };
 
 // progress JSONB에서 소스 키 목록 추출
-type ProgressData = Record<string, { status: string; posts?: number; articles?: number; videos?: number; comments: number }>;
+type ProgressData = Record<string, { status: string; posts?: number; articles?: number; videos?: number; tweets?: number; comments: number }>;
 
 export function extractSources(progress: unknown): string[] {
   if (!progress || typeof progress !== 'object') return [];
@@ -56,7 +61,7 @@ export function summarizeCounts(progress: unknown): { items: number; comments: n
   let comments = 0;
   for (const val of Object.values(p)) {
     if (val && typeof val === 'object') {
-      items += (val.articles ?? 0) + (val.videos ?? 0) + (val.posts ?? 0);
+      items += (val.articles ?? 0) + (val.videos ?? 0) + (val.posts ?? 0) + (val.tweets ?? 0);
       comments += val.comments ?? 0;
     }
   }
