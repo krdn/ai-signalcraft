@@ -115,9 +115,9 @@ export function TrendChart({ data, events }: TrendChartProps) {
                 dot={false}
                 isAnimationActive={!prefersReducedMotion}
               />
-              {events?.map((evt) => (
+              {events?.map((evt, idx) => (
                 <ReferenceLine
-                  key={evt.date}
+                  key={`${evt.date}-${idx}`}
                   x={evt.date}
                   stroke="hsl(280 70% 55%)"
                   strokeDasharray="4 4"
