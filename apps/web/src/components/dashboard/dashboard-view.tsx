@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { trpcClient } from '@/lib/trpc';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -15,6 +16,8 @@ import { WordCloud } from './word-cloud';
 import { PlatformCompare } from './platform-compare';
 import { RiskCards } from './risk-cards';
 import { OpportunityCards } from './opportunity-cards';
+import { CompareSelector } from './compare-selector';
+import { CompareView } from './compare-view';
 
 interface DashboardViewProps {
   jobId: number | null;
@@ -27,6 +30,8 @@ function parseModuleResult(results: Array<{ module: string; result: unknown }>, 
 }
 
 export function DashboardView({ jobId }: DashboardViewProps) {
+  const [compareJobId, setCompareJobId] = useState<number | null>(null);
+
   const {
     data: results,
     isLoading,
@@ -196,6 +201,18 @@ export function DashboardView({ jobId }: DashboardViewProps) {
 
   return (
     <div className="space-y-6">
+      {/* 비교 분석 셀렉터 */}
+      <CompareSelector
+        currentJobId={jobId}
+        compareJobId={compareJobId}
+        onSelect={setCompareJobId}
+      />
+
+      {/* 비교 모드일 때 CompareView 표시 */}
+      {compareJobId && (
+        <CompareView baseJobId={jobId} compareJobId={compareJobId} />
+      )}
+
       {/* KPI 카드 — 핵심 지표 한눈에 */}
       <KpiCards
         totalMentions={totalMentions}
