@@ -1,9 +1,9 @@
 // 수집 데이터를 DB 스키마에 맞게 정규화
 import type { NaverArticle, NaverComment, YoutubeVideo, YoutubeComment, CommunityPost, CommunityComment } from '@ai-signalcraft/collectors';
 import type { articles, videos, comments } from '../db/schema/collections';
+import type { CommunitySource } from '../types/pipeline';
 
-/** 커뮤니티 소스 타입 */
-export type CommunitySource = 'dcinside' | 'fmkorea' | 'clien';
+export type { CommunitySource } from '../types/pipeline';
 
 /** BullMQ 직렬화로 문자열이 된 Date를 복원 */
 function toDate(value: Date | string | null | undefined): Date | null {

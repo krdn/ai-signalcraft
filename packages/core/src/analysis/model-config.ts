@@ -5,13 +5,9 @@ import { modelSettings, providerKeys } from '../db/schema/settings';
 import { decrypt } from '../utils/crypto';
 import type { AIProvider } from './types';
 import { MODULE_MODEL_MAP } from './types';
+import type { ModuleModelConfig } from '../types/analysis';
 
-export interface ModuleModelConfig {
-  provider: AIProvider;
-  model: string;
-  baseUrl?: string;
-  apiKey?: string;
-}
+export type { ModuleModelConfig } from '../types/analysis';
 
 /**
  * 프로바이더 타입에 해당하는 활성 프로바이더 키에서 연결 정보를 가져옴

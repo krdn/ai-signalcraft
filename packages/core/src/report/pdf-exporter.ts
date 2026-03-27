@@ -1,11 +1,8 @@
 // PDF 내보내기 (Playwright 기반, D-05 / REPT-03)
 import { chromium } from 'playwright';
+import type { PdfExportOptions } from '../types/report';
 
-export interface PdfExportOptions {
-  title?: string;
-  format?: 'A4' | 'Letter';
-  margin?: { top?: string; bottom?: string; left?: string; right?: string };
-}
+export type { PdfExportOptions } from '../types/report';
 
 /**
  * 마크다운 리포트를 Playwright로 HTML 렌더링 후 PDF로 내보내기

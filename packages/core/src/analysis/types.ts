@@ -1,7 +1,8 @@
 import { z } from 'zod';
+import type { AIProvider } from '@ai-signalcraft/ai-gateway';
 
-// AI 프로바이더 타입 (모든 프로바이더 — API 키 관리 + 분석 실행 통합)
-export type AIProvider = 'anthropic' | 'openai' | 'gemini' | 'ollama' | 'deepseek' | 'xai' | 'openrouter' | 'custom';
+// AI 프로바이더 타입 — ai-gateway에서 단일 정의, 여기서 re-export
+export type { AIProvider };
 
 // 호환성을 위한 별칭
 export type ProviderType = AIProvider;

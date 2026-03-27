@@ -3,15 +3,9 @@ import { analyzeText } from '@ai-signalcraft/ai-gateway';
 import { persistAnalysisReport } from '../analysis/persist-analysis';
 import { getModuleModelConfig } from '../analysis/model-config';
 import type { AnalysisModuleResult } from '../analysis/types';
+import type { ReportGenerationInput } from '../types/report';
 
-export interface ReportGenerationInput {
-  jobId: number;
-  keyword: string;
-  dateRange: { start: Date; end: Date };
-  results: Record<string, AnalysisModuleResult>;
-  completedModules: string[];
-  failedModules: string[];
-}
+export type { ReportGenerationInput } from '../types/report';
 
 // 고급 분석(ADVN) 모듈 결과가 있으면 프롬프트에 추가할 섹션 생성
 const ADVN_MODULES = ['approval-rating', 'frame-war', 'crisis-scenario', 'win-simulation'];

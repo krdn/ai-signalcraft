@@ -3,21 +3,9 @@ import { eq } from 'drizzle-orm';
 import { getDb } from '../db';
 import { providerKeys } from '../db/schema/settings';
 import { encrypt, decrypt, maskKey } from '../utils/crypto';
+import type { ProviderKeyInfo } from '../types/analysis';
 
-// 외부에 노출되는 프로바이더 키 정보 (encryptedKey 제외)
-export interface ProviderKeyInfo {
-  id: number;
-  providerName: string;
-  providerType: string;
-  name: string;
-  maskedKey: string | null;
-  baseUrl: string | null;
-  selectedModel: string | null;
-  availableModels: string[] | null;
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}
+export type { ProviderKeyInfo } from '../types/analysis';
 
 /**
  * 전체 프로바이더 키 목록 조회
