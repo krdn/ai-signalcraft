@@ -95,6 +95,10 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
     name: 'persist',
     queueName: 'pipeline',
     data: { flowId, dbJobId, keyword: params.keyword },
+    opts: {
+      removeOnComplete: { age: 3600 },
+      removeOnFail: { age: 86400 },
+    },
     children,
   });
 
@@ -108,6 +112,10 @@ export async function triggerAnalysis(dbJobId: number, keyword: string) {
     name: 'run-analysis',
     queueName: 'analysis',
     data: { dbJobId, keyword },
+    opts: {
+      removeOnComplete: { age: 3600 },
+      removeOnFail: { age: 86400 },
+    },
   });
   return flow;
 }

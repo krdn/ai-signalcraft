@@ -11,11 +11,18 @@ let _collectors: Queue | null = null;
 let _pipeline: Queue | null = null;
 let _analysis: Queue | null = null;
 
+// 완료된 작업 자동 정리 — Redis 메모리 누적 방지
+const DEFAULT_JOB_OPTIONS = {
+  removeOnComplete: { age: 3600, count: 200 },   // 1시간 경과 또는 200개 초과 시 제거
+  removeOnFail: { age: 86400, count: 100 },       // 24시간 경과 또는 100개 초과 시 제거
+};
+
 function getQueue(name: string): Queue {
   const conn = getRedisConnection();
-  if (name === 'collectors') return _collectors ??= new Queue('collectors', { connection: conn });
-  if (name === 'pipeline') return _pipeline ??= new Queue('pipeline', { connection: conn });
-  return _analysis ??= new Queue('analysis', { connection: conn });
+  const opts = { connection: conn, defaultJobOptions: DEFAULT_JOB_OPTIONS };
+  if (name === 'collectors') return _collectors ??= new Queue('collectors', opts);
+  if (name === 'pipeline') return _pipeline ??= new Queue('pipeline', opts);
+  return _analysis ??= new Queue('analysis', opts);
 }
 
 /**

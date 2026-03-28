@@ -4,7 +4,7 @@ import { collectionJobs } from './collections';
 // D-06: 분석 결과 (모듈별)
 export const analysisResults = pgTable('analysis_results', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  jobId: integer('job_id').references(() => collectionJobs.id).notNull(),
+  jobId: integer('job_id').references(() => collectionJobs.id, { onDelete: 'cascade' }).notNull(),
   module: text('module').notNull(),  // 'macro-view', 'segmentation', 등
   status: text('status', {
     enum: ['pending', 'running', 'completed', 'failed'],
@@ -27,7 +27,7 @@ export const analysisResults = pgTable('analysis_results', {
 // D-07: 종합 분석 리포트
 export const analysisReports = pgTable('analysis_reports', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  jobId: integer('job_id').references(() => collectionJobs.id).notNull(),
+  jobId: integer('job_id').references(() => collectionJobs.id, { onDelete: 'cascade' }).notNull(),
   title: text('title').notNull(),
   markdownContent: text('markdown_content').notNull(),
   oneLiner: text('one_liner'),       // REPT-02: 한 줄 요약

@@ -33,7 +33,7 @@ export const collectionJobs = pgTable('collection_jobs', {
 // 뉴스 기사 (D-07: URL 기반 중복 제거)
 export const articles = pgTable('articles', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  jobId: integer('job_id').references(() => collectionJobs.id),
+  jobId: integer('job_id').references(() => collectionJobs.id, { onDelete: 'set null' }),
   source: text('source').notNull(),
   sourceId: text('source_id').notNull(),
   url: text('url').notNull(),
@@ -54,7 +54,7 @@ export const articles = pgTable('articles', {
 // 영상 (유튜브)
 export const videos = pgTable('videos', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  jobId: integer('job_id').references(() => collectionJobs.id),
+  jobId: integer('job_id').references(() => collectionJobs.id, { onDelete: 'set null' }),
   source: text('source').notNull(),
   sourceId: text('source_id').notNull(),
   url: text('url').notNull(),
@@ -75,12 +75,12 @@ export const videos = pgTable('videos', {
 // 댓글 (네이버 + 유튜브 통합, D-07)
 export const comments = pgTable('comments', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  jobId: integer('job_id').references(() => collectionJobs.id),
+  jobId: integer('job_id').references(() => collectionJobs.id, { onDelete: 'set null' }),
   source: text('source').notNull(),
   sourceId: text('source_id').notNull(),
   parentId: text('parent_id'),
-  articleId: integer('article_id').references(() => articles.id),
-  videoId: integer('video_id').references(() => videos.id),
+  articleId: integer('article_id').references(() => articles.id, { onDelete: 'set null' }),
+  videoId: integer('video_id').references(() => videos.id, { onDelete: 'set null' }),
   content: text('content').notNull(),
   author: text('author'),
   likeCount: integer('like_count').default(0),
