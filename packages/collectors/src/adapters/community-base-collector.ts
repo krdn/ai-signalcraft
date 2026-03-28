@@ -49,12 +49,13 @@ export abstract class CommunityBaseCollector extends BrowserCollector<CommunityP
         break;
       }
 
-      // 보안 챌린지 처리 (에펨코리아 등)
+      // 보안 챌린지 처리 (에펨코리아 WASM 안티봇 등)
       const challengeHandled = await this.handleSecurityChallenge(page);
       if (challengeHandled) {
-        // 챌린지 통과 후 원래 검색 페이지를 다시 로드
+        // 챌린지 통과 후 원래 검색 페이지를 다시 로드 (networkidle로 완전 로드 대기)
         try {
-          await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+          await page.goto(searchUrl, { waitUntil: 'networkidle', timeout: 30000 });
+          await page.waitForTimeout(2000);
         } catch (navErr) {
           console.warn(`${this.source} 챌린지 후 검색 페이지 재로드 실패 (page ${pageNum}):`, navErr);
           break;

@@ -42,34 +42,36 @@ export class FMKoreaCollector extends CommunityBaseCollector {
 
   /**
    * 에펨코리아 WASM 안티봇 보안 챌린지 통과
-   * HTTP 430 응답 시 WASM 모듈이 쿠키를 생성하고 자동 리다이렉트
-   * Playwright에서 JS 실행 완료 + 네비게이션 완료를 기다림
+   * HTTP 430 응답 시 WASM 모듈(/mc/mc.php)이 lite_year 쿠키를 생성
+   * 쿠키 설정 후 재접속하면 정상 페이지 반환
    */
   protected async handleSecurityChallenge(page: import('playwright').Page): Promise<boolean> {
     const html = await page.content();
     if (!html.includes('에펨코리아 보안 시스템') && !html.includes('/mc/mc.php')) {
-      return false; // 보안 챌린지 아님
+      return false;
     }
 
     console.log(`[fmkorea] 보안 챌린지 감지 -- WASM 쿠키 생성 대기 중...`);
 
-    try {
-      // WASM 실행 + 쿠키 설정 + 리다이렉트 완료 대기 (최대 15초)
-      await page.waitForURL(/fmkorea\.com\/(?!.*에펨코리아 보안)/, { timeout: 15000 });
-      console.log(`[fmkorea] 보안 챌린지 통과 완료`);
-      // 챌린지 통과 후 쿠키가 설정됨 → 이후 요청은 정상
-      return true;
-    } catch {
-      // URL 변경 대기 실패 시, 쿠키가 설정되었는지 확인
+    // WASM 실행 완료를 기다림 (쿠키가 설정될 때까지 폴링)
+    const maxWait = 15000;
+    const pollInterval = 1000;
+    let elapsed = 0;
+
+    while (elapsed < maxWait) {
+      await page.waitForTimeout(pollInterval);
+      elapsed += pollInterval;
+
       const cookies = await page.context().cookies();
       const hasLiteYear = cookies.some(c => c.name === 'lite_year');
       if (hasLiteYear) {
-        console.log(`[fmkorea] 보안 쿠키 확인됨 (lite_year) -- 계속 진행`);
+        console.log(`[fmkorea] 보안 쿠키 확인됨 (lite_year) -- ${elapsed}ms 소요`);
         return true;
       }
-      console.warn(`[fmkorea] 보안 챌린지 통과 실패 -- 수집 시도 계속`);
-      return true; // 어쨌든 재시도
     }
+
+    console.warn(`[fmkorea] 보안 챌린지 쿠키 대기 타임아웃 (${maxWait}ms) -- 재시도`);
+    return true;
   }
 
   protected buildSearchUrl(keyword: string, page: number): string {
