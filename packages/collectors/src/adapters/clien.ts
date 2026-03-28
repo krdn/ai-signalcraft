@@ -17,8 +17,8 @@ export class ClienCollector extends CommunityBaseCollector {
   protected readonly baseUrl = 'https://www.clien.net';
 
   protected readonly config: BrowserCollectorConfig = {
-    pageDelay: { min: 3000, max: 5000 },
-    postDelay: { min: 1500, max: 2500 },
+    pageDelay: { min: 2000, max: 3500 },
+    postDelay: { min: 1000, max: 1800 },
     defaultMaxItems: 50,
     maxSearchPages: 15,
   };

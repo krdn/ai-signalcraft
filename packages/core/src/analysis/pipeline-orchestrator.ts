@@ -122,7 +122,7 @@ export async function runAnalysisPipeline(jobId: number): Promise<{
   const stage1Settled = await runWithConcurrency(
     stage1Active,
     (m) => runModule(m, input),
-    2,
+    4,  // 4개 모듈 동시 실행 (Stage 1은 모두 독립)
   );
 
   const priorResults: Record<string, unknown> = {};
@@ -135,15 +135,41 @@ export async function runAnalysisPipeline(jobId: number): Promise<{
     }
   }
 
-  // Stage 2: 순차 실행 (모듈 5~7, Stage 1 결과 의존)
-  for (const module of STAGE2_MODULES) {
-    if (!await preRunCheck()) break;
-    if (isSkipped(module.name)) { await markSkipped(module.name); continue; }
+  // Stage 2: risk-map + opportunity 병렬, strategy 순차 (의존성 기반)
+  // - opportunityModule: Stage 1 결과만 참조 (risk-map 불필요)
+  // - strategyModule: Stage 1 + risk-map + opportunity 전부 필요
+  // → risk-map과 opportunity를 병렬 실행 후 strategy 순차 실행
+  if (await preRunCheck()) {
+    const [riskMapMod, opportunityMod, strategyMod] = STAGE2_MODULES;
 
-    const result = await runModule(module, input, priorResults);
-    allResults[result.module] = result;
-    if (result.status === 'completed') {
-      priorResults[result.module] = result.result;
+    // risk-map + opportunity 병렬 실행
+    const stage2Parallel = [riskMapMod, opportunityMod].filter(m => !isSkipped(m.name));
+    const stage2Skipped = [riskMapMod, opportunityMod].filter(m => isSkipped(m.name));
+    for (const m of stage2Skipped) await markSkipped(m.name);
+
+    const stage2Settled = await Promise.allSettled(
+      stage2Parallel.map(m => runModule(m, input, priorResults)),
+    );
+    for (const settled of stage2Settled) {
+      if (settled.status === 'fulfilled') {
+        allResults[settled.value.module] = settled.value;
+        if (settled.value.status === 'completed') {
+          priorResults[settled.value.module] = settled.value.result;
+        }
+      }
+    }
+
+    // strategy 순차 실행 (risk-map + opportunity 결과 필요)
+    if (strategyMod && await preRunCheck()) {
+      if (isSkipped(strategyMod.name)) {
+        await markSkipped(strategyMod.name);
+      } else {
+        const result = await runModule(strategyMod, input, priorResults);
+        allResults[result.module] = result;
+        if (result.status === 'completed') {
+          priorResults[result.module] = result.result;
+        }
+      }
     }
   }
 

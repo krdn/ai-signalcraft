@@ -86,6 +86,8 @@ export async function persistVideos(jobId: number, data: (typeof videos.$inferIn
  * - comments_source_id_idx 충돌 시 업데이트 (jobId 덮어쓰기 없음)
  * - comment_jobs에 N:M 관계 레코드 추가
  */
+const PERSIST_BATCH_SIZE = 1000;
+
 export async function persistComments(jobId: number, data: (typeof comments.$inferInsert)[]) {
   if (data.length === 0) return [];
   // 같은 batch 내 source+sourceId 중복 제거
@@ -95,31 +97,42 @@ export async function persistComments(jobId: number, data: (typeof comments.$inf
   }
   const deduped = [...seen.values()];
 
-  return getDb().transaction(async (tx) => {
-    const upserted = await tx
-      .insert(comments)
-      .values(deduped)
-      .onConflictDoUpdate({
-        target: [comments.source, comments.sourceId],
-        set: {
-          content: sql`excluded.content`,
-          likeCount: sql`excluded.like_count`,
-          dislikeCount: sql`excluded.dislike_count`,
-          rawData: sql`excluded.raw_data`,
-          collectedAt: sql`excluded.collected_at`,
-        },
-      })
-      .returning();
+  // 대량 데이터 시 배치 분할 (트랜잭션 크기 + 메모리 안정화)
+  const allUpserted: (typeof comments.$inferSelect)[] = [];
 
-    if (upserted.length > 0) {
-      await tx
-        .insert(commentJobs)
-        .values(upserted.map((c) => ({ commentId: c.id, jobId })))
-        .onConflictDoNothing();
-    }
+  for (let i = 0; i < deduped.length; i += PERSIST_BATCH_SIZE) {
+    const batch = deduped.slice(i, i + PERSIST_BATCH_SIZE);
 
-    return upserted;
-  });
+    const upserted = await getDb().transaction(async (tx) => {
+      const rows = await tx
+        .insert(comments)
+        .values(batch)
+        .onConflictDoUpdate({
+          target: [comments.source, comments.sourceId],
+          set: {
+            content: sql`excluded.content`,
+            likeCount: sql`excluded.like_count`,
+            dislikeCount: sql`excluded.dislike_count`,
+            rawData: sql`excluded.raw_data`,
+            collectedAt: sql`excluded.collected_at`,
+          },
+        })
+        .returning();
+
+      if (rows.length > 0) {
+        await tx
+          .insert(commentJobs)
+          .values(rows.map((c) => ({ commentId: c.id, jobId })))
+          .onConflictDoNothing();
+      }
+
+      return rows;
+    });
+
+    allUpserted.push(...upserted);
+  }
+
+  return allUpserted;
 }
 
 /**

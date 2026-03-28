@@ -17,8 +17,8 @@ export class FMKoreaCollector extends CommunityBaseCollector {
   protected readonly baseUrl = 'https://www.fmkorea.com';
 
   protected readonly config: BrowserCollectorConfig = {
-    pageDelay: { min: 2000, max: 4000 },
-    postDelay: { min: 1000, max: 2000 },
+    pageDelay: { min: 1500, max: 3000 },
+    postDelay: { min: 800, max: 1500 },
     defaultMaxItems: 50,
     maxSearchPages: 20,
   };
@@ -36,7 +36,40 @@ export class FMKoreaCollector extends CommunityBaseCollector {
 
   // 차단 감지 override (에펨코리아 전용)
   protected detectBlocked(html: string): boolean {
-    return html.includes('자동등록방지') || html.includes('captcha') || html.includes('접근이 제한');
+    return html.includes('자동등록방지') || html.includes('captcha')
+      || html.includes('접근이 제한') || html.includes('에펨코리아 보안 시스템');
+  }
+
+  /**
+   * 에펨코리아 WASM 안티봇 보안 챌린지 통과
+   * HTTP 430 응답 시 WASM 모듈이 쿠키를 생성하고 자동 리다이렉트
+   * Playwright에서 JS 실행 완료 + 네비게이션 완료를 기다림
+   */
+  protected async handleSecurityChallenge(page: import('playwright').Page): Promise<boolean> {
+    const html = await page.content();
+    if (!html.includes('에펨코리아 보안 시스템') && !html.includes('/mc/mc.php')) {
+      return false; // 보안 챌린지 아님
+    }
+
+    console.log(`[fmkorea] 보안 챌린지 감지 -- WASM 쿠키 생성 대기 중...`);
+
+    try {
+      // WASM 실행 + 쿠키 설정 + 리다이렉트 완료 대기 (최대 15초)
+      await page.waitForURL(/fmkorea\.com\/(?!.*에펨코리아 보안)/, { timeout: 15000 });
+      console.log(`[fmkorea] 보안 챌린지 통과 완료`);
+      // 챌린지 통과 후 쿠키가 설정됨 → 이후 요청은 정상
+      return true;
+    } catch {
+      // URL 변경 대기 실패 시, 쿠키가 설정되었는지 확인
+      const cookies = await page.context().cookies();
+      const hasLiteYear = cookies.some(c => c.name === 'lite_year');
+      if (hasLiteYear) {
+        console.log(`[fmkorea] 보안 쿠키 확인됨 (lite_year) -- 계속 진행`);
+        return true;
+      }
+      console.warn(`[fmkorea] 보안 챌린지 통과 실패 -- 수집 시도 계속`);
+      return true; // 어쨌든 재시도
+    }
   }
 
   protected buildSearchUrl(keyword: string, page: number): string {

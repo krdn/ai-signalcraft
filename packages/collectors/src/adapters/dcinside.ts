@@ -17,8 +17,8 @@ export class DCInsideCollector extends CommunityBaseCollector {
   protected readonly baseUrl = 'https://gall.dcinside.com';
 
   protected readonly config: BrowserCollectorConfig = {
-    pageDelay: { min: 2000, max: 3000 },
-    postDelay: { min: 1000, max: 2000 },
+    pageDelay: { min: 1500, max: 2500 },
+    postDelay: { min: 800, max: 1500 },
     defaultMaxItems: 50,
     maxSearchPages: 20,
   };

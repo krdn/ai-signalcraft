@@ -22,6 +22,9 @@ export function createCollectorHandler(): (job: Job) => Promise<CollectorResult>
 
     const pKey = progressKey(source);
 
+    const startTime = Date.now();
+    logger.info(`[${source}] 수집 시작 (keyword=${keyword}, maxItems=${maxItems})`);
+
     try {
       // DB: 수집 시작 상태
       if (dbJobId) {
@@ -42,6 +45,9 @@ export function createCollectorHandler(): (job: Job) => Promise<CollectorResult>
         }
       }
 
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+      logger.info(`[${source}] 수집 완료: ${allItems.length}건, ${elapsed}초 소요`);
+
       // DB: 수집 완료
       if (dbJobId) {
         await updateJobProgress(dbJobId, {
@@ -51,7 +57,8 @@ export function createCollectorHandler(): (job: Job) => Promise<CollectorResult>
 
       return { source, items: allItems, count: allItems.length };
     } catch (err) {
-      logger.warn(`[${source}] 수집 실패 (부분 실패 허용):`, err instanceof Error ? err.message : err);
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+      logger.warn(`[${source}] 수집 실패 (${elapsed}초, 부분 실패 허용):`, err instanceof Error ? err.message : err);
       // DB: 수집 실패
       if (dbJobId) {
         await updateJobProgress(dbJobId, {

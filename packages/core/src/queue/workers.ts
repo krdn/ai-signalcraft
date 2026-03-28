@@ -8,8 +8,8 @@ export function createCollectorWorker(processJob: (job: Job) => Promise<any>) {
     connection: getRedisConnection(),
     concurrency: 2,
     limiter: {
-      max: 5,
-      duration: 10000,  // 10초당 최대 5개 작업 (네이버 rate limit 대응)
+      max: 8,
+      duration: 10000,  // 10초당 최대 8개 작업 (각 수집기 내부 딜레이가 rate limit 대응)
     },
   });
 }
@@ -17,6 +17,6 @@ export function createCollectorWorker(processJob: (job: Job) => Promise<any>) {
 export function createPipelineWorker(processJob: (job: Job) => Promise<any>) {
   return new Worker('pipeline', processJob, {
     connection: getRedisConnection(),
-    concurrency: 1,
+    concurrency: 3,  // normalize-naver, normalize-youtube, normalize-community를 병렬 처리
   });
 }

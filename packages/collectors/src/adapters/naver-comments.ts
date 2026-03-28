@@ -17,8 +17,8 @@ export interface NaverComment {
 
 // 기본 최대 댓글 수집 건수
 const DEFAULT_MAX_COMMENTS = 500;
-// 요청 간 딜레이 (rate limit 대응)
-const REQUEST_DELAY_MS = 1500;
+// 요청 간 딜레이 (네이버 댓글 API는 ~10req/s 허용, 500ms면 충분)
+const REQUEST_DELAY_MS = 500;
 
 // 필수 헤더 (Referer 없으면 403 차단)
 const BASE_HEADERS: Record<string, string> = {
@@ -162,7 +162,7 @@ export class NaverCommentsCollector implements Collector<NaverComment> {
       if (currentPage >= totalPages) break;
 
       currentPage++;
-      await delay(REQUEST_DELAY_MS, REQUEST_DELAY_MS + 1500);
+      await delay(REQUEST_DELAY_MS, REQUEST_DELAY_MS + 500);
     }
   }
 }

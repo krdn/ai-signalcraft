@@ -24,6 +24,15 @@ export abstract class CommunityBaseCollector extends BrowserCollector<CommunityP
     return false;
   }
 
+  /**
+   * 보안 챌린지 페이지 감지 및 통과 (에펨코리아 WASM 안티봇 등)
+   * 보안 페이지가 감지되면 JS 실행 완료 + 리다이렉트를 기다림
+   * 기본: 감지 안 함 (subclass에서 override)
+   */
+  protected async handleSecurityChallenge(page: Page): Promise<boolean> {
+    return false; // 기본: 보안 챌린지 없음
+  }
+
   protected async *doCollect(page: Page, options: CollectionOptions): AsyncGenerator<CommunityPost[], void, unknown> {
     const maxItems = options.maxItems ?? this.config.defaultMaxItems;
     const maxComments = options.maxComments ?? 100;
@@ -39,6 +48,19 @@ export abstract class CommunityBaseCollector extends BrowserCollector<CommunityP
         console.warn(`${this.source} 검색 페이지 로드 실패 (page ${pageNum}):`, navErr);
         break;
       }
+
+      // 보안 챌린지 처리 (에펨코리아 등)
+      const challengeHandled = await this.handleSecurityChallenge(page);
+      if (challengeHandled) {
+        // 챌린지 통과 후 원래 검색 페이지를 다시 로드
+        try {
+          await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+        } catch (navErr) {
+          console.warn(`${this.source} 챌린지 후 검색 페이지 재로드 실패 (page ${pageNum}):`, navErr);
+          break;
+        }
+      }
+
       await page.waitForTimeout(this.config.pageDelay.min + Math.random() * 1000);
 
       const html = await page.content();

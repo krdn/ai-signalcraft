@@ -1,11 +1,10 @@
-// 네이버 뉴스 기사 수집기 (BrowserCollector 상속 + Cheerio 파싱)
-import type { Page } from 'playwright';
+// 네이버 뉴스 기사 수집기 (하이브리드: 검색=fetch, 본문=Playwright)
+import type { Browser, Page } from 'playwright';
 import * as cheerio from 'cheerio';
-import type { CollectionOptions } from './base';
-import { BrowserCollector, type BrowserCollectorConfig } from './browser-collector';
+import type { Collector, CollectionOptions } from './base';
 import { buildNaverSearchUrl, parseNaverArticleUrl } from '../utils/naver-parser';
 import { parseDateTextOrNull } from '../utils/community-parser';
-import { sleep } from '../utils/browser';
+import { getRandomUserAgent, launchBrowser, createBrowserContext, sleep } from '../utils/browser';
 
 /** 수집된 네이버 뉴스 기사 */
 export interface NaverArticle {
@@ -19,82 +18,106 @@ export interface NaverArticle {
   rawData: Record<string, unknown>;
 }
 
+// 검색 페이지 fetch 요청 헤더
+const SEARCH_HEADERS: Record<string, string> = {
+  Accept: 'text/html,application/xhtml+xml',
+  'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+  'Cache-Control': 'no-cache',
+  Referer: 'https://search.naver.com/',
+};
+
 /**
- * NaverNewsCollector
+ * NaverNewsCollector (하이브리드)
  *
- * Playwright로 네이버 뉴스 검색 결과 페이지를 렌더링하고
- * Cheerio로 기사 목록을 파싱한다.
- * AsyncGenerator로 페이지 단위(최대 10건)로 yield한다.
+ * 검색 결과 목록: fetch + Cheerio (브라우저 불필요, ~200ms/페이지)
+ * 기사 본문 수집: Playwright (일부 언론사 JS 렌더링 필요)
+ * AsyncGenerator로 페이지 단위(최대 10건)로 yield.
  */
-export class NaverNewsCollector extends BrowserCollector<NaverArticle> {
+export class NaverNewsCollector implements Collector<NaverArticle> {
   readonly source = 'naver-news';
 
-  protected readonly config: BrowserCollectorConfig = {
-    pageDelay: { min: 1500, max: 2000 },
-    postDelay: { min: 500, max: 1000 },
+  private readonly config = {
+    searchDelay: { min: 300, max: 600 },   // 검색 페이지 간 딜레이 (fetch이므로 짧게)
+    postDelay: { min: 500, max: 1000 },    // 기사 본문 간 딜레이
     defaultMaxItems: 100,
     maxSearchPages: 40,
   };
 
-  /**
-   * 키워드 기반 네이버 뉴스 기사 수집
-   * 페이지 단위(10건)로 yield
-   */
-  protected async *doCollect(page: Page, options: CollectionOptions): AsyncGenerator<NaverArticle[], void, unknown> {
+  async *collect(options: CollectionOptions): AsyncGenerator<NaverArticle[], void, unknown> {
     const maxItems = options.maxItems ?? this.config.defaultMaxItems;
     let totalCollected = 0;
 
+    // Phase 1: 검색 결과 수집 (fetch — 브라우저 없이 빠르게)
+    const allArticles: NaverArticle[] = [];
+
     for (let pageNum = 1; pageNum <= this.config.maxSearchPages; pageNum++) {
-      if (totalCollected >= maxItems) break;
+      if (allArticles.length >= maxItems) break;
 
       const searchUrl = buildNaverSearchUrl({
         keyword: options.keyword,
         startDate: options.startDate,
         endDate: options.endDate,
         page: pageNum,
-        sort: 1, // 최신순
+        sort: 1,
       });
 
-      await page.goto(searchUrl, { waitUntil: 'domcontentloaded' });
-      // SDS 컴포넌트 렌더링 대기 (동적 해시 클래스 로드 필요)
       try {
-        await page.waitForSelector('[class*="sds-comps-text-type-headline1"], .news_tit', { timeout: 5000 });
+        const response = await fetch(searchUrl, {
+          headers: { ...SEARCH_HEADERS, 'User-Agent': getRandomUserAgent() },
+        });
+        if (!response.ok) break;
+
+        const html = await response.text();
+        const articles = this.parseSearchResults(html);
+        if (articles.length === 0) break;
+
+        allArticles.push(...articles);
       } catch {
-        // 셀렉터 대기 실패 시 고정 대기
+        break;
       }
-      await page.waitForTimeout(1500);
 
-      const html = await page.content();
-      const articles = this.parseSearchResults(html);
+      await sleep(this.config.searchDelay.min, this.config.searchDelay.max);
+    }
 
-      if (articles.length === 0) break; // 검색 결과 없음 -- 종료
+    // maxItems 제한
+    const targetArticles = allArticles.slice(0, maxItems);
+    if (targetArticles.length === 0) return;
 
-      // 각 기사의 본문 수집
-      const enrichedArticles: NaverArticle[] = [];
-      for (const article of articles) {
-        if (totalCollected >= maxItems) break;
+    // Phase 2: 기사 본문 수집 (Playwright — JS 렌더링 필요)
+    let browser: Browser | null = null;
+    try {
+      browser = await launchBrowser();
+      const context = await createBrowserContext(browser);
+      const page = await context.newPage();
 
-        // 네이버뉴스 URL 또는 원본 언론사 URL로 본문 수집 시도
-        try {
-          const content = await this.fetchArticleContent(page, article.url);
-          article.content = content;
-        } catch (err) {
-          // 개별 기사 본문 수집 실패 시 content를 null로 유지 (부분 실패 허용)
-          article.content = null;
-          article.rawData.fetchError = err instanceof Error ? err.message : String(err);
+      // 배치로 yield (10건 단위)
+      const BATCH_SIZE = 10;
+      for (let i = 0; i < targetArticles.length; i += BATCH_SIZE) {
+        const batch = targetArticles.slice(i, i + BATCH_SIZE);
+        const enriched: NaverArticle[] = [];
+
+        for (const article of batch) {
+          if (totalCollected >= maxItems) break;
+
+          try {
+            const content = await this.fetchArticleContent(page, article.url);
+            article.content = content;
+          } catch (err) {
+            article.content = null;
+            article.rawData.fetchError = err instanceof Error ? err.message : String(err);
+          }
+          await sleep(this.config.postDelay.min, this.config.postDelay.max);
+
+          enriched.push(article);
+          totalCollected++;
         }
-        await sleep(this.config.postDelay.min, this.config.postDelay.max);
 
-        enrichedArticles.push(article);
-        totalCollected++;
+        if (enriched.length > 0) {
+          yield enriched;
+        }
       }
-
-      if (enrichedArticles.length > 0) {
-        yield enrichedArticles;
-      }
-
-      // 페이지 간 딜레이 (rate limit 대응)
-      await sleep(this.config.pageDelay.min, this.config.pageDelay.max);
+    } finally {
+      if (browser) await browser.close();
     }
   }
 
@@ -114,31 +137,23 @@ export class NaverNewsCollector extends BrowserCollector<NaverArticle> {
     const seen = new Set<string>(); // URL 기반 중복 제거
 
     // --- 1차: sds-comps headline1 기반 (2026-03 네이버 구조) ---
-    // headline1 요소의 부모 <a> 태그에 기사 URL이 있음
     $('[class*="sds-comps-text-type-headline1"]').each((_, el) => {
-      // 제목 텍스트
       const title = $(el).text().trim();
       if (!title || title.length < 5) return;
 
-      // 기사 URL: headline1을 감싸는 가장 가까운 <a> 태그
       const $parentLink = $(el).closest('a[href]');
       const articleUrl = $parentLink.attr('href') ?? '';
       if (!articleUrl || !articleUrl.startsWith('http')) return;
 
-      // 중복 제거 (URL 기반)
       if (seen.has(articleUrl)) return;
       seen.add(articleUrl);
 
-      // 기사 블록 탐색: headline1에서 상위로 올라가며 기사 컨테이너 찾기
-      // sds-comps-full-layout 클래스 + 프로필(언론사) 정보가 있는 블록
       let $block = $(el);
       for (let i = 0; i < 8; i++) {
         $block = $block.parent();
-        // 언론사 프로필 이미지가 있으면 기사 블록으로 판단
         if ($block.find('img[alt$="의 프로필 이미지"]').length > 0) break;
       }
 
-      // 언론사: 프로필 이미지의 alt 텍스트에서 추출
       let publisher = '알 수 없음';
       const $pubImg = $block.find('img[alt$="의 프로필 이미지"]').first();
       if ($pubImg.length) {
@@ -146,12 +161,10 @@ export class NaverNewsCollector extends BrowserCollector<NaverArticle> {
         publisher = alt.replace('의 프로필 이미지', '').trim() || publisher;
       }
 
-      // 날짜: 블록 내 "N분 전", "N시간 전" 등
       const blockText = $block.text();
       const dateMatch = blockText.match(/(\d+)(분|시간|일)\s*전/);
       const publishedAt = dateMatch ? parseDateTextOrNull(`${dateMatch[1]}${dateMatch[2]} 전`) : null;
 
-      // 네이버뉴스 URL 확인: 같은 블록 안에 n.news.naver.com 링크가 있는지
       let naverUrl: string | null = null;
       $block.find('a[href*="n.news.naver.com"]').each((_, a) => {
         if (!naverUrl) {
@@ -160,7 +173,6 @@ export class NaverNewsCollector extends BrowserCollector<NaverArticle> {
         }
       });
 
-      // sourceId 생성: 네이버뉴스 URL이 있으면 oid_aid, 없으면 URL 해시
       const parsed = naverUrl ? parseNaverArticleUrl(naverUrl) : null;
       const sourceId = parsed
         ? `${parsed.oid}_${parsed.aid}`
@@ -168,7 +180,7 @@ export class NaverNewsCollector extends BrowserCollector<NaverArticle> {
 
       articles.push({
         sourceId,
-        url: naverUrl ?? articleUrl, // 네이버뉴스 URL 우선 (댓글 수집용)
+        url: naverUrl ?? articleUrl,
         title,
         content: null,
         author: null,
@@ -189,7 +201,6 @@ export class NaverNewsCollector extends BrowserCollector<NaverArticle> {
       if (!parsed) return;
 
       const sourceId = `${parsed.oid}_${parsed.aid}`;
-      // 1차에서 이미 수집한 기사인지 확인
       if (articles.some(a => a.sourceId === sourceId)) return;
       if (seen.has(naverUrl)) return;
       seen.add(naverUrl);
@@ -269,13 +280,10 @@ export class NaverNewsCollector extends BrowserCollector<NaverArticle> {
 
   /**
    * URL에서 고유 sourceId 생성 (네이버뉴스 URL이 없는 기사용)
-   * 원본 언론사 URL의 경로 부분을 ID로 사용
    */
   private urlToSourceId(url: string): string {
     try {
       const u = new URL(url);
-      // 호스트 + 경로 + 쿼리 파라미터를 합쳐서 고유 ID 생성
-      // 쿼리 파라미터에 기사 ID가 포함되므로 반드시 포함해야 중복 방지
       const fullPath = (u.pathname + u.search).replace(/[^a-zA-Z0-9]/g, '_').substring(0, 120);
       return `ext_${u.hostname.replace(/\./g, '_')}_${fullPath}`;
     } catch {
@@ -284,7 +292,7 @@ export class NaverNewsCollector extends BrowserCollector<NaverArticle> {
   }
 
   /**
-   * 기사 페이지에서 본문 추출
+   * 기사 페이지에서 본문 추출 (Playwright 사용)
    */
   private async fetchArticleContent(page: Page, url: string): Promise<string | null> {
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15000 });
@@ -293,15 +301,11 @@ export class NaverNewsCollector extends BrowserCollector<NaverArticle> {
     const html = await page.content();
     const $ = cheerio.load(html);
 
-    // 네이버 뉴스 + 원본 언론사 본문 셀렉터 (우선순위대로)
     const contentSelectors = [
-      // 네이버 뉴스
       '#newsct_article', '.newsct_article', '#dic_area',
-      // 일반 언론사 공통 패턴
       '#articeBody', '#articleBody', '.article_body', '.article-body',
       '#article-body', '#article_body', '.news_content', '.article_content',
       '.story-news', '#article_content', '.view_article', '#news_body',
-      // 범용 article 태그
       'article',
     ];
 

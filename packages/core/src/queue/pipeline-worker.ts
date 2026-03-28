@@ -28,6 +28,8 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
     // dbJobId는 collection_jobs 테이블의 정수 PK -- flows.ts에서 모든 job data에 포함
     // IMPORTANT: parseInt(jobId) 패턴 사용 금지 -- flowId는 "collection-1711234567890" 형태
     const { source, dbJobId } = job.data;
+    const jobStartTime = Date.now();
+    logger.info(`[${job.name}] 시작 (dbJobId=${dbJobId})`);
 
     if (job.name.startsWith('normalize-')) {
       // 자식 작업(collect)의 결과를 가져와 정규화
@@ -39,11 +41,10 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
         results[childResult.source] = childResult;
       }
 
-      // normalize-naver: 기사 수집 결과에서 URL 추출 후 댓글 수집
+      // normalize-naver: 기사 수집 결과에서 URL 추출 후 댓글 병렬 수집
       if (job.name === 'normalize-naver' && results['naver-news']) {
         const articles = (results['naver-news'] as { items: Array<{ url: string; title?: string }> }).items;
         const maxComments = (job.data.maxComments as number) ?? 500;
-        const commentsCollector = new NaverCommentsCollector();
         const allComments: NaverComment[] = [];
 
         // 기사별 댓글 수집 진행 추적
@@ -51,49 +52,22 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
           .filter(a => a.url)
           .map(a => ({ title: (a.title || a.url).slice(0, 50), status: 'pending', comments: 0 }));
 
+        // 네이버뉴스 URL만 필터 (외부 언론사 URL은 네이버 댓글 API 미지원)
+        const naverArticles: Array<{ index: number; url: string }> = [];
         for (let i = 0; i < articles.length; i++) {
           const article = articles[i];
           if (!article.url) continue;
-
-          const detail = articleDetails[i];
-
-          // 네이버 뉴스 URL이 아닌 기사는 댓글 수집 스킵 (외부 언론사 URL은 네이버 댓글 API 미지원)
           if (!article.url.includes('n.news.naver.com')) {
-            detail.status = 'completed';
-            detail.comments = 0;
+            articleDetails[i].status = 'completed';
+            articleDetails[i].comments = 0;
             continue;
           }
+          naverArticles.push({ index: i, url: article.url });
+        }
 
-          detail.status = 'running';
-          let articleCommentCount = 0;
-
-          try {
-            for await (const chunk of commentsCollector.collectForArticle(article.url, { maxComments })) {
-              allComments.push(...chunk);
-              articleCommentCount += chunk.length;
-              detail.comments = articleCommentCount;
-
-              // DB: 기사별 댓글 실시간 진행
-              if (dbJobId) {
-                await updateJobProgress(dbJobId, {
-                  naver: {
-                    status: 'running',
-                    articles: articles.length,
-                    comments: allComments.length,
-                    articleDetails,
-                  }
-                });
-              }
-            }
-            detail.status = 'completed';
-          } catch (err) {
-            // D-04: 부분 실패 허용 -- 개별 기사 댓글 실패 시 로깅 후 계속
-            logger.warn(`댓글 수집 실패 (${article.url}):`, err);
-            detail.status = 'failed';
-          }
-          await job.updateProgress({ commentsCollected: allComments.length });
-
-          // DB: 기사 완료/실패 후 진행 업데이트
+        // 병렬 수집 -- 동시 4개 기사 댓글 수집 (semaphore 패턴)
+        const CONCURRENCY = 4;
+        const updateProgress = async () => {
           if (dbJobId) {
             await updateJobProgress(dbJobId, {
               naver: {
@@ -104,6 +78,42 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
               }
             });
           }
+        };
+
+        const collectArticleComments = async (item: { index: number; url: string }) => {
+          const detail = articleDetails[item.index];
+          detail.status = 'running';
+          const collector = new NaverCommentsCollector();
+          const articleComments: NaverComment[] = [];
+
+          try {
+            for await (const chunk of collector.collectForArticle(item.url, { maxComments })) {
+              articleComments.push(...chunk);
+              detail.comments = articleComments.length;
+              await updateProgress();
+            }
+            detail.status = 'completed';
+          } catch (err) {
+            // D-04: 부분 실패 허용 -- 개별 기사 댓글 실패 시 로깅 후 계속
+            logger.warn(`댓글 수집 실패 (${item.url}):`, err);
+            detail.status = 'failed';
+          }
+          return articleComments;
+        };
+
+        // semaphore: CONCURRENCY개씩 배치 처리
+        for (let batchStart = 0; batchStart < naverArticles.length; batchStart += CONCURRENCY) {
+          const batch = naverArticles.slice(batchStart, batchStart + CONCURRENCY);
+          const batchResults = await Promise.allSettled(batch.map(collectArticleComments));
+
+          for (const result of batchResults) {
+            if (result.status === 'fulfilled' && result.value.length > 0) {
+              allComments.push(...result.value);
+            }
+          }
+
+          await job.updateProgress({ commentsCollected: allComments.length });
+          await updateProgress();
         }
 
         if (allComments.length > 0) {
@@ -123,11 +133,10 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
         }
       }
 
-      // normalize-youtube: 영상 수집 결과에서 videoId 추출 후 댓글 순차 수집
+      // normalize-youtube: 영상 수집 결과에서 videoId 추출 후 댓글 병렬 수집
       if (job.name === 'normalize-youtube' && results['youtube-videos']) {
         const videos = (results['youtube-videos'] as { items: Array<{ sourceId: string; title?: string }> }).items;
         const maxComments = (job.data.maxComments as number) ?? 500;
-        const commentsCollector = new YoutubeCommentsCollector();
         const allComments: YoutubeComment[] = [];
 
         // 영상별 댓글 수집 진행 추적
@@ -135,39 +144,63 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
           .filter(v => v.sourceId)
           .map(v => ({ title: (v.title || v.sourceId).slice(0, 50), status: 'pending', comments: 0 }));
 
+        // 유효한 영상 필터
+        const validVideos: Array<{ index: number; sourceId: string }> = [];
         for (let i = 0; i < videos.length; i++) {
-          const video = videos[i];
-          if (!video.sourceId) continue;
+          if (videos[i].sourceId) {
+            validVideos.push({ index: i, sourceId: videos[i].sourceId });
+          }
+        }
 
-          const detail = videoDetails[i];
+        // 병렬 수집 -- 동시 3개 영상 댓글 수집 (YouTube API quota 고려)
+        const YT_CONCURRENCY = 3;
+        const updateYtProgress = async () => {
+          if (dbJobId) {
+            await updateJobProgress(dbJobId, {
+              youtube: {
+                status: 'running',
+                videos: videos.length,
+                comments: allComments.length,
+                videoDetails,
+              }
+            });
+          }
+        };
+
+        const collectVideoComments = async (item: { index: number; sourceId: string }) => {
+          const detail = videoDetails[item.index];
           detail.status = 'running';
-          let videoCommentCount = 0;
+          const collector = new YoutubeCommentsCollector();
+          const videoComments: YoutubeComment[] = [];
 
           try {
-            for await (const chunk of commentsCollector.collect({ keyword: video.sourceId, startDate: job.data.startDate ?? '', endDate: job.data.endDate ?? '', maxComments })) {
-              allComments.push(...chunk);
-              videoCommentCount += chunk.length;
-              detail.comments = videoCommentCount;
-
-              // DB: 영상별 댓글 실시간 진행
-              if (dbJobId) {
-                await updateJobProgress(dbJobId, {
-                  youtube: {
-                    status: 'running',
-                    videos: videos.length,
-                    comments: allComments.length,
-                    videoDetails,
-                  }
-                });
-              }
+            for await (const chunk of collector.collect({ keyword: item.sourceId, startDate: job.data.startDate ?? '', endDate: job.data.endDate ?? '', maxComments })) {
+              videoComments.push(...chunk);
+              detail.comments = videoComments.length;
+              await updateYtProgress();
             }
             detail.status = 'completed';
           } catch (err) {
             // 부분 실패 허용 -- 개별 영상 댓글 실패 시 로깅 후 계속
-            logger.warn(`[youtube-comments] 영상 댓글 수집 실패 (${video.sourceId}):`, err instanceof Error ? err.message : err);
+            logger.warn(`[youtube-comments] 영상 댓글 수집 실패 (${item.sourceId}):`, err instanceof Error ? err.message : err);
             detail.status = 'failed';
           }
+          return videoComments;
+        };
+
+        // semaphore: YT_CONCURRENCY개씩 배치 처리
+        for (let batchStart = 0; batchStart < validVideos.length; batchStart += YT_CONCURRENCY) {
+          const batch = validVideos.slice(batchStart, batchStart + YT_CONCURRENCY);
+          const batchResults = await Promise.allSettled(batch.map(collectVideoComments));
+
+          for (const result of batchResults) {
+            if (result.status === 'fulfilled' && result.value.length > 0) {
+              allComments.push(...result.value);
+            }
+          }
+
           await job.updateProgress({ commentsCollected: allComments.length });
+          await updateYtProgress();
         }
 
         if (allComments.length > 0) {
@@ -193,6 +226,8 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
         // results에 각 커뮤니티 소스 결과가 담겨 있음
       }
 
+      const normalizeElapsed = ((Date.now() - jobStartTime) / 1000).toFixed(1);
+      logger.info(`[${job.name}] 완료: ${normalizeElapsed}초 소요`);
       return { source, dbJobId, normalized: true, results };
     }
 
@@ -281,6 +316,9 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
 
       // D-06: 최종 상태 업데이트 -- dbJobId는 number이므로 parseInt 불필요
       await updateJobProgress(dbJobId, {}, 'completed');
+
+      const persistElapsed = ((Date.now() - jobStartTime) / 1000).toFixed(1);
+      logger.info(`[persist] 완료: ${persistElapsed}초 소요 (dbJobId=${dbJobId})`);
 
       // D-09: 수집 완료 후 자동 분석 트리거
       const keyword = job.data.keyword;
