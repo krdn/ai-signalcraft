@@ -14,6 +14,9 @@ const ITEM_ANALYSIS_MODULE = 'sentiment-framing';
 const ARTICLE_BATCH_SIZE = 10;
 const COMMENT_BATCH_SIZE = 50;
 
+// 병렬 API 호출 동시성 (gpt-4o-mini RPM 500 기준, 안전하게 5개)
+const API_CONCURRENCY = 5;
+
 // --- Zod 스키마 ---
 
 const ArticleItemResultSchema = z.object({
@@ -93,6 +96,69 @@ function chunk<T>(arr: T[], size: number): T[][] {
   return result;
 }
 
+/** Rate limit 에러 감지 */
+function isRateLimitError(error: unknown): boolean {
+  const msg = error instanceof Error ? error.message : String(error);
+  return msg.includes('Rate limit') || msg.includes('429') || msg.includes('TPM') || msg.includes('RPM');
+}
+
+/** Rate limit 에러에서 대기 시간 추출 (초) */
+function parseRetryAfter(error: unknown): number {
+  const msg = error instanceof Error ? error.message : String(error);
+  const match = msg.match(/try again in ([\d.]+)s/i);
+  return match ? Math.ceil(parseFloat(match[1])) : 0;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Rate limit 재시도 래퍼 — API 호출을 exponential backoff로 보호
+ */
+async function withRateLimitRetry<T>(
+  fn: () => Promise<T>,
+  label: string,
+  maxRetries = 3,
+): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      if (isRateLimitError(error) && attempt < maxRetries) {
+        const retryAfterSec = parseRetryAfter(error);
+        const backoffMs = Math.max(retryAfterSec * 1000, (attempt + 1) * 5000);
+        console.log(`[item-analyzer] ${label}: rate limit, ${backoffMs}ms 후 재시도 (${attempt + 1}/${maxRetries})`);
+        await sleep(backoffMs);
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw lastError;
+}
+
+/**
+ * 동시성 제한 병렬 실행 — API_CONCURRENCY개씩 배치 처리
+ */
+async function runWithConcurrency<T, R>(
+  items: T[],
+  fn: (item: T, index: number) => Promise<R>,
+  concurrency: number,
+): Promise<PromiseSettledResult<R>[]> {
+  const results: PromiseSettledResult<R>[] = [];
+  for (let i = 0; i < items.length; i += concurrency) {
+    const batch = items.slice(i, i + concurrency);
+    const batchResults = await Promise.allSettled(
+      batch.map((item, batchIdx) => fn(item, i + batchIdx)),
+    );
+    results.push(...batchResults);
+  }
+  return results;
+}
+
 // --- 메인 함수 ---
 
 /**
@@ -131,24 +197,29 @@ export async function analyzeItems(jobId: number): Promise<{
   let articlesAnalyzed = 0;
   const articleBatches = chunk(articleRows, ARTICLE_BATCH_SIZE);
 
-  for (const batch of articleBatches) {
-    try {
-      const result = await analyzeStructured(
-        buildArticleBatchPrompt(job.keyword, batch),
-        ArticleItemResultSchema,
-        {
-          provider: config.provider,
-          model: config.model,
-          baseUrl: config.baseUrl,
-          apiKey: config.apiKey,
-          systemPrompt: SYSTEM_PROMPT,
-          maxOutputTokens: 4096,
-        },
+  console.log(`[item-analyzer] 기사 분석 시작: ${articleRows.length}건, ${articleBatches.length}배치, 동시 ${API_CONCURRENCY}개`);
+
+  const articleResults = await runWithConcurrency(
+    articleBatches,
+    async (batch, batchIdx) => {
+      const result = await withRateLimitRetry(
+        () => analyzeStructured(
+          buildArticleBatchPrompt(job.keyword, batch),
+          ArticleItemResultSchema,
+          {
+            provider: config.provider,
+            model: config.model,
+            baseUrl: config.baseUrl,
+            apiKey: config.apiKey,
+            systemPrompt: SYSTEM_PROMPT,
+            maxOutputTokens: 4096,
+          },
+        ),
+        `기사 배치 ${batchIdx + 1}/${articleBatches.length}`,
       );
 
-      totalTokens += (result.usage as any)?.totalTokens ?? 0;
-
-      // DB 업데이트
+      // DB 업데이트 (배치 내 순차 — 가벼운 UPDATE이므로 병목 아님)
+      let batchAnalyzed = 0;
       for (const item of result.object.items) {
         const article = batch[item.index];
         if (!article) continue;
@@ -159,11 +230,23 @@ export async function analyzeItems(jobId: number): Promise<{
             summary: item.summary,
           })
           .where(eq(articles.id, article.id));
-        articlesAnalyzed++;
+        batchAnalyzed++;
       }
-    } catch (error) {
-      console.error(`[item-analyzer] 기사 배치 분석 실패:`, error);
-      // 배치 실패 시 계속 진행 (부분 실패 허용)
+
+      return {
+        tokens: (result.usage as any)?.totalTokens ?? 0,
+        analyzed: batchAnalyzed,
+      };
+    },
+    API_CONCURRENCY,
+  );
+
+  for (const settled of articleResults) {
+    if (settled.status === 'fulfilled') {
+      totalTokens += settled.value.tokens;
+      articlesAnalyzed += settled.value.analyzed;
+    } else {
+      console.error(`[item-analyzer] 기사 배치 분석 실패:`, settled.reason);
     }
   }
 
@@ -180,23 +263,28 @@ export async function analyzeItems(jobId: number): Promise<{
   let commentsAnalyzed = 0;
   const commentBatches = chunk(commentRows, COMMENT_BATCH_SIZE);
 
-  for (const batch of commentBatches) {
-    try {
-      const result = await analyzeStructured(
-        buildCommentBatchPrompt(job.keyword, batch),
-        CommentItemResultSchema,
-        {
-          provider: config.provider,
-          model: config.model,
-          baseUrl: config.baseUrl,
-          apiKey: config.apiKey,
-          systemPrompt: SYSTEM_PROMPT,
-          maxOutputTokens: 4096,
-        },
+  console.log(`[item-analyzer] 댓글 분석 시작: ${commentRows.length}건, ${commentBatches.length}배치, 동시 ${API_CONCURRENCY}개`);
+
+  const commentResults = await runWithConcurrency(
+    commentBatches,
+    async (batch, batchIdx) => {
+      const result = await withRateLimitRetry(
+        () => analyzeStructured(
+          buildCommentBatchPrompt(job.keyword, batch),
+          CommentItemResultSchema,
+          {
+            provider: config.provider,
+            model: config.model,
+            baseUrl: config.baseUrl,
+            apiKey: config.apiKey,
+            systemPrompt: SYSTEM_PROMPT,
+            maxOutputTokens: 4096,
+          },
+        ),
+        `댓글 배치 ${batchIdx + 1}/${commentBatches.length}`,
       );
 
-      totalTokens += (result.usage as any)?.totalTokens ?? 0;
-
+      let batchAnalyzed = 0;
       for (const item of result.object.items) {
         const comment = batch[item.index];
         if (!comment) continue;
@@ -206,10 +294,23 @@ export async function analyzeItems(jobId: number): Promise<{
             sentimentScore: item.sentimentScore,
           })
           .where(eq(comments.id, comment.id));
-        commentsAnalyzed++;
+        batchAnalyzed++;
       }
-    } catch (error) {
-      console.error(`[item-analyzer] 댓글 배치 분석 실패:`, error);
+
+      return {
+        tokens: (result.usage as any)?.totalTokens ?? 0,
+        analyzed: batchAnalyzed,
+      };
+    },
+    API_CONCURRENCY,
+  );
+
+  for (const settled of commentResults) {
+    if (settled.status === 'fulfilled') {
+      totalTokens += settled.value.tokens;
+      commentsAnalyzed += settled.value.analyzed;
+    } else {
+      console.error(`[item-analyzer] 댓글 배치 분석 실패:`, settled.reason);
     }
   }
 
