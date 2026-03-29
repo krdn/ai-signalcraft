@@ -17,6 +17,7 @@ import {
 import { persistAnalysisResult } from './persist-analysis';
 import { getModuleModelConfig } from './model-config';
 import { isRateLimitError, isParseError, parseRetryAfter, sleep, MAX_RATE_LIMIT_RETRIES, MAX_PARSE_RETRIES } from './retry-utils';
+import { isPipelineCancelled } from '../pipeline/control';
 import type { AnalysisModule, AnalysisInput, AnalysisModuleResult } from './types';
 
 // Stage 1: 병렬 실행 (독립 모듈)
@@ -92,6 +93,12 @@ export async function runModule<T>(
     // Rate limit 재시도 루프
     let lastError: unknown;
     for (let attempt = 0; attempt <= MAX_RATE_LIMIT_RETRIES; attempt++) {
+      // 각 시도 전 취소 확인 — 실행 중인 모듈도 즉시 중단
+      if (await isPipelineCancelled(input.jobId)) {
+        console.log(`[runner] ${module.name}: 취소 감지 — 분석 중단 (jobId=${input.jobId})`);
+        return { module: module.name, status: 'failed', errorMessage: '사용자에 의해 중지됨' };
+      }
+
       try {
         const result = await analyzeStructured(prompt, module.schema, gatewayOptions);
 

@@ -68,15 +68,22 @@ export async function GET(
 
           // 완료/실패/취소 시 스트림 종료
           if (status.status === 'completed' || status.status === 'failed' || status.status === 'partial_failure' || status.status === 'cancelled') {
-            // 분석이 아직 진행 중이면 종료하지 않음
-            const analysisRunning = status.analysisModulesDetailed.some(
-              (m: { status: string }) => m.status === 'running' || m.status === 'pending',
-            );
-            if (!analysisRunning && (status.hasReport || status.status === 'failed')) {
+            // cancelled 상태는 즉시 종료 — 분석 모듈 상태와 무관하게 SSE 종료
+            if (status.status === 'cancelled') {
               clearInterval(interval);
-              // 최종 상태 한번 더 전송
               send(status);
               setTimeout(() => { if (!closed) { closed = true; controller.close(); } }, 500);
+            } else {
+              // 분석이 아직 진행 중이면 종료하지 않음
+              const analysisRunning = status.analysisModulesDetailed.some(
+                (m: { status: string }) => m.status === 'running' || m.status === 'pending',
+              );
+              if (!analysisRunning && (status.hasReport || status.status === 'failed')) {
+                clearInterval(interval);
+                // 최종 상태 한번 더 전송
+                send(status);
+                setTimeout(() => { if (!closed) { closed = true; controller.close(); } }, 500);
+              }
             }
           }
         } catch {

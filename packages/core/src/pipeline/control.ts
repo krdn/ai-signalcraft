@@ -1,12 +1,10 @@
 // 파이프라인 제어 함수 — 중지, 일시정지, 재개, 모듈 스킵, 비용 한도
 import { Queue } from 'bullmq';
-import { eq } from 'drizzle-orm';
+import { eq, and, notInArray } from 'drizzle-orm';
 import { getDb } from '../db';
 import { collectionJobs } from '../db/schema/collections';
 import { analysisResults } from '../db/schema/analysis';
 import { getRedisConnection } from '../queue/connection';
-
-import Redis from 'ioredis';
 
 // 큐 인스턴스 (lazy)
 let _collectors: Queue | null = null;
@@ -29,9 +27,12 @@ function getQueue(name: string): Queue {
 
 /**
  * 파이프라인 완전 중지
- * - 대기 중인 BullMQ 작업 제거
- * - DB 상태를 cancelled로 업데이트
- * - 이미 완료된 분석 결과는 보존
+ *
+ * 전략: DB 상태를 먼저 cancelled로 변경하여 모든 Worker 핸들러가
+ * isPipelineCancelled()로 취소를 감지하고 자체 종료하게 만듦.
+ * BullMQ의 대기 중(waiting/delayed) 작업만 안전하게 제거.
+ * active 작업은 건드리지 않음 — Worker 핸들러가 자체 종료 후
+ * BullMQ가 정상적으로 완료/실패 처리.
  */
 export async function cancelPipeline(jobId: number): Promise<{ cancelled: boolean; message: string }> {
   const db = getDb();
@@ -46,23 +47,27 @@ export async function cancelPipeline(jobId: number): Promise<{ cancelled: boolea
     return { cancelled: false, message: `이미 ${job.status} 상태입니다` };
   }
 
-  // BullMQ Flow의 모든 작업을 Redis에서 직접 제거
-  // BullMQ API(moveToFailed/remove)는 부모-자식 관계를 깨뜨리므로 직접 정리
-  try {
-    await purgeAllBullMQJobs(jobId);
-  } catch {
-    // 정리 실패해도 DB 상태 업데이트는 계속 진행
-  }
-
-  // 진행 중인 분석 모듈을 cancelled로 표시
-  await db.update(analysisResults)
-    .set({ status: 'failed', errorMessage: '사용자에 의해 중지됨', updatedAt: new Date() })
-    .where(eq(analysisResults.jobId, jobId));
-
-  // DB 상태 업데이트
+  // 1단계: DB 상태를 먼저 cancelled로 변경
+  // 이것이 핵심 — 모든 Worker 핸들러가 isPipelineCancelled()로 확인하고 조기 종료
   await db.update(collectionJobs)
     .set({ status: 'cancelled', updatedAt: new Date() })
     .where(eq(collectionJobs.id, jobId));
+
+  // 2단계: 진행 중/대기 중인 분석 모듈을 failed로 표시 (완료된 결과는 보존)
+  await db.update(analysisResults)
+    .set({ status: 'failed', errorMessage: '사용자에 의해 중지됨', updatedAt: new Date() })
+    .where(and(
+      eq(analysisResults.jobId, jobId),
+      notInArray(analysisResults.status, ['completed', 'skipped']),
+    ));
+
+  // 3단계: 대기 중인 BullMQ 작업만 안전하게 제거
+  // active 작업은 건드리지 않음 — 핸들러가 isPipelineCancelled()로 자체 종료
+  try {
+    await removeWaitingBullMQJobs(jobId);
+  } catch {
+    // 정리 실패해도 DB 상태는 이미 cancelled → 핸들러가 자체 종료
+  }
 
   return { cancelled: true, message: '파이프라인이 중지되었습니다' };
 }
@@ -246,62 +251,144 @@ export async function getSkippedModules(jobId: number): Promise<string[]> {
 }
 
 /**
- * 특정 dbJobId에 해당하는 모든 BullMQ 작업을 Redis에서 완전 제거
- * - active, waiting, delayed, waiting-children 모든 상태 대상
- * - 작업 해시, lock, dependencies 등 관련 키 모두 삭제
- * - BullMQ API 대신 Redis 직접 접근 (Flow 부모-자식 관계 깨짐 방지)
+ * 대기 중인 BullMQ 작업만 안전하게 제거 (active 작업은 건드리지 않음)
+ *
+ * 핵심 원칙:
+ * - active 작업의 Redis 데이터(해시, lock)를 삭제하면 Worker 내부 상태가 오염됨
+ * - active 작업은 핸들러의 isPipelineCancelled() 체크에 의존하여 자체 종료
+ * - waiting/delayed 작업만 BullMQ Queue API로 안전하게 제거
+ * - waiting-children 상태의 부모는 자식이 완료/실패하면 자동 정리됨
  */
-export async function purgeAllBullMQJobs(jobId: number): Promise<number> {
-  const conn = getRedisConnection() as { host?: string; port?: number };
-  const redis = new Redis({ host: conn.host ?? 'localhost', port: conn.port ?? 6379 });
+export async function removeWaitingBullMQJobs(jobId: number): Promise<number> {
   let cleaned = 0;
 
-  try {
-    for (const queueName of ['collectors', 'pipeline', 'analysis']) {
-      const prefix = `bull:${queueName}`;
+  for (const queueName of ['collectors', 'pipeline', 'analysis']) {
+    const queue = getQueue(queueName);
 
-      // 모든 리스트/셋에서 해당 dbJobId 작업 제거
-      const lists: Array<{ key: string; type: 'list' | 'zset' }> = [
-        { key: `${prefix}:active`, type: 'list' },
-        { key: `${prefix}:waiting`, type: 'list' },
-        { key: `${prefix}:delayed`, type: 'zset' },
-        { key: `${prefix}:waiting-children`, type: 'zset' },
-      ];
-
-      for (const { key, type } of lists) {
-        const members = type === 'list'
-          ? await redis.lrange(key, 0, -1)
-          : await redis.zrange(key, 0, -1);
-
-        for (const bullJobId of members) {
-          const dataStr = await redis.hget(`${prefix}:${bullJobId}`, 'data');
-          if (!dataStr) continue;
-
-          try {
-            const data = JSON.parse(dataStr);
-            if (data.dbJobId !== jobId) continue;
-          } catch { continue; }
-
-          // 리스트/셋에서 제거
-          if (type === 'list') {
-            await redis.lrem(key, 0, bullJobId);
-          } else {
-            await redis.zrem(key, bullJobId);
-          }
-
-          // 작업 관련 모든 키 삭제
-          await redis.del(
-            `${prefix}:${bullJobId}`,
-            `${prefix}:${bullJobId}:lock`,
-            `${prefix}:${bullJobId}:dependencies`,
-            `${prefix}:${bullJobId}:processed`,
-          );
+    // waiting, delayed, waiting-children 상태의 작업 모두 제거
+    // waiting-children: FlowProducer 부모 작업이 자식 완료 대기 중인 상태
+    // 이전에는 waiting/delayed만 제거하여 부모 작업이 남아 concurrency 슬롯 점유
+    try {
+      const jobs = await queue.getJobs(['waiting', 'delayed', 'waiting-children']);
+      for (const job of jobs) {
+        if (!job?.data?.dbJobId || job.data.dbJobId !== jobId) continue;
+        try {
+          await job.remove();
           cleaned++;
+        } catch {
+          // 이미 제거되었거나 상태 변경됨 — 무시
         }
       }
+    } catch {
+      // 큐 접근 실패 — 무시
     }
-  } finally {
-    await redis.quit();
+
+    // active 작업은 건드리지 않음 — 핸들러의 isPipelineCancelled() 체크로 자체 종료
+    // BullMQ 외부에서 active 작업을 조작하면 Worker 내부 상태 오염 위험
+  }
+
+  return cleaned;
+}
+
+/**
+ * BullMQ 큐 상태 조회 — 큐별 작업 수 및 상세 목록
+ * 디버깅/모니터링용: Worker가 어떤 작업을 처리 중인지 확인
+ */
+export async function getQueueStatus() {
+  const result = [];
+
+  for (const queueName of ['collectors', 'pipeline', 'analysis']) {
+    try {
+      const queue = getQueue(queueName);
+
+      const counts = await queue.getJobCounts(
+        'active', 'waiting', 'delayed', 'waiting-children', 'completed', 'failed',
+      );
+
+      const allJobs = await queue.getJobs(
+        ['active', 'waiting', 'delayed', 'waiting-children', 'failed'],
+        0, 50,
+      );
+
+      const jobs = await Promise.all(
+        allJobs.map(async (job) => {
+          let state = 'unknown';
+          try { state = await job.getState(); } catch { /* ignore */ }
+          return {
+            id: job.id ?? '',
+            name: job.name,
+            state,
+            dbJobId: (job.data?.dbJobId as number) ?? null,
+            timestamp: job.timestamp ?? null,
+            processedOn: job.processedOn ?? null,
+            failedReason: job.failedReason ?? null,
+          };
+        }),
+      );
+
+      result.push({ name: queueName, counts, jobs });
+    } catch (err) {
+      // Redis 연결 실패 등 — 해당 큐는 에러 표시
+      result.push({
+        name: queueName,
+        counts: { active: 0, waiting: 0, delayed: 0, 'waiting-children': 0, completed: 0, failed: 0 },
+        jobs: [],
+        error: err instanceof Error ? err.message : 'Unknown error',
+      });
+    }
+  }
+
+  return { queues: result };
+}
+
+/**
+ * purgeAllBullMQJobs — 하위 호환용 wrapper
+ * startup-cleanup.ts 등에서 호출하는 경우를 위해 유지
+ * 새 코드에서는 removeWaitingBullMQJobs 사용 권장
+ */
+export async function purgeAllBullMQJobs(jobId: number): Promise<number> {
+  return removeWaitingBullMQJobs(jobId);
+}
+
+/**
+ * 새 파이프라인 실행 전 이전 잔여 작업 전체 정리
+ *
+ * 문제: 이전 파이프라인 취소 시 waiting/waiting-children 작업이 큐에 남아있으면
+ * 새 작업보다 먼저 처리되거나 concurrency 계산에 영향을 줌
+ *
+ * 전략: waiting, delayed, waiting-children 상태의 고아 작업만 안전하게 제거
+ * active 작업은 건드리지 않음 — 핸들러가 isPipelineCancelled()로 자체 종료
+ */
+export async function cleanupBeforeNewPipeline(): Promise<number> {
+  const db = getDb();
+  let cleaned = 0;
+
+  for (const queueName of ['collectors', 'pipeline', 'analysis']) {
+    const queue = getQueue(queueName);
+
+    try {
+      const jobs = await queue.getJobs(['waiting', 'delayed', 'waiting-children']);
+      for (const job of jobs) {
+        if (!job?.data?.dbJobId) continue;
+
+        // DB에서 해당 작업의 상태 확인
+        const [dbJob] = await db.select({ status: collectionJobs.status })
+          .from(collectionJobs).where(eq(collectionJobs.id, job.data.dbJobId)).limit(1);
+
+        // DB에 없거나 cancelled/failed 상태이면 잔여물 → 제거
+        const shouldRemove = !dbJob || dbJob.status === 'cancelled' || dbJob.status === 'failed';
+        if (!shouldRemove) continue;
+
+        try {
+          await job.remove();
+          cleaned++;
+        } catch {
+          // 이미 상태 변경됨 — 무시
+        }
+      }
+    } catch {
+      // 큐 접근 실패 — 무시
+    }
   }
 
   return cleaned;

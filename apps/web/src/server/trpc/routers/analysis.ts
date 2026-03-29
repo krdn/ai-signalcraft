@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { protectedProcedure, router } from '../init';
-import { collectionJobs, analysisResults, analysisReports, triggerCollection } from '@ai-signalcraft/core';
+import { collectionJobs, analysisResults, analysisReports, triggerCollection, cleanupBeforeNewPipeline } from '@ai-signalcraft/core';
 import { eq, and } from 'drizzle-orm';
 
 export const analysisRouter = router({
@@ -22,6 +22,15 @@ export const analysisRouter = router({
       }).optional(),
     }))
     .mutation(async ({ input, ctx }) => {
+      // 0. 이전 취소/실패 작업의 Redis 잔여물 정리
+      // 취소 후 active 작업이 concurrency 슬롯을 점유하면 새 작업이 "수집 대기..." 상태로 멈춤
+      try {
+        const cleaned = await cleanupBeforeNewPipeline();
+        if (cleaned > 0) console.log(`[trigger] 이전 잔여 작업 ${cleaned}개 정리 완료`);
+      } catch {
+        // 정리 실패해도 새 작업 실행은 진행
+      }
+
       // 1. collectionJobs 레코드 생성 (팀 ID 포함)
       const [job] = await ctx.db.insert(collectionJobs).values({
         keyword: input.keyword,

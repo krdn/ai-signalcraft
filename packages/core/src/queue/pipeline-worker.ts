@@ -110,6 +110,12 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
 
         // semaphore: CONCURRENCY개씩 배치 처리
         for (let batchStart = 0; batchStart < naverArticles.length; batchStart += CONCURRENCY) {
+          // 배치 시작 전 취소 확인 — 네이버 댓글 수집 중 즉시 중단
+          if (dbJobId && await isPipelineCancelled(dbJobId)) {
+            logger.info(`[normalize-naver] 댓글 수집 중 취소됨 (${allComments.length}건 수집 후)`);
+            break;
+          }
+
           const batch = naverArticles.slice(batchStart, batchStart + CONCURRENCY);
           const batchResults = await Promise.allSettled(batch.map(collectArticleComments));
 
@@ -197,6 +203,12 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
 
         // semaphore: YT_CONCURRENCY개씩 배치 처리
         for (let batchStart = 0; batchStart < validVideos.length; batchStart += YT_CONCURRENCY) {
+          // 배치 시작 전 취소 확인 — 유튜브 댓글 수집 중 즉시 중단
+          if (dbJobId && await isPipelineCancelled(dbJobId)) {
+            logger.info(`[normalize-youtube] 댓글 수집 중 취소됨 (${allComments.length}건 수집 후)`);
+            break;
+          }
+
           const batch = validVideos.slice(batchStart, batchStart + YT_CONCURRENCY);
           const batchResults = await Promise.allSettled(batch.map(collectVideoComments));
 
@@ -334,10 +346,15 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
       logger.info(`[persist] 완료: ${persistElapsed}초 소요 (dbJobId=${dbJobId})`);
 
       // D-09: 수집 완료 후 자동 분석 트리거
+      // 취소 확인 — persist 완료 후에도 취소되었으면 분석 트리거하지 않음
       const keyword = job.data.keyword;
       if (keyword) {
-        await triggerAnalysis(dbJobId, keyword);
-        logger.info(`분석 파이프라인 트리거됨: job=${dbJobId}, keyword=${keyword}`);
+        if (dbJobId && await isPipelineCancelled(dbJobId)) {
+          logger.info(`[persist] 취소됨 — 분석 트리거 건너뜀 (dbJobId=${dbJobId})`);
+        } else {
+          await triggerAnalysis(dbJobId, keyword);
+          logger.info(`분석 파이프라인 트리거됨: job=${dbJobId}, keyword=${keyword}`);
+        }
       }
 
       return { persisted: true };

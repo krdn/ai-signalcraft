@@ -10,6 +10,7 @@ import {
   resumePipeline,
   setSkippedModules,
   setCostLimit,
+  getQueueStatus,
 } from '@ai-signalcraft/core';
 
 export const pipelineRouter = router({
@@ -63,6 +64,12 @@ export const pipelineRouter = router({
     .mutation(async ({ input, ctx }) => {
       await verifyJobOwnership(ctx, input.jobId);
       return setSkippedModules(input.jobId, input.modules);
+    }),
+
+  // Worker/큐 상태 조회 — 디버깅/모니터링용
+  queueStatus: protectedProcedure
+    .query(async () => {
+      return getQueueStatus();
     }),
 
   // 비용 한도 설정
