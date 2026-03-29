@@ -11,6 +11,10 @@ import {
   deleteProviderKey,
   testProviderConnection,
   chatWithProvider,
+  getConcurrencyConfig,
+  upsertConcurrencyConfig,
+  applyConcurrencyPreset,
+  CONCURRENCY_PRESETS,
 } from '@ai-signalcraft/core';
 
 export const settingsRouter = router({
@@ -37,6 +41,27 @@ export const settingsRouter = router({
       return upsertModelSetting(input.moduleName, input.provider, input.model);
     }),
 
+  // 전체 모듈의 AI 모델을 일괄 변경
+  bulkUpdate: protectedProcedure
+    .input(
+      z.object({
+        provider: z.enum([
+          'anthropic', 'openai', 'gemini', 'ollama',
+          'deepseek', 'xai', 'openrouter', 'custom',
+        ]),
+        model: z.string().min(1),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const currentSettings = await getAllModelSettings();
+      const results = await Promise.all(
+        currentSettings.map((s) =>
+          upsertModelSetting(s.moduleName, input.provider, input.model),
+        ),
+      );
+      return { updated: results.length };
+    }),
+
   // 모듈의 AI 모델 설정을 기본값으로 복원 (DB 레코드 삭제)
   resetToDefault: protectedProcedure
     .input(z.object({ moduleName: z.string().min(1) }))
@@ -46,6 +71,39 @@ export const settingsRouter = router({
         .where(eq(modelSettings.moduleName, input.moduleName));
       return { success: true };
     }),
+
+  // === 병렬처리 동시성 설정 ===
+
+  concurrency: router({
+    // 현재 설정 조회
+    get: protectedProcedure.query(async () => {
+      return getConcurrencyConfig();
+    }),
+
+    // 프리셋 목록 반환
+    presets: protectedProcedure.query(() => {
+      return CONCURRENCY_PRESETS;
+    }),
+
+    // 프리셋 적용
+    applyPreset: protectedProcedure
+      .input(z.object({ presetId: z.string().min(1) }))
+      .mutation(async ({ input }) => {
+        return applyConcurrencyPreset(input.presetId);
+      }),
+
+    // 개별 값 커스텀 수정
+    update: protectedProcedure
+      .input(z.object({
+        providerConcurrency: z.record(z.string(), z.number().min(1).max(20)).optional(),
+        apiConcurrency: z.number().min(1).max(20).optional(),
+        articleBatchSize: z.number().min(1).max(50).optional(),
+        commentBatchSize: z.number().min(1).max(200).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        return upsertConcurrencyConfig({ ...input, activePreset: null });
+      }),
+  }),
 
   // === 프로바이더 API 키 관리 ===
 

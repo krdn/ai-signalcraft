@@ -13,28 +13,20 @@ import { collectionJobs } from '../db/schema/collections';
 import { eq } from 'drizzle-orm';
 import type { AnalysisModule, AnalysisModuleResult, AnalysisInput } from './types';
 import { getModuleModelConfig } from './model-config';
-
-/** 프로바이더별 안전한 동시성 한도 (무료 티어 RPM 기준) */
-const PROVIDER_CONCURRENCY: Record<string, number> = {
-  gemini: 1,    // 무료 티어 RPM 20 — 순차 실행으로 rate limit 방지
-  ollama: 1,    // 로컬 리소스 제한
-  anthropic: 2,
-  openai: 3,
-  deepseek: 2,
-  xai: 2,
-  openrouter: 2,
-  custom: 1,
-};
+import { getConcurrencyConfig, DEFAULT_PROVIDER_CONCURRENCY } from './concurrency-config';
 
 /**
  * 모듈 목록의 프로바이더를 조회하여 최소 동시성을 결정
  * 같은 배치에 gemini 모듈이 하나라도 있으면 동시성 1로 제한
  */
-async function resolveConcurrency(modules: AnalysisModule[]): Promise<number> {
+async function resolveConcurrency(
+  modules: AnalysisModule[],
+  providerConcurrency: Record<string, number>,
+): Promise<number> {
   if (modules.length <= 1) return 1;
   const configs = await Promise.all(modules.map(m => getModuleModelConfig(m.name)));
   const minConcurrency = Math.min(
-    ...configs.map(c => PROVIDER_CONCURRENCY[c.provider] ?? 2),
+    ...configs.map(c => providerConcurrency[c.provider] ?? 2),
   );
   console.log(
     `[pipeline] 동시성 결정: ${modules.map(m => m.name).join(', ')} → ` +
@@ -51,6 +43,7 @@ async function resolveConcurrency(modules: AnalysisModule[]): Promise<number> {
 async function runWithProviderGrouping(
   modules: AnalysisModule[],
   fn: (m: AnalysisModule) => Promise<AnalysisModuleResult>,
+  providerConcurrency: Record<string, number>,
 ): Promise<PromiseSettledResult<AnalysisModuleResult>[]> {
   if (modules.length <= 1) {
     return Promise.allSettled(modules.map(fn));
@@ -73,7 +66,7 @@ async function runWithProviderGrouping(
 
   // 각 프로바이더 그룹을 해당 프로바이더의 동시성으로 실행, 그룹 간 동시 실행
   const groupPromises = [...groups.entries()].map(async ([provider, groupModules]) => {
-    const concurrency = PROVIDER_CONCURRENCY[provider] ?? 2;
+    const concurrency = providerConcurrency[provider] ?? 2;
     return runWithConcurrency(groupModules, fn, concurrency);
   });
 
@@ -133,6 +126,10 @@ export async function runAnalysisPipeline(jobId: number): Promise<{
   const allResults: Record<string, AnalysisModuleResult> = {};
   let cancelledByUser = false;
   let costLimitExceeded = false;
+
+  // 병렬처리 설정 로드 (파이프라인 시작 시 1회)
+  const concurrencyConfig = await getConcurrencyConfig();
+  const providerConcurrency = concurrencyConfig.providerConcurrency;
 
   // 스킵 모듈 목록 로드
   const skippedModules = await getSkippedModules(jobId);
@@ -212,6 +209,7 @@ export async function runAnalysisPipeline(jobId: number): Promise<{
   const stage1Results = await runWithProviderGrouping(
     stage1Active,
     (m) => runModuleMapReduce(m, input),
+    providerConcurrency,
   );
   for (const settled of stage1Results) {
     if (settled.status === 'fulfilled') {
@@ -241,6 +239,7 @@ export async function runAnalysisPipeline(jobId: number): Promise<{
     const stage2Results = await runWithProviderGrouping(
       stage2Parallel,
       (m) => runModule(m, input, priorResults),
+      providerConcurrency,
     );
     for (const settled of stage2Results) {
       if (settled.status === 'fulfilled') {
@@ -308,6 +307,7 @@ export async function runAnalysisPipeline(jobId: number): Promise<{
     const stage4aResults = await runWithProviderGrouping(
       stage4aActive,
       (m) => runModule(m, input, priorResults),
+      providerConcurrency,
     );
     for (const settled of stage4aResults) {
       if (settled.status === 'fulfilled') {

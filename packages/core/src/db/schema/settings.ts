@@ -11,6 +11,22 @@ export const modelSettings = pgTable('model_settings', {
   uniqueIndex('model_settings_module_name_idx').on(table.moduleName),
 ]);
 
+// 병렬처리 동시성 설정 (singleton row)
+export const concurrencySettings = pgTable('concurrency_settings', {
+  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+  // 프로바이더별 동시성 한도 (예: {"openai":3,"anthropic":2,"gemini":1})
+  providerConcurrency: jsonb('provider_concurrency').$type<Record<string, number>>().notNull(),
+  // 개별 항목 분석 동시 API 호출 수
+  apiConcurrency: integer('api_concurrency').notNull().default(5),
+  // 기사 배치 크기
+  articleBatchSize: integer('article_batch_size').notNull().default(10),
+  // 댓글 배치 크기
+  commentBatchSize: integer('comment_batch_size').notNull().default(50),
+  // 현재 적용된 프리셋 ID (커스텀이면 null)
+  activePreset: text('active_preset'),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
 // AI 프로바이더 API 키 관리
 export const providerKeys = pgTable('provider_keys', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),

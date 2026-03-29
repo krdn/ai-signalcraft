@@ -46,6 +46,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { TeamSettings } from '@/components/team/team-settings';
 import { ModelSettings } from '@/components/settings/model-settings';
 import { ProviderKeys } from '@/components/settings/provider-keys';
+import { ConcurrencySettings } from '@/components/settings/concurrency-settings';
 import { cn } from '@/lib/utils';
 import type { LucideIcon } from 'lucide-react';
 
@@ -170,20 +171,24 @@ export function TopNav({ activeTab, onTabChange }: TopNavProps) {
             </button>
           }
         />
-        <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col">
+        <DialogContent className="sm:max-w-xl max-h-[85vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>AI 설정</DialogTitle>
           </DialogHeader>
           <Tabs defaultValue="provider-keys" className="flex flex-col min-h-0 flex-1">
             <TabsList className="w-full shrink-0">
               <TabsTrigger value="provider-keys">API 키 관리</TabsTrigger>
-              <TabsTrigger value="model-settings">모듈별 모델 설정</TabsTrigger>
+              <TabsTrigger value="model-settings">모듈별 모델</TabsTrigger>
+              <TabsTrigger value="concurrency">병렬처리</TabsTrigger>
             </TabsList>
             <TabsContent value="provider-keys" className="mt-4 overflow-y-auto min-h-0">
               <ProviderKeys />
             </TabsContent>
             <TabsContent value="model-settings" className="mt-4 overflow-y-auto min-h-0">
               <ModelSettings />
+            </TabsContent>
+            <TabsContent value="concurrency" className="mt-4 overflow-y-auto min-h-0">
+              <ConcurrencySettings />
             </TabsContent>
           </Tabs>
         </DialogContent>
@@ -206,6 +211,7 @@ export function TopNav({ activeTab, onTabChange }: TopNavProps) {
           <DropdownMenuSeparator />
           <Dialog>
             <DialogTrigger
+              nativeButton={false}
               render={
                 <DropdownMenuItem
                   className="flex items-center gap-2 cursor-pointer"

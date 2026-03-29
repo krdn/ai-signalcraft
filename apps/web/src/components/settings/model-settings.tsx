@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { trpcClient } from '@/lib/trpc';
 import { Badge } from '@/components/ui/badge';
@@ -18,7 +18,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { toast } from 'sonner';
-import { HelpCircle, Loader2, RotateCcw, AlertTriangle } from 'lucide-react';
+import { HelpCircle, Loader2, RotateCcw, AlertTriangle, ChevronsUpDown } from 'lucide-react';
 
 // 모듈 메타데이터: 이름, 설명, 분석 내용, 추천 모델, 비용 팁
 type ModuleMeta = {
@@ -298,6 +298,21 @@ export function ModelSettings() {
     },
   });
 
+  const bulkUpdateMutation = useMutation({
+    mutationFn: (input: { provider: string; model: string }) =>
+      trpcClient.settings.bulkUpdate.mutate(input as Parameters<typeof trpcClient.settings.bulkUpdate.mutate>[0]),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: [['settings', 'list']] });
+      toast.success(`전체 ${data.updated}개 모듈의 모델이 변경되었습니다`);
+    },
+    onError: (error: { message?: string }) => {
+      toast.error(error.message ?? '일괄 변경에 실패했습니다');
+    },
+  });
+
+  const [bulkProvider, setBulkProvider] = useState<string>('');
+  const [bulkModel, setBulkModel] = useState<string>('');
+
   const handleProviderChange = (item: ModelSettingItem, newProvider: string | null) => {
     if (!newProvider) return;
     // 프로바이더 변경 시 해당 프로바이더의 첫 번째 모델로 자동 변경
@@ -335,8 +350,10 @@ export function ModelSettings() {
     );
   }
 
-  const isPending = updateMutation.isPending || resetMutation.isPending;
+  const isPending = updateMutation.isPending || resetMutation.isPending || bulkUpdateMutation.isPending;
   const hasProviders = availableProviders.length > 0;
+
+  const bulkModels = bulkProvider ? (providerModels[bulkProvider] ?? []) : [];
 
   return (
       <div className="space-y-3">
@@ -350,6 +367,76 @@ export function ModelSettings() {
                 위의 <strong>API 키 관리</strong> 탭에서 프로바이더를 등록하고 모델을 선택(Test &amp; Select)해주세요.
                 등록된 프로바이더와 모델이 여기에 자동으로 표시됩니다.
               </p>
+            </div>
+          </div>
+        )}
+
+        {/* 전체 일괄 변경 */}
+        {hasProviders && (
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
+            <div className="flex items-center gap-1.5 mb-2">
+              <ChevronsUpDown className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium">전체 일괄 변경</span>
+              <span className="text-xs text-muted-foreground">— 모든 모듈의 모델을 한 번에 변경합니다</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Select
+                value={bulkProvider}
+                onValueChange={(val) => {
+                  setBulkProvider(val ?? '');
+                  setBulkModel('');
+                }}
+                disabled={isPending}
+              >
+                <SelectTrigger className="w-[130px]" size="sm">
+                  <SelectValue placeholder="프로바이더" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableProviders.map((provider) => (
+                    <SelectItem key={provider} value={provider}>
+                      {PROVIDER_LABELS[provider] ?? provider}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select
+                value={bulkModel}
+                onValueChange={(val) => setBulkModel(val ?? '')}
+                disabled={isPending || bulkModels.length === 0}
+              >
+                <SelectTrigger className="flex-1" size="sm">
+                  <SelectValue placeholder={bulkModels.length > 0 ? '모델 선택' : '프로바이더를 먼저 선택'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {bulkModels.map((model) => (
+                    <SelectItem key={model} value={model}>
+                      {model}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Button
+                size="sm"
+                disabled={isPending || !bulkProvider || !bulkModel}
+                onClick={() => {
+                  bulkUpdateMutation.mutate(
+                    { provider: bulkProvider, model: bulkModel },
+                    {
+                      onSuccess: () => {
+                        setBulkProvider('');
+                        setBulkModel('');
+                      },
+                    },
+                  );
+                }}
+              >
+                {bulkUpdateMutation.isPending ? (
+                  <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                ) : null}
+                전체 적용
+              </Button>
             </div>
           </div>
         )}

@@ -6,16 +6,10 @@ import { getDb } from '../db';
 import { articles, comments, collectionJobs, articleJobs, commentJobs } from '../db/schema/collections';
 import { getModuleModelConfig } from './model-config';
 import { MODULE_MODEL_MAP } from './types';
+import { getConcurrencyConfig } from './concurrency-config';
 
 // item-analysis 모듈은 Stage 1과 동일하게 gpt-4o-mini 사용 (비용 최적화)
 const ITEM_ANALYSIS_MODULE = 'sentiment-framing';
-
-// 배치 크기
-const ARTICLE_BATCH_SIZE = 10;
-const COMMENT_BATCH_SIZE = 50;
-
-// 병렬 API 호출 동시성 (gpt-4o-mini RPM 500 기준, 안전하게 5개)
-const API_CONCURRENCY = 5;
 
 // --- Zod 스키마 ---
 
@@ -170,6 +164,12 @@ export async function analyzeItems(jobId: number): Promise<{
   commentsAnalyzed: number;
   totalTokens: number;
 }> {
+  // 병렬처리 설정 로드
+  const cc = await getConcurrencyConfig();
+  const ARTICLE_BATCH_SIZE = cc.articleBatchSize;
+  const COMMENT_BATCH_SIZE = cc.commentBatchSize;
+  const API_CONCURRENCY = cc.apiConcurrency;
+
   const db = getDb();
   const config = await getModuleModelConfig(ITEM_ANALYSIS_MODULE);
   let totalTokens = 0;
