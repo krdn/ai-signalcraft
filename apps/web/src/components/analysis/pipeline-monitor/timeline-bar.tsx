@@ -37,7 +37,7 @@ const STAGE_COLORS: Record<string, { bg: string; active: string }> = {
 };
 
 /** 타임라인에서 각 단계의 상대적 소요시간을 계산 */
-function computeSegments(
+export function computeSegments(
   timeline: PipelineTimeline,
   stages: Record<string, { status: string }>,
   elapsedSeconds: number,

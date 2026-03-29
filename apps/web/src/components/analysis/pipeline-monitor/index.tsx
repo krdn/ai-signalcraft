@@ -1,15 +1,12 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useMemo, useEffect, useRef, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { usePipelineStatus } from '@/hooks/use-pipeline-status';
 import { trpcClient } from '@/lib/trpc';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,12 +24,7 @@ import {
   AlertCircle,
   CheckCircle2,
   Loader2,
-  Clock,
   ChevronRight,
-  LayoutDashboard,
-  Download,
-  Beaker,
-  ScrollText,
   Square,
   Pause,
   Play,
@@ -41,29 +33,14 @@ import {
   Ban,
 } from 'lucide-react';
 
-import { PipelineSteps } from './pipeline-steps';
-import { OverviewTab } from './overview-tab';
-import { CollectionTab } from './collection-tab';
-import { AnalysisTab } from './analysis-tab';
-import { LogTab } from './log-tab';
-import { formatElapsed } from './utils';
+import { PipelineHeader } from './pipeline-header';
+import { LiveStatsBar } from './live-stats-bar';
+import { StageFlow } from './stage-flow';
+import { CollectionLanes } from './collection-lanes';
+import { AnalysisModuleGrid } from './analysis-module-grid';
+import { LiveEventFeed } from './live-event-feed';
+import { MODULE_LABELS } from './constants';
 import type { PipelineStatusData } from './types';
-
-// 분석 모듈 한글 라벨
-const MODULE_LABELS: Record<string, string> = {
-  'sentiment-framing': '감정 프레이밍',
-  'macro-view': '거시 분석',
-  'segmentation': '세그멘테이션',
-  'message-impact': '메시지 임팩트',
-  'risk-map': '리스크 맵',
-  'opportunity': '기회 발굴',
-  'strategy': '전략 제안',
-  'final-summary': '종합 요약',
-  'approval-rating': '지지율 분석',
-  'frame-war': '프레임 전쟁',
-  'crisis-scenario': '위기 시나리오',
-  'win-simulation': '승리 시뮬레이션',
-};
 
 interface PipelineMonitorProps {
   jobId: number | null;
@@ -74,8 +51,7 @@ interface PipelineMonitorProps {
 export function PipelineMonitor({ jobId, onComplete, onRetry }: PipelineMonitorProps) {
   const { data, isLoading } = usePipelineStatus(jobId);
 
-  // 완료 시 toast + 탭 전환
-  // 리포트 생성 완료 + 분석 모듈 모두 완료(running/pending 없음) 시에만 전환
+  // 완료 시 toast + 결과 전환
   const prevDoneRef = useRef(false);
   useEffect(() => {
     if (!data) return;
@@ -136,60 +112,41 @@ export function PipelineMonitor({ jobId, onComplete, onRetry }: PipelineMonitorP
   const isAnalysisRunning = data.pipelineStages?.analysis?.status === 'running';
   const isInProgress = isRunning || isPaused || isAnalysisRunning || data.pipelineStages?.report?.status === 'running';
 
+  // 수집 합계
+  const totalCollected = Object.values(data.sourceDetails ?? {}).reduce(
+    (sum: number, s) => sum + ((s as { count: number }).count ?? 0), 0 as number,
+  );
+
   return (
     <Card className="mx-auto max-w-3xl mt-4">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-semibold">
-            파이프라인 진행 상태
-          </CardTitle>
-          <div className="flex items-center gap-2">
-            {data.elapsedSeconds != null && isInProgress && (
-              <span className="text-xs font-mono text-muted-foreground flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                {formatElapsed(data.elapsedSeconds)}
-              </span>
-            )}
-            <StatusBadge status={data.status} keyword={data.keyword} />
-          </div>
-        </div>
-      </CardHeader>
+      <CardContent className="pt-5 space-y-5">
+        {/* 헤더: 키워드 + 상태 + 진행률 바 */}
+        <PipelineHeader
+          keyword={data.keyword}
+          status={data.status}
+          overallProgress={statusData.overallProgress}
+          elapsedSeconds={data.elapsedSeconds ?? 0}
+          isInProgress={isInProgress}
+          isPaused={isPaused}
+        />
 
-      <CardContent className="space-y-4">
-        {/* 4단계 스텝 인디케이터 */}
-        <PipelineSteps stages={data.pipelineStages} />
+        {/* 실시간 통계 4열 */}
+        <LiveStatsBar
+          totalCollected={totalCollected as number}
+          completedModules={statusData.analysisModuleCount?.completed ?? 0}
+          totalModules={statusData.analysisModuleCount?.total ?? 0}
+          tokenUsage={statusData.tokenUsage}
+          elapsedSeconds={data.elapsedSeconds ?? 0}
+        />
 
-        {/* 전체 진행률 바 */}
-        {isInProgress && !isPaused && (
-          <div className="space-y-1">
-            <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-              <span>전체 진행률</span>
-              <span className="font-mono">{statusData.overallProgress}%</span>
-            </div>
-            <Progress value={statusData.overallProgress} className="h-2" />
-          </div>
-        )}
+        {/* 파이프라인 4단계 플로우 */}
+        <StageFlow
+          stages={data.pipelineStages ?? {}}
+          timeline={statusData.timeline}
+          elapsedSeconds={data.elapsedSeconds ?? 0}
+        />
 
-        {/* 일시정지 진행률 (애니메이션 없이) */}
-        {isPaused && (
-          <div className="space-y-1">
-            <div className="flex items-center justify-between text-[10px] text-amber-600">
-              <span>일시정지 중</span>
-              <span className="font-mono">{statusData.overallProgress}%</span>
-            </div>
-            <Progress value={statusData.overallProgress} className="h-2 opacity-60" />
-          </div>
-        )}
-
-        {/* 경과 시간 (완료/취소 상태) */}
-        {data.elapsedSeconds != null && !isInProgress && (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-mono">
-            <Clock className="h-3 w-3" />
-            <span>총 소요시간: {formatElapsed(data.elapsedSeconds)}</span>
-          </div>
-        )}
-
-        {/* 제어 버튼 영역 */}
+        {/* 제어 버튼 */}
         {isInProgress && jobId && (
           <PipelineControls
             jobId={jobId}
@@ -201,43 +158,22 @@ export function PipelineMonitor({ jobId, onComplete, onRetry }: PipelineMonitorP
           />
         )}
 
-        {/* 탭 영역 */}
-        <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 h-8">
-            <TabsTrigger value="overview" className="text-xs gap-1">
-              <LayoutDashboard className="h-3 w-3" />
-              개요
-            </TabsTrigger>
-            <TabsTrigger value="collection" className="text-xs gap-1">
-              <Download className="h-3 w-3" />
-              수집
-            </TabsTrigger>
-            <TabsTrigger value="analysis" className="text-xs gap-1">
-              <Beaker className="h-3 w-3" />
-              분석
-            </TabsTrigger>
-            <TabsTrigger value="log" className="text-xs gap-1">
-              <ScrollText className="h-3 w-3" />
-              로그
-            </TabsTrigger>
-          </TabsList>
+        {/* 수집 현황 (수영 레인) */}
+        <CollectionLanes
+          sourceDetails={data.sourceDetails ?? {}}
+          errorDetails={data.errorDetails}
+          elapsedSeconds={data.elapsedSeconds ?? 0}
+        />
 
-          <TabsContent value="overview" className="mt-3">
-            <OverviewTab data={statusData} />
-          </TabsContent>
+        {/* 분석 모듈 DAG 그리드 */}
+        <AnalysisModuleGrid
+          modules={statusData.analysisModulesDetailed}
+          moduleCount={statusData.analysisModuleCount ?? { total: 0, completed: 0 }}
+          tokenUsage={statusData.tokenUsage}
+        />
 
-          <TabsContent value="collection" className="mt-3">
-            <CollectionTab data={statusData} />
-          </TabsContent>
-
-          <TabsContent value="analysis" className="mt-3">
-            <AnalysisTab data={statusData} />
-          </TabsContent>
-
-          <TabsContent value="log" className="mt-3">
-            <LogTab events={statusData.events} />
-          </TabsContent>
-        </Tabs>
+        {/* 라이브 이벤트 타임라인 */}
+        <LiveEventFeed events={statusData.events} />
 
         {/* 완료 상태 — 리포트 생성 + 모든 분석 모듈 완료 시에만 표시 */}
         {data.hasReport && !data.analysisModulesDetailed?.some(
@@ -297,22 +233,6 @@ export function PipelineMonitor({ jobId, onComplete, onRetry }: PipelineMonitorP
         )}
       </CardContent>
     </Card>
-  );
-}
-
-// 상태 뱃지
-function StatusBadge({ status, keyword }: { status: string; keyword: string }) {
-  const variantMap: Record<string, 'destructive' | 'default' | 'secondary' | 'outline'> = {
-    failed: 'destructive',
-    completed: 'default',
-    cancelled: 'outline',
-  };
-  return (
-    <Badge variant={variantMap[status] ?? 'secondary'}>
-      {status === 'cancelled' && '중지됨 · '}
-      {status === 'paused' && '일시정지 · '}
-      {keyword}
-    </Badge>
   );
 }
 

@@ -127,3 +127,45 @@
     @apply font-sans;
     }
 }
+
+/* Pipeline Monitor V2 — shimmer & glow */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 25%,
+    oklch(0.7 0.15 250 / 0.3) 50%,
+    transparent 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+}
+
+.dark .animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 25%,
+    oklch(0.6 0.15 250 / 0.2) 50%,
+    transparent 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+}
+
+.glow-blue {
+  box-shadow: 0 0 8px 2px oklch(0.65 0.2 250 / 0.3);
+}
+.dark .glow-blue {
+  box-shadow: 0 0 8px 2px oklch(0.55 0.2 250 / 0.25);
+}
+
+.glow-green {
+  box-shadow: 0 0 8px 2px oklch(0.65 0.2 155 / 0.3);
+}
+.dark .glow-green {
+  box-shadow: 0 0 8px 2px oklch(0.55 0.2 155 / 0.25);
+}

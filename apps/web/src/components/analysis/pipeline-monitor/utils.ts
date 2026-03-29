@@ -37,3 +37,19 @@ export function formatTime(isoString: string): string {
   const d = new Date(isoString);
   return d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
+
+/** 비용을 컴팩트하게 포맷 (예: 0.048 → "$0.048") */
+export function formatCostCompact(cost: number): string {
+  if (cost === 0) return '$0';
+  if (cost < 0.001) return `$${cost.toFixed(4)}`;
+  return `$${cost.toFixed(3)}`;
+}
+
+/** 초를 컴팩트하게 포맷 (예: 222 → "3m 42s") */
+export function formatElapsedCompact(seconds: number): string {
+  if (seconds < 0) return '0s';
+  const min = Math.floor(seconds / 60);
+  const sec = seconds % 60;
+  if (min === 0) return `${sec}s`;
+  return `${min}m ${sec}s`;
+}

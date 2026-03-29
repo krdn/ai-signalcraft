@@ -64,7 +64,7 @@ function itemStatusIcon(status: string) {
 }
 
 /** 기사/영상별 댓글 수집 상세 리스트 */
-function ItemDetailsSection({
+export function ItemDetailsSection({
   items,
   label,
 }: {
