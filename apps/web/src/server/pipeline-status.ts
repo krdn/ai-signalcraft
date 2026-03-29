@@ -52,6 +52,10 @@ type SourceDetailStatus = 'pending' | 'running' | 'completed' | 'failed' | 'skip
 export interface SourceDetailResult {
   status: SourceDetailStatus;
   count: number;
+  articles: number;
+  comments: number;
+  videos: number;
+  posts: number;
   label: string;
   articleDetails?: Array<{ title: string; status: string; comments: number }>;
   videoDetails?: Array<{ title: string; status: string; comments: number }>;
@@ -116,10 +120,18 @@ export async function getPipelineStatus(jobId: number) {
   if (progress) {
     for (const [key, val] of Object.entries(progress)) {
       const label = SOURCE_LABELS[key] ?? key;
-      const count = (val.articles ?? 0) + (val.videos ?? 0) + (val.posts ?? 0) + (val.comments ?? 0);
+      const articles = val.articles ?? 0;
+      const videos = val.videos ?? 0;
+      const posts = val.posts ?? 0;
+      const comments = val.comments ?? 0;
+      const count = articles + videos + posts + comments;
       sourceDetails[key] = {
         status: (val.status as SourceDetailStatus) ?? 'pending',
         count,
+        articles,
+        comments,
+        videos,
+        posts,
         label,
         articleDetails: val.articleDetails ?? undefined,
         videoDetails: val.videoDetails ?? undefined,
@@ -133,7 +145,7 @@ export async function getPipelineStatus(jobId: number) {
       if (sourceDetails[key]) {
         sourceDetails[key].status = 'failed';
       } else {
-        sourceDetails[key] = { status: 'failed', count: 0, label: SOURCE_LABELS[key] ?? key };
+        sourceDetails[key] = { status: 'failed', count: 0, articles: 0, comments: 0, videos: 0, posts: 0, label: SOURCE_LABELS[key] ?? key };
       }
     }
   }
@@ -198,13 +210,25 @@ export async function getPipelineStatus(jobId: number) {
   if (progress) {
     for (const [key, val] of Object.entries(progress)) {
       const label = SOURCE_LABELS[key] ?? key;
-      const count = (val.articles ?? 0) + (val.videos ?? 0) + (val.posts ?? 0) + (val.comments ?? 0);
+      const arts = val.articles ?? 0;
+      const vids = val.videos ?? 0;
+      const psts = val.posts ?? 0;
+      const cmts = val.comments ?? 0;
+
+      // 소스 유형별 상세 건수 문자열 생성
+      const parts: string[] = [];
+      if (arts > 0) parts.push(`기사 ${arts}건`);
+      if (vids > 0) parts.push(`영상 ${vids}건`);
+      if (psts > 0) parts.push(`게시글 ${psts}건`);
+      if (cmts > 0) parts.push(`댓글 ${cmts}건`);
+      const detail = parts.length > 0 ? parts.join(', ') : '0건';
+
       if (val.status === 'completed') {
-        events.push({ timestamp: timeline.jobUpdatedAt, level: 'info', message: `${label} 수집 완료 (${count}건)` });
+        events.push({ timestamp: timeline.jobUpdatedAt, level: 'info', message: `${label} 수집 완료 (${detail})` });
       } else if (val.status === 'failed') {
         events.push({ timestamp: timeline.jobUpdatedAt, level: 'error', message: `${label} 수집 실패: ${errorDetails?.[key] ?? '알 수 없는 오류'}` });
       } else if (val.status === 'running') {
-        events.push({ timestamp: timeline.jobCreatedAt, level: 'info', message: `${label} 수집 중... (현재 ${count}건)` });
+        events.push({ timestamp: timeline.jobCreatedAt, level: 'info', message: `${label} 수집 중... (현재 ${detail})` });
       }
     }
   }
@@ -214,11 +238,23 @@ export async function getPipelineStatus(jobId: number) {
   } else if (isPaused) {
     events.push({ timestamp: timeline.jobUpdatedAt, level: 'warn', message: '파이프라인이 일시정지 중입니다' });
   } else if (collectionDone) {
-    const totalCount = Object.values(sourceDetails).reduce((sum, s) => sum + s.count, 0);
+    const allSources = Object.values(sourceDetails);
+    const totalArts = allSources.reduce((s, d) => s + d.articles, 0);
+    const totalCmts = allSources.reduce((s, d) => s + d.comments, 0);
+    const totalVids = allSources.reduce((s, d) => s + d.videos, 0);
+    const totalPsts = allSources.reduce((s, d) => s + d.posts, 0);
+    const summaryParts: string[] = [];
+    if (totalArts > 0) summaryParts.push(`기사 ${totalArts}`);
+    if (totalVids > 0) summaryParts.push(`영상 ${totalVids}`);
+    if (totalPsts > 0) summaryParts.push(`게시글 ${totalPsts}`);
+    if (totalCmts > 0) summaryParts.push(`댓글 ${totalCmts}`);
+    const summaryStr = summaryParts.join(' + ');
     events.push({
       timestamp: timeline.jobUpdatedAt,
       level: job.status === 'partial_failure' ? 'warn' : 'info',
-      message: job.status === 'partial_failure' ? `수집 부분 완료 (총 ${totalCount}건, 일부 소스 실패)` : `수집 완료 (총 ${totalCount}건)`,
+      message: job.status === 'partial_failure'
+        ? `수집 부분 완료 (${summaryStr}, 일부 소스 실패)`
+        : `수집 완료 (${summaryStr})`,
     });
   } else if (collectionFailed) {
     events.push({ timestamp: timeline.jobUpdatedAt, level: 'error', message: '수집 실패 — 파이프라인 중단' });
@@ -226,13 +262,23 @@ export async function getPipelineStatus(jobId: number) {
 
   for (const mod of analysisModulesDetailed) {
     const label = MODULE_LABELS[mod.module] ?? mod.module;
+    const stageLabel = `Stage ${mod.stage}`;
+
+    // 시작 이벤트
+    if (mod.startedAt) {
+      const providerInfo = mod.usage?.provider ? ` [${mod.usage.provider}/${mod.usage.model}]` : '';
+      events.push({ timestamp: mod.startedAt, level: 'info', message: `${label} 분석 시작 (${stageLabel})${providerInfo}` });
+    }
+
+    // 완료 이벤트
     if (mod.status === 'completed' && mod.completedAt) {
-      const tokenInfo = mod.usage ? ` (${(mod.usage.input + mod.usage.output).toLocaleString()} 토큰)` : '';
-      events.push({ timestamp: mod.completedAt, level: 'info', message: `${label} 분석 완료${tokenInfo}` });
+      const infoParts: string[] = [];
+      if (mod.usage) infoParts.push(`${(mod.usage.input + mod.usage.output).toLocaleString()} 토큰`);
+      if (mod.durationSeconds != null) infoParts.push(`${mod.durationSeconds}초`);
+      const infoStr = infoParts.length > 0 ? ` (${infoParts.join(', ')})` : '';
+      events.push({ timestamp: mod.completedAt, level: 'info', message: `${label} 분석 완료${infoStr}` });
     } else if (mod.status === 'failed' && mod.completedAt) {
       events.push({ timestamp: mod.completedAt, level: 'error', message: `${label} 분석 실패: ${mod.errorMessage ?? '알 수 없는 오류'}` });
-    } else if (mod.status === 'running' && mod.startedAt) {
-      events.push({ timestamp: mod.startedAt, level: 'info', message: `${label} 분석 진행 중...` });
     }
   }
 

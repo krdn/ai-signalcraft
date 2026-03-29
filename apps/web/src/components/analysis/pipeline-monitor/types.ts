@@ -11,8 +11,17 @@ export interface ItemDetail {
 
 export interface SourceDetail {
   status: string;
+  /** 전체 합산 건수 (기사+댓글+영상+게시글) */
   count: number;
   label: string;
+  /** 기사/영상/게시글 수 */
+  articles: number;
+  /** 댓글 수 */
+  comments: number;
+  /** 영상 수 (유튜브) */
+  videos: number;
+  /** 게시글 수 (커뮤니티) */
+  posts: number;
   articleDetails?: ItemDetail[];
   videoDetails?: ItemDetail[];
 }

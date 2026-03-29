@@ -136,18 +136,41 @@ export const CollectionLanes = memo(function CollectionLanes({
                       )}
                     </div>
 
-                    {/* 건수 + 속도 */}
-                    <div className="flex items-center gap-2 shrink-0">
+                    {/* 건수: 본문/댓글 분리 */}
+                    <div className="flex items-center gap-1.5 shrink-0 text-[11px] font-mono">
                       {isRunning && elapsedSeconds > 0 && detail.count > 0 && (
-                        <span className="text-[10px] text-muted-foreground font-mono">
+                        <span className="text-[10px] text-muted-foreground">
                           {calcRate(detail.count, elapsedSeconds)}
                         </span>
                       )}
-                      <AnimatedNumber
-                        value={detail.count}
-                        className="text-xs font-mono font-medium w-12 text-right"
-                      />
-                      <span className="text-[10px] text-muted-foreground">건</span>
+                      {/* 본문 (기사/영상/게시글) */}
+                      {(detail.articles > 0 || detail.videos > 0 || detail.posts > 0) && (
+                        <span className="text-xs font-medium">
+                          <AnimatedNumber
+                            value={detail.articles + detail.videos + detail.posts}
+                            className="tabular-nums"
+                          />
+                          <span className="text-[10px] text-muted-foreground ml-0.5">
+                            {detail.articles > 0 ? '기사' : detail.videos > 0 ? '영상' : '글'}
+                          </span>
+                        </span>
+                      )}
+                      {/* 댓글 */}
+                      {detail.comments > 0 && (
+                        <>
+                          <span className="text-muted-foreground/40">·</span>
+                          <span className="text-xs font-medium">
+                            <AnimatedNumber
+                              value={detail.comments}
+                              className="tabular-nums"
+                            />
+                            <span className="text-[10px] text-muted-foreground ml-0.5">댓글</span>
+                          </span>
+                        </>
+                      )}
+                      {detail.count === 0 && (
+                        <span className="text-muted-foreground text-[10px]">대기</span>
+                      )}
                     </div>
 
                     {/* 상세 토글 */}
@@ -184,17 +207,23 @@ export const CollectionLanes = memo(function CollectionLanes({
       </AnimatePresence>
 
       {/* 합계 */}
-      <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1">
-        <span>
-          {sources.filter(([, s]) => s.status === 'completed').length}/{sources.length} 소스 완료
-        </span>
-        <span className="font-mono">
-          총 <AnimatedNumber
-            value={sources.reduce((sum, [, s]) => sum + s.count, 0)}
-            className="font-mono"
-          />건
-        </span>
-      </div>
+      {(() => {
+        const totalArts = sources.reduce((s, [, d]) => s + d.articles + d.videos + d.posts, 0);
+        const totalCmts = sources.reduce((s, [, d]) => s + d.comments, 0);
+        return (
+          <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1">
+            <span>
+              {sources.filter(([, s]) => s.status === 'completed').length}/{sources.length} 소스 완료
+            </span>
+            <span className="font-mono">
+              본문 <AnimatedNumber value={totalArts} className="font-mono font-medium" />건
+              {totalCmts > 0 && (
+                <> · 댓글 <AnimatedNumber value={totalCmts} className="font-mono font-medium" />건</>
+              )}
+            </span>
+          </div>
+        );
+      })()}
     </div>
   );
 });

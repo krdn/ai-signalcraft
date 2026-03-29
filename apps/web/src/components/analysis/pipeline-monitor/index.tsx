@@ -112,10 +112,10 @@ export function PipelineMonitor({ jobId, onComplete, onRetry }: PipelineMonitorP
   const isAnalysisRunning = data.pipelineStages?.analysis?.status === 'running';
   const isInProgress = isRunning || isPaused || isAnalysisRunning || data.pipelineStages?.report?.status === 'running';
 
-  // 수집 합계
-  const totalCollected = Object.values(data.sourceDetails ?? {}).reduce(
-    (sum: number, s) => sum + ((s as { count: number }).count ?? 0), 0 as number,
-  );
+  // 수집 합계 (본문/댓글 분리)
+  const sourceValues = Object.values(data.sourceDetails ?? {}) as Array<{ articles?: number; comments?: number; videos?: number; posts?: number }>;
+  const totalArticles = sourceValues.reduce((s, d) => s + (d.articles ?? 0) + (d.videos ?? 0) + (d.posts ?? 0), 0);
+  const totalComments = sourceValues.reduce((s, d) => s + (d.comments ?? 0), 0);
 
   return (
     <Card className="mx-auto max-w-3xl mt-4">
@@ -130,9 +130,10 @@ export function PipelineMonitor({ jobId, onComplete, onRetry }: PipelineMonitorP
           isPaused={isPaused}
         />
 
-        {/* 실시간 통계 4열 */}
+        {/* 실시간 통계 5열 */}
         <LiveStatsBar
-          totalCollected={totalCollected as number}
+          totalArticles={totalArticles}
+          totalComments={totalComments}
           completedModules={statusData.analysisModuleCount?.completed ?? 0}
           totalModules={statusData.analysisModuleCount?.total ?? 0}
           tokenUsage={statusData.tokenUsage}

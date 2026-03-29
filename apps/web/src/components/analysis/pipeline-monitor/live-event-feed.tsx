@@ -21,7 +21,7 @@ const LEVEL_CONFIG = {
   error: { icon: XCircle, color: 'text-red-500', dotColor: 'bg-red-500' },
 } as const;
 
-const DEFAULT_SHOW = 5;
+const DEFAULT_SHOW = 10;
 
 export const LiveEventFeed = memo(function LiveEventFeed({
   events: incomingEvents,
