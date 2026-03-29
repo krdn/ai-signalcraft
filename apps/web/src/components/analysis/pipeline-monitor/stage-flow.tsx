@@ -81,7 +81,7 @@ export const StageFlow = memo(function StageFlow({
             <div key={step.key} className="flex items-center flex-1 min-w-0">
               {/* 노드 */}
               <Tooltip>
-                <TooltipTrigger render={<span />} className="w-full cursor-default block">
+                <TooltipTrigger className="w-full cursor-default block">
                   <div>
                     <PulseRing active={isActive} color="bg-blue-400">
                       <div
