@@ -70,9 +70,9 @@ export const CONCURRENCY_PRESETS: ConcurrencyPreset[] = [
     name: '유료 기본',
     description: '유료 API Tier 1~2 기준 안정적인 병렬처리. 대부분의 환경에 적합합니다.',
     providerConcurrency: { ...DEFAULT_PROVIDER_CONCURRENCY },
-    apiConcurrency: 5,
-    articleBatchSize: 10,
-    commentBatchSize: 50,
+    apiConcurrency: 10,
+    articleBatchSize: 20,
+    commentBatchSize: 100,
   },
   {
     id: 'paid-max',

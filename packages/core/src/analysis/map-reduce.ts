@@ -6,6 +6,7 @@ import { persistAnalysisResult } from './persist-analysis';
 import { getModuleModelConfig } from './model-config';
 import { runModule } from './runner';
 import { isRateLimitError, parseRetryAfter, sleep, MAX_RATE_LIMIT_RETRIES } from './retry-utils';
+import { getConcurrencyConfig } from './concurrency-config';
 import type { AnalysisModule, AnalysisInput, AnalysisModuleResult } from './types';
 
 // --- 청킹 설정 ---
@@ -178,43 +179,54 @@ export async function runModuleMapReduce<T>(
     const config = await getModuleModelConfig(module.name);
     const totalUsage = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
 
-    // === MAP 단계 ===
+    // === MAP 단계 (프로바이더별 동시성 제한 병렬 처리) ===
     const mapResults: { result: T; chunkIndex: number }[] = [];
 
-    // 순차 실행 (프로바이더 Rate Limit 안전)
-    for (let i = 0; i < chunks.length; i++) {
-      const chunk = chunks[i];
-      const chunkLabel = `${module.name}[chunk ${i + 1}/${chunks.length}]`;
+    const cc = await getConcurrencyConfig();
+    const mapConcurrency = cc.providerConcurrency[config.provider] ?? 2;
+    console.log(`[map-reduce] ${module.name}: Map 동시성=${mapConcurrency} (${config.provider})`);
 
-      try {
-        const prompt = module.buildPrompt(chunk);
-        const mapPrompt = `[데이터 청크 ${i + 1}/${chunks.length}] 전체 수집 데이터 중 일부입니다. 이 부분의 데이터만 분석하세요.\n\n${prompt}`;
+    for (let i = 0; i < chunks.length; i += mapConcurrency) {
+      const batch = chunks.slice(i, i + mapConcurrency);
+      const batchResults = await Promise.allSettled(
+        batch.map(async (chunk, batchIdx) => {
+          const chunkIdx = i + batchIdx;
+          const chunkLabel = `${module.name}[chunk ${chunkIdx + 1}/${chunks.length}]`;
 
-        const gatewayOptions: AIGatewayOptions = {
-          provider: config.provider,
-          model: config.model,
-          baseUrl: config.baseUrl,
-          apiKey: config.apiKey,
-          systemPrompt: module.buildSystemPrompt(),
-          maxOutputTokens: 8192,
-          timeoutMs: cfg.mapTimeoutMs,
-        };
+          const prompt = module.buildPrompt(chunk);
+          const mapPrompt = `[데이터 청크 ${chunkIdx + 1}/${chunks.length}] 전체 수집 데이터 중 일부입니다. 이 부분의 데이터만 분석하세요.\n\n${prompt}`;
 
-        const mapResult = await callWithRetry(
-          () => analyzeStructured(mapPrompt, module.schema, gatewayOptions),
-          chunkLabel,
-        );
+          const gatewayOptions: AIGatewayOptions = {
+            provider: config.provider,
+            model: config.model,
+            baseUrl: config.baseUrl,
+            apiKey: config.apiKey,
+            systemPrompt: module.buildSystemPrompt(),
+            maxOutputTokens: 8192,
+            timeoutMs: cfg.mapTimeoutMs,
+          };
 
-        totalUsage.inputTokens += (mapResult.usage as any)?.promptTokens ?? (mapResult.usage as any)?.inputTokens ?? 0;
-        totalUsage.outputTokens += (mapResult.usage as any)?.completionTokens ?? (mapResult.usage as any)?.outputTokens ?? 0;
-        totalUsage.totalTokens += (mapResult.usage as any)?.totalTokens ?? 0;
+          const mapResult = await callWithRetry(
+            () => analyzeStructured(mapPrompt, module.schema, gatewayOptions),
+            chunkLabel,
+          );
 
-        mapResults.push({ result: mapResult.object, chunkIndex: i });
-        console.log(`[map-reduce] ${chunkLabel}: 완료`);
-      } catch (error) {
-        const errMsg = error instanceof Error ? error.message : String(error);
-        console.error(`[map-reduce] ${chunkLabel}: 실패 — ${errMsg}`);
-        // 부분 실패 허용: 다음 청크 계속 진행
+          console.log(`[map-reduce] ${chunkLabel}: 완료`);
+          return { result: mapResult.object, chunkIndex: chunkIdx, usage: mapResult.usage };
+        }),
+      );
+
+      for (const settled of batchResults) {
+        if (settled.status === 'fulfilled') {
+          const { result, chunkIndex, usage } = settled.value;
+          totalUsage.inputTokens += (usage as any)?.promptTokens ?? (usage as any)?.inputTokens ?? 0;
+          totalUsage.outputTokens += (usage as any)?.completionTokens ?? (usage as any)?.outputTokens ?? 0;
+          totalUsage.totalTokens += (usage as any)?.totalTokens ?? 0;
+          mapResults.push({ result, chunkIndex });
+        } else {
+          const errMsg = settled.reason instanceof Error ? settled.reason.message : String(settled.reason);
+          console.error(`[map-reduce] ${module.name}[chunk]: 실패 — ${errMsg}`);
+        }
       }
     }
 
