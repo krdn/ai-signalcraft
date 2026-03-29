@@ -39,44 +39,59 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
   private readonly config = {
     searchDelay: { min: 300, max: 600 },   // 검색 페이지 간 딜레이 (fetch이므로 짧게)
     postDelay: { min: 500, max: 1000 },    // 기사 본문 간 딜레이
-    defaultMaxItems: 100,
-    maxSearchPages: 40,
+    defaultMaxItems: 500,
+    maxSearchPages: 100,
   };
 
   async *collect(options: CollectionOptions): AsyncGenerator<NaverArticle[], void, unknown> {
     const maxItems = options.maxItems ?? this.config.defaultMaxItems;
     let totalCollected = 0;
 
-    // Phase 1: 검색 결과 수집 (fetch — 브라우저 없이 빠르게)
+    // Phase 1: 날짜 분할 검색 (Date-Chunked Collection)
+    // 기간을 일별로 분할하여 각 날짜에서 균등하게 수집 — 최신순 편중 방지
     const allArticles: NaverArticle[] = [];
+    const days = this.splitIntoDays(options.startDate, options.endDate);
+    const perDayLimit = Math.ceil(maxItems / days.length);
+    const maxPagesPerDay = Math.min(
+      Math.ceil(this.config.maxSearchPages / days.length),
+      40, // 네이버 검색 한계: 단일 날짜에서도 40페이지(~400건) 이상 반환 안 됨
+    );
 
-    for (let pageNum = 1; pageNum <= this.config.maxSearchPages; pageNum++) {
+    for (const day of days) {
       if (allArticles.length >= maxItems) break;
+      let dailyCollected = 0;
+      const dayStr = day.toISOString();
 
-      const searchUrl = buildNaverSearchUrl({
-        keyword: options.keyword,
-        startDate: options.startDate,
-        endDate: options.endDate,
-        page: pageNum,
-        sort: 1,
-      });
+      for (let pageNum = 1; pageNum <= maxPagesPerDay; pageNum++) {
+        if (dailyCollected >= perDayLimit) break;
+        if (allArticles.length >= maxItems) break;
 
-      try {
-        const response = await fetch(searchUrl, {
-          headers: { ...SEARCH_HEADERS, 'User-Agent': getRandomUserAgent() },
+        const searchUrl = buildNaverSearchUrl({
+          keyword: options.keyword,
+          startDate: dayStr,
+          endDate: dayStr,
+          page: pageNum,
+          sort: 1,
         });
-        if (!response.ok) break;
 
-        const html = await response.text();
-        const articles = this.parseSearchResults(html);
-        if (articles.length === 0) break;
+        try {
+          const response = await fetch(searchUrl, {
+            headers: { ...SEARCH_HEADERS, 'User-Agent': getRandomUserAgent() },
+          });
+          if (!response.ok) break;
 
-        allArticles.push(...articles);
-      } catch {
-        break;
+          const html = await response.text();
+          const articles = this.parseSearchResults(html);
+          if (articles.length === 0) break;
+
+          allArticles.push(...articles);
+          dailyCollected += articles.length;
+        } catch {
+          break;
+        }
+
+        await sleep(this.config.searchDelay.min, this.config.searchDelay.max);
       }
-
-      await sleep(this.config.searchDelay.min, this.config.searchDelay.max);
     }
 
     // maxItems 제한
@@ -276,6 +291,27 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
     });
 
     return articles;
+  }
+
+  /**
+   * 날짜 범위를 일별로 분할 (과거 → 최신 순서)
+   * 각 날짜에서 균등하게 기사를 수집하여 일별 트렌드 분석 정확도 향상
+   */
+  private splitIntoDays(startDate: string, endDate: string): Date[] {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    start.setHours(0, 0, 0, 0);
+    end.setHours(23, 59, 59, 999);
+
+    const days: Date[] = [];
+    const current = new Date(start);
+    while (current <= end) {
+      days.push(new Date(current));
+      current.setDate(current.getDate() + 1);
+    }
+
+    if (days.length === 0) days.push(new Date(start));
+    return days;
   }
 
   /**

@@ -493,7 +493,7 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
                         <div className="text-xs space-y-1 text-muted-foreground">
                           <p><span className="text-foreground">수집 대상:</span> 뉴스 기사 본문 + 기사별 댓글</p>
                           <p><span className="text-foreground">수집 방식:</span> Playwright 브라우저 자동화</p>
-                          <p><span className="text-foreground">기본 한도:</span> 기사 100건, 기사당 댓글 500건</p>
+                          <p><span className="text-foreground">기본 한도:</span> 기사 500건 (일별 균등 수집), 기사당 댓글 500건</p>
                           <p><span className="text-foreground">특성:</span> 주류 언론의 보도 프레임과 일반 대중의 반응을 동시에 파악. 정치/경제 키워드에 특히 효과적</p>
                           <p><span className="text-foreground">추천 상황:</span> 언론 보도 기조 분석, 댓글 여론 파악, 기사 프레이밍 분석</p>
                         </div>

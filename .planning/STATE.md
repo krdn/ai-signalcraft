@@ -84,9 +84,10 @@ None.
 | 260326-cicd | GitHub Actions CI/CD 파이프라인 (CI + Docker 배포) | 2026-03-26 | - | [260326-cicd-github-actions](./quick/260326-cicd-github-actions/) |
 | 260327-0b8 | 최근 분석 UI 개선 (날짜+시분, 소스 아이콘, 수집 건수, 소요 시간) | 2026-03-27 | - | [260327-0b8-ui](./quick/260327-0b8-ui/) |
 | 260327-vvl | 동일 분석실행 날짜 겹침 및 중복 기사 처리 전략 리서치 | 2026-03-27 | - | [260327-vvl-duplicate-analysis-strategy](./quick/260327-vvl-duplicate-analysis-strategy/) |
+| 260329-kmr | 하이브리드 날짜 분할 수집 (Date-Chunked Collection) | 2026-03-29 | - | [260329-kmr-naver-news-ts-date-chunked-collection](./quick/260329-kmr-naver-news-ts-date-chunked-collection/) |
 
 ## Session Continuity
 
-Last activity: 2026-03-27 - Completed quick task 260327-vvl: 동일 분석실행 날짜 겹침 및 중복 기사 처리 전략 리서치
+Last activity: 2026-03-29 - Completed quick task 260329-kmr: 하이브리드 날짜 분할 수집 구현
 Stopped at: Completed 09-03-PLAN.md
 Resume file: None
