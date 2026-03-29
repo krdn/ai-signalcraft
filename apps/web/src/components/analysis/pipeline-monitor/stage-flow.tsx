@@ -16,6 +16,7 @@ import {
   Layers,
   Beaker,
   FileText,
+  Ban,
 } from 'lucide-react';
 import { PulseRing } from './pulse-ring';
 import { STAGE_HELP, PIPELINE_STEPS } from './constants';
@@ -44,6 +45,8 @@ function stageStatusIcon(status: StageStatus) {
       return <Loader2 className="h-4 w-4 animate-spin text-blue-500" />;
     case 'failed':
       return <XCircle className="h-4 w-4 text-red-500" />;
+    case 'cancelled':
+      return <Ban className="h-4 w-4 text-zinc-400" />;
     default:
       return <Clock className="h-4 w-4 text-muted-foreground/50" />;
   }
@@ -55,6 +58,9 @@ function connectorClass(fromStatus: string, toStatus: string): string {
   }
   if (fromStatus === 'completed' && (toStatus === 'completed' || toStatus === 'failed')) {
     return 'bg-green-400/60 h-0.5';
+  }
+  if (fromStatus === 'cancelled' || toStatus === 'cancelled') {
+    return 'bg-zinc-300/50 dark:bg-zinc-700/50 h-px';
   }
   return 'bg-muted-foreground/20 h-px border-t border-dashed border-muted-foreground/30';
 }
@@ -90,6 +96,7 @@ export const StageFlow = memo(function StageFlow({
                           ${isActive ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/40 glow-blue' : ''}
                           ${isCompleted ? 'border-green-500/50 bg-green-50/50 dark:bg-green-950/20' : ''}
                           ${status === 'failed' ? 'border-red-500/50 bg-red-50/50 dark:bg-red-950/20' : ''}
+                          ${status === 'cancelled' ? 'border-zinc-400/50 bg-zinc-100/50 dark:bg-zinc-800/30 opacity-60' : ''}
                           ${status === 'pending' || status === 'skipped' ? 'border-border bg-muted/30' : ''}
                         `}
                       >

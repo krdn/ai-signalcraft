@@ -38,7 +38,7 @@ const MODULE_STAGE: Record<string, number> = {
 
 import { estimateCostUsd } from '@/components/analysis/pipeline-monitor/constants';
 
-type SourceDetailStatus = 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
+type SourceDetailStatus = 'pending' | 'running' | 'completed' | 'failed' | 'skipped' | 'cancelled';
 
 export interface SourceDetailResult {
   status: SourceDetailStatus;
@@ -81,25 +81,32 @@ export async function getPipelineStatus(jobId: number) {
   const analysisDone = analysisStarted && !analysisInProgress;
   const reportDone = !!report;
 
+  // cancelled 시: 완료되지 않은 단계는 모두 'cancelled'로 표시
   const pipelineStages = {
     collection: {
       status: collectionFailed ? 'failed' as const
         : collectionDone ? 'completed' as const
+        : isCancelled ? 'cancelled' as const
         : job.status === 'running' ? 'running' as const
         : 'pending' as const,
     },
     normalization: {
-      status: collectionFailed ? 'skipped' as const : normalizationDone ? 'completed' as const : 'pending' as const,
+      status: collectionFailed ? 'skipped' as const
+        : normalizationDone ? 'completed' as const
+        : isCancelled ? 'cancelled' as const
+        : 'pending' as const,
     },
     analysis: {
       status: collectionFailed ? 'skipped' as const
         : analysisDone ? 'completed' as const
+        : isCancelled ? 'cancelled' as const
         : analysisInProgress || analysisStarted ? 'running' as const
         : 'pending' as const,
     },
     report: {
       status: collectionFailed ? 'skipped' as const
         : reportDone ? 'completed' as const
+        : isCancelled ? 'cancelled' as const
         : analysisDone ? 'running' as const
         : 'pending' as const,
     },
@@ -137,6 +144,15 @@ export async function getPipelineStatus(jobId: number) {
         sourceDetails[key].status = 'failed';
       } else {
         sourceDetails[key] = { status: 'failed', count: 0, articles: 0, comments: 0, videos: 0, posts: 0, label: SOURCE_LABELS[key] ?? key };
+      }
+    }
+  }
+
+  // cancelled 시: 완료되지 않은 소스를 cancelled로 표시
+  if (isCancelled) {
+    for (const detail of Object.values(sourceDetails)) {
+      if (detail.status === 'running' || detail.status === 'pending') {
+        detail.status = 'cancelled' as SourceDetailStatus;
       }
     }
   }

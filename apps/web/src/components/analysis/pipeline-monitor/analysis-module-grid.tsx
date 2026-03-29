@@ -144,11 +144,7 @@ export const AnalysisModuleGrid = memo(function AnalysisModuleGrid({
   );
 
   if (modules.length === 0) {
-    return (
-      <div className="text-sm text-muted-foreground py-2 text-center">
-        분석 대기 중...
-      </div>
-    );
+    return null;
   }
 
   // Stage별 그룹핑

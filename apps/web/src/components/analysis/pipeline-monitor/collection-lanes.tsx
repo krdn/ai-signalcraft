@@ -20,6 +20,7 @@ import {
   Clock,
   ChevronDown,
   Info,
+  Ban,
 } from 'lucide-react';
 import { AnimatedNumber } from './animated-number';
 import { ItemDetailsSection } from './collection-tab';
@@ -41,6 +42,8 @@ function sourceIcon(status: string) {
       return <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-500 shrink-0" />;
     case 'failed':
       return <XCircle className="h-3.5 w-3.5 text-red-500 shrink-0" />;
+    case 'cancelled':
+      return <Ban className="h-3.5 w-3.5 text-zinc-400 shrink-0" />;
     default:
       return <Clock className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />;
   }
@@ -54,6 +57,8 @@ function progressBarClass(status: string): string {
       return 'bg-blue-500 dark:bg-blue-600';
     case 'failed':
       return 'bg-red-400 dark:bg-red-600';
+    case 'cancelled':
+      return 'bg-zinc-400 dark:bg-zinc-600';
     default:
       return 'bg-muted-foreground/20';
   }
@@ -169,7 +174,12 @@ export const CollectionLanes = memo(function CollectionLanes({
                         </>
                       )}
                       {detail.count === 0 && (
-                        <span className="text-muted-foreground text-[10px]">대기</span>
+                        <span className="text-muted-foreground text-[10px]">
+                          {detail.status === 'cancelled' ? '중지됨' : '대기'}
+                        </span>
+                      )}
+                      {detail.status === 'cancelled' && detail.count > 0 && (
+                        <span className="text-zinc-400 text-[10px]">중지됨</span>
                       )}
                     </div>
 

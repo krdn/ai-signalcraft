@@ -6,6 +6,8 @@ import { collectionJobs } from '../db/schema/collections';
 import { analysisResults } from '../db/schema/analysis';
 import { getRedisConnection } from '../queue/connection';
 
+import Redis from 'ioredis';
+
 // 큐 인스턴스 (lazy)
 let _collectors: Queue | null = null;
 let _pipeline: Queue | null = null;
@@ -44,20 +46,33 @@ export async function cancelPipeline(jobId: number): Promise<{ cancelled: boolea
     return { cancelled: false, message: `이미 ${job.status} 상태입니다` };
   }
 
-  // BullMQ 큐에서 대기 중인 작업 제거
+  // BullMQ 큐에서 모든 상태의 작업 제거 (waiting + delayed + active)
   for (const queueName of ['collectors', 'pipeline', 'analysis']) {
     const queue = getQueue(queueName);
     try {
       const waiting = await queue.getWaiting();
       const delayed = await queue.getDelayed();
-      for (const qJob of [...waiting, ...delayed]) {
+      const active = await queue.getActive();
+      for (const qJob of [...waiting, ...delayed, ...active]) {
         if (qJob.data?.dbJobId === jobId) {
-          await qJob.remove();
+          try {
+            await qJob.moveToFailed(new Error('사용자에 의해 중지됨'), '0', true);
+          } catch {
+            // moveToFailed 실패 시 강제 제거
+            try { await qJob.remove(); } catch { /* 무시 */ }
+          }
         }
       }
     } catch {
       // 큐 연결 실패 시 무시 (DB 상태만이라도 업데이트)
     }
+  }
+
+  // Redis에 남은 고아 active 작업 강제 정리
+  try {
+    await cleanStalledActiveJobs(jobId);
+  } catch {
+    // 정리 실패해도 DB 상태 업데이트는 계속 진행
   }
 
   // 진행 중인 분석 모듈을 cancelled로 표시
@@ -248,4 +263,72 @@ export async function getSkippedModules(jobId: number): Promise<string[]> {
   const [job] = await db.select({ skippedModules: collectionJobs.skippedModules })
     .from(collectionJobs).where(eq(collectionJobs.id, jobId)).limit(1);
   return (job?.skippedModules as string[]) ?? [];
+}
+
+/**
+ * Redis에 남은 고아 active 작업 강제 정리
+ * BullMQ API로 제거 실패한 경우 Redis에 직접 접근하여 정리
+ */
+export async function cleanStalledActiveJobs(jobId: number): Promise<number> {
+  const conn = getRedisConnection() as { host?: string; port?: number };
+  const redis = new Redis({ host: conn.host ?? 'localhost', port: conn.port ?? 6379 });
+  let cleaned = 0;
+
+  try {
+    for (const queueName of ['collectors', 'pipeline', 'analysis']) {
+      // 1) active 리스트에서 해당 jobId 작업 제거
+      const activeKey = `bull:${queueName}:active`;
+      const activeJobIds = await redis.lrange(activeKey, 0, -1);
+
+      for (const bullJobId of activeJobIds) {
+        if (await removeIfMatches(redis, queueName, bullJobId, activeKey, jobId, 'lrem')) {
+          cleaned++;
+        }
+      }
+
+      // 2) waiting-children (sorted set)에서 해당 jobId 작업 제거
+      const wcKey = `bull:${queueName}:waiting-children`;
+      const wcJobIds = await redis.zrange(wcKey, 0, -1);
+
+      for (const bullJobId of wcJobIds) {
+        if (await removeIfMatches(redis, queueName, bullJobId, wcKey, jobId, 'zrem')) {
+          cleaned++;
+        }
+      }
+    }
+  } finally {
+    await redis.quit();
+  }
+
+  return cleaned;
+}
+
+/** Redis에서 특정 dbJobId에 해당하는 BullMQ 작업을 제거하는 헬퍼 */
+async function removeIfMatches(
+  redis: Redis,
+  queueName: string,
+  bullJobId: string,
+  listKey: string,
+  dbJobId: number,
+  removeType: 'lrem' | 'zrem',
+): Promise<boolean> {
+  const dataStr = await redis.hget(`bull:${queueName}:${bullJobId}`, 'data');
+  if (!dataStr) return false;
+
+  try {
+    const data = JSON.parse(dataStr);
+    if (data.dbJobId === dbJobId) {
+      if (removeType === 'lrem') {
+        await redis.lrem(listKey, 0, bullJobId);
+      } else {
+        await redis.zrem(listKey, bullJobId);
+      }
+      await redis.del(`bull:${queueName}:${bullJobId}`);
+      await redis.del(`bull:${queueName}:${bullJobId}:lock`);
+      return true;
+    }
+  } catch {
+    // JSON 파싱 실패 시 무시
+  }
+  return false;
 }
