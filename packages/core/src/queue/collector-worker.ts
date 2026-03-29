@@ -3,6 +3,7 @@
 import type { Job } from 'bullmq';
 import { getCollector } from '@ai-signalcraft/collectors';
 import { updateJobProgress } from '../pipeline';
+import { isPipelineCancelled } from '../pipeline/control';
 import { progressKey, countBySourceType } from './worker-config';
 import { createLogger } from '../utils/logger';
 
@@ -35,6 +36,11 @@ export function createCollectorHandler(): (job: Job) => Promise<CollectorResult>
 
       const allItems: unknown[] = [];
       for await (const chunk of collector.collect({ keyword, startDate, endDate, maxItems, maxComments })) {
+        // 취소 확인 — DB에서 cancelled 상태이면 즉시 중단
+        if (dbJobId && await isPipelineCancelled(dbJobId)) {
+          logger.info(`[${source}] 사용자에 의해 수집 중지됨 (${allItems.length}건 수집 후)`);
+          return { source, items: allItems, count: allItems.length };
+        }
         allItems.push(...chunk);
         await job.updateProgress({ collected: allItems.length });
         // DB: 실시간 진행 업데이트

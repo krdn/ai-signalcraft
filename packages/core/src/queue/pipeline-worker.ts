@@ -18,6 +18,7 @@ import {
   updateJobProgress,
 } from '../pipeline';
 import { triggerAnalysis } from './flows';
+import { isPipelineCancelled } from '../pipeline/control';
 import { COMMUNITY_SOURCES } from './worker-config';
 import { createLogger } from '../utils/logger';
 
@@ -32,6 +33,12 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
     logger.info(`[${job.name}] 시작 (dbJobId=${dbJobId})`);
 
     if (job.name.startsWith('normalize-')) {
+      // 취소 확인
+      if (dbJobId && await isPipelineCancelled(dbJobId)) {
+        logger.info(`[${job.name}] 취소됨 — 정규화 건너뜀`);
+        return { skipped: true, reason: 'cancelled' };
+      }
+
       // 자식 작업(collect)의 결과를 가져와 정규화
       const childValues = await job.getChildrenValues();
       const results: Record<string, unknown> = {};
@@ -232,6 +239,12 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
     }
 
     if (job.name === 'persist') {
+      // 취소 확인
+      if (dbJobId && await isPipelineCancelled(dbJobId)) {
+        logger.info(`[persist] 취소됨 — 저장 건너뜀`);
+        return { skipped: true, reason: 'cancelled' };
+      }
+
       // 자식 작업(normalize)의 결과를 가져와 DB에 저장
       const childValues = await job.getChildrenValues();
 
