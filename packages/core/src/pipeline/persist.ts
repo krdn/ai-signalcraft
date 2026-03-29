@@ -2,7 +2,7 @@
 // N:M 조인 테이블을 사용하여 기사/영상/댓글이 여러 job에서 공유 가능
 import { getDb } from '../db';
 import { articles, videos, comments, collectionJobs, articleJobs, videoJobs, commentJobs } from '../db/schema/collections';
-import { sql } from 'drizzle-orm';
+import { sql, eq, and, notInArray } from 'drizzle-orm';
 
 /**
  * 기사 upsert + 조인 테이블 삽입
@@ -145,17 +145,30 @@ export async function updateJobProgress(
   status?: 'pending' | 'running' | 'completed' | 'partial_failure' | 'failed',
 ) {
   const hasProgress = Object.keys(progress).length > 0;
+  const db = getDb();
 
-  return getDb()
-    .update(collectionJobs)
-    .set({
+  // cancelled/paused 상태는 worker가 덮어쓰지 못하도록 보호
+  if (status) {
+    const condition = and(
+      eq(collectionJobs.id, jobId),
+      notInArray(collectionJobs.status, ['cancelled', 'paused']),
+    );
+    return db.update(collectionJobs).set({
       ...(hasProgress
         ? { progress: sql`COALESCE(progress, '{}'::jsonb) || ${sql.param(JSON.stringify(progress))}::jsonb` as any }
         : {}),
-      ...(status ? { status } : {}),
+      status,
       updatedAt: new Date(),
-    })
-    .where(sql`id = ${jobId}`);
+    }).where(condition);
+  }
+
+  // status 없이 progress만 업데이트할 때는 제한 없음
+  return db.update(collectionJobs).set({
+    ...(hasProgress
+      ? { progress: sql`COALESCE(progress, '{}'::jsonb) || ${sql.param(JSON.stringify(progress))}::jsonb` as any }
+      : {}),
+    updatedAt: new Date(),
+  }).where(eq(collectionJobs.id, jobId));
 }
 
 /**
