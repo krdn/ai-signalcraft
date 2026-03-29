@@ -14,6 +14,12 @@ export const analysisRouter = router({
       options: z.object({
         enableItemAnalysis: z.boolean().optional(),
       }).optional(),
+      limits: z.object({
+        naverArticles: z.number().min(10).max(5000),
+        youtubeVideos: z.number().min(5).max(500),
+        communityPosts: z.number().min(5).max(500),
+        commentsPerItem: z.number().min(10).max(2000),
+      }).optional(),
     }))
     .mutation(async ({ input, ctx }) => {
       // 1. collectionJobs 레코드 생성 (팀 ID 포함)
@@ -24,6 +30,7 @@ export const analysisRouter = router({
         status: 'pending',
         teamId: ctx.teamId ?? null,
         options: input.options ?? null,
+        limits: input.limits ?? null,
       }).returning();
 
       // 2. BullMQ 트리거 -- CollectionTrigger 형식 (INT-01: sources 전달)
@@ -32,6 +39,7 @@ export const analysisRouter = router({
         startDate: new Date(input.startDate).toISOString(),
         endDate: new Date(input.endDate).toISOString(),
         sources: input.sources,
+        limits: input.limits,
       }, job.id);
 
       return { jobId: job.id };

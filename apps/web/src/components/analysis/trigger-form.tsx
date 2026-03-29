@@ -77,6 +77,11 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
   const [eventName, setEventName] = useState('');
   const [eventDate, setEventDate] = useState<Date>(new Date());
   const [eventRadius, setEventRadius] = useState(3); // 전후 N일
+  const [isLimitsOpen, setIsLimitsOpen] = useState(false);
+  const [maxNaverArticles, setMaxNaverArticles] = useState(1000);
+  const [maxYoutubeVideos, setMaxYoutubeVideos] = useState(50);
+  const [maxCommunityPosts, setMaxCommunityPosts] = useState(50);
+  const [maxCommentsPerItem, setMaxCommentsPerItem] = useState(500);
 
   const triggerMutation = useMutation({
     mutationFn: (input: {
@@ -85,6 +90,12 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
       startDate: string;
       endDate: string;
       options?: { enableItemAnalysis?: boolean };
+      limits?: {
+        naverArticles: number;
+        youtubeVideos: number;
+        communityPosts: number;
+        commentsPerItem: number;
+      };
     }) => trpcClient.analysis.trigger.mutate(input),
     onSuccess: (data) => {
       toast.success('분석이 시작되었습니다');
@@ -121,6 +132,12 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
       startDate: resolvedStart.toISOString(),
       endDate: resolvedEnd.toISOString(),
       options: enableItemAnalysis ? { enableItemAnalysis: true } : undefined,
+      limits: {
+        naverArticles: maxNaverArticles,
+        youtubeVideos: maxYoutubeVideos,
+        communityPosts: maxCommunityPosts,
+        commentsPerItem: maxCommentsPerItem,
+      },
     });
   };
 
@@ -319,6 +336,79 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
               </div>
             </label>
           </div>
+
+          {/* 수집 한도 설정 */}
+          <Collapsible open={isLimitsOpen} onOpenChange={setIsLimitsOpen}>
+            <CollapsibleTrigger
+              className="w-full flex items-center justify-between rounded-lg border px-3 py-2 text-sm hover:bg-accent transition-colors cursor-pointer"
+            >
+              <span className="font-medium">수집 한도 설정</span>
+              <ChevronDown
+                className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isLimitsOpen ? 'rotate-180' : ''}`}
+              />
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="mt-2 space-y-3 rounded-lg border p-3">
+                <p className="text-xs text-muted-foreground">
+                  소스별 최대 수집 건수를 조절합니다. 줄이면 비용과 시간이 절약됩니다.
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="maxNaver" className="text-xs">네이버 뉴스</Label>
+                    <Input
+                      id="maxNaver"
+                      type="number"
+                      min={10}
+                      max={5000}
+                      step={10}
+                      value={maxNaverArticles}
+                      onChange={(e) => setMaxNaverArticles(Number(e.target.value))}
+                      disabled={triggerMutation.isPending}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="maxYoutube" className="text-xs">유튜브 영상</Label>
+                    <Input
+                      id="maxYoutube"
+                      type="number"
+                      min={5}
+                      max={500}
+                      step={5}
+                      value={maxYoutubeVideos}
+                      onChange={(e) => setMaxYoutubeVideos(Number(e.target.value))}
+                      disabled={triggerMutation.isPending}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="maxCommunity" className="text-xs">커뮤니티 게시글</Label>
+                    <Input
+                      id="maxCommunity"
+                      type="number"
+                      min={5}
+                      max={500}
+                      step={5}
+                      value={maxCommunityPosts}
+                      onChange={(e) => setMaxCommunityPosts(Number(e.target.value))}
+                      disabled={triggerMutation.isPending}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="maxComments" className="text-xs">항목당 댓글</Label>
+                    <Input
+                      id="maxComments"
+                      type="number"
+                      min={10}
+                      max={2000}
+                      step={10}
+                      value={maxCommentsPerItem}
+                      onChange={(e) => setMaxCommentsPerItem(Number(e.target.value))}
+                      disabled={triggerMutation.isPending}
+                    />
+                  </div>
+                </div>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
 
           {/* 실행 버튼 */}
           <Button
