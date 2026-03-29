@@ -16,7 +16,7 @@ import {
 } from './modules';
 import { persistAnalysisResult } from './persist-analysis';
 import { getModuleModelConfig } from './model-config';
-import { isRateLimitError, parseRetryAfter, sleep, MAX_RATE_LIMIT_RETRIES } from './retry-utils';
+import { isRateLimitError, isParseError, parseRetryAfter, sleep, MAX_RATE_LIMIT_RETRIES, MAX_PARSE_RETRIES } from './retry-utils';
 import type { AnalysisModule, AnalysisInput, AnalysisModuleResult } from './types';
 
 // Stage 1: 병렬 실행 (독립 모듈)
@@ -129,6 +129,13 @@ export async function runModule<T>(
           const retryAfterSec = parseRetryAfter(error);
           const backoffMs = Math.max(retryAfterSec * 1000, (attempt + 1) * 3000);
           console.log(`[runner] ${module.name}: rate limit 도달, ${backoffMs}ms 후 재시도 (${attempt + 1}/${MAX_RATE_LIMIT_RETRIES})`);
+          await sleep(backoffMs);
+          continue;
+        }
+        // 파싱 실패 (구조화 응답 생성 실패) — 최대 2회 재시도
+        if (isParseError(error) && attempt < MAX_PARSE_RETRIES) {
+          const backoffMs = (attempt + 1) * 5000;
+          console.log(`[runner] ${module.name}: 응답 파싱 실패, ${backoffMs}ms 후 재시도 (${attempt + 1}/${MAX_PARSE_RETRIES})`);
           await sleep(backoffMs);
           continue;
         }

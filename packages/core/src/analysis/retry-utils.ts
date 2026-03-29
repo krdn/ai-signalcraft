@@ -24,3 +24,11 @@ export function sleep(ms: number): Promise<void> {
 }
 
 export const MAX_RATE_LIMIT_RETRIES = 5;
+export const MAX_PARSE_RETRIES = 2;
+
+/** 구조화 응답 파싱 실패 감지 */
+export function isParseError(error: unknown): boolean {
+  const msg = error instanceof Error ? error.message : String(error);
+  return msg.includes('could not parse') || msg.includes('No object generated')
+    || msg.includes('Failed to parse');
+}
