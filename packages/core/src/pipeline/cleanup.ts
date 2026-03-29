@@ -11,8 +11,6 @@ import {
   commentJobs,
 } from '../db/schema/collections';
 import { analysisResults, analysisReports } from '../db/schema/analysis';
-import { Queue } from 'bullmq';
-import { getRedisConnection } from '../queue/connection';
 
 /**
  * 단일 분석 작업 삭제
@@ -254,34 +252,11 @@ function toSnakeCase(s: string): string {
   return s.replace(/[A-Z]/g, c => `_${c.toLowerCase()}`);
 }
 
-/** BullMQ에서 특정 job 관련 모든 상태의 작업 제거 (waiting + delayed + active) */
+/** BullMQ에서 특정 job 관련 모든 상태의 작업 제거 */
 async function removeBullMQJobs(jobId: number): Promise<void> {
-  const conn = getRedisConnection();
-  for (const queueName of ['collectors', 'pipeline', 'analysis']) {
-    try {
-      const queue = new Queue(queueName, { connection: conn });
-      const waiting = await queue.getWaiting();
-      const delayed = await queue.getDelayed();
-      const active = await queue.getActive();
-      for (const qJob of [...waiting, ...delayed, ...active]) {
-        if (qJob.data?.dbJobId === jobId) {
-          try {
-            await qJob.moveToFailed(new Error('작업 삭제에 의해 중지됨'), '0', true);
-          } catch {
-            try { await qJob.remove(); } catch { /* 무시 */ }
-          }
-        }
-      }
-      await queue.close();
-    } catch {
-      // Redis 연결 실패 시 무시
-    }
-  }
-
-  // Redis에 남은 고아 active 작업 강제 정리
   try {
-    const { cleanStalledActiveJobs } = await import('./control');
-    await cleanStalledActiveJobs(jobId);
+    const { purgeAllBullMQJobs } = await import('./control');
+    await purgeAllBullMQJobs(jobId);
   } catch {
     // 정리 실패 시 무시
   }
