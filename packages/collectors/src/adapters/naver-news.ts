@@ -39,7 +39,7 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
   private readonly config = {
     searchDelay: { min: 300, max: 600 },   // 검색 페이지 간 딜레이 (fetch이므로 짧게)
     postDelay: { min: 500, max: 1000 },    // 기사 본문 간 딜레이
-    defaultMaxItems: 500,
+    defaultMaxItems: 1000,
     maxSearchPages: 100,
   };
 

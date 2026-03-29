@@ -6,7 +6,7 @@ export const CollectionTriggerSchema = z.object({
   endDate: z.string().datetime(),
   sources: z.array(z.enum(['naver', 'youtube', 'dcinside', 'fmkorea', 'clien'])).optional(),
   limits: z.object({
-    naverArticles: z.number().default(500),
+    naverArticles: z.number().default(1000),
     youtubeVideos: z.number().default(50),
     communityPosts: z.number().default(50),
     commentsPerItem: z.number().default(500),

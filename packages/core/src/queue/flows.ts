@@ -16,7 +16,7 @@ function getFlowProducer() {
 export async function triggerCollection(params: CollectionTrigger, dbJobId: number) {
   const flowId = `collection-${Date.now()}`;
   const limits = params.limits ?? {
-    naverArticles: 500,
+    naverArticles: 1000,
     youtubeVideos: 50,
     communityPosts: 50,
     commentsPerItem: 500,

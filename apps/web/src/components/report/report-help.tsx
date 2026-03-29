@@ -349,7 +349,7 @@ export function ReportHelp() {
                     <span className="text-amber-500 shrink-0">!</span>
                     <div>
                       <span className="text-foreground font-medium">수집 한도 영향</span>
-                      <p className="mt-0.5">기사 500건(일별 균등), 영상 50건 등 기본 수집 한도가 있습니다. 전체 여론의 완벽한 대표성을 보장하지 않습니다.</p>
+                      <p className="mt-0.5">기사 1,000건(일별 균등), 영상 50건 등 기본 수집 한도가 있습니다. 전체 여론의 완벽한 대표성을 보장하지 않습니다.</p>
                     </div>
                   </li>
                   <li className="flex gap-1.5">
