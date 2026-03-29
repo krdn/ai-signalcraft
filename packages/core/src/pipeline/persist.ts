@@ -150,7 +150,7 @@ export async function updateJobProgress(
     .update(collectionJobs)
     .set({
       ...(hasProgress
-        ? { progress: sql`COALESCE(progress, '{}'::jsonb) || ${JSON.stringify(progress)}::jsonb` as any }
+        ? { progress: sql`COALESCE(progress, '{}'::jsonb) || ${sql.param(JSON.stringify(progress))}::jsonb` as any }
         : {}),
       ...(status ? { status } : {}),
       updatedAt: new Date(),
