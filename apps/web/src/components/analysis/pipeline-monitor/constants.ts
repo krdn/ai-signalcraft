@@ -253,6 +253,12 @@ export const TOKEN_COST_PER_1K: Record<
 > = {
   'gpt-4o-mini': { input: 0.00015, output: 0.0006 },
   'claude-sonnet-4-20250514': { input: 0.003, output: 0.015 },
+  // Gemini 2.5 Flash Lite (<=128K context)
+  'gemini-2.5-flash-lite': { input: 0.000075, output: 0.0003 },
+  // Gemini 2.5 Flash
+  'gemini-2.5-flash': { input: 0.00015, output: 0.0006 },
+  // Gemini 2.0 Flash (레거시)
+  'gemini-2.0-flash': { input: 0.0001, output: 0.0004 },
 };
 
 /** 토큰 사용량으로 추정 비용(USD) 계산 */

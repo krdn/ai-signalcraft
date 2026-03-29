@@ -36,16 +36,7 @@ const MODULE_STAGE: Record<string, number> = {
   'approval-rating': 4, 'frame-war': 4, 'crisis-scenario': 4, 'win-simulation': 4,
 };
 
-const TOKEN_COST_PER_1K: Record<string, { input: number; output: number }> = {
-  'gpt-4o-mini': { input: 0.00015, output: 0.0006 },
-  'claude-sonnet-4-20250514': { input: 0.003, output: 0.015 },
-};
-
-function estimateCost(inputTokens: number, outputTokens: number, model: string): number {
-  const cost = TOKEN_COST_PER_1K[model];
-  if (!cost) return 0;
-  return (inputTokens / 1000) * cost.input + (outputTokens / 1000) * cost.output;
-}
+import { estimateCostUsd } from '@/components/analysis/pipeline-monitor/constants';
 
 type SourceDetailStatus = 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
 
@@ -186,7 +177,7 @@ export async function getPipelineStatus(jobId: number) {
     if (mod.usage && mod.usage.input + mod.usage.output > 0) {
       totalInput += mod.usage.input;
       totalOutput += mod.usage.output;
-      totalCost += estimateCost(mod.usage.input, mod.usage.output, mod.usage.model);
+      totalCost += estimateCostUsd(mod.usage.input, mod.usage.output, mod.usage.model);
       byModule.push({ module: mod.module, input: mod.usage.input, output: mod.usage.output, provider: mod.usage.provider, model: mod.usage.model });
     }
   }
