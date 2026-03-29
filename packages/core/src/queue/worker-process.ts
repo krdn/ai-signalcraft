@@ -13,7 +13,14 @@ initEnv();
 validateApiKeys();
 registerAllCollectors();
 
-// 1.5. 좀비 running 상태 복구 (Worker 재시작 시)
+// 1.5. Worker 시작 시 정리
+// a) cancelled/삭제된 작업의 Redis 잔류물 제거
+import('./startup-cleanup').then(({ cleanupOrphanedRedisJobs }) =>
+  cleanupOrphanedRedisJobs().catch((err) =>
+    console.error('[startup-cleanup] 정리 실패 (무시하고 계속):', err),
+  ),
+);
+// b) 좀비 running 상태 복구
 import('../analysis/stale-recovery').then(({ recoverStaleJobs }) =>
   recoverStaleJobs(30).catch((err) =>
     console.error('[stale-recovery] 복구 실패 (무시하고 계속):', err),

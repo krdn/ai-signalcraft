@@ -168,7 +168,8 @@ export async function isPipelineCancelled(jobId: number): Promise<boolean> {
   const db = getDb();
   const [job] = await db.select({ status: collectionJobs.status })
     .from(collectionJobs).where(eq(collectionJobs.id, jobId)).limit(1);
-  return job?.status === 'cancelled';
+  // DB에 없거나 cancelled 상태이면 취소된 것으로 간주
+  return !job || job.status === 'cancelled';
 }
 
 /**
