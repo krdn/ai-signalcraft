@@ -16,6 +16,7 @@ import {
 } from './modules';
 import { persistAnalysisResult } from './persist-analysis';
 import { getModuleModelConfig } from './model-config';
+import { isRateLimitError, parseRetryAfter, sleep, MAX_RATE_LIMIT_RETRIES } from './retry-utils';
 import type { AnalysisModule, AnalysisInput, AnalysisModuleResult } from './types';
 
 // Stage 1: 병렬 실행 (독립 모듈)
@@ -36,25 +37,7 @@ export const STAGE2_MODULES: AnalysisModule[] = [riskMapModule, opportunityModul
 export const STAGE4_PARALLEL: AnalysisModule[] = [approvalRatingModule, frameWarModule];
 export const STAGE4_SEQUENTIAL: AnalysisModule[] = [crisisScenarioModule, winSimulationModule];
 
-/** Rate limit 에러 감지 */
-function isRateLimitError(error: unknown): boolean {
-  const msg = error instanceof Error ? error.message : String(error);
-  return msg.includes('Rate limit') || msg.includes('429') || msg.includes('TPM') || msg.includes('RPM');
-}
-
-/** Rate limit 에러에서 대기 시간 추출 (초) */
-function parseRetryAfter(error: unknown): number {
-  const msg = error instanceof Error ? error.message : String(error);
-  const match = msg.match(/try again in ([\d.]+)s/i);
-  return match ? Math.ceil(parseFloat(match[1])) : 0;
-}
-
-/** 지정 시간(ms) 대기 */
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-const MAX_RATE_LIMIT_RETRIES = 5;
+// Rate limit 유���리티는 retry-utils.ts에서 import
 
 /**
  * 단일 분석 모듈 실행 (AI Gateway 호출 + DB 저장)
@@ -67,6 +50,14 @@ export async function runModule<T>(
   priorResults?: Record<string, unknown>,
 ): Promise<AnalysisModuleResult<T>> {
   try {
+    // 모듈 실행 시작을 DB에 'running' 상태로 기록
+    await persistAnalysisResult({
+      jobId: input.jobId,
+      module: module.name,
+      status: 'running',
+    });
+    console.log(`[runner] ${module.name}: 분석 시작 (jobId=${input.jobId})`);
+
     // DB 설정 우선, 없으면 모듈 기본값 폴백
     const config = await getModuleModelConfig(module.name);
     console.log(`[runner] ${module.name}: provider=${config.provider}, model=${config.model}, baseUrl=${config.baseUrl ?? 'NONE'}, hasApiKey=${!!config.apiKey}`);

@@ -13,6 +13,13 @@ initEnv();
 validateApiKeys();
 registerAllCollectors();
 
+// 1.5. 좀비 running 상태 복구 (Worker 재시작 시)
+import('../analysis/stale-recovery').then(({ recoverStaleJobs }) =>
+  recoverStaleJobs(30).catch((err) =>
+    console.error('[stale-recovery] 복구 실패 (무시하고 계속):', err),
+  ),
+);
+
 // 2. Worker 기동
 const collectorWorker = createCollectorWorker(createCollectorHandler());
 const pipelineWorker = createPipelineWorker(createPipelineHandler());

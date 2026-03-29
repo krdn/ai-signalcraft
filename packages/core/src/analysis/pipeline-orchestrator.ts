@@ -1,6 +1,7 @@
 // 분석 파이프라인 오케스트레이션 -- Stage 0~4 전체 관리
 // runner.ts에서 분리 (D-03: 단일 실행과 오케스트레이션 분리)
 import { runModule, STAGE1_MODULES, STAGE2_MODULES, STAGE4_PARALLEL, STAGE4_SEQUENTIAL } from './runner';
+import { runModuleMapReduce } from './map-reduce';
 import { generateIntegratedReport } from '../report/generator';
 import { finalSummaryModule } from './modules';
 import { loadAnalysisInput } from './data-loader';
@@ -11,6 +12,82 @@ import { getDb } from '../db';
 import { collectionJobs } from '../db/schema/collections';
 import { eq } from 'drizzle-orm';
 import type { AnalysisModule, AnalysisModuleResult, AnalysisInput } from './types';
+import { getModuleModelConfig } from './model-config';
+
+/** 프로바이더별 안전한 동시성 한도 (무료 티어 RPM 기준) */
+const PROVIDER_CONCURRENCY: Record<string, number> = {
+  gemini: 1,    // 무료 티어 RPM 20 — 순차 실행으로 rate limit 방지
+  ollama: 1,    // 로컬 리소스 제한
+  anthropic: 2,
+  openai: 3,
+  deepseek: 2,
+  xai: 2,
+  openrouter: 2,
+  custom: 1,
+};
+
+/**
+ * 모듈 목록의 프로바이더를 조회하여 최소 동시성을 결정
+ * 같은 배치에 gemini 모듈이 하나라도 있으면 동시성 1로 제한
+ */
+async function resolveConcurrency(modules: AnalysisModule[]): Promise<number> {
+  if (modules.length <= 1) return 1;
+  const configs = await Promise.all(modules.map(m => getModuleModelConfig(m.name)));
+  const minConcurrency = Math.min(
+    ...configs.map(c => PROVIDER_CONCURRENCY[c.provider] ?? 2),
+  );
+  console.log(
+    `[pipeline] 동시성 결정: ${modules.map(m => m.name).join(', ')} → ` +
+    `providers=[${configs.map(c => c.provider).join(', ')}], concurrency=${minConcurrency}`,
+  );
+  return minConcurrency;
+}
+
+/**
+ * 프로바이더별로 모듈을 그룹화하여 병렬 실행
+ * 다른 프로바이더 그룹은 동시에, 같은 프로바이더 내에서는 동시성 제한 적용
+ * 예: OpenAI 2개 + Gemini 2개 → OpenAI 그룹과 Gemini 그룹이 동시 실행
+ */
+async function runWithProviderGrouping(
+  modules: AnalysisModule[],
+  fn: (m: AnalysisModule) => Promise<AnalysisModuleResult>,
+): Promise<PromiseSettledResult<AnalysisModuleResult>[]> {
+  if (modules.length <= 1) {
+    return Promise.allSettled(modules.map(fn));
+  }
+
+  // 프로바이더별 그룹화
+  const configs = await Promise.all(modules.map((m) => getModuleModelConfig(m.name)));
+  const groups = new Map<string, AnalysisModule[]>();
+  for (let i = 0; i < modules.length; i++) {
+    const provider = configs[i].provider;
+    if (!groups.has(provider)) groups.set(provider, []);
+    groups.get(provider)!.push(modules[i]);
+  }
+
+  console.log(
+    `[pipeline] 프로바이더 그룹핑: ${[...groups.entries()]
+      .map(([p, ms]) => `${p}=[${ms.map((m) => m.name).join(', ')}]`)
+      .join(', ')}`,
+  );
+
+  // 각 프로바이더 그룹을 해당 프로바이더의 동시성으로 실행, 그룹 간 동시 실행
+  const groupPromises = [...groups.entries()].map(async ([provider, groupModules]) => {
+    const concurrency = PROVIDER_CONCURRENCY[provider] ?? 2;
+    return runWithConcurrency(groupModules, fn, concurrency);
+  });
+
+  const groupResults = await Promise.allSettled(groupPromises);
+
+  // 결과 평탄화
+  const allResults: PromiseSettledResult<AnalysisModuleResult>[] = [];
+  for (const gr of groupResults) {
+    if (gr.status === 'fulfilled') {
+      allResults.push(...gr.value);
+    }
+  }
+  return allResults;
+}
 
 /** 동시성 제한 병렬 실행 (rate limit 방지) */
 async function runWithConcurrency<T>(
@@ -18,6 +95,15 @@ async function runWithConcurrency<T>(
   fn: (m: AnalysisModule) => Promise<AnalysisModuleResult>,
   concurrency: number = 2,
 ): Promise<PromiseSettledResult<AnalysisModuleResult>[]> {
+  if (concurrency <= 1) {
+    // 순차 실행 (gemini 무료 등)
+    const results: PromiseSettledResult<AnalysisModuleResult>[] = [];
+    for (const m of modules) {
+      const r = await Promise.allSettled([fn(m)]);
+      results.push(...r);
+    }
+    return results;
+  }
   const results: PromiseSettledResult<AnalysisModuleResult>[] = [];
   for (let i = 0; i < modules.length; i += concurrency) {
     const batch = modules.slice(i, i + concurrency);
@@ -111,6 +197,7 @@ export async function runAnalysisPipeline(jobId: number): Promise<{
   }
 
   // Stage 1: 병렬 실행 (모듈 1~4, 독립)
+  console.log(`[pipeline] Stage 1 시작: 기본 분석 (${STAGE1_MODULES.map(m => m.name).join(', ')})`);
   if (!await preRunCheck()) {
     return buildResult(allResults, cancelledByUser, costLimitExceeded, input);
   }
@@ -119,42 +206,48 @@ export async function runAnalysisPipeline(jobId: number): Promise<{
   const stage1Skipped = STAGE1_MODULES.filter(m => isSkipped(m.name));
   for (const m of stage1Skipped) await markSkipped(m.name);
 
-  const stage1Settled = await runWithConcurrency(
-    stage1Active,
-    (m) => runModule(m, input),
-    4,  // 4개 모듈 동시 실행 (Stage 1은 모두 독립)
-  );
-
   const priorResults: Record<string, unknown> = {};
-  for (const settled of stage1Settled) {
+
+  // Stage 1 모듈은 서로 독립 → Map-Reduce + 프로바이더별 병렬 실행
+  const stage1Results = await runWithProviderGrouping(
+    stage1Active,
+    (m) => runModuleMapReduce(m, input),
+  );
+  for (const settled of stage1Results) {
     if (settled.status === 'fulfilled') {
-      allResults[settled.value.module] = settled.value;
-      if (settled.value.status === 'completed') {
-        priorResults[settled.value.module] = settled.value.result;
+      const result = settled.value;
+      allResults[result.module] = result;
+      if (result.status === 'completed') {
+        priorResults[result.module] = result.result;
       }
     }
   }
+
+  console.log(`[pipeline] Stage 1 완료: ${Object.keys(allResults).length}개 모듈 처리`);
 
   // Stage 2: risk-map + opportunity 병렬, strategy 순차 (의존성 기반)
   // - opportunityModule: Stage 1 결과만 참조 (risk-map 불필요)
   // - strategyModule: Stage 1 + risk-map + opportunity 전부 필요
   // → risk-map과 opportunity를 병렬 실행 후 strategy 순차 실행
+  console.log(`[pipeline] Stage 2 시작: 심층 분석 (risk-map, opportunity, strategy)`);
   if (await preRunCheck()) {
     const [riskMapMod, opportunityMod, strategyMod] = STAGE2_MODULES;
 
-    // risk-map + opportunity 병렬 실행
+    // risk-map + opportunity 병렬 실행 (서로 독립, Stage 1 결과만 참조)
     const stage2Parallel = [riskMapMod, opportunityMod].filter(m => !isSkipped(m.name));
     const stage2Skipped = [riskMapMod, opportunityMod].filter(m => isSkipped(m.name));
     for (const m of stage2Skipped) await markSkipped(m.name);
 
-    const stage2Settled = await Promise.allSettled(
-      stage2Parallel.map(m => runModule(m, input, priorResults)),
+    const stage2Results = await runWithProviderGrouping(
+      stage2Parallel,
+      (m) => runModule(m, input, priorResults),
     );
-    for (const settled of stage2Settled) {
+    for (const settled of stage2Results) {
       if (settled.status === 'fulfilled') {
-        allResults[settled.value.module] = settled.value;
-        if (settled.value.status === 'completed') {
-          priorResults[settled.value.module] = settled.value.result;
+        const result = settled.value;
+        allResults[result.module] = result;
+        if (result.status === 'completed') {
+          priorResults[result.module] = result.result;
         }
       }
     }
@@ -178,6 +271,7 @@ export async function runAnalysisPipeline(jobId: number): Promise<{
   }
 
   // Stage 3: 최종 요약 (모듈 8, 모든 선행 결과 참조)
+  console.log(`[pipeline] Stage 3 시작: 최종 요약`);
   if (!await preRunCheck()) {
     return buildResult(allResults, cancelledByUser, costLimitExceeded, input);
   }
@@ -200,8 +294,47 @@ export async function runAnalysisPipeline(jobId: number): Promise<{
     .filter((r) => r.status === 'failed')
     .map((r) => r.module);
 
-  // D-04: 기본 분석 완료 후 통합 리포트 생성
-  let report: { markdownContent: string; oneLiner: string; totalTokens: number };
+  // 리포트는 모든 분석(Stage 4 포함) 완료 후 한 번만 생성
+  let report: { markdownContent: string; oneLiner: string; totalTokens: number } | undefined;
+
+  // Stage 4: 고급 분석 (ADVN 모듈)
+  console.log(`[pipeline] Stage 4 시작: 고급 분석 (${STAGE4_PARALLEL.concat(STAGE4_SEQUENTIAL).map(m => m.name).join(', ')})`);
+  if (await preRunCheck()) {
+    const stage4aActive = STAGE4_PARALLEL.filter(m => !isSkipped(m.name));
+    const stage4aSkipped = STAGE4_PARALLEL.filter(m => isSkipped(m.name));
+    for (const m of stage4aSkipped) await markSkipped(m.name);
+
+    // approval-rating + frame-war 병렬 실행 (서로 독립)
+    const stage4aResults = await runWithProviderGrouping(
+      stage4aActive,
+      (m) => runModule(m, input, priorResults),
+    );
+    for (const settled of stage4aResults) {
+      if (settled.status === 'fulfilled') {
+        const result = settled.value;
+        allResults[result.module] = result;
+        if (result.status === 'completed') {
+          priorResults[result.module] = result.result;
+        }
+      }
+    }
+
+    // Stage 4b: 순차 실행
+    for (const module of STAGE4_SEQUENTIAL) {
+      if (!await preRunCheck()) break;
+      if (isSkipped(module.name)) { await markSkipped(module.name); continue; }
+
+      const result = await runModule(module, input, priorResults);
+      allResults[result.module] = result;
+      if (result.status === 'completed') {
+        priorResults[result.module] = result.result;
+      }
+    }
+
+  }
+
+  // 모든 분석 완료 후 통합 리포트 1회 생성
+  console.log(`[pipeline] 리포트 생성 시작: 완료 ${getCompletedModules().length}개, 실패 ${getFailedModules().length}개 모듈`);
   try {
     report = await generateIntegratedReport({
       jobId: input.jobId,
@@ -220,63 +353,11 @@ export async function runAnalysisPipeline(jobId: number): Promise<{
     };
   }
 
-  // Stage 4: 고급 분석 (ADVN 모듈)
-  if (await preRunCheck()) {
-    const stage4aActive = STAGE4_PARALLEL.filter(m => !isSkipped(m.name));
-    const stage4aSkipped = STAGE4_PARALLEL.filter(m => isSkipped(m.name));
-    for (const m of stage4aSkipped) await markSkipped(m.name);
-
-    const stage4aSettled = await runWithConcurrency(
-      stage4aActive,
-      (m) => runModule(m, input, priorResults),
-      2,
-    );
-    for (const settled of stage4aSettled) {
-      if (settled.status === 'fulfilled') {
-        allResults[settled.value.module] = settled.value;
-        if (settled.value.status === 'completed') {
-          priorResults[settled.value.module] = settled.value.result;
-        }
-      }
-    }
-
-    // Stage 4b: 순차 실행
-    for (const module of STAGE4_SEQUENTIAL) {
-      if (!await preRunCheck()) break;
-      if (isSkipped(module.name)) { await markSkipped(module.name); continue; }
-
-      const result = await runModule(module, input, priorResults);
-      allResults[result.module] = result;
-      if (result.status === 'completed') {
-        priorResults[result.module] = result.result;
-      }
-    }
-
-    // Stage 4 완료 후: 고급 분석 결과가 있으면 리포트 재생성
-    const advnCompleted = STAGE4_PARALLEL.concat(STAGE4_SEQUENTIAL)
-      .some(m => allResults[m.name]?.status === 'completed');
-
-    if (advnCompleted) {
-      try {
-        report = await generateIntegratedReport({
-          jobId: input.jobId,
-          keyword: input.keyword,
-          dateRange: input.dateRange,
-          results: allResults,
-          completedModules: getCompletedModules(),
-          failedModules: getFailedModules(),
-        });
-      } catch (reportError) {
-        console.error('고급 분석 리포트 재생성 실패 (기존 리포트 유지):', reportError);
-      }
-    }
-  }
-
   return {
     results: allResults,
     completedModules: getCompletedModules(),
     failedModules: getFailedModules(),
-    report,
+    report: report!,
     cancelledByUser,
     costLimitExceeded,
   };

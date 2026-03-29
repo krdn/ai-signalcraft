@@ -1,5 +1,6 @@
 import { generateText, generateObject } from 'ai';
 import { createAnthropic } from '@ai-sdk/anthropic';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createOpenAI } from '@ai-sdk/openai';
 import { z } from 'zod';
 
@@ -12,6 +13,10 @@ export interface AIGatewayOptions {
   systemPrompt?: string;
   baseUrl?: string;
   apiKey?: string;
+  /** API 호출 타임아웃 (ms). 기본값 300,000 (5분) */
+  timeoutMs?: number;
+  /** 외부에서 전달하는 AbortSignal (타임아웃과 병합됨) */
+  abortSignal?: AbortSignal;
 }
 
 const DEFAULT_MODELS: Partial<Record<AIProvider, string>> = {
@@ -34,6 +39,13 @@ export function getModel(provider: AIProvider, model?: string, baseUrl?: string,
   switch (provider) {
     case 'anthropic': {
       const client = createAnthropic({
+        ...(apiKey ? { apiKey } : {}),
+        ...(baseUrl ? { baseURL: baseUrl } : {}),
+      });
+      return client(modelName);
+    }
+    case 'gemini': {
+      const client = createGoogleGenerativeAI({
         ...(apiKey ? { apiKey } : {}),
         ...(baseUrl ? { baseURL: baseUrl } : {}),
       });
@@ -82,6 +94,7 @@ export async function analyzeText(
     ...(options.systemPrompt ? { system: options.systemPrompt } : {}),
     prompt,
     maxOutputTokens: options.maxOutputTokens ?? 4096,
+    abortSignal: options.abortSignal ?? AbortSignal.timeout(options.timeoutMs ?? 300_000),
   });
   return {
     text: result.text,
@@ -103,6 +116,7 @@ export async function analyzeStructured<T>(
     prompt,
     schema,
     maxOutputTokens: options.maxOutputTokens ?? 4096,
+    abortSignal: options.abortSignal ?? AbortSignal.timeout(options.timeoutMs ?? 300_000),
   });
   return {
     object: result.object,
