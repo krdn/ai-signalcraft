@@ -7,7 +7,7 @@ export const analysisResults = pgTable('analysis_results', {
   jobId: integer('job_id').references(() => collectionJobs.id, { onDelete: 'cascade' }).notNull(),
   module: text('module').notNull(),  // 'macro-view', 'segmentation', 등
   status: text('status', {
-    enum: ['pending', 'running', 'completed', 'failed'],
+    enum: ['pending', 'running', 'completed', 'failed', 'skipped'],
   }).notNull().default('pending'),
   result: jsonb('result'),           // 모듈별 Zod 스키마로 타입 보장
   usage: jsonb('usage').$type<{

@@ -49,6 +49,19 @@ export async function runModule<T>(
   input: AnalysisInput,
   priorResults?: Record<string, unknown>,
 ): Promise<AnalysisModuleResult<T>> {
+  // 수집 데이터가 없으면 분석 스킵 (빈 입력으로 LLM 호출 시 파싱 실패 방지)
+  const totalItems = input.articles.length + input.videos.length + input.comments.length;
+  if (totalItems === 0) {
+    console.log(`[runner] ${module.name}: 수집 데이터 0건 — 분석 스킵 (jobId=${input.jobId})`);
+    await persistAnalysisResult({
+      jobId: input.jobId,
+      module: module.name,
+      status: 'skipped',
+      errorMessage: '수집 데이터 없음 — 분석 스킵',
+    });
+    return { module: module.name, status: 'skipped', errorMessage: '수집 데이터 없음' };
+  }
+
   try {
     // 모듈 실행 시작을 DB에 'running' 상태로 기록
     await persistAnalysisResult({

@@ -153,14 +153,14 @@ export async function getPipelineStatus(jobId: number) {
   // --- 분석 모듈 ---
   const analysisModules = analysisRows.map(row => ({
     module: row.module,
-    status: row.status as 'pending' | 'running' | 'completed' | 'failed',
+    status: row.status as 'pending' | 'running' | 'completed' | 'failed' | 'skipped',
     label: MODULE_LABELS[row.module] ?? row.module,
   }));
 
   const analysisModulesDetailed = analysisRows.map(row => {
     const usage = row.usage as { inputTokens?: number; outputTokens?: number; provider?: string; model?: string } | null;
     const startedAt = row.createdAt ? new Date(row.createdAt).toISOString() : null;
-    const completedAt = (row.status === 'completed' || row.status === 'failed') && row.updatedAt
+    const completedAt = (row.status === 'completed' || row.status === 'failed' || row.status === 'skipped') && row.updatedAt
       ? new Date(row.updatedAt).toISOString() : null;
     const durationSeconds = startedAt && completedAt
       ? Math.round((new Date(completedAt).getTime() - new Date(startedAt).getTime()) / 1000) : null;
@@ -168,7 +168,7 @@ export async function getPipelineStatus(jobId: number) {
     return {
       module: row.module,
       label: MODULE_LABELS[row.module] ?? row.module,
-      status: row.status as 'pending' | 'running' | 'completed' | 'failed',
+      status: row.status as 'pending' | 'running' | 'completed' | 'failed' | 'skipped',
       stage: MODULE_STAGE[row.module] ?? 0,
       usage: usage ? {
         input: usage.inputTokens ?? 0, output: usage.outputTokens ?? 0,

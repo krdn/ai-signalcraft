@@ -54,7 +54,7 @@ export interface AnalysisInput {
 // 분석 모듈 실행 결과
 export interface AnalysisModuleResult<T = unknown> {
   module: string;
-  status: 'completed' | 'failed';
+  status: 'completed' | 'failed' | 'skipped';
   result?: T;
   usage?: {
     inputTokens: number;
