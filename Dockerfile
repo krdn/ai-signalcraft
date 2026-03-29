@@ -14,11 +14,12 @@ RUN pnpm install --frozen-lockfile
 FROM node:24-slim AS builder
 RUN corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
-COPY --from=deps /app/packages/core/node_modules ./packages/core/node_modules
-COPY --from=deps /app/packages/collectors/node_modules ./packages/collectors/node_modules
-COPY --from=deps /app/packages/ai-gateway/node_modules ./packages/ai-gateway/node_modules
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/web/package.json ./apps/web/
+COPY packages/core/package.json ./packages/core/
+COPY packages/collectors/package.json ./packages/collectors/
+COPY packages/ai-gateway/package.json ./packages/ai-gateway/
+RUN pnpm install --frozen-lockfile
 COPY . .
 RUN pnpm build
 
