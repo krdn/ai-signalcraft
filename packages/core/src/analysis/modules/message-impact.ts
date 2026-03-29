@@ -34,9 +34,26 @@ ${videos.map((v, i) => `${i + 1}. [${v.channel}] ${v.title} (조회수: ${v.view
 ### 댓글 (${comments.length}건)
 ${comments.map((c, i) => `${i + 1}. [${c.source}] ${c.content} (좋아요: ${c.likeCount})`).join('\n')}
 
-위 데이터를 기반으로 "${data.keyword}"에 대한 메시지 효과를 분석하세요:
-1. 성공 메시지 (긍정 반응을 유발한 발언/콘텐츠, 영향력 점수, 확산 유형)
-2. 실패 메시지 (부정 반응을 유발한 발언/콘텐츠, 부정 점수, 피해 유형)
-3. 확산력 높은 콘텐츠 유형 (유형, 설명, 사례 수)`;
+위 데이터를 기반으로 "${data.keyword}"에 대한 메시지 효과를 분석하세요.
+반드시 아래 3개 항목을 모두 포함하여 JSON으로 응답하세요:
+
+1. successMessages: 긍정 반응을 유발한 발언/콘텐츠 배열 (3~7개)
+   - content: 실제 발언/제목 인용
+   - source: 출처 (naver/youtube/clien/fmkorea/dcinside)
+   - impactScore: 영향력 점수 (1~10 정수)
+   - reason: 긍정 반응 유발 이유
+   - spreadType: 확산 유형 (예: "커뮤니티 공감", "뉴스 확산", "댓글 바이럴")
+
+2. failureMessages: 부정 반응을 유발한 발언/콘텐츠 배열 (3~7개)
+   - content: 실제 발언/제목 인용
+   - source: 출처
+   - negativeScore: 부정 점수 (1~10 정수)
+   - reason: 부정 반응 유발 이유
+   - damageType: 피해 유형 (예: "신뢰도 하락", "지지층 이탈", "프레임 역공")
+
+3. highSpreadContentTypes: 확산력 높은 콘텐츠 유형 배열 (2~5개)
+   - type: 콘텐츠 유형명
+   - description: 설명
+   - exampleCount: 해당 유형 사례 수 (정수)`;
   },
 };
