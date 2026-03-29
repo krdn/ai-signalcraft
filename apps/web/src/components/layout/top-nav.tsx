@@ -47,6 +47,7 @@ import { TeamSettings } from '@/components/team/team-settings';
 import { ModelSettings } from '@/components/settings/model-settings';
 import { ProviderKeys } from '@/components/settings/provider-keys';
 import { ConcurrencySettings } from '@/components/settings/concurrency-settings';
+import { CollectionLimitsSettings } from '@/components/settings/collection-limits-settings';
 import { cn } from '@/lib/utils';
 import type { LucideIcon } from 'lucide-react';
 
@@ -180,6 +181,7 @@ export function TopNav({ activeTab, onTabChange }: TopNavProps) {
               <TabsTrigger value="provider-keys">API 키 관리</TabsTrigger>
               <TabsTrigger value="model-settings">모듈별 모델</TabsTrigger>
               <TabsTrigger value="concurrency">병렬처리</TabsTrigger>
+              <TabsTrigger value="collection-limits">수집 한도</TabsTrigger>
             </TabsList>
             <TabsContent value="provider-keys" className="mt-4 overflow-y-auto min-h-0">
               <ProviderKeys />
@@ -189,6 +191,9 @@ export function TopNav({ activeTab, onTabChange }: TopNavProps) {
             </TabsContent>
             <TabsContent value="concurrency" className="mt-4 overflow-y-auto min-h-0">
               <ConcurrencySettings />
+            </TabsContent>
+            <TabsContent value="collection-limits" className="mt-4 overflow-y-auto min-h-0">
+              <CollectionLimitsSettings />
             </TabsContent>
           </Tabs>
         </DialogContent>

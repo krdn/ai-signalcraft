@@ -15,6 +15,8 @@ import {
   upsertConcurrencyConfig,
   applyConcurrencyPreset,
   CONCURRENCY_PRESETS,
+  getCollectionLimits,
+  updateCollectionLimits,
 } from '@ai-signalcraft/core';
 
 export const settingsRouter = router({
@@ -102,6 +104,25 @@ export const settingsRouter = router({
       }))
       .mutation(async ({ input }) => {
         return upsertConcurrencyConfig({ ...input, activePreset: null });
+      }),
+  }),
+
+  // === 수집 한도 기본값 ===
+
+  collectionLimits: router({
+    get: protectedProcedure.query(async () => {
+      return getCollectionLimits();
+    }),
+
+    update: protectedProcedure
+      .input(z.object({
+        naverArticles: z.number().min(10).max(5000).optional(),
+        youtubeVideos: z.number().min(5).max(500).optional(),
+        communityPosts: z.number().min(5).max(500).optional(),
+        commentsPerItem: z.number().min(10).max(2000).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        return updateCollectionLimits(input);
       }),
   }),
 

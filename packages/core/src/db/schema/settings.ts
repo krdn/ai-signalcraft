@@ -24,8 +24,18 @@ export const concurrencySettings = pgTable('concurrency_settings', {
   commentBatchSize: integer('comment_batch_size').notNull().default(50),
   // 현재 적용된 프리셋 ID (커스텀이면 null)
   activePreset: text('active_preset'),
+  // 수집 한도 기본값 (트리거 폼 초기값)
+  collectionLimits: jsonb('collection_limits').$type<CollectionLimits>(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
+
+// 수집 한도 타입
+export type CollectionLimits = {
+  naverArticles: number;
+  youtubeVideos: number;
+  communityPosts: number;
+  commentsPerItem: number;
+};
 
 // AI 프로바이더 API 키 관리
 export const providerKeys = pgTable('provider_keys', {

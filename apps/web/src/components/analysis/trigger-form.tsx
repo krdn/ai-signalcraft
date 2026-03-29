@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { trpcClient } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -78,10 +78,26 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
   const [eventDate, setEventDate] = useState<Date>(new Date());
   const [eventRadius, setEventRadius] = useState(3); // 전후 N일
   const [isLimitsOpen, setIsLimitsOpen] = useState(false);
-  const [maxNaverArticles, setMaxNaverArticles] = useState(1000);
+  const [maxNaverArticles, setMaxNaverArticles] = useState(500);
   const [maxYoutubeVideos, setMaxYoutubeVideos] = useState(50);
   const [maxCommunityPosts, setMaxCommunityPosts] = useState(50);
   const [maxCommentsPerItem, setMaxCommentsPerItem] = useState(500);
+
+  // 서버에서 수집 한도 기본값 로드
+  const { data: defaultLimits } = useQuery({
+    queryKey: ['settings', 'collectionLimits'],
+    queryFn: () => trpcClient.settings.collectionLimits.get.query(),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  useEffect(() => {
+    if (defaultLimits) {
+      setMaxNaverArticles(defaultLimits.naverArticles);
+      setMaxYoutubeVideos(defaultLimits.youtubeVideos);
+      setMaxCommunityPosts(defaultLimits.communityPosts);
+      setMaxCommentsPerItem(defaultLimits.commentsPerItem);
+    }
+  }, [defaultLimits]);
 
   const triggerMutation = useMutation({
     mutationFn: (input: {
