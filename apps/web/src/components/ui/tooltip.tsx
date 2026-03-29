@@ -22,12 +22,14 @@ function Tooltip({ ...props }: TooltipPrimitive.Root.Props) {
   return <TooltipPrimitive.Root data-slot="tooltip" {...props} />
 }
 
+const SafeSpan = React.forwardRef<HTMLSpanElement, React.ComponentPropsWithRef<'span'> & { asChild?: unknown }>(
+  function SafeSpan({ asChild: _, ...rest }, ref) {
+    return <span ref={ref} {...rest} />;
+  }
+);
+
 function TooltipTrigger({ render, ...props }: TooltipPrimitive.Trigger.Props) {
-  const defaultRender = render ?? ((renderProps: React.ComponentPropsWithRef<'span'>) => {
-    const { asChild, ...rest } = renderProps as any;
-    return <span {...rest} />;
-  });
-  return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" render={defaultRender as any} {...props} />
+  return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" render={render ?? <SafeSpan />} {...props} />
 }
 
 function TooltipContent({
