@@ -1,5 +1,6 @@
 "use client"
 
+import React from "react"
 import { Tooltip as TooltipPrimitive } from "@base-ui/react/tooltip"
 
 import { cn } from "@/lib/utils"
@@ -22,7 +23,11 @@ function Tooltip({ ...props }: TooltipPrimitive.Root.Props) {
 }
 
 function TooltipTrigger({ render, ...props }: TooltipPrimitive.Trigger.Props) {
-  return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" render={render ?? <span />} {...props} />
+  const defaultRender = render ?? ((renderProps: React.ComponentPropsWithRef<'span'>) => {
+    const { asChild, ...rest } = renderProps as any;
+    return <span {...rest} />;
+  });
+  return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" render={defaultRender as any} {...props} />
 }
 
 function TooltipContent({
