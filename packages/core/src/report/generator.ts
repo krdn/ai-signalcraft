@@ -126,6 +126,7 @@ ${resultsJson}
       modulesCompleted: input.completedModules,
       modulesFailed: input.failedModules,
       totalTokens,
+      reportModel: { provider: config.provider, model: config.model },
       generatedAt: new Date().toISOString(),
     },
   });

@@ -87,6 +87,12 @@ function ModuleCard({ mod, modelSetting }: { mod: AnalysisModuleDetailed; modelS
           {moduleStatusIcon(mod.status)}
           <span className="font-medium truncate text-[11px]">{mod.label}</span>
         </div>
+        {/* 모델명 표시 */}
+        {(displayProvider || displayModel) && mod.status !== 'pending' && (
+          <div className="text-[9px] text-muted-foreground/70 ml-5 font-mono truncate">
+            {PROVIDER_DISPLAY[displayProvider] ?? displayProvider}{displayModel ? ` · ${displayModel}` : ''}
+          </div>
+        )}
         {(totalTokens > 0 || mod.durationSeconds) && (
           <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground ml-5">
             {totalTokens > 0 && <span className="font-mono">{formatTokens(totalTokens)}</span>}

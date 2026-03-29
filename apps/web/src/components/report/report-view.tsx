@@ -121,11 +121,26 @@ export function ReportView({ jobId }: ReportViewProps) {
               {report.oneLiner}
             </p>
           )}
-          {report.metadata && (
-            <p className="text-xs font-mono text-muted-foreground">
-              {(report.metadata as { generatedAt?: string }).generatedAt ?? ''}
-            </p>
-          )}
+          {report.metadata && (() => {
+            const meta = report.metadata as {
+              generatedAt?: string;
+              totalTokens?: number;
+              reportModel?: { provider: string; model: string };
+            };
+            return (
+              <div className="flex items-center gap-3 text-xs font-mono text-muted-foreground">
+                {meta.generatedAt && <span>{meta.generatedAt}</span>}
+                {meta.reportModel && (
+                  <span className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 text-[10px]">
+                    {meta.reportModel.provider}/{meta.reportModel.model}
+                  </span>
+                )}
+                {meta.totalTokens != null && meta.totalTokens > 0 && (
+                  <span className="text-[10px]">{meta.totalTokens.toLocaleString()} 토큰</span>
+                )}
+              </div>
+            );
+          })()}
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <ReportHelp />

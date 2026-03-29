@@ -37,6 +37,7 @@ export const analysisReports = pgTable('analysis_reports', {
     modulesCompleted: string[];
     modulesFailed: string[];
     totalTokens: number;
+    reportModel?: { provider: string; model: string };
     generatedAt: string;
   }>(),
   createdAt: timestamp('created_at').defaultNow().notNull(),

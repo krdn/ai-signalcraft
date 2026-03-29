@@ -75,8 +75,8 @@ export async function getPipelineStatus(jobId: number) {
   // 2. analysisResults
   const analysisRows = await db.select().from(analysisResults).where(eq(analysisResults.jobId, jobId));
 
-  // 3. analysisReports
-  const [report] = await db.select({ id: analysisReports.id, createdAt: analysisReports.createdAt })
+  // 3. analysisReports (metadata에서 reportModel 추출)
+  const [report] = await db.select({ id: analysisReports.id, createdAt: analysisReports.createdAt, metadata: analysisReports.metadata })
     .from(analysisReports).where(eq(analysisReports.jobId, jobId)).limit(1);
 
   // --- 4단계 파이프라인 상태 파생 ---
@@ -273,6 +273,7 @@ export async function getPipelineStatus(jobId: number) {
     // 완료 이벤트
     if (mod.status === 'completed' && mod.completedAt) {
       const infoParts: string[] = [];
+      if (mod.usage?.model) infoParts.push(mod.usage.model);
       if (mod.usage) infoParts.push(`${(mod.usage.input + mod.usage.output).toLocaleString()} 토큰`);
       if (mod.durationSeconds != null) infoParts.push(`${mod.durationSeconds}초`);
       const infoStr = infoParts.length > 0 ? ` (${infoParts.join(', ')})` : '';
@@ -283,7 +284,10 @@ export async function getPipelineStatus(jobId: number) {
   }
 
   if (reportDone && timeline.reportCompletedAt) {
-    events.push({ timestamp: timeline.reportCompletedAt, level: 'info', message: '종합 리포트 생성 완료' });
+    const reportMeta = report?.metadata as { reportModel?: { provider: string; model: string }; totalTokens?: number } | null;
+    const reportModelStr = reportMeta?.reportModel ? ` [${reportMeta.reportModel.provider}/${reportMeta.reportModel.model}]` : '';
+    const reportTokenStr = reportMeta?.totalTokens ? `, ${reportMeta.totalTokens.toLocaleString()} 토큰` : '';
+    events.push({ timestamp: timeline.reportCompletedAt, level: 'info', message: `종합 리포트 생성 완료${reportModelStr}${reportTokenStr ? ` (${reportTokenStr.slice(2)})` : ''}` });
   }
 
   events.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
