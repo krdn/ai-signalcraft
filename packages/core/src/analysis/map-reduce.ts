@@ -5,7 +5,7 @@ import { analyzeStructured, type AIGatewayOptions } from '@ai-signalcraft/ai-gat
 import { persistAnalysisResult } from './persist-analysis';
 import { getModuleModelConfig } from './model-config';
 import { runModule } from './runner';
-import { isRateLimitError, parseRetryAfter, sleep, MAX_RATE_LIMIT_RETRIES } from './retry-utils';
+import { isRateLimitError, isParseError, parseRetryAfter, sleep, MAX_RATE_LIMIT_RETRIES, MAX_PARSE_RETRIES } from './retry-utils';
 import { getConcurrencyConfig } from './concurrency-config';
 import type { AnalysisModule, AnalysisInput, AnalysisModuleResult } from './types';
 
@@ -99,16 +99,30 @@ async function callWithRetry<T>(
   fn: () => Promise<T>,
   label: string,
 ): Promise<T> {
+  const maxRetries = Math.max(MAX_RATE_LIMIT_RETRIES, MAX_PARSE_RETRIES);
   let lastError: unknown;
-  for (let attempt = 0; attempt <= MAX_RATE_LIMIT_RETRIES; attempt++) {
+  let rateLimitAttempts = 0;
+  let parseAttempts = 0;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       return await fn();
     } catch (error) {
       lastError = error;
-      if (isRateLimitError(error) && attempt < MAX_RATE_LIMIT_RETRIES) {
+      // Rate limit 재시도
+      if (isRateLimitError(error) && rateLimitAttempts < MAX_RATE_LIMIT_RETRIES) {
+        rateLimitAttempts++;
         const retryAfterSec = parseRetryAfter(error);
-        const backoffMs = Math.max(retryAfterSec * 1000, (attempt + 1) * 3000);
-        console.log(`[map-reduce] ${label}: rate limit, ${backoffMs}ms 후 재시도 (${attempt + 1}/${MAX_RATE_LIMIT_RETRIES})`);
+        const backoffMs = Math.max(retryAfterSec * 1000, rateLimitAttempts * 3000);
+        console.log(`[map-reduce] ${label}: rate limit, ${backoffMs}ms 후 재시도 (${rateLimitAttempts}/${MAX_RATE_LIMIT_RETRIES})`);
+        await sleep(backoffMs);
+        continue;
+      }
+      // 파싱 실패 재시도 (구조화 응답 생성 실패)
+      if (isParseError(error) && parseAttempts < MAX_PARSE_RETRIES) {
+        parseAttempts++;
+        const backoffMs = parseAttempts * 5000;
+        console.log(`[map-reduce] ${label}: 응답 파싱 실패, ${backoffMs}ms 후 재시도 (${parseAttempts}/${MAX_PARSE_RETRIES})`);
         await sleep(backoffMs);
         continue;
       }
