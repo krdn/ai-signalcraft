@@ -2,7 +2,7 @@
 // D-04: 부분 실패 허용 -- 개별 소스 실패 시 빈 결과 반환 (파이프라인 중단 방지)
 import type { Job } from 'bullmq';
 import { getCollector } from '@ai-signalcraft/collectors';
-import { updateJobProgress } from '../pipeline';
+import { updateJobProgress, appendJobEvent } from '../pipeline';
 import { isPipelineCancelled } from '../pipeline/control';
 import { progressKey, countBySourceType } from './worker-config';
 import { createLogger } from '../utils/logger';
@@ -64,12 +64,14 @@ export function createCollectorHandler(): (job: Job) => Promise<CollectorResult>
       return { source, items: allItems, count: allItems.length };
     } catch (err) {
       const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-      logger.warn(`[${source}] 수집 실패 (${elapsed}초, 부분 실패 허용):`, err instanceof Error ? err.message : err);
+      const errMsg = err instanceof Error ? err.message : String(err);
+      logger.warn(`[${source}] 수집 실패 (${elapsed}초, 부분 실패 허용):`, errMsg);
       // DB: 수집 실패
       if (dbJobId) {
         await updateJobProgress(dbJobId, {
           [pKey]: { status: 'failed', ...countBySourceType(source, []) }
         });
+        appendJobEvent(dbJobId, 'error', `${source} 수집 실패: ${errMsg}`).catch(() => {});
       }
       return { source, items: [], count: 0 };
     }

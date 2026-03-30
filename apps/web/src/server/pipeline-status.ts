@@ -117,6 +117,7 @@ export async function getPipelineStatus(jobId: number) {
   const progress = job.progress as Record<string, any> | null;
   if (progress) {
     for (const [key, val] of Object.entries(progress)) {
+      if (key === '_events') continue; // appendJobEvent로 기록된 이벤트 배열은 건너뜀
       const label = SOURCE_LABELS[key] ?? key;
       const articles = val.articles ?? 0;
       const videos = val.videos ?? 0;
@@ -216,6 +217,7 @@ export async function getPipelineStatus(jobId: number) {
 
   if (progress) {
     for (const [key, val] of Object.entries(progress)) {
+      if (key === '_events') continue;
       const label = SOURCE_LABELS[key] ?? key;
       const arts = val.articles ?? 0;
       const vids = val.videos ?? 0;
@@ -295,6 +297,16 @@ export async function getPipelineStatus(jobId: number) {
     const reportModelStr = reportMeta?.reportModel ? ` [${reportMeta.reportModel.provider}/${reportMeta.reportModel.model}]` : '';
     const reportTokenStr = reportMeta?.totalTokens ? `, ${reportMeta.totalTokens.toLocaleString()} 토큰` : '';
     events.push({ timestamp: timeline.reportCompletedAt, level: 'info', message: `종합 리포트 생성 완료${reportModelStr}${reportTokenStr ? ` (${reportTokenStr.slice(2)})` : ''}` });
+  }
+
+  // Worker에서 appendJobEvent()로 기록한 이벤트를 병합
+  const rawEvents = (progress as Record<string, any> | null)?._events;
+  if (Array.isArray(rawEvents)) {
+    for (const ev of rawEvents) {
+      if (ev && ev.ts && ev.level && ev.msg) {
+        events.push({ timestamp: ev.ts, level: ev.level, message: ev.msg });
+      }
+    }
   }
 
   events.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());

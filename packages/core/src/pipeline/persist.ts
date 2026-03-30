@@ -172,6 +172,38 @@ export async function updateJobProgress(
 }
 
 /**
+ * 파이프라인 이벤트 로그를 progress._events에 추가
+ * DB 마이그레이션 없이 기존 JSONB 활용 — 최대 100개 유지
+ */
+const MAX_EVENTS = 100;
+
+export async function appendJobEvent(
+  jobId: number,
+  level: 'info' | 'warn' | 'error',
+  msg: string,
+) {
+  const db = getDb();
+  const event = { ts: new Date().toISOString(), level, msg };
+
+  // 현재 이벤트 배열을 읽고 append (단순하고 안전한 read-modify-write)
+  const [row] = await db.select({ progress: collectionJobs.progress })
+    .from(collectionJobs).where(eq(collectionJobs.id, jobId));
+  if (!row) return;
+
+  const progress = (row.progress ?? {}) as Record<string, unknown>;
+  const events = Array.isArray(progress._events) ? progress._events : [];
+  events.push(event);
+  // 오래된 이벤트 제거
+  if (events.length > MAX_EVENTS) events.splice(0, events.length - MAX_EVENTS);
+  progress._events = events;
+
+  await db.update(collectionJobs).set({
+    progress: sql`${sql.param(JSON.stringify(progress))}::jsonb` as any,
+    updatedAt: new Date(),
+  }).where(eq(collectionJobs.id, jobId));
+}
+
+/**
  * 수집 작업 생성 -- 정수 job.id를 반환하여 triggerCollection에 전달
  */
 export async function createCollectionJob(params: {

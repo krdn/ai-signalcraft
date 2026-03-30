@@ -65,23 +65,36 @@ interface TriggerFormProps {
   onJobStarted: (jobId: number) => void;
 }
 
+// SSR/CSR 간 동일한 초기값을 보장하기 위해 고정 날짜를 초기값으로 사용
+const STABLE_INIT_DATE = new Date(0);
+
 export function TriggerForm({ onJobStarted }: TriggerFormProps) {
   const [keyword, setKeyword] = useState('');
   const [sources, setSources] = useState<SourceId[]>([...ALL_SOURCES]);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [helpTab, setHelpTab] = useState('quickstart');
-  const [startDate, setStartDate] = useState<Date>(subDays(new Date(), 7));
-  const [endDate, setEndDate] = useState<Date>(new Date());
+  const [startDate, setStartDate] = useState<Date>(STABLE_INIT_DATE);
+  const [endDate, setEndDate] = useState<Date>(STABLE_INIT_DATE);
   const [enableItemAnalysis, setEnableItemAnalysis] = useState(false);
   const [dateMode, setDateMode] = useState<'period' | 'event'>('period');
   const [eventName, setEventName] = useState('');
-  const [eventDate, setEventDate] = useState<Date>(new Date());
+  const [eventDate, setEventDate] = useState<Date>(STABLE_INIT_DATE);
   const [eventRadius, setEventRadius] = useState(3); // 전후 N일
   const [isLimitsOpen, setIsLimitsOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const [maxNaverArticles, setMaxNaverArticles] = useState(500);
   const [maxYoutubeVideos, setMaxYoutubeVideos] = useState(50);
   const [maxCommunityPosts, setMaxCommunityPosts] = useState(50);
   const [maxCommentsPerItem, setMaxCommentsPerItem] = useState(500);
+
+  // 클라이언트 마운트 후 실제 날짜 설정 (hydration mismatch 방지)
+  useEffect(() => {
+    const now = new Date();
+    setStartDate(subDays(now, 7));
+    setEndDate(now);
+    setEventDate(now);
+    setIsMounted(true);
+  }, []);
 
   // 서버에서 수집 한도 기본값 로드
   const { data: defaultLimits } = useQuery({
@@ -247,7 +260,9 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
                   <Popover>
                     <PopoverTrigger className="inline-flex w-full items-center justify-start rounded-lg border bg-card px-3 py-2 text-sm font-normal text-foreground hover:bg-accent hover:text-accent-foreground">
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {format(startDate, 'yyyy-MM-dd', { locale: ko })}
+                      <span suppressHydrationWarning>
+                        {isMounted ? format(startDate, 'yyyy-MM-dd', { locale: ko }) : '----/--/--'}
+                      </span>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
                       <Calendar
@@ -264,7 +279,9 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
                   <Popover>
                     <PopoverTrigger className="inline-flex w-full items-center justify-start rounded-lg border bg-card px-3 py-2 text-sm font-normal text-foreground hover:bg-accent hover:text-accent-foreground">
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {format(endDate, 'yyyy-MM-dd', { locale: ko })}
+                      <span suppressHydrationWarning>
+                        {isMounted ? format(endDate, 'yyyy-MM-dd', { locale: ko }) : '----/--/--'}
+                      </span>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
                       <Calendar
@@ -297,7 +314,9 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
                   <Popover>
                     <PopoverTrigger className="inline-flex w-full items-center justify-start rounded-lg border bg-card px-3 py-2 text-sm font-normal text-foreground hover:bg-accent hover:text-accent-foreground">
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {format(eventDate, 'yyyy-MM-dd', { locale: ko })}
+                      <span suppressHydrationWarning>
+                        {isMounted ? format(eventDate, 'yyyy-MM-dd', { locale: ko }) : '----/--/--'}
+                      </span>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
                       <Calendar
@@ -327,9 +346,10 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
                   </div>
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground">
-                분석 범위: {format(subDays(eventDate, eventRadius), 'MM/dd')} ~ {format(addDays(eventDate, eventRadius), 'MM/dd')}
-                ({eventRadius * 2 + 1}일간)
+              <p suppressHydrationWarning className="text-xs text-muted-foreground">
+                {isMounted
+                  ? `분석 범위: ${format(subDays(eventDate, eventRadius), 'MM/dd')} ~ ${format(addDays(eventDate, eventRadius), 'MM/dd')} (${eventRadius * 2 + 1}일간)`
+                  : '분석 범위: --/-- ~ --/-- (7일간)'}
               </p>
             </TabsContent>
           </Tabs>

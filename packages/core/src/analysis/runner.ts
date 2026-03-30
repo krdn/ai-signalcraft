@@ -18,6 +18,7 @@ import { persistAnalysisResult } from './persist-analysis';
 import { getModuleModelConfig } from './model-config';
 import { isRateLimitError, isParseError, parseRetryAfter, sleep, MAX_RATE_LIMIT_RETRIES, MAX_PARSE_RETRIES } from './retry-utils';
 import { isPipelineCancelled } from '../pipeline/control';
+import { appendJobEvent } from '../pipeline/persist';
 import type { AnalysisModule, AnalysisInput, AnalysisModuleResult } from './types';
 
 // Stage 1: 병렬 실행 (독립 모듈)
@@ -135,14 +136,18 @@ export async function runModule<T>(
         if (isRateLimitError(error) && attempt < MAX_RATE_LIMIT_RETRIES) {
           const retryAfterSec = parseRetryAfter(error);
           const backoffMs = Math.max(retryAfterSec * 1000, (attempt + 1) * 3000);
-          console.log(`[runner] ${module.name}: rate limit 도달, ${backoffMs}ms 후 재시도 (${attempt + 1}/${MAX_RATE_LIMIT_RETRIES})`);
+          const msg = `${module.name}: Rate limit 도달, ${Math.round(backoffMs / 1000)}초 후 재시도 (${attempt + 1}/${MAX_RATE_LIMIT_RETRIES})`;
+          console.log(`[runner] ${msg}`);
+          appendJobEvent(input.jobId, 'warn', msg).catch(() => {});
           await sleep(backoffMs);
           continue;
         }
         // 파싱 실패 (구조화 응답 생성 실패) — 최대 2회 재시도
         if (isParseError(error) && attempt < MAX_PARSE_RETRIES) {
           const backoffMs = (attempt + 1) * 5000;
-          console.log(`[runner] ${module.name}: 응답 파싱 실패, ${backoffMs}ms 후 재시도 (${attempt + 1}/${MAX_PARSE_RETRIES})`);
+          const msg = `${module.name}: 응답 파싱 실패, ${Math.round(backoffMs / 1000)}초 후 재시도 (${attempt + 1}/${MAX_PARSE_RETRIES})`;
+          console.log(`[runner] ${msg}`);
+          appendJobEvent(input.jobId, 'warn', msg).catch(() => {});
           await sleep(backoffMs);
           continue;
         }
@@ -162,6 +167,7 @@ export async function runModule<T>(
       errorMessage,
     });
 
+    appendJobEvent(input.jobId, 'error', `${module.name} 분석 실패: ${errorMessage}`).catch(() => {});
     return { module: module.name, status: 'failed', errorMessage };
   }
 }

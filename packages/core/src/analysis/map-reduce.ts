@@ -7,6 +7,7 @@ import { getModuleModelConfig } from './model-config';
 import { runModule } from './runner';
 import { isRateLimitError, isParseError, parseRetryAfter, sleep, MAX_RATE_LIMIT_RETRIES, MAX_PARSE_RETRIES } from './retry-utils';
 import { getConcurrencyConfig } from './concurrency-config';
+import { appendJobEvent } from '../pipeline/persist';
 import type { AnalysisModule, AnalysisInput, AnalysisModuleResult } from './types';
 
 // --- 청킹 설정 ---
@@ -98,6 +99,7 @@ export function chunkAnalysisInput(
 async function callWithRetry<T>(
   fn: () => Promise<T>,
   label: string,
+  jobId?: number,
 ): Promise<T> {
   const maxRetries = Math.max(MAX_RATE_LIMIT_RETRIES, MAX_PARSE_RETRIES);
   let lastError: unknown;
@@ -114,7 +116,9 @@ async function callWithRetry<T>(
         rateLimitAttempts++;
         const retryAfterSec = parseRetryAfter(error);
         const backoffMs = Math.max(retryAfterSec * 1000, rateLimitAttempts * 3000);
-        console.log(`[map-reduce] ${label}: rate limit, ${backoffMs}ms 후 재시도 (${rateLimitAttempts}/${MAX_RATE_LIMIT_RETRIES})`);
+        const msg = `${label}: Rate limit 도달, ${Math.round(backoffMs / 1000)}초 후 재시도 (${rateLimitAttempts}/${MAX_RATE_LIMIT_RETRIES})`;
+        console.log(`[map-reduce] ${msg}`);
+        if (jobId) appendJobEvent(jobId, 'warn', msg).catch(() => {});
         await sleep(backoffMs);
         continue;
       }
@@ -122,7 +126,9 @@ async function callWithRetry<T>(
       if (isParseError(error) && parseAttempts < MAX_PARSE_RETRIES) {
         parseAttempts++;
         const backoffMs = parseAttempts * 5000;
-        console.log(`[map-reduce] ${label}: 응답 파싱 실패, ${backoffMs}ms 후 재시도 (${parseAttempts}/${MAX_PARSE_RETRIES})`);
+        const msg = `${label}: 응답 파싱 실패, ${Math.round(backoffMs / 1000)}초 후 재시도 (${parseAttempts}/${MAX_PARSE_RETRIES})`;
+        console.log(`[map-reduce] ${msg}`);
+        if (jobId) appendJobEvent(jobId, 'warn', msg).catch(() => {});
         await sleep(backoffMs);
         continue;
       }
@@ -223,6 +229,7 @@ export async function runModuleMapReduce<T>(
           const mapResult = await callWithRetry(
             () => analyzeStructured(mapPrompt, module.schema, gatewayOptions),
             chunkLabel,
+            input.jobId,
           );
 
           console.log(`[map-reduce] ${chunkLabel}: 완료`);
@@ -240,6 +247,7 @@ export async function runModuleMapReduce<T>(
         } else {
           const errMsg = settled.reason instanceof Error ? settled.reason.message : String(settled.reason);
           console.error(`[map-reduce] ${module.name}[chunk]: 실패 — ${errMsg}`);
+          appendJobEvent(input.jobId, 'warn', `${module.name} 청크 분석 실패 (계속 진행): ${errMsg}`).catch(() => {});
         }
       }
     }
@@ -291,6 +299,7 @@ export async function runModuleMapReduce<T>(
     const reduceResult = await callWithRetry(
       () => analyzeStructured(reducePrompt, module.schema, reduceOptions),
       `${module.name}[reduce]`,
+      input.jobId,
     );
 
     totalUsage.inputTokens += (reduceResult.usage as any)?.promptTokens ?? (reduceResult.usage as any)?.inputTokens ?? 0;
@@ -325,6 +334,7 @@ export async function runModuleMapReduce<T>(
       errorMessage,
     });
 
+    appendJobEvent(input.jobId, 'error', `${module.name} Map-Reduce 분석 실패: ${errorMessage}`).catch(() => {});
     return { module: module.name, status: 'failed', errorMessage };
   }
 }
