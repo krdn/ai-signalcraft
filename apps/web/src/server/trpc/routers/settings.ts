@@ -5,6 +5,8 @@ import {
   getAllModelSettings,
   upsertModelSetting,
   modelSettings,
+  MODEL_SCENARIO_PRESETS,
+  applyModelScenario,
   getAllProviderKeys,
   addProviderKey,
   updateProviderKey,
@@ -73,6 +75,22 @@ export const settingsRouter = router({
         .where(eq(modelSettings.moduleName, input.moduleName));
       return { success: true };
     }),
+
+  // === 시나리오 프리셋 ===
+
+  modelScenarios: router({
+    // 프리셋 목록 반환
+    list: protectedProcedure.query(() => {
+      return MODEL_SCENARIO_PRESETS;
+    }),
+
+    // 프리셋 적용 (모듈별로 다른 모델을 일괄 변경)
+    applyPreset: protectedProcedure
+      .input(z.object({ presetId: z.string().min(1) }))
+      .mutation(async ({ input }) => {
+        return applyModelScenario(input.presetId);
+      }),
+  }),
 
   // === 병렬처리 동시성 설정 ===
 

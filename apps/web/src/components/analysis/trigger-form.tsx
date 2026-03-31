@@ -8,8 +8,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
 import {
   Collapsible,
   CollapsibleContent,
@@ -21,7 +19,6 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import {
   Loader2,
-  CalendarIcon,
   HelpCircle,
   ChevronDown,
   Search,
@@ -257,41 +254,23 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>시작일</Label>
-                  <Popover>
-                    <PopoverTrigger className="inline-flex w-full items-center justify-start rounded-lg border bg-card px-3 py-2 text-sm font-normal text-foreground hover:bg-accent hover:text-accent-foreground">
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      <span suppressHydrationWarning>
-                        {isMounted ? format(startDate, 'yyyy-MM-dd', { locale: ko }) : '----/--/--'}
-                      </span>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={startDate}
-                        onSelect={(date) => date && setStartDate(date)}
-                        disabled={triggerMutation.isPending}
-                      />
-                    </PopoverContent>
-                  </Popover>
+                  <input
+                    type="date"
+                    className="flex h-9 w-full rounded-lg border bg-card px-3 text-sm"
+                    value={isMounted ? format(startDate, 'yyyy-MM-dd') : ''}
+                    onChange={(e) => e.target.value && setStartDate(new Date(e.target.value))}
+                    disabled={triggerMutation.isPending}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>종료일</Label>
-                  <Popover>
-                    <PopoverTrigger className="inline-flex w-full items-center justify-start rounded-lg border bg-card px-3 py-2 text-sm font-normal text-foreground hover:bg-accent hover:text-accent-foreground">
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      <span suppressHydrationWarning>
-                        {isMounted ? format(endDate, 'yyyy-MM-dd', { locale: ko }) : '----/--/--'}
-                      </span>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={endDate}
-                        onSelect={(date) => date && setEndDate(date)}
-                        disabled={triggerMutation.isPending}
-                      />
-                    </PopoverContent>
-                  </Popover>
+                  <input
+                    type="date"
+                    className="flex h-9 w-full rounded-lg border bg-card px-3 text-sm"
+                    value={isMounted ? format(endDate, 'yyyy-MM-dd') : ''}
+                    onChange={(e) => e.target.value && setEndDate(new Date(e.target.value))}
+                    disabled={triggerMutation.isPending}
+                  />
                 </div>
               </div>
             </TabsContent>
@@ -311,22 +290,13 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>이벤트 날짜</Label>
-                  <Popover>
-                    <PopoverTrigger className="inline-flex w-full items-center justify-start rounded-lg border bg-card px-3 py-2 text-sm font-normal text-foreground hover:bg-accent hover:text-accent-foreground">
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      <span suppressHydrationWarning>
-                        {isMounted ? format(eventDate, 'yyyy-MM-dd', { locale: ko }) : '----/--/--'}
-                      </span>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={eventDate}
-                        onSelect={(date) => date && setEventDate(date)}
-                        disabled={triggerMutation.isPending}
-                      />
-                    </PopoverContent>
-                  </Popover>
+                  <input
+                    type="date"
+                    className="flex h-9 w-full rounded-lg border bg-card px-3 text-sm"
+                    value={isMounted ? format(eventDate, 'yyyy-MM-dd') : ''}
+                    onChange={(e) => e.target.value && setEventDate(new Date(e.target.value))}
+                    disabled={triggerMutation.isPending}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="eventRadius">전후 분석 범위</Label>

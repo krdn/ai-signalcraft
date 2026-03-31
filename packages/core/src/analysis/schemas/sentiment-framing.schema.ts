@@ -22,12 +22,12 @@ export const SentimentFramingSchema = z.object({
     frame: z.string(),
     description: z.string(),
     strength: z.number().describe('1~10'),
-  })).max(5).describe('긍정 프레임 TOP5'),
+  })).describe('긍정 프레임 TOP5 (최대 5개)'),
   negativeFrames: z.array(z.object({
     frame: z.string(),
     description: z.string(),
     strength: z.number().describe('1~10'),
-  })).max(5).describe('부정 프레임 TOP5'),
+  })).describe('부정 프레임 TOP5 (최대 5개)'),
   frameConflict: z.object({
     description: z.string(),
     dominantFrame: z.string(),

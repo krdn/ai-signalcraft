@@ -17,7 +17,7 @@ const ArticleItemResultSchema = z.object({
   items: z.array(z.object({
     index: z.number(),
     sentiment: z.enum(['positive', 'negative', 'neutral']),
-    sentimentScore: z.number().min(0).max(1),
+    sentimentScore: z.number().describe('감정 점수 0~1'),
     summary: z.string(),
   })),
 });
@@ -26,7 +26,7 @@ const CommentItemResultSchema = z.object({
   items: z.array(z.object({
     index: z.number(),
     sentiment: z.enum(['positive', 'negative', 'neutral']),
-    sentimentScore: z.number().min(0).max(1),
+    sentimentScore: z.number().describe('감정 점수 0~1'),
   })),
 });
 

@@ -3,7 +3,7 @@ import { z } from 'zod';
 // 개별 시나리오 공통 필드
 const scenarioBase = {
   name: z.string(),
-  probability: z.number().min(0).max(100),
+  probability: z.number().describe('발생 확률 0~100'),
   triggerConditions: z.array(z.string()),
   expectedOutcome: z.string(),
   responseStrategy: z.array(z.string()),
@@ -18,7 +18,7 @@ const scenarioSchema = z.object({
 });
 
 export const CrisisScenarioSchema = z.object({
-  scenarios: z.array(scenarioSchema).min(3).max(3),
+  scenarios: z.array(scenarioSchema).describe('정확히 3개 시나리오: spread, control, reverse'),
   currentRiskLevel: z.enum(['critical', 'high', 'medium', 'low']),
   recommendedAction: z.string(),
 });

@@ -10,7 +10,7 @@ export const RiskMapSchema = z.object({
     spreadProbability: z.number().describe('0~1 확산 가능성'),
     currentStatus: z.string(),
     triggerConditions: z.array(z.string()),
-  })).max(5).describe('Top 3~5 리스크'),
+  })).describe('Top 3~5 리스크 (최대 5개)'),
   overallRiskLevel: z.enum(['critical', 'high', 'medium', 'low']),
   riskTrend: z.enum(['increasing', 'stable', 'decreasing']),
 });

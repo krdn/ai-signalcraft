@@ -78,7 +78,7 @@ export async function GET(
               const analysisRunning = status.analysisModulesDetailed.some(
                 (m: { status: string }) => m.status === 'running' || m.status === 'pending',
               );
-              if (!analysisRunning && (status.hasReport || status.status === 'failed')) {
+              if (!analysisRunning && (status.hasReport || status.status === 'failed' || status.status === 'completed')) {
                 clearInterval(interval);
                 // 최종 상태 한번 더 전송
                 send(status);

@@ -16,7 +16,7 @@ import {
 } from './modules';
 import { persistAnalysisResult } from './persist-analysis';
 import { getModuleModelConfig } from './model-config';
-import { isRateLimitError, isParseError, parseRetryAfter, sleep, MAX_RATE_LIMIT_RETRIES, MAX_PARSE_RETRIES } from './retry-utils';
+import { isRateLimitError, parseRetryAfter, sleep, MAX_RATE_LIMIT_RETRIES } from './retry-utils';
 import { isPipelineCancelled } from '../pipeline/control';
 import { appendJobEvent } from '../pipeline/persist';
 import type { AnalysisModule, AnalysisInput, AnalysisModuleResult } from './types';
@@ -91,7 +91,7 @@ export async function runModule<T>(
       maxOutputTokens: 8192,
     };
 
-    // Rate limit 재시도 루프
+    // Rate limit 재시도 루프 (파싱 실패는 재시도 없이 즉시 에러 전파)
     let lastError: unknown;
     for (let attempt = 0; attempt <= MAX_RATE_LIMIT_RETRIES; attempt++) {
       // 각 시도 전 취소 확인 — 실행 중인 모듈도 즉시 중단
@@ -133,6 +133,7 @@ export async function runModule<T>(
         return moduleResult;
       } catch (error) {
         lastError = error;
+        // Rate limit만 재시도 (토큰 비용 미발생)
         if (isRateLimitError(error) && attempt < MAX_RATE_LIMIT_RETRIES) {
           const retryAfterSec = parseRetryAfter(error);
           const backoffMs = Math.max(retryAfterSec * 1000, (attempt + 1) * 3000);
@@ -142,15 +143,7 @@ export async function runModule<T>(
           await sleep(backoffMs);
           continue;
         }
-        // 파싱 실패 (구조화 응답 생성 실패) — 최대 2회 재시도
-        if (isParseError(error) && attempt < MAX_PARSE_RETRIES) {
-          const backoffMs = (attempt + 1) * 5000;
-          const msg = `${module.name}: 응답 파싱 실패, ${Math.round(backoffMs / 1000)}초 후 재시도 (${attempt + 1}/${MAX_PARSE_RETRIES})`;
-          console.log(`[runner] ${msg}`);
-          appendJobEvent(input.jobId, 'warn', msg).catch(() => {});
-          await sleep(backoffMs);
-          continue;
-        }
+        // 파싱 실패 등 기타 에러 — 즉시 전파 (재시도해도 해결 안 됨, 비용만 낭비)
         throw error;
       }
     }

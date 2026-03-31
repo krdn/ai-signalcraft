@@ -6,21 +6,21 @@ export const FrameWarSchema = z.object({
   dominantFrames: z.array(z.object({
     name: z.string(),
     description: z.string(),
-    strength: z.number().min(0).max(100),
+    strength: z.number().describe('강도 0~100'),
     supportingEvidence: z.array(z.string()),
-  })).max(5).describe('지배적 프레임 TOP 5'),
+  })).describe('지배적 프레임 TOP 5 (최대 5개)'),
   threateningFrames: z.array(z.object({
     name: z.string(),
     description: z.string(),
     threatLevel: z.enum(['critical', 'high', 'medium', 'low']),
     counterStrategy: z.string(),
-  })).max(5),
+  })).describe('위협 프레임 (최대 5개)'),
   reversibleFrames: z.array(z.object({
     name: z.string(),
     currentPerception: z.string(),
     potentialShift: z.string(),
     requiredAction: z.string(),
-  })).max(3).describe('반전 가능 프레임'),
+  })).describe('반전 가능 프레임 (최대 3개)'),
   battlefieldSummary: z.string(),
 });
 

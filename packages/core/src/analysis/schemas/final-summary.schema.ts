@@ -13,7 +13,7 @@ export const FinalSummarySchema = z.object({
     action: z.string(),
     expectedImpact: z.string(),
     timeline: z.string(),
-  })).max(5).describe('최우선 실행 과제'),
+  })).describe('최우선 실행 과제 (최대 5개)'),
   outlook: z.object({
     shortTerm: z.string(),
     mediumTerm: z.string(),

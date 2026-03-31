@@ -5,9 +5,10 @@ import { analyzeStructured, type AIGatewayOptions } from '@ai-signalcraft/ai-gat
 import { persistAnalysisResult } from './persist-analysis';
 import { getModuleModelConfig } from './model-config';
 import { runModule } from './runner';
-import { isRateLimitError, isParseError, parseRetryAfter, sleep, MAX_RATE_LIMIT_RETRIES, MAX_PARSE_RETRIES } from './retry-utils';
+import { isRateLimitError, parseRetryAfter, sleep, MAX_RATE_LIMIT_RETRIES } from './retry-utils';
 import { getConcurrencyConfig } from './concurrency-config';
 import { appendJobEvent } from '../pipeline/persist';
+import { isPipelineCancelled } from '../pipeline/control';
 import type { AnalysisModule, AnalysisInput, AnalysisModuleResult } from './types';
 
 // --- 청킹 설정 ---
@@ -26,8 +27,8 @@ interface MapReduceConfig {
 const DEFAULT_CONFIG: MapReduceConfig = {
   chunkTargetChars: 15_000,
   minCharsForChunking: 20_000,
-  mapTimeoutMs: 120_000,
-  reduceTimeoutMs: 180_000,
+  mapTimeoutMs: 300_000,
+  reduceTimeoutMs: 300_000,
 };
 
 // --- 데이터 크기 계산 ---
@@ -96,22 +97,31 @@ export function chunkAnalysisInput(
 
 // --- Rate limit 재시도 래퍼 ---
 
+function isTimeoutError(error: unknown): boolean {
+  if (error instanceof Error) {
+    const msg = error.message.toLowerCase();
+    return msg.includes('timeout') || msg.includes('aborted') || error.name === 'AbortError' || error.name === 'TimeoutError';
+  }
+  return false;
+}
+
+const MAX_TIMEOUT_RETRIES = 1;
+
 async function callWithRetry<T>(
   fn: () => Promise<T>,
   label: string,
   jobId?: number,
 ): Promise<T> {
-  const maxRetries = Math.max(MAX_RATE_LIMIT_RETRIES, MAX_PARSE_RETRIES);
   let lastError: unknown;
   let rateLimitAttempts = 0;
-  let parseAttempts = 0;
+  let timeoutAttempts = 0;
 
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+  for (let attempt = 0; attempt <= MAX_RATE_LIMIT_RETRIES + MAX_TIMEOUT_RETRIES; attempt++) {
     try {
       return await fn();
     } catch (error) {
       lastError = error;
-      // Rate limit 재시도
+      // Rate limit 재시도 (토큰 비용 미발생)
       if (isRateLimitError(error) && rateLimitAttempts < MAX_RATE_LIMIT_RETRIES) {
         rateLimitAttempts++;
         const retryAfterSec = parseRetryAfter(error);
@@ -122,16 +132,16 @@ async function callWithRetry<T>(
         await sleep(backoffMs);
         continue;
       }
-      // 파싱 실패 재시도 (구조화 응답 생성 실패)
-      if (isParseError(error) && parseAttempts < MAX_PARSE_RETRIES) {
-        parseAttempts++;
-        const backoffMs = parseAttempts * 5000;
-        const msg = `${label}: 응답 파싱 실패, ${Math.round(backoffMs / 1000)}초 후 재시도 (${parseAttempts}/${MAX_PARSE_RETRIES})`;
+      // 타임아웃 재시도 (1회만 — 일시적 서버 지연일 수 있음)
+      if (isTimeoutError(error) && timeoutAttempts < MAX_TIMEOUT_RETRIES) {
+        timeoutAttempts++;
+        const msg = `${label}: 타임아웃 발생, 10초 후 재시도 (${timeoutAttempts}/${MAX_TIMEOUT_RETRIES})`;
         console.log(`[map-reduce] ${msg}`);
         if (jobId) appendJobEvent(jobId, 'warn', msg).catch(() => {});
-        await sleep(backoffMs);
+        await sleep(10_000);
         continue;
       }
+      // 기타 에러 — 즉시 전파
       throw error;
     }
   }
@@ -207,7 +217,24 @@ export async function runModuleMapReduce<T>(
     console.log(`[map-reduce] ${module.name}: Map 동시성=${mapConcurrency} (${config.provider})`);
 
     for (let i = 0; i < chunks.length; i += mapConcurrency) {
+      // 각 배치 시작 전 취소 확인
+      if (await isPipelineCancelled(input.jobId)) {
+        console.log(`[map-reduce] ${module.name}: 취소 감지 — Map 단계 중단`);
+        throw new Error('사용자에 의해 중지됨');
+      }
+
       const batch = chunks.slice(i, i + mapConcurrency);
+
+      // 배치 전체에 대한 AbortController — 취소 시 진행 중인 API 호출도 즉시 중단
+      const batchAbort = new AbortController();
+      const cancelPoller = setInterval(async () => {
+        try {
+          if (await isPipelineCancelled(input.jobId)) {
+            batchAbort.abort(new Error('사용자에 의해 중지됨'));
+          }
+        } catch { /* DB 조회 실패 무시 */ }
+      }, 3000);
+
       const batchResults = await Promise.allSettled(
         batch.map(async (chunk, batchIdx) => {
           const chunkIdx = i + batchIdx;
@@ -224,6 +251,7 @@ export async function runModuleMapReduce<T>(
             systemPrompt: module.buildSystemPrompt(),
             maxOutputTokens: 8192,
             timeoutMs: cfg.mapTimeoutMs,
+            abortSignal: batchAbort.signal,
           };
 
           const mapResult = await callWithRetry(
@@ -236,6 +264,13 @@ export async function runModuleMapReduce<T>(
           return { result: mapResult.object, chunkIndex: chunkIdx, usage: mapResult.usage };
         }),
       );
+
+      clearInterval(cancelPoller);
+
+      // 배치 abort된 경우 즉시 중단
+      if (batchAbort.signal.aborted) {
+        throw new Error('사용자에 의해 중지됨');
+      }
 
       for (const settled of batchResults) {
         if (settled.status === 'fulfilled') {
@@ -277,6 +312,11 @@ export async function runModuleMapReduce<T>(
     }
 
     // === REDUCE 단계 ===
+    // Reduce 시작 전 취소 확인
+    if (await isPipelineCancelled(input.jobId)) {
+      console.log(`[map-reduce] ${module.name}: 취소 감지 — Reduce 단계 중단`);
+      throw new Error('사용자에 의해 중지됨');
+    }
     console.log(`[map-reduce] ${module.name}: Reduce 시작 (${mapResults.length}개 결과 종합)`);
 
     const reducePrompt = buildReducePrompt(
@@ -286,6 +326,16 @@ export async function runModuleMapReduce<T>(
       chunks.length,
     );
 
+    // Reduce용 AbortController — 취소 시 진행 중인 API 호출도 즉시 중단
+    const reduceAbort = new AbortController();
+    const reduceCancelPoller = setInterval(async () => {
+      try {
+        if (await isPipelineCancelled(input.jobId)) {
+          reduceAbort.abort(new Error('사용자에 의해 중지됨'));
+        }
+      } catch { /* DB 조회 실패 무시 */ }
+    }, 3000);
+
     const reduceOptions: AIGatewayOptions = {
       provider: config.provider,
       model: config.model,
@@ -294,13 +344,19 @@ export async function runModuleMapReduce<T>(
       systemPrompt: module.buildSystemPrompt(),
       maxOutputTokens: 8192,
       timeoutMs: cfg.reduceTimeoutMs,
+      abortSignal: reduceAbort.signal,
     };
 
-    const reduceResult = await callWithRetry(
-      () => analyzeStructured(reducePrompt, module.schema, reduceOptions),
-      `${module.name}[reduce]`,
-      input.jobId,
-    );
+    let reduceResult;
+    try {
+      reduceResult = await callWithRetry(
+        () => analyzeStructured(reducePrompt, module.schema, reduceOptions),
+        `${module.name}[reduce]`,
+        input.jobId,
+      );
+    } finally {
+      clearInterval(reduceCancelPoller);
+    }
 
     totalUsage.inputTokens += (reduceResult.usage as any)?.promptTokens ?? (reduceResult.usage as any)?.inputTokens ?? 0;
     totalUsage.outputTokens += (reduceResult.usage as any)?.completionTokens ?? (reduceResult.usage as any)?.outputTokens ?? 0;

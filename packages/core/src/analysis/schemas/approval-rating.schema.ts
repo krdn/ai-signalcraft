@@ -4,8 +4,8 @@ import { z } from 'zod';
 // 감정 비율과 플랫폼 편향을 보정하여 범위(range)로 산출, 면책 문구 필수 포함
 export const ApprovalRatingSchema = z.object({
   estimatedRange: z.object({
-    min: z.number().min(0).max(100),
-    max: z.number().min(0).max(100),
+    min: z.number().describe('최소 지지율 0~100'),
+    max: z.number().describe('최대 지지율 0~100'),
   }).describe('AI 추정 지지율 범위 (%)'),
   confidence: z.enum(['high', 'medium', 'low']),
   methodology: z.object({

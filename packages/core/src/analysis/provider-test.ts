@@ -5,9 +5,11 @@ import { getDb } from '../db';
 import { providerKeys } from '../db/schema/settings';
 import { decrypt } from '../utils/crypto';
 
-// Anthropic 모델 목록 (API로 조회 불가, 하드코딩)
-const ANTHROPIC_MODELS = [
+// Anthropic 모델 목록 (주요 모델 하드코딩 + API 조회 병행)
+const ANTHROPIC_MODELS_FALLBACK = [
+  'claude-sonnet-4-5-20250514',
   'claude-sonnet-4-20250514',
+  'claude-haiku-4-5-20251001',
   'claude-haiku-35-20241022',
   'claude-opus-4-20250514',
 ];
@@ -52,8 +54,29 @@ export async function testProviderConnection(
 
   try {
     switch (providerType) {
-      case 'anthropic':
-        return { success: true, models: ANTHROPIC_MODELS };
+      case 'anthropic': {
+        // Anthropic /v1/models API로 모델 목록 조회 시도
+        try {
+          const endpoint = baseUrl || 'https://api.anthropic.com';
+          const res = await fetch(`${endpoint}/v1/models?limit=100`, {
+            headers: {
+              'x-api-key': apiKey,
+              'anthropic-version': '2023-06-01',
+            },
+            signal: AbortSignal.timeout(10000),
+          });
+          if (res.ok) {
+            const data = (await res.json()) as { data?: Array<{ id: string }> };
+            if (data.data && data.data.length > 0) {
+              const models = data.data.map((m) => m.id).sort();
+              return { success: true, models };
+            }
+          }
+        } catch {
+          // API 조회 실패 시 폴백
+        }
+        return { success: true, models: ANTHROPIC_MODELS_FALLBACK };
+      }
 
       case 'openai':
       case 'deepseek':

@@ -7,6 +7,7 @@ import { finalSummaryModule } from './modules';
 import { loadAnalysisInput } from './data-loader';
 import { persistAnalysisResult } from './persist-analysis';
 import { isPipelineCancelled, waitIfPaused, checkCostLimit, getSkippedModules } from '../pipeline/control';
+import { appendJobEvent } from '../pipeline/persist';
 import { analyzeItems } from './item-analyzer';
 import { getDb } from '../db';
 import { collectionJobs } from '../db/schema/collections';
@@ -162,6 +163,18 @@ export async function runAnalysisPipeline(jobId: number): Promise<{
     return skippedModules.includes(moduleName);
   }
 
+  // 실패 모듈 발생 시 파이프라인 즉시 중단 (fail-fast)
+  function checkFailAndAbort(stageName: string): boolean {
+    const failed = Object.values(allResults).filter(r => r.status === 'failed' && r.errorMessage !== '사용자에 의해 스킵됨');
+    if (failed.length > 0) {
+      const failedNames = failed.map(f => f.module).join(', ');
+      console.log(`[pipeline] ${stageName} 실패 감지 — 파이프라인 중단: ${failedNames}`);
+      appendJobEvent(input.jobId, 'error', `${stageName}에서 실패 발생 (${failedNames}), 파이프라인 중단`).catch(() => {});
+      return true;
+    }
+    return false;
+  }
+
   // 스킵된 모듈은 DB에 기록
   async function markSkipped(moduleName: string) {
     await persistAnalysisResult({
@@ -223,6 +236,11 @@ export async function runAnalysisPipeline(jobId: number): Promise<{
 
   console.log(`[pipeline] Stage 1 완료: ${Object.keys(allResults).length}개 모듈 처리`);
 
+  // Stage 1 실패 시 즉시 중단
+  if (checkFailAndAbort('Stage 1')) {
+    return buildResult(allResults, cancelledByUser, costLimitExceeded, input);
+  }
+
   // Stage 2: risk-map + opportunity 병렬, strategy 순차 (의존성 기반)
   // - opportunityModule: Stage 1 결과만 참조 (risk-map 불필요)
   // - strategyModule: Stage 1 + risk-map + opportunity 전부 필요
@@ -269,6 +287,11 @@ export async function runAnalysisPipeline(jobId: number): Promise<{
     return buildResult(allResults, cancelledByUser, costLimitExceeded, input);
   }
 
+  // Stage 2 실패 시 즉시 중단
+  if (checkFailAndAbort('Stage 2')) {
+    return buildResult(allResults, cancelledByUser, costLimitExceeded, input);
+  }
+
   // Stage 3: 최종 요약 (모듈 8, 모든 선행 결과 참조)
   console.log(`[pipeline] Stage 3 시작: 최종 요약`);
   if (!await preRunCheck()) {
@@ -283,6 +306,11 @@ export async function runAnalysisPipeline(jobId: number): Promise<{
     if (finalResult.status === 'completed') {
       priorResults[finalResult.module] = finalResult.result;
     }
+  }
+
+  // Stage 3 실패 시 즉시 중단
+  if (checkFailAndAbort('Stage 3')) {
+    return buildResult(allResults, cancelledByUser, costLimitExceeded, input);
   }
 
   // 기본 완료/실패 모듈 집계 (Stage 1~3)
@@ -319,6 +347,11 @@ export async function runAnalysisPipeline(jobId: number): Promise<{
       }
     }
 
+    // Stage 4a 실패 시 즉시 중단
+    if (checkFailAndAbort('Stage 4a')) {
+      return buildResult(allResults, cancelledByUser, costLimitExceeded, input);
+    }
+
     // Stage 4b: 순차 실행
     for (const module of STAGE4_SEQUENTIAL) {
       if (!await preRunCheck()) break;
@@ -328,6 +361,10 @@ export async function runAnalysisPipeline(jobId: number): Promise<{
       allResults[result.module] = result;
       if (result.status === 'completed') {
         priorResults[result.module] = result.result;
+      }
+      // Stage 4b 개별 모듈 실패 시 즉시 중단
+      if (checkFailAndAbort('Stage 4b')) {
+        return buildResult(allResults, cancelledByUser, costLimitExceeded, input);
       }
     }
 

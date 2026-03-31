@@ -9,6 +9,100 @@ import type { ModuleModelConfig } from '../types/analysis';
 
 export type { ModuleModelConfig } from '../types/analysis';
 
+// --- 시나리오 프리셋 ---
+
+export type ModelScenarioPreset = {
+  id: string;
+  name: string;
+  description: string;
+  estimatedCost: string;
+  modules: Record<string, { provider: AIProvider; model: string }>;
+};
+
+export const MODEL_SCENARIO_PRESETS: ModelScenarioPreset[] = [
+  {
+    id: 'scenario-a',
+    name: 'A: 최고 품질',
+    description: '핵심 모듈에 Sonnet, Stage 1은 Gemini Pro. 분석 품질 최대화.',
+    estimatedCost: '~$1.00/실행',
+    modules: {
+      'macro-view':        { provider: 'gemini',    model: 'gemini-2.5-pro' },
+      'segmentation':      { provider: 'gemini',    model: 'gemini-2.5-pro' },
+      'sentiment-framing': { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
+      'message-impact':    { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
+      'risk-map':          { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
+      'opportunity':       { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
+      'strategy':          { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
+      'final-summary':     { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
+      'approval-rating':   { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
+      'frame-war':         { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
+      'crisis-scenario':   { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
+      'win-simulation':    { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
+    },
+  },
+  {
+    id: 'scenario-b',
+    name: 'B: 가성비 최적',
+    description: 'Stage 1은 Gemini Flash, 심화분석은 Haiku, 핵심전략만 Sonnet. 비용 59% 절감.',
+    estimatedCost: '~$0.35/실행',
+    modules: {
+      'macro-view':        { provider: 'gemini',    model: 'gemini-2.5-flash' },
+      'segmentation':      { provider: 'gemini',    model: 'gemini-2.5-flash' },
+      'sentiment-framing': { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
+      'message-impact':    { provider: 'gemini',    model: 'gemini-2.5-flash' },
+      'risk-map':          { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
+      'opportunity':       { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
+      'strategy':          { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
+      'final-summary':     { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
+      'approval-rating':   { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
+      'frame-war':         { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
+      'crisis-scenario':   { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
+      'win-simulation':    { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
+    },
+  },
+  {
+    id: 'scenario-c',
+    name: 'C: 최소 변경',
+    description: 'Stage 1을 Gemini Flash로, 일부를 Haiku로 변경. 기존 대비 41% 절감.',
+    estimatedCost: '~$0.50/실행',
+    modules: {
+      'macro-view':        { provider: 'gemini',    model: 'gemini-2.5-flash' },
+      'segmentation':      { provider: 'gemini',    model: 'gemini-2.5-flash' },
+      'sentiment-framing': { provider: 'gemini',    model: 'gemini-2.5-flash' },
+      'message-impact':    { provider: 'gemini',    model: 'gemini-2.5-flash' },
+      'risk-map':          { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
+      'opportunity':       { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
+      'strategy':          { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
+      'final-summary':     { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
+      'approval-rating':   { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
+      'frame-war':         { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
+      'crisis-scenario':   { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
+      'win-simulation':    { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
+    },
+  },
+];
+
+/**
+ * 시나리오 프리셋을 적용하여 전체 모듈의 모델 설정을 일괄 변경
+ */
+export async function applyModelScenario(
+  presetId: string,
+): Promise<{ updated: number; presetName: string }> {
+  const preset = MODEL_SCENARIO_PRESETS.find((p) => p.id === presetId);
+  if (!preset) {
+    throw new Error(`알 수 없는 시나리오 프리셋: ${presetId}`);
+  }
+
+  const entries = Object.entries(preset.modules);
+  await Promise.all(
+    entries.map(([moduleName, config]) =>
+      upsertModelSetting(moduleName, config.provider, config.model),
+    ),
+  );
+
+  return { updated: entries.length, presetName: preset.name };
+}
+
 /**
  * 프로바이더 타입에 해당하는 활성 프로바이더 키에서 연결 정보를 가져옴
  */

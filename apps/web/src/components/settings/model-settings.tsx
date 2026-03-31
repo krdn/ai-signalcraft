@@ -18,7 +18,18 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { toast } from 'sonner';
-import { HelpCircle, Loader2, RotateCcw, AlertTriangle, ChevronsUpDown } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { HelpCircle, Loader2, RotateCcw, AlertTriangle, ChevronsUpDown, Sparkles, Zap, ArrowRight } from 'lucide-react';
 
 // 모듈 메타데이터: 이름, 설명, 분석 내용, 추천 모델, 비용 팁
 type ModuleMeta = {
@@ -215,6 +226,12 @@ export function ModelSettings() {
     queryFn: () => trpcClient.settings.list.query(),
   });
 
+  // 시나리오 프리셋 목록
+  const { data: scenarioPresets } = useQuery({
+    queryKey: [['settings', 'modelScenarios', 'list']],
+    queryFn: () => trpcClient.settings.modelScenarios.list.query(),
+  });
+
   // API 키 관리에서 등록된 프로바이더/모델 정보 가져오기
   const { data: providerKeysList } = useQuery({
     queryKey: [['settings', 'providerKeys', 'list']],
@@ -310,8 +327,24 @@ export function ModelSettings() {
     },
   });
 
+  const scenarioMutation = useMutation({
+    mutationFn: (presetId: string) =>
+      trpcClient.settings.modelScenarios.applyPreset.mutate({ presetId }),
+    onSuccess: (data) => {
+      setScenarioDialogOpen(null);
+      queryClient.invalidateQueries({ queryKey: [['settings', 'list']] });
+      toast.success(`"${data.presetName}" 시나리오가 적용되었습니다 (${data.updated}개 모듈)`);
+    },
+    onError: (error: { message?: string }) => {
+      setScenarioDialogOpen(null);
+      toast.error(error.message ?? '시나리오 적용에 실패했습니다');
+    },
+  });
+
   const [bulkProvider, setBulkProvider] = useState<string>('');
   const [bulkModel, setBulkModel] = useState<string>('');
+  // 시나리오 프리셋 AlertDialog open 상태 (controlled)
+  const [scenarioDialogOpen, setScenarioDialogOpen] = useState<string | null>(null);
 
   const handleProviderChange = (item: ModelSettingItem, newProvider: string | null) => {
     if (!newProvider) return;
@@ -350,7 +383,7 @@ export function ModelSettings() {
     );
   }
 
-  const isPending = updateMutation.isPending || resetMutation.isPending || bulkUpdateMutation.isPending;
+  const isPending = updateMutation.isPending || resetMutation.isPending || bulkUpdateMutation.isPending || scenarioMutation.isPending;
   const hasProviders = availableProviders.length > 0;
 
   const bulkModels = bulkProvider ? (providerModels[bulkProvider] ?? []) : [];
@@ -367,6 +400,90 @@ export function ModelSettings() {
                 위의 <strong>API 키 관리</strong> 탭에서 프로바이더를 등록하고 모델을 선택(Test &amp; Select)해주세요.
                 등록된 프로바이더와 모델이 여기에 자동으로 표시됩니다.
               </p>
+            </div>
+          </div>
+        )}
+
+        {/* 시나리오 프리셋 */}
+        {scenarioPresets && scenarioPresets.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-1.5">
+              <Sparkles className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium">시나리오 프리셋</span>
+              <span className="text-xs text-muted-foreground">— 모듈별 최적 모델을 한 번에 적용합니다</span>
+            </div>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+              {scenarioPresets.map((preset) => {
+                const isRecommended = preset.id === 'scenario-b';
+                return (
+                  <div
+                    key={preset.id}
+                    className={`relative rounded-lg border p-3 ${
+                      isRecommended
+                        ? 'border-primary/40 bg-primary/5'
+                        : 'border-border'
+                    }`}
+                  >
+                    {isRecommended && (
+                      <Badge className="absolute -top-2 right-2 text-[10px]">
+                        추천
+                      </Badge>
+                    )}
+                    <div className="flex items-center gap-1.5 mb-1">
+                      {isRecommended ? (
+                        <Zap className="h-3.5 w-3.5 text-primary" />
+                      ) : (
+                        <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+                      )}
+                      <span className="text-sm font-medium">{preset.name}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mb-2 leading-relaxed">
+                      {preset.description}
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-mono text-muted-foreground">
+                        {preset.estimatedCost}
+                      </span>
+                      <AlertDialog
+                        open={scenarioDialogOpen === preset.id}
+                        onOpenChange={(open) => setScenarioDialogOpen(open ? preset.id : null)}
+                      >
+                        <AlertDialogTrigger
+                          className={`inline-flex items-center justify-center rounded-md text-xs h-7 px-3 ${
+                            isRecommended
+                              ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                              : 'border border-input bg-background hover:bg-accent hover:text-accent-foreground'
+                          } ${isPending ? 'pointer-events-none opacity-50' : 'cursor-pointer'}`}
+                        >
+                          적용
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>시나리오 적용</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              &quot;{preset.name}&quot; 시나리오를 적용하면 12개 모듈의 모델 설정이 일괄 변경됩니다. 계속하시겠습니까?
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>취소</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={(e) => {
+                                e.preventDefault();
+                                scenarioMutation.mutate(preset.id);
+                              }}
+                            >
+                              {scenarioMutation.isPending ? (
+                                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                              ) : null}
+                              적용
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
