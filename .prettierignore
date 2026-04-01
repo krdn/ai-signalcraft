@@ -4,3 +4,4 @@ dist
 pnpm-lock.yaml
 drizzle
 apps/web/src/components/ui
+next-env.d.ts
