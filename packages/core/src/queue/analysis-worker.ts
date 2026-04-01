@@ -20,7 +20,22 @@ export function createAnalysisWorker(): Worker {
         logger.info(
           `분석 ${isResume ? '재실행' : '시작'}: job=${dbJobId}, keyword=${keyword}${isResume ? `, options=${JSON.stringify(resumeOptions)}` : ''}`,
         );
-        const result = await runAnalysisPipeline(dbJobId, resumeOptions);
+
+        // 장시간 분석 중 lock 만료 방지 — 2분마다 lock 갱신
+        const lockExtender = setInterval(async () => {
+          try {
+            await job.extendLock(job.token!, 600_000);
+          } catch {
+            // lock 갱신 실패해도 작업은 계속 진행
+          }
+        }, 120_000);
+
+        let result;
+        try {
+          result = await runAnalysisPipeline(dbJobId, resumeOptions);
+        } finally {
+          clearInterval(lockExtender);
+        }
 
         await job.updateProgress({
           completedModules: result.completedModules,
@@ -51,6 +66,11 @@ export function createAnalysisWorker(): Worker {
         return result;
       }
     },
-    { connection: getRedisConnection() },
+    {
+      connection: getRedisConnection(),
+      // AI 분석은 수분~수십분 소요 — 기본 30초 lockDuration은 stall 발생
+      lockDuration: 600_000, // 10분
+      stalledInterval: 300_000, // 5분마다 stall check
+    },
   );
 }

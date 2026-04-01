@@ -1,6 +1,7 @@
 import { FrameWarSchema, type FrameWarResult } from '../schemas/frame-war.schema';
 import type { AnalysisModule, AnalysisInput } from '../types';
 import { MODULE_MODEL_MAP } from '../types';
+import { ANALYSIS_CONSTRAINTS, FRAME_STRENGTH_ANCHOR, distillForFrameWar } from './prompt-utils';
 
 const config = MODULE_MODEL_MAP['frame-war'];
 
@@ -14,11 +15,25 @@ export const frameWarModule: AnalysisModule<FrameWarResult> = {
   schema: FrameWarSchema,
 
   buildSystemPrompt(): string {
-    return `당신은 미디어 프레임 분석 및 여론 전쟁 전문가입니다.
-수집된 데이터에서 경쟁하는 프레임들을 식별하고, 지배적/위협적/반전 가능한 프레임을 분류합니다.
-각 프레임의 강도(strength)를 0~100으로 평가하세요.
-프레임 간 충돌 구조와 전략적 대응 방안을 제시하세요.
-반드시 한국어로 응답하세요.`;
+    return `당신은 미디어 프레임 전쟁(frame war) 및 담론 역학 전문가입니다.
+선행 분석(sentiment-framing)에서 식별된 프레임을 출발점으로, **프레임 간 세력 역학과 전략적 전장 구조**를 심층 분석합니다.
+
+## 핵심 원칙 — sentiment-framing과의 차별화
+- sentiment-framing이 "어떤 프레임이 있는가"를 식별했다면, 이 모듈은 "프레임 간 힘의 관계"를 분석합니다
+- sentiment-framing에서 이미 식별한 프레임 목록을 그대로 반복하지 마세요
+- 대신 다음을 추가로 분석하세요:
+  1. **세력 역학**: 어떤 프레임이 다른 프레임을 약화/강화시키는가
+  2. **시간 추이**: 프레임 강도가 상승/하락 중인가
+  3. **플랫폼 격차**: 같은 프레임이 플랫폼별로 다른 강도를 갖는가
+  4. **반전 가능성**: 약세 프레임이 특정 이벤트로 우세로 전환될 조건
+
+## 프레임 3분류
+- **지배적(dominant)**: 현재 여론을 주도. 다수가 이 관점으로 이야기함
+- **위협적(threatening)**: 지배 프레임에 도전 중. 확산 시 여론 판도 변경 가능
+- **반전 가능(reversible)**: 현재 약세이나, 특정 조건 충족 시 급반전 가능
+
+${FRAME_STRENGTH_ANCHOR}
+${ANALYSIS_CONSTRAINTS}`;
   },
 
   buildPrompt(data: AnalysisInput): string {
@@ -40,28 +55,38 @@ ${articlesSummary}
 ## 대표 댓글 (${data.comments.length}건 중 상위 30건)
 ${commentsSample}
 
-위 데이터를 기반으로 "${data.keyword}"에 대한 프레임 전쟁을 분석하세요.
-- 지배적 프레임 (최대 5개): 이름, 설명, 강도, 근거
-- 위협적 프레임 (최대 5개): 이름, 설명, 위협 수준, 대응 전략
-- 반전 가능 프레임 (최대 3개): 현재 인식, 반전 가능성, 필요 행동`;
+## 분석 절차 (반드시 이 순서로 수행)
+
+### Step 1: 프레임 세력 지도 구성
+- 데이터에서 작동 중인 프레임을 식별하고, 각 프레임의 강도(0~100)를 앵커 기준에 따라 평가하세요
+
+### Step 2: 세력 역학 분석
+- 프레임 간 상호 작용을 분석하세요 (강화 관계, 약화 관계, 독립 관계)
+- 어떤 프레임이 어떤 프레임을 밀어내고 있는지 기술하세요
+
+### Step 3: 위협 프레임 식별
+- 현재 지배 프레임을 위협하는 도전 프레임을 식별하세요
+- 각 위협 프레임의 위협 수준과 구체적 대응 전략을 제시하세요
+
+### Step 4: 반전 기회 탐색
+- 현재 약세이나 잠재적 반전이 가능한 프레임을 식별하세요 (최대 3개)
+- 반전을 위한 필요 조건과 행동을 구체적으로 제시하세요
+
+### Step 5: 전장 종합
+- battlefieldSummary에 프레임 전장의 전체 구도를 3~5줄로 요약하세요`;
   },
 
   buildPromptWithContext(data: AnalysisInput, priorResults: Record<string, unknown>): string {
     const basePrompt = this.buildPrompt(data);
-
-    // sentiment-framing 결과를 핵심 참조
-    const relevantModules = ['macro-view', 'sentiment-framing', 'message-impact'];
-    const priorContext = Object.entries(priorResults)
-      .filter(([key]) => relevantModules.includes(key))
-      .map(([key, value]) => `### ${key}\n${JSON.stringify(value, null, 2)}`)
-      .join('\n\n');
+    const distilledContext = distillForFrameWar(priorResults);
 
     return `${basePrompt}
 
-## 선행 분석 결과
-${priorContext}
+## 선행 분석 핵심 요약
+${distilledContext}
 
-위 선행 분석 결과, 특히 sentiment-framing의 프레임 유형 분석을 기반으로 프레임 간 충돌 구조를 심층 분석하세요.
-message-impact에서 식별된 성공/실패 메시지와 프레임의 관계도 분석하세요.`;
+**중요**: sentiment-framing에서 이미 식별한 프레임 목록을 그대로 반복하지 마세요.
+대신 프레임 간 **세력 역학, 시간 추이, 플랫폼 격차, 반전 가능성**을 심층 분석하세요.
+성공/실패 메시지가 어떤 프레임을 강화/약화했는지도 분석하세요.`;
   },
 };

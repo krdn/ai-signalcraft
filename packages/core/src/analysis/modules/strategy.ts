@@ -1,6 +1,7 @@
 import { StrategySchema, type StrategyResult } from '../schemas/strategy.schema';
 import type { AnalysisModule, AnalysisInput } from '../types';
 import { MODULE_MODEL_MAP } from '../types';
+import { ANALYSIS_CONSTRAINTS, distillForStrategy } from './prompt-utils';
 
 const config = MODULE_MODEL_MAP['strategy'];
 
@@ -14,10 +15,21 @@ export const strategyModule: AnalysisModule<StrategyResult> = {
   schema: StrategySchema,
 
   buildSystemPrompt(): string {
-    return `당신은 여론 전략 수립 전문가입니다.
-여론 분석, 리스크 평가, 기회 분석 결과를 종합하여 실행 가능한 전략을 도출합니다.
-타겟 설정, 메시지 전략, 콘텐츠 전략, 리스크 대응 전략을 구체적으로 제안하세요.
-반드시 한국어로 응답하세요.`;
+    return `당신은 정치 여론 전략 수립 전문가입니다.
+여론 분석·리스크·기회 결과를 종합하여 **실행 가능하고 구체적인 전략**을 도출합니다.
+
+## 전략 수립 원칙
+
+1. **타겟 전략**: Swing 집단 포섭이 핵심. Core 유지 비용과 Opposition 전환 비용을 비교하여 우선순위 설정
+2. **메시지 전략**: 성공 메시지의 패턴을 재현하고, 실패 메시지의 패턴을 회피. 핵심 메시지는 15자 이내로 압축 가능해야 함
+3. **콘텐츠 전략**: 확산력 높은 콘텐츠 유형(데이터 기반)을 우선 제작. 플랫폼별 최적 포맷 제안
+4. **리스크 대응**: 즉각 대응(24시간 내), 예방적 대응(1주 내), 비상 계획(만약의 사태)으로 3단계 구분
+
+## 전략 품질 기준
+- 모든 전략은 "누가, 무엇을, 언제까지, 어떤 채널로" 수준의 구체성을 가져야 함
+- "소통을 강화한다", "이미지를 개선한다" 같은 추상적 제안 금지
+- 리스크 대응과 기회 활용이 상충하는 경우, 트레이드오프를 명시하세요
+${ANALYSIS_CONSTRAINTS}`;
   },
 
   buildPrompt(data: AnalysisInput): string {
@@ -39,36 +51,37 @@ ${articlesSummary}
 ## 대표 댓글 (${data.comments.length}건 중 상위 20건)
 ${commentsSample}
 
-위 데이터를 기반으로 "${data.keyword}"에 대한 종합 전략을 도출하세요.
-타겟 전략, 메시지 전략, 콘텐츠 전략, 리스크 대응 전략을 포함해야 합니다.`;
+## 분석 절차 (반드시 이 순서로 수행)
+
+### Step 1: 현재 상황 진단
+- 여론의 전체 방향성과 핵심 리스크/기회를 한 문장으로 정리하세요
+
+### Step 2: 타겟 전략 수립
+- 주 타겟(primary)과 보조 타겟(secondary)을 선정하세요
+- 각 타겟에 대한 접근 방식(approach)을 구체적으로 기술하세요
+
+### Step 3: 메시지 전략 수립
+- 핵심 메시지(15자 이내)와 보조 메시지를 설계하세요
+- 톤앤매너를 지정하세요 (예: 진정성 있는 공감, 데이터 기반 설득, 비전 제시 등)
+
+### Step 4: 콘텐츠·리스크 대응 전략
+- 추천 콘텐츠 포맷, 핵심 토픽, 배포 채널을 구체적으로 제안하세요
+- 리스크 대응은 즉각/예방/비상 3단계로 구분하세요`;
   },
 
   buildPromptWithContext(data: AnalysisInput, priorResults: Record<string, unknown>): string {
     const basePrompt = this.buildPrompt(data);
-
-    // Stage 1 + Stage 2 (risk-map, opportunity) 결과 모두 참조
-    const priorContext = Object.entries(priorResults)
-      .filter(([key]) =>
-        [
-          'macro-view',
-          'segmentation',
-          'sentiment-framing',
-          'message-impact',
-          'risk-map',
-          'opportunity',
-        ].includes(key),
-      )
-      .map(([key, value]) => `### ${key}\n${JSON.stringify(value, null, 2)}`)
-      .join('\n\n');
+    const distilledContext = distillForStrategy(priorResults);
 
     return `${basePrompt}
 
-## 선행 분석 결과 (Stage 1 + Stage 2)
-${priorContext}
+## 선행 분석 핵심 요약 (Stage 1 + Stage 2)
+${distilledContext}
 
-위 선행 분석 결과를 종합하여 전략을 도출하세요.
-- risk-map의 주요 리스크에 대한 대응 전략을 수립하세요
-- opportunity의 기회 요소를 활용한 공격적 전략을 포함하세요
-- 감정 분석과 메시지 임팩트를 반영하여 메시지 전략을 수립하세요`;
+위 선행 분석을 종합하여 전략을 도출하세요:
+- risk-map의 리스크를 방어 전략의 근거로 활용
+- opportunity의 긍정 자산을 공격 전략의 기반으로 활용
+- 성공/실패 메시지 패턴을 메시지 전략에 직접 반영
+- 선행 결과를 재기술하지 말고, 전략적 판단과 실행 계획에 집중하세요`;
   },
 };
