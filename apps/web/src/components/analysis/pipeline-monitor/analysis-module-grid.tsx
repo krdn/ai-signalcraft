@@ -14,15 +14,18 @@ import {
 } from '@/components/ui/hover-card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Button } from '@/components/ui/button';
 import {
   CheckCircle2,
   Loader2,
   XCircle,
   Clock,
   ChevronDown,
+  RefreshCw,
 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { trpcClient } from '@/lib/trpc';
+import { toast } from 'sonner';
 import { PulseRing } from './pulse-ring';
 import { CostSummary } from './cost-summary';
 import { MODULE_HELP, STAGE_LABELS } from './constants';
@@ -33,6 +36,8 @@ interface AnalysisModuleGridProps {
   modules: AnalysisModuleDetailed[];
   moduleCount: { total: number; completed: number };
   tokenUsage: TokenUsage;
+  jobId?: number | null;
+  pipelineStatus?: string;
 }
 
 // 프로바이더 타입 → 표시명
@@ -67,7 +72,12 @@ const STATUS_STYLES: Record<string, string> = {
   pending: 'border-border bg-muted/30 text-muted-foreground',
 };
 
-function ModuleCard({ mod, modelSetting }: { mod: AnalysisModuleDetailed; modelSetting?: { provider: string; model: string } }) {
+function ModuleCard({ mod, modelSetting, jobId, canRetry }: { mod: AnalysisModuleDetailed; modelSetting?: { provider: string; model: string }; jobId?: number | null; canRetry?: boolean }) {
+  const retryMutation = useMutation({
+    mutationFn: () => trpcClient.analysis.retryModule.mutate({ jobId: jobId!, module: mod.module }),
+    onSuccess: () => toast.success(`${mod.label} 재실행 시작`),
+    onError: () => toast.error('재실행에 실패했습니다'),
+  });
   const help = MODULE_HELP[mod.module];
   const totalTokens = mod.usage ? mod.usage.input + mod.usage.output : 0;
   const isActive = mod.status === 'running';
@@ -101,10 +111,29 @@ function ModuleCard({ mod, modelSetting }: { mod: AnalysisModuleDetailed; modelS
             )}
           </div>
         )}
-        {mod.status === 'failed' && mod.errorMessage && (
-          <p className="text-[10px] text-red-600 dark:text-red-400 truncate ml-5" title={mod.errorMessage}>
-            {mod.errorMessage}
-          </p>
+        {mod.status === 'failed' && (
+          <div className="flex items-center gap-1 ml-5">
+            {mod.errorMessage && (
+              <p className="text-[10px] text-red-600 dark:text-red-400 truncate flex-1" title={mod.errorMessage}>
+                {mod.errorMessage}
+              </p>
+            )}
+            {canRetry && jobId && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-5 w-5 shrink-0"
+                title="재실행"
+                onClick={(e) => { e.stopPropagation(); retryMutation.mutate(); }}
+                disabled={retryMutation.isPending}
+              >
+                {retryMutation.isPending
+                  ? <Loader2 className="h-3 w-3 animate-spin" />
+                  : <RefreshCw className="h-3 w-3 text-red-500 hover:text-red-600" />
+                }
+              </Button>
+            )}
+          </div>
         )}
       </motion.div>
     </PulseRing>
@@ -133,7 +162,11 @@ export const AnalysisModuleGrid = memo(function AnalysisModuleGrid({
   modules,
   moduleCount,
   tokenUsage,
+  jobId,
+  pipelineStatus,
 }: AnalysisModuleGridProps) {
+  const terminalStatuses = ['completed', 'failed', 'partial_failure', 'cancelled'];
+  const canRetry = jobId != null && terminalStatuses.includes(pipelineStatus ?? '');
   // DB에서 모듈별 모델 설정
   const { data: modelSettings } = useQuery({
     queryKey: [['settings', 'list']],
@@ -193,7 +226,7 @@ export const AnalysisModuleGrid = memo(function AnalysisModuleGrid({
 
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1.5">
                 {mods.map((mod) => (
-                  <ModuleCard key={mod.module} mod={mod} modelSetting={settingsMap.get(mod.module)} />
+                  <ModuleCard key={mod.module} mod={mod} modelSetting={settingsMap.get(mod.module)} jobId={jobId} canRetry={canRetry} />
                 ))}
               </div>
             </div>

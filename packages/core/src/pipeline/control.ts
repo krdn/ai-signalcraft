@@ -42,9 +42,12 @@ export async function cancelPipeline(jobId: number): Promise<{ cancelled: boolea
     .from(collectionJobs).where(eq(collectionJobs.id, jobId)).limit(1);
   if (!job) return { cancelled: false, message: '작업을 찾을 수 없습니다' };
 
-  const terminalStatuses = ['completed', 'failed', 'cancelled'];
-  if (terminalStatuses.includes(job.status)) {
-    return { cancelled: false, message: `이미 ${job.status} 상태입니다` };
+  // cancelled/failed는 즉시 반환, completed는 분석 진행 중일 수 있으므로 취소 허용
+  if (job.status === 'cancelled') {
+    return { cancelled: false, message: '이미 cancelled 상태입니다' };
+  }
+  if (job.status === 'failed') {
+    return { cancelled: false, message: '이미 failed 상태입니다' };
   }
 
   // 1단계: DB 상태를 먼저 cancelled로 변경

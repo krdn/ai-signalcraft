@@ -31,6 +31,9 @@ import {
   SkipForward,
   DollarSign,
   Ban,
+  Heart,
+  Zap,
+  Brain,
 } from 'lucide-react';
 
 import { PipelineHeader } from './pipeline-header';
@@ -40,7 +43,10 @@ import { CollectionLanes } from './collection-lanes';
 import { AnalysisModuleGrid } from './analysis-module-grid';
 import { LiveEventFeed } from './live-event-feed';
 import { MODULE_LABELS } from './constants';
-import type { PipelineStatusData } from './types';
+import { Progress } from '@/components/ui/progress';
+import { PulseRing } from './pulse-ring';
+import { AnimatedNumber } from './animated-number';
+import type { PipelineStatusData, ItemAnalysisData } from './types';
 
 interface PipelineMonitorProps {
   jobId: number | null;
@@ -128,6 +134,7 @@ export function PipelineMonitor({ jobId, onComplete, onRetry }: PipelineMonitorP
           elapsedSeconds={data.elapsedSeconds ?? 0}
           isInProgress={isInProgress}
           isPaused={isPaused}
+          jobId={jobId}
         />
 
         {/* 실시간 통계 5열 */}
@@ -166,11 +173,21 @@ export function PipelineMonitor({ jobId, onComplete, onRetry }: PipelineMonitorP
           elapsedSeconds={data.elapsedSeconds ?? 0}
         />
 
+        {/* 개별 감정 분석 진행 */}
+        {data.itemAnalysis && data.itemAnalysis.status !== 'skipped' && (
+          <ItemAnalysisProgress
+            data={data.itemAnalysis}
+            stageStatus={data.pipelineStages?.['item-analysis']?.status ?? 'pending'}
+          />
+        )}
+
         {/* 분석 모듈 DAG 그리드 */}
         <AnalysisModuleGrid
           modules={statusData.analysisModulesDetailed}
           moduleCount={statusData.analysisModuleCount ?? { total: 0, completed: 0 }}
           tokenUsage={statusData.tokenUsage}
+          jobId={jobId}
+          pipelineStatus={data.status}
         />
 
         {/* 라이브 이벤트 타임라인 */}
@@ -451,6 +468,94 @@ function PipelineControls({
               </Button>
             )}
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// --- 개별 감정 분석 진행률 ---
+
+const PHASE_LABELS: Record<string, { label: string; icon: typeof Heart }> = {
+  lightweight: { label: '경량 분류 중', icon: Zap },
+  'llm-reanalysis': { label: 'LLM 재분석 중', icon: Brain },
+  completed: { label: '완료', icon: CheckCircle2 },
+  pending: { label: '대기 중', icon: Heart },
+};
+
+function ItemAnalysisProgress({
+  data,
+  stageStatus,
+}: {
+  data: ItemAnalysisData;
+  stageStatus: string;
+}) {
+  const isRunning = stageStatus === 'running';
+  const isCompleted = stageStatus === 'completed';
+  const isFailed = stageStatus === 'failed';
+
+  const articlesPercent = data.articlesTotal > 0
+    ? Math.round((data.articlesAnalyzed / data.articlesTotal) * 100)
+    : 0;
+  const commentsPercent = data.commentsTotal > 0
+    ? Math.round((data.commentsAnalyzed / data.commentsTotal) * 100)
+    : 0;
+
+  const phaseInfo = PHASE_LABELS[data.phase] ?? PHASE_LABELS.pending;
+  const PhaseIcon = phaseInfo.icon;
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          <Heart className="h-3.5 w-3.5 text-pink-500" />
+          <h4 className="text-xs font-medium">개별 감정 분석</h4>
+        </div>
+        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+          <PulseRing active={isRunning} color="bg-pink-400">
+            <PhaseIcon className={`h-3 w-3 ${isRunning ? 'text-pink-500' : isCompleted ? 'text-green-500' : isFailed ? 'text-red-500' : 'text-muted-foreground'}`} />
+          </PulseRing>
+          <span className="font-medium">{phaseInfo.label}</span>
+          {data.ambiguousCount > 0 && data.phase === 'llm-reanalysis' && (
+            <span className="text-amber-600 dark:text-amber-400">({data.ambiguousCount}건)</span>
+          )}
+        </div>
+      </div>
+
+      {/* 기사 진행률 */}
+      {data.articlesTotal > 0 && (
+        <div className="space-y-1">
+          <div className="flex items-center justify-between text-[10px]">
+            <span className="text-muted-foreground">기사</span>
+            <span className="font-mono">
+              <AnimatedNumber value={data.articlesAnalyzed} /> / {data.articlesTotal}
+            </span>
+          </div>
+          <Progress value={articlesPercent} className="h-1.5" />
+        </div>
+      )}
+
+      {/* 댓글 진행률 */}
+      {data.commentsTotal > 0 && (
+        <div className="space-y-1">
+          <div className="flex items-center justify-between text-[10px]">
+            <span className="text-muted-foreground">댓글</span>
+            <span className="font-mono">
+              <AnimatedNumber value={data.commentsAnalyzed} /> / {data.commentsTotal}
+            </span>
+          </div>
+          <Progress value={commentsPercent} className="h-1.5" />
+        </div>
+      )}
+
+      {/* 완료 요약 */}
+      {isCompleted && data.ambiguousCount > 0 && (
+        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+          <Zap className="h-3 w-3 text-yellow-500" />
+          <span>경량 {(data.articlesAnalyzed + data.commentsAnalyzed) - data.ambiguousCount}건</span>
+          <span>·</span>
+          <Brain className="h-3 w-3 text-violet-500" />
+          <span>LLM {data.ambiguousCount}건</span>
         </div>
       )}
     </div>

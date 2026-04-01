@@ -71,6 +71,16 @@ export interface PipelineEvent {
   message: string;
 }
 
+export interface ItemAnalysisData {
+  articlesTotal: number;
+  articlesAnalyzed: number;
+  commentsTotal: number;
+  commentsAnalyzed: number;
+  ambiguousCount: number;
+  phase: string; // 'pending' | 'lightweight' | 'llm-reanalysis' | 'completed'
+  status: string;
+}
+
 export interface PipelineStatusData {
   status: string;
   keyword: string;
@@ -91,4 +101,5 @@ export interface PipelineStatusData {
   timeline: PipelineTimeline;
   analysisModulesDetailed: AnalysisModuleDetailed[];
   events: PipelineEvent[];
+  itemAnalysis: ItemAnalysisData | null;
 }

@@ -14,6 +14,7 @@ import {
   Clock,
   Download,
   Layers,
+  Heart,
   Beaker,
   FileText,
   Ban,
@@ -33,6 +34,7 @@ interface StageFlowProps {
 const STAGE_ICONS: Record<string, typeof Download> = {
   collection: Download,
   normalization: Layers,
+  'item-analysis': Heart,
   analysis: Beaker,
   report: FileText,
 };

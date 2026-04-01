@@ -28,6 +28,17 @@ export const STAGE_HELP: Record<
       '기사→댓글, 영상→댓글 간 FK(외래키) 관계 매핑',
     ],
   },
+  'item-analysis': {
+    title: '개별 감정 분석',
+    description:
+      '각 기사/댓글의 감정(긍정/부정/중립)을 개별적으로 판별합니다.',
+    details: [
+      '1차: 경량 AI 모델로 전체 항목을 빠르게 분류 (1~2초)',
+      '2차: 판별이 애매한 항목만 LLM으로 정밀 재분석',
+      '결과는 기사/댓글 개별 레코드에 sentiment, sentimentScore로 저장',
+      '이 단계는 옵션이며, 비활성화 시 건너뜁니다',
+    ],
+  },
   analysis: {
     title: 'AI 분석',
     description:
@@ -277,6 +288,7 @@ export function estimateCostUsd(
 export const PIPELINE_STEPS = [
   { key: 'collection', label: '수집' },
   { key: 'normalization', label: '정규화' },
-  { key: 'analysis', label: '분석' },
+  { key: 'item-analysis', label: '개별 감정' },
+  { key: 'analysis', label: 'AI 분석' },
   { key: 'report', label: '리포트' },
 ] as const;

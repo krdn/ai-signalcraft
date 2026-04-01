@@ -70,7 +70,7 @@ export async function getPipelineStatus(jobId: number) {
   const [report] = await db.select({ id: analysisReports.id, createdAt: analysisReports.createdAt, metadata: analysisReports.metadata })
     .from(analysisReports).where(eq(analysisReports.jobId, jobId)).limit(1);
 
-  // --- 4단계 파이프라인 상태 파생 ---
+  // --- 5단계 파이프라인 상태 파생 ---
   const isCancelled = job.status === 'cancelled';
   const isPaused = job.status === 'paused';
   const collectionDone = job.status === 'completed' || job.status === 'partial_failure';
@@ -81,8 +81,20 @@ export async function getPipelineStatus(jobId: number) {
   const analysisDone = analysisStarted && !analysisInProgress;
   const reportDone = !!report;
 
+  // item-analysis 상태 파생 (progress JSONB에서)
+  const itemAnalysisProgress = (job.progress as Record<string, any>)?.['item-analysis'] as {
+    status?: string; phase?: string;
+    articlesTotal?: number; commentsTotal?: number;
+    articlesAnalyzed?: number; commentsAnalyzed?: number;
+    ambiguousCount?: number;
+  } | undefined;
+  const itemAnalysisEnabled = !!(job as any).options?.enableItemAnalysis;
+  const itemAnalysisDone = itemAnalysisProgress?.status === 'completed';
+  const itemAnalysisRunning = itemAnalysisProgress?.status === 'running';
+  const itemAnalysisSkipped = itemAnalysisProgress?.status === 'skipped' || !itemAnalysisEnabled;
+
   // cancelled 시: 완료되지 않은 단계는 모두 'cancelled'로 표시
-  const pipelineStages = {
+  const pipelineStages: Record<string, { status: string }> = {
     collection: {
       status: collectionFailed ? 'failed' as const
         : collectionDone ? 'completed' as const
@@ -94,6 +106,15 @@ export async function getPipelineStatus(jobId: number) {
       status: collectionFailed ? 'skipped' as const
         : normalizationDone ? 'completed' as const
         : isCancelled ? 'cancelled' as const
+        : 'pending' as const,
+    },
+    'item-analysis': {
+      status: collectionFailed ? 'skipped' as const
+        : itemAnalysisSkipped ? 'skipped' as const
+        : itemAnalysisDone ? 'completed' as const
+        : isCancelled ? 'cancelled' as const
+        : itemAnalysisRunning ? 'running' as const
+        : normalizationDone ? 'pending' as const
         : 'pending' as const,
     },
     analysis: {
@@ -364,5 +385,14 @@ export async function getPipelineStatus(jobId: number) {
     timeline,
     analysisModulesDetailed,
     events,
+    itemAnalysis: itemAnalysisProgress ? {
+      articlesTotal: itemAnalysisProgress.articlesTotal ?? 0,
+      articlesAnalyzed: itemAnalysisProgress.articlesAnalyzed ?? 0,
+      commentsTotal: itemAnalysisProgress.commentsTotal ?? 0,
+      commentsAnalyzed: itemAnalysisProgress.commentsAnalyzed ?? 0,
+      ambiguousCount: itemAnalysisProgress.ambiguousCount ?? 0,
+      phase: (itemAnalysisProgress.phase as string) ?? 'pending',
+      status: (itemAnalysisProgress.status as string) ?? 'pending',
+    } : null,
   };
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import {
   HoverCard,
@@ -12,9 +13,11 @@ import {
   Loader2,
   Clock,
   XCircle,
+  RefreshCw,
 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { trpcClient } from '@/lib/trpc';
+import { toast } from 'sonner';
 import { MODULE_HELP, STAGE_LABELS } from './constants';
 import { formatTokens, formatElapsed } from './utils';
 import { CostSummary } from './cost-summary';
@@ -22,6 +25,7 @@ import type { PipelineStatusData, AnalysisModuleDetailed, ModuleStatus } from '.
 
 interface AnalysisTabProps {
   data: PipelineStatusData;
+  jobId?: number | null;
 }
 
 function moduleStatusIcon(status: ModuleStatus) {
@@ -62,7 +66,12 @@ const PROVIDER_DISPLAY: Record<string, string> = {
   custom: 'Custom',
 };
 
-function ModuleCard({ mod, modelSetting }: { mod: AnalysisModuleDetailed; modelSetting?: { provider: string; model: string } }) {
+function ModuleCard({ mod, modelSetting, jobId, canRetry }: { mod: AnalysisModuleDetailed; modelSetting?: { provider: string; model: string }; jobId?: number | null; canRetry?: boolean }) {
+  const retryMutation = useMutation({
+    mutationFn: () => trpcClient.analysis.retryModule.mutate({ jobId: jobId!, module: mod.module }),
+    onSuccess: () => toast.success(`${mod.label} 재실행 시작`),
+    onError: () => toast.error('재실행에 실패했습니다'),
+  });
   const help = MODULE_HELP[mod.module];
   const totalTokens = mod.usage ? mod.usage.input + mod.usage.output : 0;
 
@@ -89,11 +98,30 @@ function ModuleCard({ mod, modelSetting }: { mod: AnalysisModuleDetailed; modelS
           )}
         </div>
       )}
-      {/* 에러 메시지 */}
-      {mod.status === 'failed' && mod.errorMessage && (
-        <p className="text-[10px] text-red-600 dark:text-red-400 truncate ml-6" title={mod.errorMessage}>
-          {mod.errorMessage}
-        </p>
+      {/* 에러 메시지 + 재실행 버튼 */}
+      {mod.status === 'failed' && (
+        <div className="flex items-center gap-1 ml-6">
+          {mod.errorMessage && (
+            <p className="text-[10px] text-red-600 dark:text-red-400 truncate flex-1" title={mod.errorMessage}>
+              {mod.errorMessage}
+            </p>
+          )}
+          {canRetry && jobId && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-5 w-5 shrink-0"
+              title="재실행"
+              onClick={(e) => { e.stopPropagation(); retryMutation.mutate(); }}
+              disabled={retryMutation.isPending}
+            >
+              {retryMutation.isPending
+                ? <Loader2 className="h-3 w-3 animate-spin" />
+                : <RefreshCw className="h-3 w-3 text-red-500 hover:text-red-600" />
+              }
+            </Button>
+          )}
+        </div>
       )}
     </div>
   );
@@ -118,7 +146,9 @@ function ModuleCard({ mod, modelSetting }: { mod: AnalysisModuleDetailed; modelS
   );
 }
 
-export function AnalysisTab({ data }: AnalysisTabProps) {
+export function AnalysisTab({ data, jobId }: AnalysisTabProps) {
+  const terminalStatuses = ['completed', 'failed', 'partial_failure', 'cancelled'];
+  const canRetry = jobId != null && terminalStatuses.includes(data.status);
   const modules = data.analysisModulesDetailed;
 
   // DB에서 모듈별 모델 설정 가져오기
@@ -182,7 +212,7 @@ export function AnalysisTab({ data }: AnalysisTabProps) {
               )}
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                 {mods.map((mod) => (
-                  <ModuleCard key={mod.module} mod={mod} modelSetting={settingsMap.get(mod.module)} />
+                  <ModuleCard key={mod.module} mod={mod} modelSetting={settingsMap.get(mod.module)} jobId={jobId} canRetry={canRetry} />
                 ))}
               </div>
             </div>

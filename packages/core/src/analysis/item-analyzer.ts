@@ -1,4 +1,4 @@
-// 개별 기사/댓글 감정 분석 (배치 처리)
+// 개별 기사/댓글 감정 분석 (하이브리드: 경량 모델 1차 + LLM 2차)
 import { z } from 'zod';
 import { eq } from 'drizzle-orm';
 import { analyzeStructured } from '@ai-signalcraft/ai-gateway';
@@ -7,6 +7,9 @@ import { articles, comments, collectionJobs, articleJobs, commentJobs } from '..
 import { getModuleModelConfig } from './model-config';
 import { MODULE_MODEL_MAP } from './types';
 import { getConcurrencyConfig } from './concurrency-config';
+import { classifySentiment, isAmbiguous, initClassifier } from './sentiment-classifier';
+import { updateJobProgress, appendJobEvent } from '../pipeline/persist';
+import { isPipelineCancelled } from '../pipeline/control';
 
 // item-analysis 모듈은 Stage 1과 동일하게 gpt-4o-mini 사용 (비용 최적화)
 const ITEM_ANALYSIS_MODULE = 'sentiment-framing';
@@ -108,7 +111,7 @@ function sleep(ms: number): Promise<void> {
 }
 
 /**
- * Rate limit 재시도 래퍼 — API 호출을 exponential backoff로 보호
+ * Rate limit 재시도 래퍼
  */
 async function withRateLimitRetry<T>(
   fn: () => Promise<T>,
@@ -135,7 +138,7 @@ async function withRateLimitRetry<T>(
 }
 
 /**
- * 동시성 제한 병렬 실행 — API_CONCURRENCY개씩 배치 처리
+ * 동시성 제한 병렬 실행
  */
 async function runWithConcurrency<T, R>(
   items: T[],
@@ -156,18 +159,18 @@ async function runWithConcurrency<T, R>(
 // --- 메인 함수 ---
 
 /**
- * 개별 기사/댓글 감정 분석 실행
- * collectionJobs.options.enableItemAnalysis가 true일 때만 호출됨
+ * 개별 기사/댓글 감정 분석 실행 (하이브리드)
+ * 1차: @xenova/transformers 경량 모델로 전체 빠른 분류
+ * 2차: 애매한 건만 LLM으로 재분석
  */
 export async function analyzeItems(jobId: number): Promise<{
   articlesAnalyzed: number;
   commentsAnalyzed: number;
   totalTokens: number;
 }> {
-  // 병렬처리 설정 로드
   const cc = await getConcurrencyConfig();
-  const ARTICLE_BATCH_SIZE = cc.articleBatchSize;
   const COMMENT_BATCH_SIZE = cc.commentBatchSize;
+  const ARTICLE_BATCH_SIZE = cc.articleBatchSize;
   const API_CONCURRENCY = cc.apiConcurrency;
 
   const db = getDb();
@@ -183,137 +186,256 @@ export async function analyzeItems(jobId: number): Promise<{
 
   if (!job) throw new Error(`Job not found: ${jobId}`);
 
-  // --- 기사 분석 --- (조인 테이블 경유)
+  // 취소 확인
+  if (await isPipelineCancelled(jobId)) {
+    console.log(`[item-analyzer] 취소 감지, 스킵`);
+    return { articlesAnalyzed: 0, commentsAnalyzed: 0, totalTokens: 0 };
+  }
+
+  // --- 경량 모델 초기화 ---
+  await initClassifier();
+
+  // --- 기사 로드 ---
   const articleRows = await db
-    .select({
-      id: articles.id,
-      title: articles.title,
-      content: articles.content,
-    })
+    .select({ id: articles.id, title: articles.title, content: articles.content })
     .from(articles)
     .innerJoin(articleJobs, eq(articles.id, articleJobs.articleId))
     .where(eq(articleJobs.jobId, jobId));
 
-  let articlesAnalyzed = 0;
-  const articleBatches = chunk(articleRows, ARTICLE_BATCH_SIZE);
-
-  console.log(`[item-analyzer] 기사 분석 시작: ${articleRows.length}건, ${articleBatches.length}배치, 동시 ${API_CONCURRENCY}개`);
-
-  const articleResults = await runWithConcurrency(
-    articleBatches,
-    async (batch, batchIdx) => {
-      const result = await withRateLimitRetry(
-        () => analyzeStructured(
-          buildArticleBatchPrompt(job.keyword, batch),
-          ArticleItemResultSchema,
-          {
-            provider: config.provider,
-            model: config.model,
-            baseUrl: config.baseUrl,
-            apiKey: config.apiKey,
-            systemPrompt: SYSTEM_PROMPT,
-            maxOutputTokens: 4096,
-          },
-        ),
-        `기사 배치 ${batchIdx + 1}/${articleBatches.length}`,
-      );
-
-      // DB 업데이트 (배치 내 순차 — 가벼운 UPDATE이므로 병목 아님)
-      let batchAnalyzed = 0;
-      for (const item of result.object.items) {
-        const article = batch[item.index];
-        if (!article) continue;
-        await db.update(articles)
-          .set({
-            sentiment: item.sentiment,
-            sentimentScore: item.sentimentScore,
-            summary: item.summary,
-          })
-          .where(eq(articles.id, article.id));
-        batchAnalyzed++;
-      }
-
-      return {
-        tokens: (result.usage as any)?.totalTokens ?? 0,
-        analyzed: batchAnalyzed,
-      };
-    },
-    API_CONCURRENCY,
-  );
-
-  for (const settled of articleResults) {
-    if (settled.status === 'fulfilled') {
-      totalTokens += settled.value.tokens;
-      articlesAnalyzed += settled.value.analyzed;
-    } else {
-      console.error(`[item-analyzer] 기사 배치 분석 실패:`, settled.reason);
-    }
-  }
-
-  // --- 댓글 분석 --- (조인 테이블 경유)
+  // --- 댓글 로드 ---
   const commentRows = await db
-    .select({
-      id: comments.id,
-      content: comments.content,
-    })
+    .select({ id: comments.id, content: comments.content })
     .from(comments)
     .innerJoin(commentJobs, eq(comments.id, commentJobs.commentId))
     .where(eq(commentJobs.jobId, jobId));
 
+  const articlesTotal = articleRows.length;
+  const commentsTotal = commentRows.length;
+
+  await appendJobEvent(jobId, 'info',
+    `개별 감정 분석 시작 (기사 ${articlesTotal}건, 댓글 ${commentsTotal}건)`);
+
+  await updateJobProgress(jobId, {
+    'item-analysis': {
+      status: 'running',
+      phase: 'lightweight',
+      articlesTotal, commentsTotal,
+      articlesAnalyzed: 0, commentsAnalyzed: 0,
+      ambiguousCount: 0,
+    },
+  });
+
+  // =============================================
+  // Phase 1: 경량 모델로 기사 1차 분류
+  // =============================================
+  let articlesAnalyzed = 0;
+  let articleAmbiguous: typeof articleRows = [];
+
+  if (articlesTotal > 0) {
+    console.log(`[item-analyzer] 기사 1차 경량 분류 시작: ${articlesTotal}건`);
+    const articleTexts = articleRows.map(a => `${a.title} ${(a.content ?? '').slice(0, 150)}`);
+    const articleResults = await classifySentiment(articleTexts);
+
+    // 확실한 건 DB 저장, 애매한 건 분리
+    for (let i = 0; i < articleRows.length; i++) {
+      const result = articleResults[i];
+      if (isAmbiguous(result.score)) {
+        articleAmbiguous.push(articleRows[i]);
+      } else {
+        await db.update(articles).set({
+          sentiment: result.label,
+          sentimentScore: result.score,
+        }).where(eq(articles.id, articleRows[i].id));
+        articlesAnalyzed++;
+      }
+    }
+
+    console.log(`[item-analyzer] 기사 1차 완료: ${articlesAnalyzed}건 확정, ${articleAmbiguous.length}건 LLM 재분석 대기`);
+  }
+
+  // =============================================
+  // Phase 1: 경량 모델로 댓글 1차 분류
+  // =============================================
   let commentsAnalyzed = 0;
-  const commentBatches = chunk(commentRows, COMMENT_BATCH_SIZE);
+  let commentAmbiguous: typeof commentRows = [];
 
-  console.log(`[item-analyzer] 댓글 분석 시작: ${commentRows.length}건, ${commentBatches.length}배치, 동시 ${API_CONCURRENCY}개`);
+  if (commentsTotal > 0) {
+    console.log(`[item-analyzer] 댓글 1차 경량 분류 시작: ${commentsTotal}건`);
+    const commentTexts = commentRows.map(c => c.content);
+    const commentResults = await classifySentiment(commentTexts);
 
-  const commentResults = await runWithConcurrency(
-    commentBatches,
-    async (batch, batchIdx) => {
-      const result = await withRateLimitRetry(
-        () => analyzeStructured(
-          buildCommentBatchPrompt(job.keyword, batch),
-          CommentItemResultSchema,
-          {
-            provider: config.provider,
-            model: config.model,
-            baseUrl: config.baseUrl,
-            apiKey: config.apiKey,
-            systemPrompt: SYSTEM_PROMPT,
-            maxOutputTokens: 4096,
-          },
-        ),
-        `댓글 배치 ${batchIdx + 1}/${commentBatches.length}`,
-      );
+    for (let i = 0; i < commentRows.length; i++) {
+      const result = commentResults[i];
+      if (isAmbiguous(result.score)) {
+        commentAmbiguous.push(commentRows[i]);
+      } else {
+        await db.update(comments).set({
+          sentiment: result.label,
+          sentimentScore: result.score,
+        }).where(eq(comments.id, commentRows[i].id));
+        commentsAnalyzed++;
+      }
+    }
 
-      let batchAnalyzed = 0;
-      for (const item of result.object.items) {
-        const comment = batch[item.index];
-        if (!comment) continue;
-        await db.update(comments)
-          .set({
+    console.log(`[item-analyzer] 댓글 1차 완료: ${commentsAnalyzed}건 확정, ${commentAmbiguous.length}건 LLM 재분석 대기`);
+  }
+
+  const totalAmbiguous = articleAmbiguous.length + commentAmbiguous.length;
+  await appendJobEvent(jobId, 'info',
+    `1차 경량 분류 완료 (${articlesAnalyzed + commentsAnalyzed}건 확정, ${totalAmbiguous}건 LLM 재분석 대기)`);
+
+  await updateJobProgress(jobId, {
+    'item-analysis': {
+      status: 'running',
+      phase: totalAmbiguous > 0 ? 'llm-reanalysis' : 'completed',
+      articlesTotal, commentsTotal,
+      articlesAnalyzed, commentsAnalyzed,
+      ambiguousCount: totalAmbiguous,
+    },
+  });
+
+  // 취소 확인 (LLM 재분석 전)
+  if (await isPipelineCancelled(jobId)) {
+    console.log(`[item-analyzer] 취소 감지 (1차 분류 후), LLM 재분석 스킵`);
+    await updateJobProgress(jobId, {
+      'item-analysis': {
+        status: 'completed', phase: 'completed',
+        articlesTotal, commentsTotal, articlesAnalyzed, commentsAnalyzed,
+        ambiguousCount: totalAmbiguous,
+      },
+    });
+    return { articlesAnalyzed, commentsAnalyzed, totalTokens };
+  }
+
+  // =============================================
+  // Phase 2: 애매한 기사만 LLM 재분석
+  // =============================================
+  if (articleAmbiguous.length > 0) {
+    const batches = chunk(articleAmbiguous, ARTICLE_BATCH_SIZE);
+    console.log(`[item-analyzer] 기사 LLM 재분석 시작: ${articleAmbiguous.length}건, ${batches.length}배치`);
+
+    const results = await runWithConcurrency(
+      batches,
+      async (batch, batchIdx) => {
+        if (await isPipelineCancelled(jobId)) throw new Error('사용자에 의해 중지됨');
+        const result = await withRateLimitRetry(
+          () => analyzeStructured(
+            buildArticleBatchPrompt(job.keyword, batch),
+            ArticleItemResultSchema,
+            {
+              provider: config.provider,
+              model: config.model,
+              baseUrl: config.baseUrl,
+              apiKey: config.apiKey,
+              systemPrompt: SYSTEM_PROMPT,
+              maxOutputTokens: 4096,
+            },
+          ),
+          `기사 LLM 배치 ${batchIdx + 1}/${batches.length}`,
+        );
+
+        let batchAnalyzed = 0;
+        for (const item of result.object.items) {
+          const article = batch[item.index];
+          if (!article) continue;
+          await db.update(articles).set({
             sentiment: item.sentiment,
             sentimentScore: item.sentimentScore,
-          })
-          .where(eq(comments.id, comment.id));
-        batchAnalyzed++;
+            summary: item.summary,
+          }).where(eq(articles.id, article.id));
+          batchAnalyzed++;
+        }
+
+        return {
+          tokens: (result.usage as any)?.totalTokens ?? 0,
+          analyzed: batchAnalyzed,
+        };
+      },
+      API_CONCURRENCY,
+    );
+
+    for (const settled of results) {
+      if (settled.status === 'fulfilled') {
+        totalTokens += settled.value.tokens;
+        articlesAnalyzed += settled.value.analyzed;
+      } else {
+        console.error(`[item-analyzer] 기사 LLM 배치 실패:`, settled.reason);
       }
-
-      return {
-        tokens: (result.usage as any)?.totalTokens ?? 0,
-        analyzed: batchAnalyzed,
-      };
-    },
-    API_CONCURRENCY,
-  );
-
-  for (const settled of commentResults) {
-    if (settled.status === 'fulfilled') {
-      totalTokens += settled.value.tokens;
-      commentsAnalyzed += settled.value.analyzed;
-    } else {
-      console.error(`[item-analyzer] 댓글 배치 분석 실패:`, settled.reason);
     }
   }
 
-  console.log(`[item-analyzer] 완료: 기사 ${articlesAnalyzed}건, 댓글 ${commentsAnalyzed}건, 토큰 ${totalTokens}`);
+  // =============================================
+  // Phase 2: 애매한 댓글만 LLM 재분석
+  // =============================================
+  if (commentAmbiguous.length > 0) {
+    const batches = chunk(commentAmbiguous, COMMENT_BATCH_SIZE);
+    console.log(`[item-analyzer] 댓글 LLM 재분석 시작: ${commentAmbiguous.length}건, ${batches.length}배치`);
+
+    const results = await runWithConcurrency(
+      batches,
+      async (batch, batchIdx) => {
+        if (await isPipelineCancelled(jobId)) throw new Error('사용자에 의해 중지됨');
+        const result = await withRateLimitRetry(
+          () => analyzeStructured(
+            buildCommentBatchPrompt(job.keyword, batch),
+            CommentItemResultSchema,
+            {
+              provider: config.provider,
+              model: config.model,
+              baseUrl: config.baseUrl,
+              apiKey: config.apiKey,
+              systemPrompt: SYSTEM_PROMPT,
+              maxOutputTokens: 4096,
+            },
+          ),
+          `댓글 LLM 배치 ${batchIdx + 1}/${batches.length}`,
+        );
+
+        let batchAnalyzed = 0;
+        for (const item of result.object.items) {
+          const comment = batch[item.index];
+          if (!comment) continue;
+          await db.update(comments).set({
+            sentiment: item.sentiment,
+            sentimentScore: item.sentimentScore,
+          }).where(eq(comments.id, comment.id));
+          batchAnalyzed++;
+        }
+
+        return {
+          tokens: (result.usage as any)?.totalTokens ?? 0,
+          analyzed: batchAnalyzed,
+        };
+      },
+      API_CONCURRENCY,
+    );
+
+    for (const settled of results) {
+      if (settled.status === 'fulfilled') {
+        totalTokens += settled.value.tokens;
+        commentsAnalyzed += settled.value.analyzed;
+      } else {
+        console.error(`[item-analyzer] 댓글 LLM 배치 실패:`, settled.reason);
+      }
+    }
+  }
+
+  // --- 완료 ---
+  await updateJobProgress(jobId, {
+    'item-analysis': {
+      status: 'completed',
+      phase: 'completed',
+      articlesTotal, commentsTotal,
+      articlesAnalyzed, commentsAnalyzed,
+      ambiguousCount: totalAmbiguous,
+    },
+  });
+
+  const llmReanalyzed = totalAmbiguous;
+  const lightweightClassified = (articlesAnalyzed + commentsAnalyzed) - llmReanalyzed;
+  await appendJobEvent(jobId, 'info',
+    `개별 감정 분석 완료 (경량 ${lightweightClassified}건 + LLM ${llmReanalyzed}건, 토큰 ${totalTokens})`);
+
+  console.log(`[item-analyzer] 완료: 기사 ${articlesAnalyzed}건, 댓글 ${commentsAnalyzed}건, LLM 재분석 ${totalAmbiguous}건, 토큰 ${totalTokens}`);
   return { articlesAnalyzed, commentsAnalyzed, totalTokens };
 }

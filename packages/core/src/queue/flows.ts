@@ -1,6 +1,7 @@
 import { FlowProducer } from 'bullmq';
 import { getRedisConnection } from './connection';
 import type { CollectionTrigger } from '../types';
+import type { ResumeOptions } from '../analysis/pipeline-orchestrator';
 
 // FlowProducer를 lazy 초기화 -- import 시 Redis 연결 시도 방지
 let flowProducer: FlowProducer | null = null;
@@ -112,6 +113,20 @@ export async function triggerAnalysis(dbJobId: number, keyword: string) {
     name: 'run-analysis',
     queueName: 'analysis',
     data: { dbJobId, keyword },
+    opts: {
+      removeOnComplete: { age: 3600 },
+      removeOnFail: { age: 86400 },
+    },
+  });
+  return flow;
+}
+
+// 분석 재실행 트리거 -- 완료된 모듈은 DB에서 로드하고 실패/미실행 모듈만 재실행
+export async function triggerAnalysisResume(dbJobId: number, keyword: string, resumeOptions: ResumeOptions) {
+  const flow = await getFlowProducer().add({
+    name: 'run-analysis',
+    queueName: 'analysis',
+    data: { dbJobId, keyword, resumeOptions },
     opts: {
       removeOnComplete: { age: 3600 },
       removeOnFail: { age: 86400 },

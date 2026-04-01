@@ -7,14 +7,57 @@ import { finalSummaryModule } from './modules';
 import { loadAnalysisInput } from './data-loader';
 import { persistAnalysisResult } from './persist-analysis';
 import { isPipelineCancelled, waitIfPaused, checkCostLimit, getSkippedModules } from '../pipeline/control';
-import { appendJobEvent } from '../pipeline/persist';
+import { appendJobEvent, updateJobProgress } from '../pipeline/persist';
 import { analyzeItems } from './item-analyzer';
 import { getDb } from '../db';
 import { collectionJobs } from '../db/schema/collections';
+import { analysisResults as analysisResultsTable } from '../db/schema/analysis';
 import { eq } from 'drizzle-orm';
 import type { AnalysisModule, AnalysisModuleResult, AnalysisInput } from './types';
 import { getModuleModelConfig } from './model-config';
 import { getConcurrencyConfig, DEFAULT_PROVIDER_CONCURRENCY } from './concurrency-config';
+
+/** 재시작 옵션 -- 완료된 모듈은 DB에서 로드하고 실패/미실행 모듈만 재실행 */
+export interface ResumeOptions {
+  /** 특정 모듈만 재실행 (나머지 completed는 DB에서 로드). 미지정 시: 모든 non-completed 모듈 실행 */
+  retryModules?: string[];
+  /** 리포트만 재생성 (분석 전부 스킵) */
+  reportOnly?: boolean;
+}
+
+/**
+ * DB에서 이미 완료된 분석 결과를 로드하여 allResults/priorResults를 채움
+ * retryModules에 포함된 모듈은 재실행 대상이므로 건너뜀
+ */
+async function loadCompletedResults(
+  jobId: number,
+  retryModules?: string[],
+): Promise<{ allResults: Record<string, AnalysisModuleResult>; priorResults: Record<string, unknown> }> {
+  const db = getDb();
+  const rows = await db.select()
+    .from(analysisResultsTable)
+    .where(eq(analysisResultsTable.jobId, jobId));
+
+  const allResults: Record<string, AnalysisModuleResult> = {};
+  const priorResults: Record<string, unknown> = {};
+
+  for (const row of rows) {
+    // 재실행 대상 모듈은 건너뜀
+    if (retryModules?.includes(row.module)) continue;
+    // completed만 로드 (failed/pending/running은 재실행 대상)
+    if (row.status !== 'completed') continue;
+
+    allResults[row.module] = {
+      module: row.module,
+      status: 'completed',
+      result: row.result as any,
+      usage: row.usage as any,
+    };
+    priorResults[row.module] = row.result;
+  }
+
+  return { allResults, priorResults };
+}
 
 /**
  * 모듈 목록의 프로바이더를 조회하여 최소 동시성을 결정
@@ -115,7 +158,7 @@ async function runWithConcurrency<T>(
  *
  * 부분 실패 시에도 가용한 결과로 계속 진행
  */
-export async function runAnalysisPipeline(jobId: number): Promise<{
+export async function runAnalysisPipeline(jobId: number, options?: ResumeOptions): Promise<{
   results: Record<string, AnalysisModuleResult>;
   completedModules: string[];
   failedModules: string[];
@@ -124,9 +167,34 @@ export async function runAnalysisPipeline(jobId: number): Promise<{
   costLimitExceeded?: boolean;
 }> {
   const input = await loadAnalysisInput(jobId);
-  const allResults: Record<string, AnalysisModuleResult> = {};
+
+  // 체크포인트 복원: DB에서 이미 완료된 모듈 결과를 로드
+  const loaded = await loadCompletedResults(jobId, options?.retryModules);
+  const allResults: Record<string, AnalysisModuleResult> = loaded.allResults;
+  const priorResults: Record<string, unknown> = loaded.priorResults;
+
+  if (Object.keys(loaded.allResults).length > 0) {
+    console.log(`[pipeline] 체크포인트 복원: ${Object.keys(loaded.allResults).length}개 완료 결과 로드 — ${Object.keys(loaded.allResults).join(', ')}`);
+    appendJobEvent(jobId, 'info', `체크포인트 복원: ${Object.keys(loaded.allResults).join(', ')} (DB에서 로드)`).catch(() => {});
+  }
+
   let cancelledByUser = false;
   let costLimitExceeded = false;
+
+  // reportOnly 모드: 분석 스킵, 리포트만 재생성
+  if (options?.reportOnly) {
+    console.log(`[pipeline] reportOnly 모드: 리포트만 재생성`);
+    const completedModules = Object.values(allResults).filter(r => r.status === 'completed').map(r => r.module);
+    if (completedModules.length === 0) {
+      throw new Error('완료된 분석 결과가 없어 리포트를 생성할 수 없습니다');
+    }
+    const failedModules = Object.values(allResults).filter(r => r.status === 'failed').map(r => r.module);
+    const report = await generateIntegratedReport({
+      jobId: input.jobId, keyword: input.keyword, dateRange: input.dateRange,
+      results: allResults, completedModules, failedModules,
+    });
+    return { results: allResults, completedModules, failedModules, report };
+  }
 
   // 병렬처리 설정 로드 (파이프라인 시작 시 1회)
   const concurrencyConfig = await getConcurrencyConfig();
@@ -161,6 +229,11 @@ export async function runAnalysisPipeline(jobId: number): Promise<{
   // 모듈 스킵 여부 확인
   function isSkipped(moduleName: string): boolean {
     return skippedModules.includes(moduleName);
+  }
+
+  // 이미 DB에서 로드된 완료 모듈 여부 확인 (체크포인트 복원)
+  function isAlreadyCompleted(moduleName: string): boolean {
+    return allResults[moduleName]?.status === 'completed';
   }
 
   // 실패 모듈 발생 시 파이프라인 즉시 중단 (fail-fast)
@@ -203,7 +276,15 @@ export async function runAnalysisPipeline(jobId: number): Promise<{
       console.log(`[runner] 개별 항목 분석 완료: job=${jobId}`);
     } catch (error) {
       console.error(`[runner] 개별 항목 분석 실패 (집계 분석은 계속 진행):`, error);
+      await updateJobProgress(jobId, {
+        'item-analysis': { status: 'failed', phase: 'error' },
+      }).catch(() => {});
     }
+  } else {
+    // 옵션 비활성 → skipped 상태 기록 (UI에서 skipped 표시)
+    await updateJobProgress(jobId, {
+      'item-analysis': { status: 'skipped' },
+    }).catch(() => {});
   }
 
   // Stage 1: 병렬 실행 (모듈 1~4, 독립)
@@ -212,11 +293,13 @@ export async function runAnalysisPipeline(jobId: number): Promise<{
     return buildResult(allResults, cancelledByUser, costLimitExceeded, input);
   }
 
-  const stage1Active = STAGE1_MODULES.filter(m => !isSkipped(m.name));
+  const stage1Active = STAGE1_MODULES.filter(m => !isSkipped(m.name) && !isAlreadyCompleted(m.name));
   const stage1Skipped = STAGE1_MODULES.filter(m => isSkipped(m.name));
+  const stage1Loaded = STAGE1_MODULES.filter(m => isAlreadyCompleted(m.name));
   for (const m of stage1Skipped) await markSkipped(m.name);
-
-  const priorResults: Record<string, unknown> = {};
+  if (stage1Loaded.length > 0) {
+    console.log(`[pipeline] Stage 1: ${stage1Loaded.map(m => m.name).join(', ')} — DB에서 로드 (스킵)`);
+  }
 
   // Stage 1 모듈은 서로 독립 → Map-Reduce + 프로바이더별 병렬 실행
   const stage1Results = await runWithProviderGrouping(
@@ -250,8 +333,12 @@ export async function runAnalysisPipeline(jobId: number): Promise<{
     const [riskMapMod, opportunityMod, strategyMod] = STAGE2_MODULES;
 
     // risk-map + opportunity 병렬 실행 (서로 독립, Stage 1 결과만 참조)
-    const stage2Parallel = [riskMapMod, opportunityMod].filter(m => !isSkipped(m.name));
+    const stage2Parallel = [riskMapMod, opportunityMod].filter(m => !isSkipped(m.name) && !isAlreadyCompleted(m.name));
     const stage2Skipped = [riskMapMod, opportunityMod].filter(m => isSkipped(m.name));
+    const stage2Loaded = [riskMapMod, opportunityMod].filter(m => isAlreadyCompleted(m.name));
+    if (stage2Loaded.length > 0) {
+      console.log(`[pipeline] Stage 2: ${stage2Loaded.map(m => m.name).join(', ')} — DB에서 로드 (스킵)`);
+    }
     for (const m of stage2Skipped) await markSkipped(m.name);
 
     const stage2Results = await runWithProviderGrouping(
@@ -273,6 +360,8 @@ export async function runAnalysisPipeline(jobId: number): Promise<{
     if (strategyMod && await preRunCheck()) {
       if (isSkipped(strategyMod.name)) {
         await markSkipped(strategyMod.name);
+      } else if (isAlreadyCompleted(strategyMod.name)) {
+        console.log(`[pipeline] Stage 2: ${strategyMod.name} — DB에서 로드 (스킵)`);
       } else {
         const result = await runModule(strategyMod, input, priorResults);
         allResults[result.module] = result;
@@ -300,6 +389,8 @@ export async function runAnalysisPipeline(jobId: number): Promise<{
 
   if (isSkipped(finalSummaryModule.name)) {
     await markSkipped(finalSummaryModule.name);
+  } else if (isAlreadyCompleted(finalSummaryModule.name)) {
+    console.log(`[pipeline] Stage 3: ${finalSummaryModule.name} — DB에서 로드 (스킵)`);
   } else {
     const finalResult = await runModule(finalSummaryModule, input, priorResults);
     allResults[finalResult.module] = finalResult;
@@ -327,8 +418,12 @@ export async function runAnalysisPipeline(jobId: number): Promise<{
   // Stage 4: 고급 분석 (ADVN 모듈)
   console.log(`[pipeline] Stage 4 시작: 고급 분석 (${STAGE4_PARALLEL.concat(STAGE4_SEQUENTIAL).map(m => m.name).join(', ')})`);
   if (await preRunCheck()) {
-    const stage4aActive = STAGE4_PARALLEL.filter(m => !isSkipped(m.name));
+    const stage4aActive = STAGE4_PARALLEL.filter(m => !isSkipped(m.name) && !isAlreadyCompleted(m.name));
     const stage4aSkipped = STAGE4_PARALLEL.filter(m => isSkipped(m.name));
+    const stage4aLoaded = STAGE4_PARALLEL.filter(m => isAlreadyCompleted(m.name));
+    if (stage4aLoaded.length > 0) {
+      console.log(`[pipeline] Stage 4a: ${stage4aLoaded.map(m => m.name).join(', ')} — DB에서 로드 (스킵)`);
+    }
     for (const m of stage4aSkipped) await markSkipped(m.name);
 
     // approval-rating + frame-war 병렬 실행 (서로 독립)
@@ -356,6 +451,10 @@ export async function runAnalysisPipeline(jobId: number): Promise<{
     for (const module of STAGE4_SEQUENTIAL) {
       if (!await preRunCheck()) break;
       if (isSkipped(module.name)) { await markSkipped(module.name); continue; }
+      if (isAlreadyCompleted(module.name)) {
+        console.log(`[pipeline] Stage 4b: ${module.name} — DB에서 로드 (스킵)`);
+        continue;
+      }
 
       const result = await runModule(module, input, priorResults);
       allResults[result.module] = result;

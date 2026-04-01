@@ -574,6 +574,9 @@ export function ModelSettings() {
                 <span className="text-sm font-medium">
                   {MODULE_META[item.moduleName]?.name ?? item.moduleName}
                 </span>
+                <span className="text-xs font-mono text-muted-foreground">
+                  {item.moduleName}
+                </span>
                 <ModuleHelpPopover moduleName={item.moduleName} />
                 {item.isCustom && (
                   <Badge variant="secondary" className="text-[10px]">

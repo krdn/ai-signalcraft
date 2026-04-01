@@ -26,6 +26,10 @@ const STAGE_COLORS: Record<string, { bg: string; active: string }> = {
     bg: 'bg-cyan-500 dark:bg-cyan-600',
     active: 'bg-cyan-400 dark:bg-cyan-500 animate-pulse',
   },
+  'item-analysis': {
+    bg: 'bg-pink-500 dark:bg-pink-600',
+    active: 'bg-pink-400 dark:bg-pink-500 animate-pulse',
+  },
   analysis: {
     bg: 'bg-violet-500 dark:bg-violet-600',
     active: 'bg-violet-400 dark:bg-violet-500 animate-pulse',
@@ -54,10 +58,17 @@ export function computeSegments(
   // 정규화: 수집과 거의 동시 (BullMQ Flow에서 자동) — 수집의 10% 추정
   const normMs = Math.round(collectionMs * 0.1);
 
-  // 분석: analysisStarted ~ analysisCompleted
+  // 개별 감정 분석: 정규화 완료 ~ 분석 시작 사이 (progress 기반 추정)
+  const itemAnalysisStatus = stages['item-analysis']?.status;
   const analysisStart = timeline.analysisStartedAt
     ? new Date(timeline.analysisStartedAt).getTime()
     : collectionEnd;
+  // item-analysis가 실행되었으면 정규화 완료 ~ 분석 시작 구간의 일부를 할당
+  const itemAnalysisMs = itemAnalysisStatus === 'completed' || itemAnalysisStatus === 'running'
+    ? Math.max(analysisStart - collectionEnd - normMs, Math.round(collectionMs * 0.05))
+    : 0;
+
+  // 분석: analysisStarted ~ analysisCompleted
   const analysisEnd = timeline.analysisCompletedAt
     ? new Date(timeline.analysisCompletedAt).getTime()
     : timeline.reportCompletedAt
@@ -75,8 +86,9 @@ export function computeSegments(
   const reportMs = Math.max(reportEnd - reportStart, 0);
 
   const segments = [
-    { key: 'collection', ms: collectionMs - normMs },
+    { key: 'collection', ms: Math.max(collectionMs - normMs - itemAnalysisMs, 0) },
     { key: 'normalization', ms: normMs },
+    { key: 'item-analysis', ms: itemAnalysisMs },
     { key: 'analysis', ms: analysisMs },
     { key: 'report', ms: reportMs },
   ];
