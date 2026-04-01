@@ -187,18 +187,18 @@ export const STAGE_LABELS: Record<number, { label: string; description: string }
 // --- 모듈 한글 라벨 ---
 
 export const MODULE_LABELS: Record<string, string> = {
-  'sentiment-framing': '감정 프레이밍',
-  'macro-view': '거시 분석',
-  segmentation: '세그멘테이션',
-  'message-impact': '메시지 임팩트',
-  'risk-map': '리스크 맵',
-  opportunity: '기회 발굴',
-  strategy: '전략 제안',
-  'final-summary': '종합 요약',
-  'approval-rating': '지지율 분석',
-  'frame-war': '프레임 전쟁',
-  'crisis-scenario': '위기 시나리오',
-  'win-simulation': '승리 시뮬레이션',
+  'sentiment-framing': '감정 프레이밍 (Sentiment Framing)',
+  'macro-view': '거시 분석 (Macro View)',
+  segmentation: '세그멘테이션 (Segmentation)',
+  'message-impact': '메시지 임팩트 (Message Impact)',
+  'risk-map': '리스크 맵 (Risk Map)',
+  opportunity: '기회 발굴 (Opportunity)',
+  strategy: '전략 제안 (Strategy)',
+  'final-summary': '종합 요약 (Final Summary)',
+  'approval-rating': '지지율 분석 (Approval Rating)',
+  'frame-war': '프레임 전쟁 (Frame War)',
+  'crisis-scenario': '위기 시나리오 (Crisis Scenario)',
+  'win-simulation': '승리 시뮬레이션 (Win Simulation)',
 };
 
 // --- 소스 도움말 ---

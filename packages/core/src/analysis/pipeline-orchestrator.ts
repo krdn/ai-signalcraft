@@ -299,39 +299,40 @@ export async function runAnalysisPipeline(
     };
   }
 
-  // Stage 0: 개별 기사/댓글 감정 분석 (옵션 활성화 시만)
+  // Stage 0: 개별 기사/댓글 감정 분석 (Stage 1과 병렬 실행)
   const [jobRow] = await getDb()
     .select({ options: collectionJobs.options })
     .from(collectionJobs)
     .where(eq(collectionJobs.id, jobId))
     .limit(1);
 
+  // Stage 0 프로미스 생성 (await 하지 않고 Stage 1과 병렬 실행)
+  let itemAnalysisPromise: Promise<void> = Promise.resolve();
   if (jobRow?.options?.enableItemAnalysis) {
-    if (!(await preRunCheck())) {
-      return buildResult(allResults, cancelledByUser, costLimitExceeded, input);
-    }
-    try {
-      console.log(`[runner] 개별 항목 분석 시작: job=${jobId}`);
-      await analyzeItems(jobId);
-      console.log(`[runner] 개별 항목 분석 완료: job=${jobId}`);
-    } catch (error) {
-      console.error(`[runner] 개별 항목 분석 실패 (집계 분석은 계속 진행):`, error);
-      await updateJobProgress(jobId, {
-        'item-analysis': { status: 'failed', phase: 'error' },
-      }).catch(() => {});
-    }
+    itemAnalysisPromise = (async () => {
+      try {
+        console.log(`[runner] 개별 항목 분석 시작: job=${jobId}`);
+        await analyzeItems(jobId);
+        console.log(`[runner] 개별 항목 분석 완료: job=${jobId}`);
+      } catch (error) {
+        console.error(`[runner] 개별 항목 분석 실패 (집계 분석은 계속 진행):`, error);
+        await updateJobProgress(jobId, {
+          'item-analysis': { status: 'failed', phase: 'error' },
+        }).catch(() => {});
+      }
+    })();
   } else {
-    // 옵션 비활성 → skipped 상태 기록 (UI에서 skipped 표시)
     await updateJobProgress(jobId, {
       'item-analysis': { status: 'skipped' },
     }).catch(() => {});
   }
 
-  // Stage 1: 병렬 실행 (모듈 1~4, 독립)
+  // Stage 1: 병렬 실행 (모듈 1~4, 독립) — Stage 0과 동시 진행
   console.log(
     `[pipeline] Stage 1 시작: 기본 분석 (${STAGE1_MODULES.map((m) => m.name).join(', ')})`,
   );
   if (!(await preRunCheck())) {
+    await itemAnalysisPromise;
     return buildResult(allResults, cancelledByUser, costLimitExceeded, input);
   }
 
@@ -347,12 +348,11 @@ export async function runAnalysisPipeline(
     );
   }
 
-  // Stage 1 모듈은 서로 독립 → Map-Reduce + 프로바이더별 병렬 실행
-  const stage1Results = await runWithProviderGrouping(
-    stage1Active,
-    (m) => runModuleMapReduce(m, input),
-    providerConcurrency,
-  );
+  // Stage 0과 Stage 1을 동시 실행 (Stage 0은 AI 분석 입력에 영향 없음)
+  const [, stage1Results] = await Promise.all([
+    itemAnalysisPromise,
+    runWithProviderGrouping(stage1Active, (m) => runModuleMapReduce(m, input), providerConcurrency),
+  ]);
   for (const settled of stage1Results) {
     if (settled.status === 'fulfilled') {
       const result = settled.value;

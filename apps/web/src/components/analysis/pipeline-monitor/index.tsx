@@ -17,7 +17,6 @@ import {
   Ban,
   Heart,
   Zap,
-  Brain,
 } from 'lucide-react';
 import { PipelineHeader } from './pipeline-header';
 import { LiveStatsBar } from './live-stats-bar';
@@ -548,8 +547,7 @@ function PipelineControls({
 // --- 개별 감정 분석 진행률 ---
 
 const PHASE_LABELS: Record<string, { label: string; icon: typeof Heart }> = {
-  lightweight: { label: '경량 분류 중', icon: Zap },
-  'llm-reanalysis': { label: 'LLM 재분석 중', icon: Brain },
+  lightweight: { label: '분류 중', icon: Zap },
   completed: { label: '완료', icon: CheckCircle2 },
   pending: { label: '대기 중', icon: Heart },
 };
@@ -587,9 +585,6 @@ function ItemAnalysisProgress({
             />
           </PulseRing>
           <span className="font-medium">{phaseInfo.label}</span>
-          {data.ambiguousCount > 0 && data.phase === 'llm-reanalysis' && (
-            <span className="text-amber-600 dark:text-amber-400">({data.ambiguousCount}건)</span>
-          )}
         </div>
       </div>
 
@@ -620,13 +615,10 @@ function ItemAnalysisProgress({
       )}
 
       {/* 완료 요약 */}
-      {isCompleted && data.ambiguousCount > 0 && (
+      {isCompleted && (
         <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
           <Zap className="h-3 w-3 text-yellow-500" />
-          <span>경량 {data.articlesAnalyzed + data.commentsAnalyzed - data.ambiguousCount}건</span>
-          <span>·</span>
-          <Brain className="h-3 w-3 text-violet-500" />
-          <span>LLM {data.ambiguousCount}건</span>
+          <span>총 {data.articlesAnalyzed + data.commentsAnalyzed}건 분류 완료</span>
         </div>
       )}
     </div>
