@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { Loader2, Save } from 'lucide-react';
 import { trpcClient } from '@/lib/trpc';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
-import { Loader2, Save } from 'lucide-react';
 
 export function CollectionLimitsSettings() {
   const queryClient = useQueryClient();
@@ -56,12 +56,12 @@ export function CollectionLimitsSettings() {
     });
   };
 
-  const hasChanges = limits && (
-    naverArticles !== limits.naverArticles ||
-    youtubeVideos !== limits.youtubeVideos ||
-    communityPosts !== limits.communityPosts ||
-    commentsPerItem !== limits.commentsPerItem
-  );
+  const hasChanges =
+    limits &&
+    (naverArticles !== limits.naverArticles ||
+      youtubeVideos !== limits.youtubeVideos ||
+      communityPosts !== limits.communityPosts ||
+      commentsPerItem !== limits.commentsPerItem);
 
   if (isLoading) {
     return (
@@ -79,7 +79,9 @@ export function CollectionLimitsSettings() {
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <Label htmlFor="sl-naver" className="text-sm">네이버 뉴스 (최대 기사수)</Label>
+          <Label htmlFor="sl-naver" className="text-sm">
+            네이버 뉴스 (최대 기사수)
+          </Label>
           <Input
             id="sl-naver"
             type="number"
@@ -92,7 +94,9 @@ export function CollectionLimitsSettings() {
           <p className="text-xs text-muted-foreground">10 ~ 5,000건</p>
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="sl-youtube" className="text-sm">유튜브 영상</Label>
+          <Label htmlFor="sl-youtube" className="text-sm">
+            유튜브 영상
+          </Label>
           <Input
             id="sl-youtube"
             type="number"
@@ -105,7 +109,9 @@ export function CollectionLimitsSettings() {
           <p className="text-xs text-muted-foreground">5 ~ 500건</p>
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="sl-community" className="text-sm">커뮤니티 게시글</Label>
+          <Label htmlFor="sl-community" className="text-sm">
+            커뮤니티 게시글
+          </Label>
           <Input
             id="sl-community"
             type="number"
@@ -118,7 +124,9 @@ export function CollectionLimitsSettings() {
           <p className="text-xs text-muted-foreground">5 ~ 500건</p>
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="sl-comments" className="text-sm">항목당 댓글</Label>
+          <Label htmlFor="sl-comments" className="text-sm">
+            항목당 댓글
+          </Label>
           <Input
             id="sl-comments"
             type="number"
@@ -133,11 +141,7 @@ export function CollectionLimitsSettings() {
       </div>
 
       <div className="flex justify-end">
-        <Button
-          onClick={handleSave}
-          disabled={!hasChanges || updateMutation.isPending}
-          size="sm"
-        >
+        <Button onClick={handleSave} disabled={!hasChanges || updateMutation.isPending} size="sm">
           {updateMutation.isPending ? (
             <Loader2 className="h-4 w-4 animate-spin mr-1" />
           ) : (

@@ -2,11 +2,7 @@
 
 import { useState } from 'react';
 import { Info } from 'lucide-react';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 
@@ -46,9 +42,7 @@ export function CardHelp({
       <PopoverContent className="w-96 text-sm p-0" side="top" align="end">
         <div className="p-3 pb-2">
           <h4 className="font-semibold text-sm">{title}</h4>
-          <p className="text-muted-foreground text-xs leading-relaxed mt-1">
-            {description}
-          </p>
+          <p className="text-muted-foreground text-xs leading-relaxed mt-1">{description}</p>
         </div>
 
         {/* 탭 네비게이션 */}
@@ -130,7 +124,10 @@ export function CardHelp({
             <ul className="space-y-1.5">
               {howToRead.map((item, i) => (
                 <li key={i} className="text-xs text-muted-foreground flex gap-1.5">
-                  <Badge variant="outline" className="shrink-0 h-4 w-4 justify-center p-0 text-[9px]">
+                  <Badge
+                    variant="outline"
+                    className="shrink-0 h-4 w-4 justify-center p-0 text-[9px]"
+                  >
                     {i + 1}
                   </Badge>
                   <span>{item}</span>
@@ -154,11 +151,7 @@ export function CardHelp({
 
         {/* 하단: 데이터 출처 + 관련 모듈 */}
         <div className="border-t px-3 py-2 space-y-1">
-          {source && (
-            <p className="text-[10px] text-muted-foreground/60">
-              데이터 출처: {source}
-            </p>
-          )}
+          {source && <p className="text-[10px] text-muted-foreground/60">데이터 출처: {source}</p>}
           {relatedModules?.length && (
             <div className="flex items-center gap-1 flex-wrap">
               <span className="text-[10px] text-muted-foreground/60">관련:</span>

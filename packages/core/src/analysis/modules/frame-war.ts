@@ -22,12 +22,14 @@ export const frameWarModule: AnalysisModule<FrameWarResult> = {
   },
 
   buildPrompt(data: AnalysisInput): string {
-    const articlesSummary = data.articles.slice(0, 20).map(a =>
-      `- [${a.publisher ?? '알 수 없음'}] ${a.title}`
-    ).join('\n');
-    const commentsSample = data.comments.slice(0, 30).map(c =>
-      `- ${c.content.slice(0, 100)}`
-    ).join('\n');
+    const articlesSummary = data.articles
+      .slice(0, 20)
+      .map((a) => `- [${a.publisher ?? '알 수 없음'}] ${a.title}`)
+      .join('\n');
+    const commentsSample = data.comments
+      .slice(0, 30)
+      .map((c) => `- ${c.content.slice(0, 100)}`)
+      .join('\n');
 
     return `키워드: "${data.keyword}"
 분석 기간: ${data.dateRange.start.toISOString().split('T')[0]} ~ ${data.dateRange.end.toISOString().split('T')[0]}

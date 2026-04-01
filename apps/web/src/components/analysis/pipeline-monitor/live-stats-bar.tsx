@@ -30,20 +30,14 @@ export const LiveStatsBar = memo(function LiveStatsBar({
       {/* 본문 (기사/영상/게시글) */}
       <div className="flex flex-col items-center gap-0.5 rounded-lg border bg-card p-2">
         <FileText className="h-3.5 w-3.5 text-blue-500" />
-        <AnimatedNumber
-          value={totalArticles}
-          className="text-base font-bold tabular-nums"
-        />
+        <AnimatedNumber value={totalArticles} className="text-base font-bold tabular-nums" />
         <span className="text-[9px] text-muted-foreground">본문</span>
       </div>
 
       {/* 댓글 */}
       <div className="flex flex-col items-center gap-0.5 rounded-lg border bg-card p-2">
         <MessageSquare className="h-3.5 w-3.5 text-cyan-500" />
-        <AnimatedNumber
-          value={totalComments}
-          className="text-base font-bold tabular-nums"
-        />
+        <AnimatedNumber value={totalComments} className="text-base font-bold tabular-nums" />
         <span className="text-[9px] text-muted-foreground">댓글</span>
       </div>
 

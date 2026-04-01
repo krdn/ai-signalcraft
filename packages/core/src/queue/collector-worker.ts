@@ -4,8 +4,8 @@ import type { Job } from 'bullmq';
 import { getCollector } from '@ai-signalcraft/collectors';
 import { updateJobProgress, appendJobEvent } from '../pipeline';
 import { isPipelineCancelled } from '../pipeline/control';
-import { progressKey, countBySourceType } from './worker-config';
 import { createLogger } from '../utils/logger';
+import { progressKey, countBySourceType } from './worker-config';
 
 const logger = createLogger('collector-worker');
 
@@ -29,15 +29,25 @@ export function createCollectorHandler(): (job: Job) => Promise<CollectorResult>
     try {
       // DB: 수집 시작 상태
       if (dbJobId) {
-        await updateJobProgress(dbJobId, {
-          [pKey]: { status: 'running', ...countBySourceType(source, []) }
-        }, 'running');
+        await updateJobProgress(
+          dbJobId,
+          {
+            [pKey]: { status: 'running', ...countBySourceType(source, []) },
+          },
+          'running',
+        );
       }
 
       const allItems: unknown[] = [];
-      for await (const chunk of collector.collect({ keyword, startDate, endDate, maxItems, maxComments })) {
+      for await (const chunk of collector.collect({
+        keyword,
+        startDate,
+        endDate,
+        maxItems,
+        maxComments,
+      })) {
         // 취소 확인 — DB에서 cancelled 상태이면 즉시 중단
-        if (dbJobId && await isPipelineCancelled(dbJobId)) {
+        if (dbJobId && (await isPipelineCancelled(dbJobId))) {
           logger.info(`[${source}] 사용자에 의해 수집 중지됨 (${allItems.length}건 수집 후)`);
           return { source, items: allItems, count: allItems.length };
         }
@@ -46,7 +56,7 @@ export function createCollectorHandler(): (job: Job) => Promise<CollectorResult>
         // DB: 실시간 진행 업데이트
         if (dbJobId) {
           await updateJobProgress(dbJobId, {
-            [pKey]: { status: 'running', ...countBySourceType(source, allItems) }
+            [pKey]: { status: 'running', ...countBySourceType(source, allItems) },
           });
         }
       }
@@ -57,7 +67,7 @@ export function createCollectorHandler(): (job: Job) => Promise<CollectorResult>
       // DB: 수집 완료
       if (dbJobId) {
         await updateJobProgress(dbJobId, {
-          [pKey]: { status: 'completed', ...countBySourceType(source, allItems) }
+          [pKey]: { status: 'completed', ...countBySourceType(source, allItems) },
         });
       }
 
@@ -69,7 +79,7 @@ export function createCollectorHandler(): (job: Job) => Promise<CollectorResult>
       // DB: 수집 실패
       if (dbJobId) {
         await updateJobProgress(dbJobId, {
-          [pKey]: { status: 'failed', ...countBySourceType(source, []) }
+          [pKey]: { status: 'failed', ...countBySourceType(source, []) },
         });
         appendJobEvent(dbJobId, 'error', `${source} 수집 실패: ${errMsg}`).catch(() => {});
       }

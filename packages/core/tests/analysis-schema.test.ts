@@ -48,11 +48,20 @@ describe('AnalysisModule 인터페이스 + 타입', () => {
     const { MODULE_MODEL_MAP } = await import('../src/analysis/types');
 
     const expectedModules = [
-      'macro-view', 'segmentation', 'sentiment-framing', 'message-impact',
-      'risk-map', 'opportunity', 'strategy', 'final-summary',
+      'macro-view',
+      'segmentation',
+      'sentiment-framing',
+      'message-impact',
+      'risk-map',
+      'opportunity',
+      'strategy',
+      'final-summary',
       'integrated-report',
       // Stage 4: ADVN 고급 분석 모듈
-      'approval-rating', 'frame-war', 'crisis-scenario', 'win-simulation',
+      'approval-rating',
+      'frame-war',
+      'crisis-scenario',
+      'win-simulation',
     ];
 
     for (const mod of expectedModules) {

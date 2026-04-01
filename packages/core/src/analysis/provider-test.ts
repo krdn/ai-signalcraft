@@ -113,15 +113,19 @@ export async function testProviderConnection(
         const rawBase = (baseUrl || 'http://localhost:11434').replace(/\/+$/, '');
         // origin 추출 (https://ollama.krdn.kr/api -> https://ollama.krdn.kr)
         let origin: string;
-        try { origin = new URL(rawBase).origin; } catch { origin = rawBase; }
+        try {
+          origin = new URL(rawBase).origin;
+        } catch {
+          origin = rawBase;
+        }
 
         // baseUrl 자체 + origin 기반으로 다양한 경로 시도
         const candidateUrls = [
-          `${rawBase}/tags`,           // baseUrl이 이미 /api를 포함하는 경우
+          `${rawBase}/tags`, // baseUrl이 이미 /api를 포함하는 경우
           `${rawBase}/models`,
-          `${origin}/api/tags`,        // 직접 Ollama
+          `${origin}/api/tags`, // 직접 Ollama
           `${origin}/api/models`,
-          `${origin}/v1/models`,       // OpenAI 호환
+          `${origin}/v1/models`, // OpenAI 호환
           `${origin}/ollama/api/tags`, // Open WebUI 프록시
         ];
         // 중복 제거
@@ -214,7 +218,10 @@ export async function chatWithProvider(
             messages: [{ role: 'user', content: prompt }],
           }),
         });
-        const data = (await res.json()) as { content?: Array<{ text: string }>; error?: { message: string } };
+        const data = (await res.json()) as {
+          content?: Array<{ text: string }>;
+          error?: { message: string };
+        };
         if (!res.ok) throw new Error(data.error?.message || `API 오류: ${res.status}`);
         return { response: data.content?.[0]?.text || '', model };
       }
@@ -229,7 +236,10 @@ export async function chatWithProvider(
             body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
           },
         );
-        const data = (await res.json()) as { candidates?: Array<{ content: { parts: Array<{ text: string }> } }>; error?: { message: string } };
+        const data = (await res.json()) as {
+          candidates?: Array<{ content: { parts: Array<{ text: string }> } }>;
+          error?: { message: string };
+        };
         if (!res.ok) throw new Error(data.error?.message || `API 오류: ${res.status}`);
         return { response: data.candidates?.[0]?.content?.parts?.[0]?.text || '', model };
       }
@@ -238,17 +248,23 @@ export async function chatWithProvider(
         const model = selectedModel || 'llama3';
         const rawChatBase = (baseUrl || 'http://localhost:11434').replace(/\/+$/, '');
         let chatOrigin: string;
-        try { chatOrigin = new URL(rawChatBase).origin; } catch { chatOrigin = rawChatBase; }
+        try {
+          chatOrigin = new URL(rawChatBase).origin;
+        } catch {
+          chatOrigin = rawChatBase;
+        }
         const chatHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
         if (apiKey) chatHeaders['Authorization'] = `Bearer ${apiKey}`;
 
         // 여러 채팅 엔드포인트 시도
-        const chatEndpoints = [...new Set([
-          `${rawChatBase}/chat`,              // baseUrl이 /api를 포함하는 경우
-          `${chatOrigin}/api/chat`,           // 직접 Ollama
-          `${chatOrigin}/ollama/api/chat`,    // Open WebUI 프록시
-          `${chatOrigin}/v1/chat/completions`, // OpenAI 호환
-        ])];
+        const chatEndpoints = [
+          ...new Set([
+            `${rawChatBase}/chat`, // baseUrl이 /api를 포함하는 경우
+            `${chatOrigin}/api/chat`, // 직접 Ollama
+            `${chatOrigin}/ollama/api/chat`, // Open WebUI 프록시
+            `${chatOrigin}/v1/chat/completions`, // OpenAI 호환
+          ]),
+        ];
 
         for (const ep of chatEndpoints) {
           try {
@@ -296,7 +312,10 @@ export async function chatWithProvider(
             messages: [{ role: 'user', content: prompt }],
           }),
         });
-        const data = (await res.json()) as { choices?: Array<{ message: { content: string } }>; error?: { message: string } };
+        const data = (await res.json()) as {
+          choices?: Array<{ message: { content: string } }>;
+          error?: { message: string };
+        };
         if (!res.ok) throw new Error(data.error?.message || `API 오류: ${res.status}`);
         return { response: data.choices?.[0]?.message?.content || '', model };
       }

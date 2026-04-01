@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import { eq } from 'drizzle-orm';
-import { protectedProcedure, router } from '../init';
 import {
   getAllModelSettings,
   upsertModelSetting,
@@ -20,6 +19,7 @@ import {
   getCollectionLimits,
   updateCollectionLimits,
 } from '@ai-signalcraft/core';
+import { protectedProcedure, router } from '../init';
 
 export const settingsRouter = router({
   // === 모듈별 AI 모델 설정 ===
@@ -35,8 +35,14 @@ export const settingsRouter = router({
       z.object({
         moduleName: z.string().min(1),
         provider: z.enum([
-          'anthropic', 'openai', 'gemini', 'ollama',
-          'deepseek', 'xai', 'openrouter', 'custom',
+          'anthropic',
+          'openai',
+          'gemini',
+          'ollama',
+          'deepseek',
+          'xai',
+          'openrouter',
+          'custom',
         ]),
         model: z.string().min(1),
       }),
@@ -50,8 +56,14 @@ export const settingsRouter = router({
     .input(
       z.object({
         provider: z.enum([
-          'anthropic', 'openai', 'gemini', 'ollama',
-          'deepseek', 'xai', 'openrouter', 'custom',
+          'anthropic',
+          'openai',
+          'gemini',
+          'ollama',
+          'deepseek',
+          'xai',
+          'openrouter',
+          'custom',
         ]),
         model: z.string().min(1),
       }),
@@ -59,9 +71,7 @@ export const settingsRouter = router({
     .mutation(async ({ input }) => {
       const currentSettings = await getAllModelSettings();
       const results = await Promise.all(
-        currentSettings.map((s) =>
-          upsertModelSetting(s.moduleName, input.provider, input.model),
-        ),
+        currentSettings.map((s) => upsertModelSetting(s.moduleName, input.provider, input.model)),
       );
       return { updated: results.length };
     }),
@@ -70,9 +80,7 @@ export const settingsRouter = router({
   resetToDefault: protectedProcedure
     .input(z.object({ moduleName: z.string().min(1) }))
     .mutation(async ({ ctx, input }) => {
-      await ctx.db
-        .delete(modelSettings)
-        .where(eq(modelSettings.moduleName, input.moduleName));
+      await ctx.db.delete(modelSettings).where(eq(modelSettings.moduleName, input.moduleName));
       return { success: true };
     }),
 
@@ -114,12 +122,14 @@ export const settingsRouter = router({
 
     // 개별 값 커스텀 수정
     update: protectedProcedure
-      .input(z.object({
-        providerConcurrency: z.record(z.string(), z.number().min(1).max(20)).optional(),
-        apiConcurrency: z.number().min(1).max(20).optional(),
-        articleBatchSize: z.number().min(1).max(50).optional(),
-        commentBatchSize: z.number().min(1).max(200).optional(),
-      }))
+      .input(
+        z.object({
+          providerConcurrency: z.record(z.string(), z.number().min(1).max(20)).optional(),
+          apiConcurrency: z.number().min(1).max(20).optional(),
+          articleBatchSize: z.number().min(1).max(50).optional(),
+          commentBatchSize: z.number().min(1).max(200).optional(),
+        }),
+      )
       .mutation(async ({ input }) => {
         return upsertConcurrencyConfig({ ...input, activePreset: null });
       }),
@@ -133,12 +143,14 @@ export const settingsRouter = router({
     }),
 
     update: protectedProcedure
-      .input(z.object({
-        naverArticles: z.number().min(10).max(5000).optional(),
-        youtubeVideos: z.number().min(5).max(500).optional(),
-        communityPosts: z.number().min(5).max(500).optional(),
-        commentsPerItem: z.number().min(10).max(2000).optional(),
-      }))
+      .input(
+        z.object({
+          naverArticles: z.number().min(10).max(5000).optional(),
+          youtubeVideos: z.number().min(5).max(500).optional(),
+          communityPosts: z.number().min(5).max(500).optional(),
+          commentsPerItem: z.number().min(10).max(2000).optional(),
+        }),
+      )
       .mutation(async ({ input }) => {
         return updateCollectionLimits(input);
       }),
@@ -158,8 +170,14 @@ export const settingsRouter = router({
         z.object({
           name: z.string().min(1),
           providerType: z.enum([
-            'openai', 'anthropic', 'gemini', 'ollama',
-            'deepseek', 'xai', 'openrouter', 'custom',
+            'openai',
+            'anthropic',
+            'gemini',
+            'ollama',
+            'deepseek',
+            'xai',
+            'openrouter',
+            'custom',
           ]),
           providerName: z.string().min(1),
           key: z.string().optional(),
@@ -193,23 +211,19 @@ export const settingsRouter = router({
       }),
 
     // 프로바이더 키 삭제
-    delete: protectedProcedure
-      .input(z.object({ id: z.number() }))
-      .mutation(async ({ input }) => {
-        await deleteProviderKey(input.id);
-        return { success: true };
-      }),
+    delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+      await deleteProviderKey(input.id);
+      return { success: true };
+    }),
 
     // 연결 테스트 + 모델 목록 조회 (성공 시 availableModels를 DB에 저장)
-    test: protectedProcedure
-      .input(z.object({ id: z.number() }))
-      .mutation(async ({ input }) => {
-        const result = await testProviderConnection(input.id);
-        if (result.success && result.models.length > 0) {
-          await updateProviderKey(input.id, { availableModels: result.models });
-        }
-        return result;
-      }),
+    test: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+      const result = await testProviderConnection(input.id);
+      if (result.success && result.models.length > 0) {
+        await updateProviderKey(input.id, { availableModels: result.models });
+      }
+      return result;
+    }),
 
     // LLM 채팅 테스트 (Playground)
     chat: protectedProcedure

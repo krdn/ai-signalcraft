@@ -23,12 +23,14 @@ export const approvalRatingModule: AnalysisModule<ApprovalRatingResult> = {
   },
 
   buildPrompt(data: AnalysisInput): string {
-    const articlesSummary = data.articles.slice(0, 20).map(a =>
-      `- [${a.publisher ?? '알 수 없음'}] ${a.title}`
-    ).join('\n');
-    const commentsSample = data.comments.slice(0, 30).map(c =>
-      `- [${c.source}] ${c.content.slice(0, 100)}`
-    ).join('\n');
+    const articlesSummary = data.articles
+      .slice(0, 20)
+      .map((a) => `- [${a.publisher ?? '알 수 없음'}] ${a.title}`)
+      .join('\n');
+    const commentsSample = data.comments
+      .slice(0, 30)
+      .map((c) => `- [${c.source}] ${c.content.slice(0, 100)}`)
+      .join('\n');
 
     // 플랫폼별 데이터 분포 계산
     const platformDist: Record<string, number> = {};

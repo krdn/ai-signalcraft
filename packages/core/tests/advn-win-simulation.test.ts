@@ -9,12 +9,28 @@ describe('ADVN-04: WinSimulationSchema', () => {
       winProbability: 55,
       confidenceLevel: 'medium' as const,
       winConditions: [
-        { condition: '경제 지표 개선 지속', currentStatus: 'partial' as const, importance: 'critical' as const },
-        { condition: '청년 정책 호응', currentStatus: 'unmet' as const, importance: 'high' as const },
-        { condition: '중도층 확보', currentStatus: 'partial' as const, importance: 'critical' as const },
+        {
+          condition: '경제 지표 개선 지속',
+          currentStatus: 'partial' as const,
+          importance: 'critical' as const,
+        },
+        {
+          condition: '청년 정책 호응',
+          currentStatus: 'unmet' as const,
+          importance: 'high' as const,
+        },
+        {
+          condition: '중도층 확보',
+          currentStatus: 'partial' as const,
+          importance: 'critical' as const,
+        },
       ],
       loseConditions: [
-        { condition: '추가 스캔들 발생', currentRisk: 'medium' as const, mitigation: '위기 대응 체계 강화' },
+        {
+          condition: '추가 스캔들 발생',
+          currentRisk: 'medium' as const,
+          mitigation: '위기 대응 체계 강화',
+        },
         { condition: '경제 악화', currentRisk: 'low' as const, mitigation: '경제 성과 지속 홍보' },
       ],
       keyStrategies: [
@@ -34,46 +50,48 @@ describe('ADVN-04: WinSimulationSchema', () => {
   it('winProbability가 0~100 범위를 벗어나면 실패한다', async () => {
     const { WinSimulationSchema } = await import('../src/analysis/schemas/win-simulation.schema');
 
-    expect(() => WinSimulationSchema.parse({
-      winProbability: 150,
-      confidenceLevel: 'medium',
-      winConditions: [
-        { condition: 'a', currentStatus: 'met', importance: 'critical' },
-        { condition: 'b', currentStatus: 'met', importance: 'high' },
-        { condition: 'c', currentStatus: 'met', importance: 'medium' },
-      ],
-      loseConditions: [
-        { condition: 'x', currentRisk: 'high', mitigation: 'y' },
-        { condition: 'z', currentRisk: 'low', mitigation: 'w' },
-      ],
-      keyStrategies: [
-        { strategy: 'a', expectedImpact: 'b', priority: 1 },
-        { strategy: 'c', expectedImpact: 'd', priority: 2 },
-        { strategy: 'e', expectedImpact: 'f', priority: 3 },
-      ],
-      simulationSummary: 'test',
-    })).toThrow(ZodError);
+    expect(() =>
+      WinSimulationSchema.parse({
+        winProbability: 150,
+        confidenceLevel: 'medium',
+        winConditions: [
+          { condition: 'a', currentStatus: 'met', importance: 'critical' },
+          { condition: 'b', currentStatus: 'met', importance: 'high' },
+          { condition: 'c', currentStatus: 'met', importance: 'medium' },
+        ],
+        loseConditions: [
+          { condition: 'x', currentRisk: 'high', mitigation: 'y' },
+          { condition: 'z', currentRisk: 'low', mitigation: 'w' },
+        ],
+        keyStrategies: [
+          { strategy: 'a', expectedImpact: 'b', priority: 1 },
+          { strategy: 'c', expectedImpact: 'd', priority: 2 },
+          { strategy: 'e', expectedImpact: 'f', priority: 3 },
+        ],
+        simulationSummary: 'test',
+      }),
+    ).toThrow(ZodError);
   });
 
   it('winConditions가 3개 미만이면 실패한다', async () => {
     const { WinSimulationSchema } = await import('../src/analysis/schemas/win-simulation.schema');
 
-    expect(() => WinSimulationSchema.parse({
-      winProbability: 50,
-      confidenceLevel: 'medium',
-      winConditions: [
-        { condition: 'a', currentStatus: 'met', importance: 'critical' },
-      ],
-      loseConditions: [
-        { condition: 'x', currentRisk: 'high', mitigation: 'y' },
-        { condition: 'z', currentRisk: 'low', mitigation: 'w' },
-      ],
-      keyStrategies: [
-        { strategy: 'a', expectedImpact: 'b', priority: 1 },
-        { strategy: 'c', expectedImpact: 'd', priority: 2 },
-        { strategy: 'e', expectedImpact: 'f', priority: 3 },
-      ],
-      simulationSummary: 'test',
-    })).toThrow(ZodError);
+    expect(() =>
+      WinSimulationSchema.parse({
+        winProbability: 50,
+        confidenceLevel: 'medium',
+        winConditions: [{ condition: 'a', currentStatus: 'met', importance: 'critical' }],
+        loseConditions: [
+          { condition: 'x', currentRisk: 'high', mitigation: 'y' },
+          { condition: 'z', currentRisk: 'low', mitigation: 'w' },
+        ],
+        keyStrategies: [
+          { strategy: 'a', expectedImpact: 'b', priority: 1 },
+          { strategy: 'c', expectedImpact: 'd', priority: 2 },
+          { strategy: 'e', expectedImpact: 'f', priority: 3 },
+        ],
+        simulationSummary: 'test',
+      }),
+    ).toThrow(ZodError);
   });
 });

@@ -2,6 +2,9 @@
 
 import { memo } from 'react';
 import { useMutation } from '@tanstack/react-query';
+import { Clock, RefreshCw, FileText, RotateCcw } from 'lucide-react';
+import { toast } from 'sonner';
+import { formatElapsedCompact } from './utils';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import {
@@ -10,10 +13,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Clock, RefreshCw, FileText, RotateCcw } from 'lucide-react';
-import { toast } from 'sonner';
 import { trpcClient } from '@/lib/trpc';
-import { formatElapsedCompact } from './utils';
 
 interface PipelineHeaderProps {
   keyword: string;
@@ -34,13 +34,20 @@ function statusVariant(status: string): 'destructive' | 'default' | 'secondary' 
 
 function statusLabel(status: string): string {
   switch (status) {
-    case 'running': return '진행 중';
-    case 'completed': return '완료';
-    case 'failed': return '실패';
-    case 'cancelled': return '중지됨';
-    case 'paused': return '일시정지';
-    case 'partial_failure': return '부분 실패';
-    default: return status;
+    case 'running':
+      return '진행 중';
+    case 'completed':
+      return '완료';
+    case 'failed':
+      return '실패';
+    case 'cancelled':
+      return '중지됨';
+    case 'paused':
+      return '일시정지';
+    case 'partial_failure':
+      return '부분 실패';
+    default:
+      return status;
   }
 }
 
@@ -74,9 +81,7 @@ export const PipelineHeader = memo(function PipelineHeader({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h3 className="text-lg font-semibold tracking-tight">{keyword}</h3>
-          <Badge variant={statusVariant(status)}>
-            {statusLabel(status)}
-          </Badge>
+          <Badge variant={statusVariant(status)}>{statusLabel(status)}</Badge>
         </div>
         <div className="flex items-center gap-2">
           {elapsedSeconds != null && (
@@ -120,10 +125,7 @@ export const PipelineHeader = memo(function PipelineHeader({
             <span className="font-mono">{overallProgress}%</span>
           </div>
           <div className="relative">
-            <Progress
-              value={overallProgress}
-              className={`h-2 ${isPaused ? 'opacity-60' : ''}`}
-            />
+            <Progress value={overallProgress} className={`h-2 ${isPaused ? 'opacity-60' : ''}`} />
             {isInProgress && !isPaused && (
               <div
                 className="absolute inset-0 h-2 rounded-full animate-shimmer"

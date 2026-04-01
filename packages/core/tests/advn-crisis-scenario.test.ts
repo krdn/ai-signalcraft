@@ -49,14 +49,40 @@ describe('ADVN-03: CrisisScenarioSchema', () => {
   it('시나리오 타입이 맞지 않으면 실패한다', async () => {
     const { CrisisScenarioSchema } = await import('../src/analysis/schemas/crisis-scenario.schema');
 
-    expect(() => CrisisScenarioSchema.parse({
-      scenarios: [
-        { type: 'wrong', name: 'test', probability: 30, triggerConditions: [], expectedOutcome: 'test', responseStrategy: [], timeframe: '1주' },
-        { type: 'control', name: 'test', probability: 50, triggerConditions: [], expectedOutcome: 'test', responseStrategy: [], timeframe: '2주' },
-        { type: 'reverse', name: 'test', probability: 20, triggerConditions: [], expectedOutcome: 'test', responseStrategy: [], timeframe: '3주' },
-      ],
-      currentRiskLevel: 'medium',
-      recommendedAction: 'test',
-    })).toThrow(ZodError);
+    expect(() =>
+      CrisisScenarioSchema.parse({
+        scenarios: [
+          {
+            type: 'wrong',
+            name: 'test',
+            probability: 30,
+            triggerConditions: [],
+            expectedOutcome: 'test',
+            responseStrategy: [],
+            timeframe: '1주',
+          },
+          {
+            type: 'control',
+            name: 'test',
+            probability: 50,
+            triggerConditions: [],
+            expectedOutcome: 'test',
+            responseStrategy: [],
+            timeframe: '2주',
+          },
+          {
+            type: 'reverse',
+            name: 'test',
+            probability: 20,
+            triggerConditions: [],
+            expectedOutcome: 'test',
+            responseStrategy: [],
+            timeframe: '3주',
+          },
+        ],
+        currentRiskLevel: 'medium',
+        recommendedAction: 'test',
+      }),
+    ).toThrow(ZodError);
   });
 });

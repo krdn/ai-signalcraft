@@ -1,8 +1,16 @@
 // 정규화된 데이터를 DB에 upsert (D-07: 중복 제거)
 // N:M 조인 테이블을 사용하여 기사/영상/댓글이 여러 job에서 공유 가능
-import { getDb } from '../db';
-import { articles, videos, comments, collectionJobs, articleJobs, videoJobs, commentJobs } from '../db/schema/collections';
 import { sql, eq, and, notInArray } from 'drizzle-orm';
+import { getDb } from '../db';
+import {
+  articles,
+  videos,
+  comments,
+  collectionJobs,
+  articleJobs,
+  videoJobs,
+  commentJobs,
+} from '../db/schema/collections';
 
 /**
  * 기사 upsert + 조인 테이블 삽입
@@ -153,22 +161,34 @@ export async function updateJobProgress(
       eq(collectionJobs.id, jobId),
       notInArray(collectionJobs.status, ['cancelled', 'paused']),
     );
-    return db.update(collectionJobs).set({
-      ...(hasProgress
-        ? { progress: sql`COALESCE(progress, '{}'::jsonb) || ${sql.param(JSON.stringify(progress))}::jsonb` as any }
-        : {}),
-      status,
-      updatedAt: new Date(),
-    }).where(condition);
+    return db
+      .update(collectionJobs)
+      .set({
+        ...(hasProgress
+          ? {
+              progress:
+                sql`COALESCE(progress, '{}'::jsonb) || ${sql.param(JSON.stringify(progress))}::jsonb` as any,
+            }
+          : {}),
+        status,
+        updatedAt: new Date(),
+      })
+      .where(condition);
   }
 
   // status 없이 progress만 업데이트할 때는 제한 없음
-  return db.update(collectionJobs).set({
-    ...(hasProgress
-      ? { progress: sql`COALESCE(progress, '{}'::jsonb) || ${sql.param(JSON.stringify(progress))}::jsonb` as any }
-      : {}),
-    updatedAt: new Date(),
-  }).where(eq(collectionJobs.id, jobId));
+  return db
+    .update(collectionJobs)
+    .set({
+      ...(hasProgress
+        ? {
+            progress:
+              sql`COALESCE(progress, '{}'::jsonb) || ${sql.param(JSON.stringify(progress))}::jsonb` as any,
+          }
+        : {}),
+      updatedAt: new Date(),
+    })
+    .where(eq(collectionJobs.id, jobId));
 }
 
 /**
@@ -177,17 +197,15 @@ export async function updateJobProgress(
  */
 const MAX_EVENTS = 100;
 
-export async function appendJobEvent(
-  jobId: number,
-  level: 'info' | 'warn' | 'error',
-  msg: string,
-) {
+export async function appendJobEvent(jobId: number, level: 'info' | 'warn' | 'error', msg: string) {
   const db = getDb();
   const event = { ts: new Date().toISOString(), level, msg };
 
   // 현재 이벤트 배열을 읽고 append (단순하고 안전한 read-modify-write)
-  const [row] = await db.select({ progress: collectionJobs.progress })
-    .from(collectionJobs).where(eq(collectionJobs.id, jobId));
+  const [row] = await db
+    .select({ progress: collectionJobs.progress })
+    .from(collectionJobs)
+    .where(eq(collectionJobs.id, jobId));
   if (!row) return;
 
   const progress = (row.progress ?? {}) as Record<string, unknown>;
@@ -197,10 +215,13 @@ export async function appendJobEvent(
   if (events.length > MAX_EVENTS) events.splice(0, events.length - MAX_EVENTS);
   progress._events = events;
 
-  await db.update(collectionJobs).set({
-    progress: sql`${sql.param(JSON.stringify(progress))}::jsonb` as any,
-    updatedAt: new Date(),
-  }).where(eq(collectionJobs.id, jobId));
+  await db
+    .update(collectionJobs)
+    .set({
+      progress: sql`${sql.param(JSON.stringify(progress))}::jsonb` as any,
+      updatedAt: new Date(),
+    })
+    .where(eq(collectionJobs.id, jobId));
 }
 
 /**

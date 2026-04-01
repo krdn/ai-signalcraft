@@ -25,10 +25,10 @@ affects: []
 tech-stack:
   added: []
   patterns:
-    - "enabledSources 기반 조건부 BullMQ Flow children 생성"
-    - "onConflictDoUpdate로 리포트 upsert 패턴"
-    - "useSearchParams + Suspense로 callbackUrl 처리"
-    - "isNull() DB 레벨 필터로 JS 후처리 대체"
+    - 'enabledSources 기반 조건부 BullMQ Flow children 생성'
+    - 'onConflictDoUpdate로 리포트 upsert 패턴'
+    - 'useSearchParams + Suspense로 callbackUrl 처리'
+    - 'isNull() DB 레벨 필터로 JS 후처리 대체'
 
 key-files:
   created: []
@@ -46,13 +46,13 @@ key-files:
     - packages/core/tests/db.test.ts
 
 key-decisions:
-  - "sources 필드를 optional로 추가하여 기존 호출 하위 호환 유지"
-  - "onConflictDoUpdate target을 jobId uniqueIndex로 설정"
-  - "JS .filter() 후처리를 isNull() DB 레벨 쿼리로 대체"
+  - 'sources 필드를 optional로 추가하여 기존 호출 하위 호환 유지'
+  - 'onConflictDoUpdate target을 jobId uniqueIndex로 설정'
+  - 'JS .filter() 후처리를 isNull() DB 레벨 쿼리로 대체'
 
 patterns-established:
-  - "enabledSources 패턴: params.sources ?? ALL_SOURCES로 기본값 처리"
-  - "Suspense boundary: useSearchParams 사용 컴포넌트는 반드시 Suspense 래핑"
+  - 'enabledSources 패턴: params.sources ?? ALL_SOURCES로 기본값 처리'
+  - 'Suspense boundary: useSearchParams 사용 컴포넌트는 반드시 Suspense 래핑'
 
 requirements-completed:
   - COLL-01
@@ -141,17 +141,18 @@ None - no external service configuration required.
 
 ## Superpowers 호출 기록
 
-| # | 스킬명 | 호출 시점 | 결과 요약 |
-|---|--------|----------|----------|
-| - | - | - | - |
+| #   | 스킬명 | 호출 시점 | 결과 요약 |
+| --- | ------ | --------- | --------- |
+| -   | -      | -         | -         |
 
 ### 미호출 스킬 사유
-| 스킬명 | 미호출 사유 |
-|--------|-----------|
-| superpowers:brainstorming | 갭 해소 플랜으로 명확한 수정 사항이 지정되어 브레인스토밍 불필요 |
-| superpowers:test-driven-development | TDD 패턴은 수동으로 적용 (RED-GREEN 사이클 준수) |
-| superpowers:systematic-debugging | 버그 미발생 |
-| superpowers:requesting-code-review | Skill 도구 미사용 (병렬 실행 에이전트 환경) |
+
+| 스킬명                              | 미호출 사유                                                      |
+| ----------------------------------- | ---------------------------------------------------------------- |
+| superpowers:brainstorming           | 갭 해소 플랜으로 명확한 수정 사항이 지정되어 브레인스토밍 불필요 |
+| superpowers:test-driven-development | TDD 패턴은 수동으로 적용 (RED-GREEN 사이클 준수)                 |
+| superpowers:systematic-debugging    | 버그 미발생                                                      |
+| superpowers:requesting-code-review  | Skill 도구 미사용 (병렬 실행 에이전트 환경)                      |
 
 ## Next Phase Readiness
 
@@ -159,5 +160,6 @@ None - no external service configuration required.
 - DB 마이그레이션(drizzle-kit push)은 운영 서버 접속 시 별도 실행 필요
 
 ---
-*Phase: 05-integration-flow-gap-closure*
-*Completed: 2026-03-24*
+
+_Phase: 05-integration-flow-gap-closure_
+_Completed: 2026-03-24_

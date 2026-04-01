@@ -80,10 +80,14 @@ export class DCInsideCollector extends CommunityBaseCollector {
     const dateText = $('.gall_date').attr('title') || $('.gall_date').text().trim();
     const publishedAt = parseDateText(dateText);
     const viewCount = parseInt($('.gall_count').text().replace(/[^\d]/g, '') || '0', 10);
-    const likeCount = parseInt($('.gall_reply_num, .up_num').text().replace(/[^\d]/g, '') || '0', 10);
+    const likeCount = parseInt(
+      $('.gall_reply_num, .up_num').text().replace(/[^\d]/g, '') || '0',
+      10,
+    );
 
     // 갤러리 이름 추출
-    const boardName = $('h3.title, .gallview_head .title').text().trim() || this.extractBoardFromUrl(url);
+    const boardName =
+      $('h3.title, .gallview_head .title').text().trim() || this.extractBoardFromUrl(url);
 
     // 게시글 ID 추출
     const sourceId = this.extractSourceId(url);
@@ -127,7 +131,8 @@ export class DCInsideCollector extends CommunityBaseCollector {
         const author = $parent.find('.gall_writer .nickname, .ip').first().text().trim() || '익명';
         const dateText = $parent.find('.date_time').text().trim();
         const commentId = $parent.attr('data-no') || `${postSourceId}_c${i}`;
-        const parentCommentId = $parent.attr('data-depth') === '1' ? null : $parent.attr('data-parent') || null;
+        const parentCommentId =
+          $parent.attr('data-depth') === '1' ? null : $parent.attr('data-parent') || null;
 
         comments.push({
           sourceId: `dc_comment_${commentId}`,

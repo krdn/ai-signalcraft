@@ -36,16 +36,19 @@ worker-process.ts(452줄)를 역할별 5개 파일로 분할하여 진입점을 
 ## What Was Done
 
 ### Task 1: worker-config + collector-worker + analysis-worker 생성 (33fbc29)
+
 - **worker-config.ts** (86줄): findMonorepoRoot, initEnv, validateApiKeys, registerAllCollectors, COMMUNITY_SOURCES, countBySourceType, progressKey
 - **collector-worker.ts** (64줄): createCollectorHandler 팩토리 함수 -- 수집 Worker 핸들러
 - **analysis-worker.ts** (26줄): createAnalysisWorker 팩토리 함수 -- 분석 Worker 생성
 
 ### Task 2: pipeline-worker + worker-process 재작성 + 테스트 수정 (0a5086a)
+
 - **pipeline-worker.ts** (295줄): createPipelineHandler 팩토리 함수 -- normalize + persist 파이프라인
 - **worker-process.ts** (32줄): 진입점 -- env 로드, 수집기 등록, Worker 3개 기동, graceful shutdown
 - **worker.test.ts**: readFileSync 경로를 worker-process.ts에서 pipeline-worker.ts로 변경
 
 ### Task 3: 전체 테스트 통과 검증
+
 - 9/11 테스트 파일 통과 (기존과 동일)
 - 96/102 개별 테스트 통과 (6개 실패는 DB 미연결 SASL 에러 -- 기존 문제)
 - pnpm build 전체 프로젝트 빌드 성공
@@ -53,6 +56,7 @@ worker-process.ts(452줄)를 역할별 5개 파일로 분할하여 진입점을 
 ## Deviations from Plan
 
 ### pipeline-worker.ts 줄 수 초과
+
 - **계획**: 200줄 이하
 - **실제**: 295줄
 - **사유**: normalize-naver/youtube/community + persist 5단계가 모두 포함되어야 하며, 추가 분할 시 함수 간 데이터 전달이 복잡해져 가독성 저하. 원본 270줄 + import 추가로 불가피
@@ -69,16 +73,17 @@ None -- 모든 파일이 실제 로직을 포함하며 스텁 없음
 
 ## Superpowers 호출 기록
 
-| # | 스킬명 | 호출 시점 | 결과 요약 |
-|---|--------|----------|----------|
+| #   | 스킬명 | 호출 시점 | 결과 요약 |
+| --- | ------ | --------- | --------- |
 
 ### 미호출 스킬 사유
-| 스킬명 | 미호출 사유 |
-|--------|-----------|
-| superpowers:brainstorming | 리팩토링 작업으로 새로운 설계 결정 불필요 -- 기존 코드를 분할만 수행 |
-| superpowers:test-driven-development | 기존 테스트 유지 확인 작업이며 새 테스트 작성 불필요 |
-| superpowers:systematic-debugging | 버그 미발생 |
-| superpowers:requesting-code-review | 코드 변경이 순수 분할이며 로직 변경 없음 |
+
+| 스킬명                              | 미호출 사유                                                          |
+| ----------------------------------- | -------------------------------------------------------------------- |
+| superpowers:brainstorming           | 리팩토링 작업으로 새로운 설계 결정 불필요 -- 기존 코드를 분할만 수행 |
+| superpowers:test-driven-development | 기존 테스트 유지 확인 작업이며 새 테스트 작성 불필요                 |
+| superpowers:systematic-debugging    | 버그 미발생                                                          |
+| superpowers:requesting-code-review  | 코드 변경이 순수 분할이며 로직 변경 없음                             |
 
 ## Self-Check: PASSED
 

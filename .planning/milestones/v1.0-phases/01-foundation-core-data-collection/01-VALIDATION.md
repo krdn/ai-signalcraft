@@ -15,13 +15,13 @@ created: 2026-03-24
 
 ## Test Infrastructure
 
-| Property | Value |
-|----------|-------|
-| **Framework** | Vitest 3.x |
-| **Config file** | vitest.config.ts (Wave 0에서 생성) |
-| **Quick run command** | `pnpm --filter @ai-signalcraft/core test` |
-| **Full suite command** | `pnpm -r test` |
-| **Estimated runtime** | ~15 seconds |
+| Property               | Value                                     |
+| ---------------------- | ----------------------------------------- |
+| **Framework**          | Vitest 3.x                                |
+| **Config file**        | vitest.config.ts (Wave 0에서 생성)        |
+| **Quick run command**  | `pnpm --filter @ai-signalcraft/core test` |
+| **Full suite command** | `pnpm -r test`                            |
+| **Estimated runtime**  | ~15 seconds                               |
 
 ---
 
@@ -36,20 +36,20 @@ created: 2026-03-24
 
 ## Per-Task Verification Map
 
-| Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
-|---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 01-01-01 | 01 | 1 | FOUND-01 | smoke | `pnpm -r build` | ❌ W0 | ⬜ pending |
-| 01-01-02 | 01 | 1 | FOUND-02 | integration | `pnpm --filter @ai-signalcraft/core test -- --grep "db"` | ❌ W0 | ⬜ pending |
-| 01-01-03 | 01 | 1 | FOUND-03 | integration | `pnpm --filter @ai-signalcraft/core test -- --grep "queue"` | ❌ W0 | ⬜ pending |
-| 01-01-04 | 01 | 1 | FOUND-04 | unit | `pnpm --filter @ai-signalcraft/core test -- --grep "ai-gateway"` | ❌ W0 | ⬜ pending |
-| 01-02-01 | 02 | 2 | COLL-09 | unit | `pnpm --filter @ai-signalcraft/collectors test -- --grep "adapter"` | ❌ W0 | ⬜ pending |
-| 01-02-02 | 02 | 2 | COLL-01 | integration | `pnpm --filter @ai-signalcraft/collectors test -- --grep "naver-article"` | ❌ W0 | ⬜ pending |
-| 01-02-03 | 02 | 2 | COLL-02 | integration | `pnpm --filter @ai-signalcraft/collectors test -- --grep "naver-comment"` | ❌ W0 | ⬜ pending |
-| 01-02-04 | 02 | 2 | COLL-03 | integration | `pnpm --filter @ai-signalcraft/collectors test -- --grep "youtube-video"` | ❌ W0 | ⬜ pending |
-| 01-02-05 | 02 | 2 | COLL-04 | integration | `pnpm --filter @ai-signalcraft/collectors test -- --grep "youtube-comment"` | ❌ W0 | ⬜ pending |
-| 01-03-01 | 03 | 2 | COLL-10 | integration | `pnpm --filter @ai-signalcraft/core test -- --grep "dedup"` | ❌ W0 | ⬜ pending |
+| Task ID  | Plan | Wave | Requirement | Test Type   | Automated Command                                                           | File Exists | Status     |
+| -------- | ---- | ---- | ----------- | ----------- | --------------------------------------------------------------------------- | ----------- | ---------- |
+| 01-01-01 | 01   | 1    | FOUND-01    | smoke       | `pnpm -r build`                                                             | ❌ W0       | ⬜ pending |
+| 01-01-02 | 01   | 1    | FOUND-02    | integration | `pnpm --filter @ai-signalcraft/core test -- --grep "db"`                    | ❌ W0       | ⬜ pending |
+| 01-01-03 | 01   | 1    | FOUND-03    | integration | `pnpm --filter @ai-signalcraft/core test -- --grep "queue"`                 | ❌ W0       | ⬜ pending |
+| 01-01-04 | 01   | 1    | FOUND-04    | unit        | `pnpm --filter @ai-signalcraft/core test -- --grep "ai-gateway"`            | ❌ W0       | ⬜ pending |
+| 01-02-01 | 02   | 2    | COLL-09     | unit        | `pnpm --filter @ai-signalcraft/collectors test -- --grep "adapter"`         | ❌ W0       | ⬜ pending |
+| 01-02-02 | 02   | 2    | COLL-01     | integration | `pnpm --filter @ai-signalcraft/collectors test -- --grep "naver-article"`   | ❌ W0       | ⬜ pending |
+| 01-02-03 | 02   | 2    | COLL-02     | integration | `pnpm --filter @ai-signalcraft/collectors test -- --grep "naver-comment"`   | ❌ W0       | ⬜ pending |
+| 01-02-04 | 02   | 2    | COLL-03     | integration | `pnpm --filter @ai-signalcraft/collectors test -- --grep "youtube-video"`   | ❌ W0       | ⬜ pending |
+| 01-02-05 | 02   | 2    | COLL-04     | integration | `pnpm --filter @ai-signalcraft/collectors test -- --grep "youtube-comment"` | ❌ W0       | ⬜ pending |
+| 01-03-01 | 03   | 2    | COLL-10     | integration | `pnpm --filter @ai-signalcraft/core test -- --grep "dedup"`                 | ❌ W0       | ⬜ pending |
 
-*Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
+_Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky_
 
 ---
 
@@ -66,11 +66,11 @@ created: 2026-03-24
 
 ## Manual-Only Verifications
 
-| Behavior | Requirement | Why Manual | Test Instructions |
-|----------|-------------|------------|-------------------|
-| 운영 서버 DB 연결 | FOUND-02 | 실제 서버 접속 필요 | `psql -h 192.168.0.5 -p 5436 -U postgres -d ai_signalcraft -c "SELECT 1"` |
-| 네이버 댓글 API 작동 | COLL-02 | 비공식 API, 외부 의존 | curl로 실제 엔드포인트 호출 후 응답 확인 |
-| YouTube API 쿼터 확인 | COLL-03 | Google Cloud 콘솔 필요 | API 키로 실제 search.list 호출 후 quota 소모 확인 |
+| Behavior              | Requirement | Why Manual             | Test Instructions                                                         |
+| --------------------- | ----------- | ---------------------- | ------------------------------------------------------------------------- |
+| 운영 서버 DB 연결     | FOUND-02    | 실제 서버 접속 필요    | `psql -h 192.168.0.5 -p 5436 -U postgres -d ai_signalcraft -c "SELECT 1"` |
+| 네이버 댓글 API 작동  | COLL-02     | 비공식 API, 외부 의존  | curl로 실제 엔드포인트 호출 후 응답 확인                                  |
+| YouTube API 쿼터 확인 | COLL-03     | Google Cloud 콘솔 필요 | API 키로 실제 search.list 호출 후 quota 소모 확인                         |
 
 ---
 

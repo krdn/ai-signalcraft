@@ -5,8 +5,7 @@ const MAX_CONTENT_LENGTH = 500;
 
 // 입력 데이터를 프롬프트용 구조로 변환
 export function formatInputData(data: AnalysisInput) {
-  const formatDate = (d: Date | null) =>
-    d ? d.toISOString().split('T')[0] : '날짜 미상';
+  const formatDate = (d: Date | null) => (d ? d.toISOString().split('T')[0] : '날짜 미상');
 
   const articles = data.articles.map((a) => ({
     title: a.title,

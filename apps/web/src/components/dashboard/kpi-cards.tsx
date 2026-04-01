@@ -1,8 +1,16 @@
 'use client';
 
-import { Card, CardContent } from '@/components/ui/card';
-import { TrendingUp, TrendingDown, Minus, MessageSquare, BarChart3, Hash, Activity } from 'lucide-react';
+import {
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  MessageSquare,
+  BarChart3,
+  Hash,
+  Activity,
+} from 'lucide-react';
 import { CardHelp, DASHBOARD_HELP } from './card-help';
+import { Card, CardContent } from '@/components/ui/card';
 
 interface KpiCardsProps {
   totalMentions: number | null;
@@ -17,14 +25,23 @@ const directionConfig = {
   mixed: { label: '혼합', icon: Minus, color: 'text-amber-500' },
 } as const;
 
-export function KpiCards({ totalMentions, sentimentRatio, topKeyword, overallDirection }: KpiCardsProps) {
+export function KpiCards({
+  totalMentions,
+  sentimentRatio,
+  topKeyword,
+  overallDirection,
+}: KpiCardsProps) {
   const direction = overallDirection ? directionConfig[overallDirection] : null;
   const DirectionIcon = direction?.icon ?? Activity;
 
   // 감성 비율 중 가장 높은 것
   const dominantSentiment = sentimentRatio
     ? sentimentRatio.positive >= sentimentRatio.negative
-      ? { label: '긍정', value: Math.round(sentimentRatio.positive * 100), color: 'text-emerald-500' }
+      ? {
+          label: '긍정',
+          value: Math.round(sentimentRatio.positive * 100),
+          color: 'text-emerald-500',
+        }
       : { label: '부정', value: Math.round(sentimentRatio.negative * 100), color: 'text-red-500' }
     : null;
 
@@ -69,9 +86,7 @@ export function KpiCards({ totalMentions, sentimentRatio, topKeyword, overallDir
               <span className="text-xs font-medium flex-1">{card.title}</span>
               {card.title === '총 수집량' && <CardHelp {...DASHBOARD_HELP.kpi} />}
             </div>
-            <p className={`text-xl font-bold truncate ${card.valueColor ?? ''}`}>
-              {card.value}
-            </p>
+            <p className={`text-xl font-bold truncate ${card.valueColor ?? ''}`}>{card.value}</p>
             {card.subtitle && (
               <p className="text-xs text-muted-foreground mt-1 truncate">{card.subtitle}</p>
             )}

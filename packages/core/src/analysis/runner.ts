@@ -1,6 +1,8 @@
 // 분석 모듈 단일 실행 러너 + Stage 상수 정의
 // 오케스트레이션 로직은 pipeline-orchestrator.ts로 분리 (D-03)
 import { analyzeStructured, type AIGatewayOptions } from '@ai-signalcraft/ai-gateway';
+import { isPipelineCancelled } from '../pipeline/control';
+import { appendJobEvent } from '../pipeline/persist';
 import {
   macroViewModule,
   segmentationModule,
@@ -17,8 +19,6 @@ import {
 import { persistAnalysisResult } from './persist-analysis';
 import { getModuleModelConfig } from './model-config';
 import { isRateLimitError, parseRetryAfter, sleep, MAX_RATE_LIMIT_RETRIES } from './retry-utils';
-import { isPipelineCancelled } from '../pipeline/control';
-import { appendJobEvent } from '../pipeline/persist';
 import type { AnalysisModule, AnalysisInput, AnalysisModuleResult } from './types';
 
 // Stage 1: 병렬 실행 (독립 모듈)
@@ -75,7 +75,9 @@ export async function runModule<T>(
 
     // DB 설정 우선, 없으면 모듈 기본값 폴백
     const config = await getModuleModelConfig(module.name);
-    console.log(`[runner] ${module.name}: provider=${config.provider}, model=${config.model}, baseUrl=${config.baseUrl ?? 'NONE'}, hasApiKey=${!!config.apiKey}`);
+    console.log(
+      `[runner] ${module.name}: provider=${config.provider}, model=${config.model}, baseUrl=${config.baseUrl ?? 'NONE'}, hasApiKey=${!!config.apiKey}`,
+    );
 
     const prompt =
       priorResults && module.buildPromptWithContext
@@ -109,13 +111,9 @@ export async function runModule<T>(
           result: result.object,
           usage: {
             inputTokens:
-              (result.usage as any)?.promptTokens ??
-              (result.usage as any)?.inputTokens ??
-              0,
+              (result.usage as any)?.promptTokens ?? (result.usage as any)?.inputTokens ?? 0,
             outputTokens:
-              (result.usage as any)?.completionTokens ??
-              (result.usage as any)?.outputTokens ??
-              0,
+              (result.usage as any)?.completionTokens ?? (result.usage as any)?.outputTokens ?? 0,
             totalTokens: (result.usage as any)?.totalTokens ?? 0,
             provider: config.provider,
             model: config.model,
@@ -160,7 +158,9 @@ export async function runModule<T>(
       errorMessage,
     });
 
-    appendJobEvent(input.jobId, 'error', `${module.name} 분석 실패: ${errorMessage}`).catch(() => {});
+    appendJobEvent(input.jobId, 'error', `${module.name} 분석 실패: ${errorMessage}`).catch(
+      () => {},
+    );
     return { module: module.name, status: 'failed', errorMessage };
   }
 }

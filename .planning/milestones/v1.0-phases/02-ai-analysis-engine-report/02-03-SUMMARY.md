@@ -18,8 +18,8 @@ affects: [02-04, 02-05]
 tech-stack:
   added: []
   patterns:
-    - "buildPromptWithContext로 선행 분석 결과를 프롬프트에 주입하는 Stage 2 패턴"
-    - "Object.entries(priorResults).filter로 필요한 선행 결과만 선택적 참조"
+    - 'buildPromptWithContext로 선행 분석 결과를 프롬프트에 주입하는 Stage 2 패턴'
+    - 'Object.entries(priorResults).filter로 필요한 선행 결과만 선택적 참조'
 
 key-files:
   created:
@@ -38,13 +38,13 @@ key-files:
     - packages/core/src/analysis/index.ts
 
 key-decisions:
-  - "strategy 모듈은 Stage 1 + risk-map + opportunity 결과 모두 참조 (6개 선행 결과)"
-  - "finalSummary 모듈은 모든 선행 결과를 필터 없이 전체 참조"
-  - "각 모듈의 buildPrompt는 priorResults 없이 독립 실행 가능하게 유지"
+  - 'strategy 모듈은 Stage 1 + risk-map + opportunity 결과 모두 참조 (6개 선행 결과)'
+  - 'finalSummary 모듈은 모든 선행 결과를 필터 없이 전체 참조'
+  - '각 모듈의 buildPrompt는 priorResults 없이 독립 실행 가능하게 유지'
 
 patterns-established:
-  - "Stage 2 모듈: buildPromptWithContext에서 priorResults의 특정 키를 filter로 선택적 참조"
-  - "모듈별 시스템 프롬프트에 역할 정의 + 한국어 응답 지시 포함"
+  - 'Stage 2 모듈: buildPromptWithContext에서 priorResults의 특정 키를 filter로 선택적 참조'
+  - '모듈별 시스템 프롬프트에 역할 정의 + 한국어 응답 지시 포함'
 
 requirements-completed: [DEEP-03, DEEP-04, DEEP-05, REPT-02]
 
@@ -65,6 +65,7 @@ completed: 2026-03-24
 - **Files modified:** 12
 
 ## Accomplishments
+
 - Stage 2 분석 모듈 4개 구현 (risk-map, opportunity, strategy, final-summary)
 - 4개 Zod 스키마로 AI 응답 구조 강제 (RiskMapSchema, OpportunitySchema, StrategySchema, FinalSummarySchema)
 - buildPromptWithContext 메서드로 선행 분석 결과를 프롬프트에 주입하는 패턴 확립
@@ -79,6 +80,7 @@ Each task was committed atomically:
 2. **Task 1 (GREEN): Stage 2 분석 모듈 + 스키마 구현** - `7155dd7` (feat)
 
 ## Files Created/Modified
+
 - `packages/core/src/analysis/schemas/risk-map.schema.ts` - Top 3~5 리스크 Zod 스키마
 - `packages/core/src/analysis/schemas/opportunity.schema.ts` - 긍정 자산 + 미활용 영역 스키마
 - `packages/core/src/analysis/schemas/strategy.schema.ts` - 타겟/메시지/콘텐츠/리스크 대응 전략 스키마
@@ -93,6 +95,7 @@ Each task was committed atomically:
 - `packages/core/tests/analysis-modules-stage2.test.ts` - 14개 테스트
 
 ## Decisions Made
+
 - strategy 모듈은 Stage 1 + risk-map + opportunity 결과 모두 참조 (6개 선행 결과)
 - finalSummary 모듈은 모든 선행 결과를 필터 없이 전체 참조
 - 각 모듈의 buildPrompt는 priorResults 없이 독립 실행 가능하게 유지
@@ -102,26 +105,30 @@ Each task was committed atomically:
 None - plan executed exactly as written.
 
 ## Issues Encountered
+
 None
 
 ## Superpowers 호출 기록
 
-| # | 스킬명 | 호출 시점 | 결과 요약 |
-|---|--------|----------|----------|
-| - | - | - | 병렬 실행 에이전트로 Superpowers 스킬 호출 생략 |
+| #   | 스킬명 | 호출 시점 | 결과 요약                                       |
+| --- | ------ | --------- | ----------------------------------------------- |
+| -   | -      | -         | 병렬 실행 에이전트로 Superpowers 스킬 호출 생략 |
 
 ### 미호출 스킬 사유
-| 스킬명 | 미호출 사유 |
-|--------|-----------|
-| superpowers:brainstorming | 병렬 실행 에이전트 -- Plan이 명확하여 브레인스토밍 불필요 |
-| superpowers:test-driven-development | TDD 플로우를 직접 수행 (RED->GREEN 완료) |
-| superpowers:systematic-debugging | 버그 미발생 |
-| superpowers:requesting-code-review | 병렬 실행 에이전트 -- 코드 리뷰 생략 |
+
+| 스킬명                              | 미호출 사유                                               |
+| ----------------------------------- | --------------------------------------------------------- |
+| superpowers:brainstorming           | 병렬 실행 에이전트 -- Plan이 명확하여 브레인스토밍 불필요 |
+| superpowers:test-driven-development | TDD 플로우를 직접 수행 (RED->GREEN 완료)                  |
+| superpowers:systematic-debugging    | 버그 미발생                                               |
+| superpowers:requesting-code-review  | 병렬 실행 에이전트 -- 코드 리뷰 생략                      |
 
 ## User Setup Required
+
 None - no external service configuration required.
 
 ## Next Phase Readiness
+
 - Stage 2 분석 모듈 4개 완성, Plan 04 (오케스트레이터)에서 Stage 1 + Stage 2 파이프라인 연결 준비 완료
 - Plan 05 (리포트 생성)에서 finalSummaryModule의 oneLiner 활용 가능
 
@@ -132,5 +139,6 @@ None - no external service configuration required.
 - 45/45 tests passing, build successful
 
 ---
-*Phase: 02-ai-analysis-engine-report*
-*Completed: 2026-03-24*
+
+_Phase: 02-ai-analysis-engine-report_
+_Completed: 2026-03-24_

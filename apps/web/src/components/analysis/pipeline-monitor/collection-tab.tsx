@@ -1,14 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 import {
   AlertCircle,
   Info,
@@ -22,6 +14,9 @@ import {
 import { SOURCE_HELP } from './constants';
 import { calcRate } from './utils';
 import type { PipelineStatusData, SourceDetail, ItemDetail } from './types';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
 
 interface CollectionTabProps {
   data: PipelineStatusData;
@@ -31,22 +26,40 @@ function sourceStatusBadge(status: string) {
   switch (status) {
     case 'completed':
       return (
-        <Badge variant="default" className="bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/30 text-[10px] px-1.5">
+        <Badge
+          variant="default"
+          className="bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/30 text-[10px] px-1.5"
+        >
           완료
         </Badge>
       );
     case 'running':
       return (
-        <Badge variant="secondary" className="bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/30 text-[10px] px-1.5">
+        <Badge
+          variant="secondary"
+          className="bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/30 text-[10px] px-1.5"
+        >
           수집 중
         </Badge>
       );
     case 'failed':
-      return <Badge variant="destructive" className="text-[10px] px-1.5">실패</Badge>;
+      return (
+        <Badge variant="destructive" className="text-[10px] px-1.5">
+          실패
+        </Badge>
+      );
     case 'skipped':
-      return <Badge variant="outline" className="text-[10px] px-1.5">건너뜀</Badge>;
+      return (
+        <Badge variant="outline" className="text-[10px] px-1.5">
+          건너뜀
+        </Badge>
+      );
     default:
-      return <Badge variant="outline" className="text-muted-foreground text-[10px] px-1.5">대기</Badge>;
+      return (
+        <Badge variant="outline" className="text-muted-foreground text-[10px] px-1.5">
+          대기
+        </Badge>
+      );
   }
 }
 
@@ -74,7 +87,7 @@ export function ItemDetailsSection({
   // 10건 이상이면 기본 접힘
   const [expanded, setExpanded] = useState(items.length < 10);
 
-  const completedCount = items.filter(i => i.status === 'completed').length;
+  const completedCount = items.filter((i) => i.status === 'completed').length;
   const totalComments = items.reduce((sum, i) => sum + i.comments, 0);
 
   return (
@@ -104,10 +117,18 @@ export function ItemDetailsSection({
             >
               {itemStatusIcon(item.status)}
               <span className="truncate flex-1 min-w-0">{item.title}</span>
-              <span className={`font-mono shrink-0 ${
-                item.status === 'running' ? 'text-blue-600 dark:text-blue-400' : 'text-muted-foreground'
-              }`}>
-                {item.comments > 0 ? `${item.comments}건` : item.status === 'pending' ? '대기' : '-'}
+              <span
+                className={`font-mono shrink-0 ${
+                  item.status === 'running'
+                    ? 'text-blue-600 dark:text-blue-400'
+                    : 'text-muted-foreground'
+                }`}
+              >
+                {item.comments > 0
+                  ? `${item.comments}건`
+                  : item.status === 'pending'
+                    ? '대기'
+                    : '-'}
               </span>
             </div>
           ))}
@@ -123,9 +144,7 @@ export function CollectionTab({ data }: CollectionTabProps) {
 
   if (sources.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground py-4 text-center">
-        수집 데이터가 없습니다.
-      </p>
+      <p className="text-sm text-muted-foreground py-4 text-center">수집 데이터가 없습니다.</p>
     );
   }
 
@@ -182,9 +201,7 @@ export function CollectionTab({ data }: CollectionTabProps) {
               </div>
 
               {/* 진행 중 프로그레스 바 */}
-              {isRunning && (
-                <Progress value={null} className="h-1 animate-pulse" />
-              )}
+              {isRunning && <Progress value={null} className="h-1 animate-pulse" />}
 
               {/* 기사별 댓글 수집 현황 */}
               {hasArticleDetails && (
@@ -192,9 +209,7 @@ export function CollectionTab({ data }: CollectionTabProps) {
               )}
 
               {/* 영상별 댓글 수집 현황 */}
-              {hasVideoDetails && (
-                <ItemDetailsSection items={detail.videoDetails!} label="영상" />
-              )}
+              {hasVideoDetails && <ItemDetailsSection items={detail.videoDetails!} label="영상" />}
 
               {/* 에러 상세 (인라인) */}
               {isFailed && error && (

@@ -28,48 +28,54 @@ describe('ADVN-01: ApprovalRatingSchema', () => {
   it('estimatedRange.min/max가 0~100 범위를 벗어나면 실패한다', async () => {
     const { ApprovalRatingSchema } = await import('../src/analysis/schemas/approval-rating.schema');
 
-    expect(() => ApprovalRatingSchema.parse({
-      estimatedRange: { min: -5, max: 42 },
-      confidence: 'medium',
-      methodology: {
-        sentimentRatio: { positive: 0.4, neutral: 0.3, negative: 0.3 },
-        platformBiasCorrection: [],
-        spreadFactor: 0.7,
-      },
-      disclaimer: '면책 문구',
-      reasoning: '이유',
-    })).toThrow(ZodError);
+    expect(() =>
+      ApprovalRatingSchema.parse({
+        estimatedRange: { min: -5, max: 42 },
+        confidence: 'medium',
+        methodology: {
+          sentimentRatio: { positive: 0.4, neutral: 0.3, negative: 0.3 },
+          platformBiasCorrection: [],
+          spreadFactor: 0.7,
+        },
+        disclaimer: '면책 문구',
+        reasoning: '이유',
+      }),
+    ).toThrow(ZodError);
   });
 
   it('disclaimer 필드가 string 타입으로 존재한다', async () => {
     const { ApprovalRatingSchema } = await import('../src/analysis/schemas/approval-rating.schema');
 
     // disclaimer 없으면 실패
-    expect(() => ApprovalRatingSchema.parse({
-      estimatedRange: { min: 35, max: 42 },
-      confidence: 'medium',
-      methodology: {
-        sentimentRatio: { positive: 0.4, neutral: 0.3, negative: 0.3 },
-        platformBiasCorrection: [],
-        spreadFactor: 0.7,
-      },
-      reasoning: '이유',
-    })).toThrow(ZodError);
+    expect(() =>
+      ApprovalRatingSchema.parse({
+        estimatedRange: { min: 35, max: 42 },
+        confidence: 'medium',
+        methodology: {
+          sentimentRatio: { positive: 0.4, neutral: 0.3, negative: 0.3 },
+          platformBiasCorrection: [],
+          spreadFactor: 0.7,
+        },
+        reasoning: '이유',
+      }),
+    ).toThrow(ZodError);
   });
 
   it('confidence 필드가 high|medium|low enum이다', async () => {
     const { ApprovalRatingSchema } = await import('../src/analysis/schemas/approval-rating.schema');
 
-    expect(() => ApprovalRatingSchema.parse({
-      estimatedRange: { min: 35, max: 42 },
-      confidence: 'invalid',
-      methodology: {
-        sentimentRatio: { positive: 0.4, neutral: 0.3, negative: 0.3 },
-        platformBiasCorrection: [],
-        spreadFactor: 0.7,
-      },
-      disclaimer: '면책 문구',
-      reasoning: '이유',
-    })).toThrow(ZodError);
+    expect(() =>
+      ApprovalRatingSchema.parse({
+        estimatedRange: { min: 35, max: 42 },
+        confidence: 'invalid',
+        methodology: {
+          sentimentRatio: { positive: 0.4, neutral: 0.3, negative: 0.3 },
+          platformBiasCorrection: [],
+          spreadFactor: 0.7,
+        },
+        disclaimer: '면책 문구',
+        reasoning: '이유',
+      }),
+    ).toThrow(ZodError);
   });
 });

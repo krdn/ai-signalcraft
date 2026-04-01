@@ -23,7 +23,7 @@ describe('App smoke test', () => {
     render(
       <QueryClientProvider client={queryClient}>
         <Page />
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
     expect(screen.getByText(/SignalCraft/i)).toBeInTheDocument();
   });

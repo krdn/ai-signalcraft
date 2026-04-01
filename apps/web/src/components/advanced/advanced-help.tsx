@@ -1,21 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { HelpCircle, ChevronDown } from 'lucide-react';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+import { HelpCircle, ChevronDown, Info } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { Info } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 // ─── 카드별 도움말 팝오버 ───
 
@@ -124,7 +115,10 @@ export function AdvancedCardHelp({
             <ul className="space-y-1.5">
               {howToRead.map((item, i) => (
                 <li key={i} className="text-xs text-muted-foreground flex gap-1.5">
-                  <Badge variant="outline" className="shrink-0 h-4 w-4 justify-center p-0 text-[9px]">
+                  <Badge
+                    variant="outline"
+                    className="shrink-0 h-4 w-4 justify-center p-0 text-[9px]"
+                  >
                     {i + 1}
                   </Badge>
                   <span>{item}</span>
@@ -304,10 +298,18 @@ export function AdvancedHelp() {
           <div className="border-b px-3 pt-3">
             <h4 className="font-semibold text-sm mb-2">고급 분석 사용 가이드</h4>
             <TabsList className="w-full h-auto flex-wrap gap-1">
-              <TabsTrigger value="overview" className="text-xs">개요</TabsTrigger>
-              <TabsTrigger value="cards" className="text-xs">카드별 안내</TabsTrigger>
-              <TabsTrigger value="howto" className="text-xs">활용 방법</TabsTrigger>
-              <TabsTrigger value="caution" className="text-xs">유의사항</TabsTrigger>
+              <TabsTrigger value="overview" className="text-xs">
+                개요
+              </TabsTrigger>
+              <TabsTrigger value="cards" className="text-xs">
+                카드별 안내
+              </TabsTrigger>
+              <TabsTrigger value="howto" className="text-xs">
+                활용 방법
+              </TabsTrigger>
+              <TabsTrigger value="caution" className="text-xs">
+                유의사항
+              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -315,8 +317,10 @@ export function AdvancedHelp() {
             {/* 개요 탭 */}
             <TabsContent value="overview" className="p-4 space-y-3 mt-0">
               <p className="text-xs text-muted-foreground leading-relaxed">
-                고급 분석은 Stage 1~3 결과를 기반으로 <span className="text-foreground font-medium">Claude Sonnet</span>이 수행하는 4개 전략 시뮬레이션 모듈입니다.
-                일반 분석보다 더 높은 수준의 AI 모델을 사용하여 전략적 인사이트를 제공합니다.
+                고급 분석은 Stage 1~3 결과를 기반으로{' '}
+                <span className="text-foreground font-medium">Claude Sonnet</span>이 수행하는 4개
+                전략 시뮬레이션 모듈입니다. 일반 분석보다 더 높은 수준의 AI 모델을 사용하여 전략적
+                인사이트를 제공합니다.
               </p>
 
               <Separator />
@@ -326,15 +330,24 @@ export function AdvancedHelp() {
                 <ul className="space-y-1 text-xs text-muted-foreground">
                   <li className="flex gap-1.5">
                     <span className="text-muted-foreground/60 shrink-0">•</span>
-                    <span>Stage 1~3 (기초+심층+종합) 분석이 <span className="text-foreground">먼저 완료</span>되어야 합니다</span>
+                    <span>
+                      Stage 1~3 (기초+심층+종합) 분석이{' '}
+                      <span className="text-foreground">먼저 완료</span>되어야 합니다
+                    </span>
                   </li>
                   <li className="flex gap-1.5">
                     <span className="text-muted-foreground/60 shrink-0">•</span>
-                    <span>Stage 4는 선행 결과를 참조하여 <span className="text-foreground">자동 실행</span>됩니다</span>
+                    <span>
+                      Stage 4는 선행 결과를 참조하여{' '}
+                      <span className="text-foreground">자동 실행</span>됩니다
+                    </span>
                   </li>
                   <li className="flex gap-1.5">
                     <span className="text-muted-foreground/60 shrink-0">•</span>
-                    <span>완료 시 AI 리포트도 <span className="text-foreground">자동으로 재생성</span>됩니다 (고급 분석 포함)</span>
+                    <span>
+                      완료 시 AI 리포트도 <span className="text-foreground">자동으로 재생성</span>
+                      됩니다 (고급 분석 포함)
+                    </span>
                   </li>
                 </ul>
               </div>
@@ -360,9 +373,10 @@ export function AdvancedHelp() {
 
               <div className="rounded-lg bg-muted/50 p-2.5">
                 <p className="text-[10px] text-muted-foreground">
-                  모든 고급 분석 모듈은 <span className="text-foreground">Claude Sonnet</span>을 사용하며,
-                  Stage 1~2의 기초/심층 분석 결과를 입력으로 받습니다.
-                  각 카드의 <Info className="h-3 w-3 inline" /> 아이콘을 클릭하면 해당 카드의 상세 가이드를 확인할 수 있습니다.
+                  모든 고급 분석 모듈은 <span className="text-foreground">Claude Sonnet</span>을
+                  사용하며, Stage 1~2의 기초/심층 분석 결과를 입력으로 받습니다. 각 카드의{' '}
+                  <Info className="h-3 w-3 inline" /> 아이콘을 클릭하면 해당 카드의 상세 가이드를
+                  확인할 수 있습니다.
                 </p>
               </div>
             </TabsContent>
@@ -420,7 +434,9 @@ export function AdvancedHelp() {
               ].map((card) => (
                 <Collapsible key={card.name}>
                   <CollapsibleTrigger className="w-full flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-accent/50 transition-colors text-left group">
-                    <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4 shrink-0">{card.badge}</Badge>
+                    <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4 shrink-0">
+                      {card.badge}
+                    </Badge>
                     <span className="text-xs font-medium text-foreground flex-1">{card.name}</span>
                     <ChevronDown className="h-3 w-3 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
                   </CollapsibleTrigger>
@@ -444,20 +460,51 @@ export function AdvancedHelp() {
                 <p className="font-medium text-foreground text-xs mb-2">추천 읽기 순서</p>
                 <ol className="space-y-1.5 text-xs text-muted-foreground">
                   <li className="flex gap-2">
-                    <Badge variant="outline" className="shrink-0 h-4 min-w-4 justify-center p-0 text-[9px]">1</Badge>
-                    <span><span className="text-foreground">위기 시나리오</span>로 현재 위기 수준과 가능한 경로 파악</span>
+                    <Badge
+                      variant="outline"
+                      className="shrink-0 h-4 min-w-4 justify-center p-0 text-[9px]"
+                    >
+                      1
+                    </Badge>
+                    <span>
+                      <span className="text-foreground">위기 시나리오</span>로 현재 위기 수준과
+                      가능한 경로 파악
+                    </span>
                   </li>
                   <li className="flex gap-2">
-                    <Badge variant="outline" className="shrink-0 h-4 min-w-4 justify-center p-0 text-[9px]">2</Badge>
-                    <span><span className="text-foreground">프레임 전쟁</span>으로 여론 전장의 구도와 기회 확인</span>
+                    <Badge
+                      variant="outline"
+                      className="shrink-0 h-4 min-w-4 justify-center p-0 text-[9px]"
+                    >
+                      2
+                    </Badge>
+                    <span>
+                      <span className="text-foreground">프레임 전쟁</span>으로 여론 전장의 구도와
+                      기회 확인
+                    </span>
                   </li>
                   <li className="flex gap-2">
-                    <Badge variant="outline" className="shrink-0 h-4 min-w-4 justify-center p-0 text-[9px]">3</Badge>
-                    <span><span className="text-foreground">승리 시뮬레이션</span>으로 실행 전략과 우선순위 결정</span>
+                    <Badge
+                      variant="outline"
+                      className="shrink-0 h-4 min-w-4 justify-center p-0 text-[9px]"
+                    >
+                      3
+                    </Badge>
+                    <span>
+                      <span className="text-foreground">승리 시뮬레이션</span>으로 실행 전략과
+                      우선순위 결정
+                    </span>
                   </li>
                   <li className="flex gap-2">
-                    <Badge variant="outline" className="shrink-0 h-4 min-w-4 justify-center p-0 text-[9px]">4</Badge>
-                    <span><span className="text-foreground">AI 지지율</span>로 정량적 현재 위치 참고</span>
+                    <Badge
+                      variant="outline"
+                      className="shrink-0 h-4 min-w-4 justify-center p-0 text-[9px]"
+                    >
+                      4
+                    </Badge>
+                    <span>
+                      <span className="text-foreground">AI 지지율</span>로 정량적 현재 위치 참고
+                    </span>
                   </li>
                 </ol>
               </div>
@@ -469,19 +516,31 @@ export function AdvancedHelp() {
                 <ul className="space-y-1.5 text-xs text-muted-foreground">
                   <li className="flex gap-1.5">
                     <span className="text-primary shrink-0">→</span>
-                    <span><span className="text-foreground">위기 대응 회의:</span> 위기 시나리오 3개를 시나리오별 역할 분담 기반으로 논의</span>
+                    <span>
+                      <span className="text-foreground">위기 대응 회의:</span> 위기 시나리오 3개를
+                      시나리오별 역할 분담 기반으로 논의
+                    </span>
                   </li>
                   <li className="flex gap-1.5">
                     <span className="text-primary shrink-0">→</span>
-                    <span><span className="text-foreground">메시지 전략 수립:</span> 프레임 전쟁의 지배/반전 프레임을 핵심 메시지에 반영</span>
+                    <span>
+                      <span className="text-foreground">메시지 전략 수립:</span> 프레임 전쟁의
+                      지배/반전 프레임을 핵심 메시지에 반영
+                    </span>
                   </li>
                   <li className="flex gap-1.5">
                     <span className="text-primary shrink-0">→</span>
-                    <span><span className="text-foreground">주간 브리핑:</span> 승리 확률 추이 + 지지율 추정 변화를 시각적으로 보고</span>
+                    <span>
+                      <span className="text-foreground">주간 브리핑:</span> 승리 확률 추이 + 지지율
+                      추정 변화를 시각적으로 보고
+                    </span>
                   </li>
                   <li className="flex gap-1.5">
                     <span className="text-primary shrink-0">→</span>
-                    <span><span className="text-foreground">전략 효과 측정:</span> 전략 실행 전/후 반복 분석으로 승리 조건 충족도 변화 추적</span>
+                    <span>
+                      <span className="text-foreground">전략 효과 측정:</span> 전략 실행 전/후 반복
+                      분석으로 승리 조건 충족도 변화 추적
+                    </span>
                   </li>
                 </ul>
               </div>
@@ -494,35 +553,50 @@ export function AdvancedHelp() {
                   <span className="text-amber-500 shrink-0">!</span>
                   <div>
                     <span className="text-foreground font-medium">AI 시뮬레이션 한계</span>
-                    <p className="mt-0.5">고급 분석은 수집된 온라인 데이터 기반의 AI 추정입니다. 예측이 아닌 "가능성 탐색"으로 활용해야 합니다.</p>
+                    <p className="mt-0.5">
+                      고급 분석은 수집된 온라인 데이터 기반의 AI 추정입니다. 예측이 아닌 "가능성
+                      탐색"으로 활용해야 합니다.
+                    </p>
                   </div>
                 </li>
                 <li className="flex gap-1.5">
                   <span className="text-amber-500 shrink-0">!</span>
                   <div>
                     <span className="text-foreground font-medium">지지율 추정 면책</span>
-                    <p className="mt-0.5">AI 지지율 추정은 실제 여론조사와 방법론이 완전히 다릅니다. 공개 데이터로 인용하거나 대외 보고에 사용하면 안 됩니다.</p>
+                    <p className="mt-0.5">
+                      AI 지지율 추정은 실제 여론조사와 방법론이 완전히 다릅니다. 공개 데이터로
+                      인용하거나 대외 보고에 사용하면 안 됩니다.
+                    </p>
                   </div>
                 </li>
                 <li className="flex gap-1.5">
                   <span className="text-amber-500 shrink-0">!</span>
                   <div>
                     <span className="text-foreground font-medium">확률의 의미</span>
-                    <p className="mt-0.5">승리 확률, 시나리오 발생 확률 등은 AI의 주관적 추정입니다. 통계적으로 검증된 수치가 아닙니다.</p>
+                    <p className="mt-0.5">
+                      승리 확률, 시나리오 발생 확률 등은 AI의 주관적 추정입니다. 통계적으로 검증된
+                      수치가 아닙니다.
+                    </p>
                   </div>
                 </li>
                 <li className="flex gap-1.5">
                   <span className="text-amber-500 shrink-0">!</span>
                   <div>
                     <span className="text-foreground font-medium">선행 분석 의존</span>
-                    <p className="mt-0.5">고급 분석의 품질은 Stage 1~3 분석 결과에 의존합니다. 기초 분석의 수집 데이터가 부족하면 고급 분석도 제한적입니다.</p>
+                    <p className="mt-0.5">
+                      고급 분석의 품질은 Stage 1~3 분석 결과에 의존합니다. 기초 분석의 수집 데이터가
+                      부족하면 고급 분석도 제한적입니다.
+                    </p>
                   </div>
                 </li>
                 <li className="flex gap-1.5">
                   <span className="text-amber-500 shrink-0">!</span>
                   <div>
                     <span className="text-foreground font-medium">비용</span>
-                    <p className="mt-0.5">고급 분석 4개 모듈 모두 Claude Sonnet을 사용하므로, Stage 1(GPT-4o-mini)보다 API 비용이 높습니다.</p>
+                    <p className="mt-0.5">
+                      고급 분석 4개 모듈 모두 Claude Sonnet을 사용하므로, Stage 1(GPT-4o-mini)보다
+                      API 비용이 높습니다.
+                    </p>
                   </div>
                 </li>
               </ul>

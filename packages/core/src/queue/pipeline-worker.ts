@@ -1,9 +1,6 @@
 // 파이프라인 Worker 핸들러 -- pipeline 큐 (normalize + persist)
 import type { Job } from 'bullmq';
-import {
-  NaverCommentsCollector,
-  YoutubeCommentsCollector,
-} from '@ai-signalcraft/collectors';
+import { NaverCommentsCollector, YoutubeCommentsCollector } from '@ai-signalcraft/collectors';
 import type { NaverComment, YoutubeComment, CommunityPost } from '@ai-signalcraft/collectors';
 import {
   normalizeNaverArticle,
@@ -17,10 +14,10 @@ import {
   persistComments,
   updateJobProgress,
 } from '../pipeline';
-import { triggerAnalysis } from './flows';
 import { isPipelineCancelled } from '../pipeline/control';
-import { COMMUNITY_SOURCES } from './worker-config';
 import { createLogger } from '../utils/logger';
+import { triggerAnalysis } from './flows';
+import { COMMUNITY_SOURCES } from './worker-config';
 
 const logger = createLogger('pipeline-worker');
 
@@ -34,7 +31,7 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
 
     if (job.name.startsWith('normalize-')) {
       // 취소 확인
-      if (dbJobId && await isPipelineCancelled(dbJobId)) {
+      if (dbJobId && (await isPipelineCancelled(dbJobId))) {
         logger.info(`[${job.name}] 취소됨 — 정규화 건너뜀`);
         return { skipped: true, reason: 'cancelled' };
       }
@@ -43,21 +40,23 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
       const childValues = await job.getChildrenValues();
       const results: Record<string, unknown> = {};
 
-      for (const [key, value] of Object.entries(childValues)) {
+      for (const [_key, value] of Object.entries(childValues)) {
         const childResult = value as { source: string; items: unknown[]; count: number };
         results[childResult.source] = childResult;
       }
 
       // normalize-naver: 기사 수집 결과에서 URL 추출 후 댓글 병렬 수집
       if (job.name === 'normalize-naver' && results['naver-news']) {
-        const articles = (results['naver-news'] as { items: Array<{ url: string; title?: string }> }).items;
+        const articles = (
+          results['naver-news'] as { items: Array<{ url: string; title?: string }> }
+        ).items;
         const maxComments = (job.data.maxComments as number) ?? 500;
         const allComments: NaverComment[] = [];
 
         // 기사별 댓글 수집 진행 추적
         const articleDetails: Array<{ title: string; status: string; comments: number }> = articles
-          .filter(a => a.url)
-          .map(a => ({ title: (a.title || a.url).slice(0, 50), status: 'pending', comments: 0 }));
+          .filter((a) => a.url)
+          .map((a) => ({ title: (a.title || a.url).slice(0, 50), status: 'pending', comments: 0 }));
 
         // 네이버뉴스 URL만 필터 (외부 언론사 URL은 네이버 댓글 API 미지원)
         const naverArticles: Array<{ index: number; url: string }> = [];
@@ -82,7 +81,7 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
                 articles: articles.length,
                 comments: allComments.length,
                 articleDetails,
-              }
+              },
             });
           }
         };
@@ -111,7 +110,7 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
         // semaphore: CONCURRENCY개씩 배치 처리
         for (let batchStart = 0; batchStart < naverArticles.length; batchStart += CONCURRENCY) {
           // 배치 시작 전 취소 확인 — 네이버 댓글 수집 중 즉시 중단
-          if (dbJobId && await isPipelineCancelled(dbJobId)) {
+          if (dbJobId && (await isPipelineCancelled(dbJobId))) {
             logger.info(`[normalize-naver] 댓글 수집 중 취소됨 (${allComments.length}건 수집 후)`);
             break;
           }
@@ -130,7 +129,11 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
         }
 
         if (allComments.length > 0) {
-          results['naver-comments'] = { source: 'naver-comments', items: allComments, count: allComments.length };
+          results['naver-comments'] = {
+            source: 'naver-comments',
+            items: allComments,
+            count: allComments.length,
+          };
         }
 
         // 네이버 수집 완료 상태로 업데이트
@@ -141,21 +144,27 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
               articles: articles.length,
               comments: allComments.length,
               articleDetails,
-            }
+            },
           });
         }
       }
 
       // normalize-youtube: 영상 수집 결과에서 videoId 추출 후 댓글 병렬 수집
       if (job.name === 'normalize-youtube' && results['youtube-videos']) {
-        const videos = (results['youtube-videos'] as { items: Array<{ sourceId: string; title?: string }> }).items;
+        const videos = (
+          results['youtube-videos'] as { items: Array<{ sourceId: string; title?: string }> }
+        ).items;
         const maxComments = (job.data.maxComments as number) ?? 500;
         const allComments: YoutubeComment[] = [];
 
         // 영상별 댓글 수집 진행 추적
         const videoDetails: Array<{ title: string; status: string; comments: number }> = videos
-          .filter(v => v.sourceId)
-          .map(v => ({ title: (v.title || v.sourceId).slice(0, 50), status: 'pending', comments: 0 }));
+          .filter((v) => v.sourceId)
+          .map((v) => ({
+            title: (v.title || v.sourceId).slice(0, 50),
+            status: 'pending',
+            comments: 0,
+          }));
 
         // 유효한 영상 필터
         const validVideos: Array<{ index: number; sourceId: string }> = [];
@@ -175,7 +184,7 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
                 videos: videos.length,
                 comments: allComments.length,
                 videoDetails,
-              }
+              },
             });
           }
         };
@@ -187,7 +196,12 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
           const videoComments: YoutubeComment[] = [];
 
           try {
-            for await (const chunk of collector.collect({ keyword: item.sourceId, startDate: job.data.startDate ?? '', endDate: job.data.endDate ?? '', maxComments })) {
+            for await (const chunk of collector.collect({
+              keyword: item.sourceId,
+              startDate: job.data.startDate ?? '',
+              endDate: job.data.endDate ?? '',
+              maxComments,
+            })) {
               videoComments.push(...chunk);
               detail.comments = videoComments.length;
               await updateYtProgress();
@@ -195,7 +209,10 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
             detail.status = 'completed';
           } catch (err) {
             // 부분 실패 허용 -- 개별 영상 댓글 실패 시 로깅 후 계속
-            logger.warn(`[youtube-comments] 영상 댓글 수집 실패 (${item.sourceId}):`, err instanceof Error ? err.message : err);
+            logger.warn(
+              `[youtube-comments] 영상 댓글 수집 실패 (${item.sourceId}):`,
+              err instanceof Error ? err.message : err,
+            );
             detail.status = 'failed';
           }
           return videoComments;
@@ -204,8 +221,10 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
         // semaphore: YT_CONCURRENCY개씩 배치 처리
         for (let batchStart = 0; batchStart < validVideos.length; batchStart += YT_CONCURRENCY) {
           // 배치 시작 전 취소 확인 — 유튜브 댓글 수집 중 즉시 중단
-          if (dbJobId && await isPipelineCancelled(dbJobId)) {
-            logger.info(`[normalize-youtube] 댓글 수집 중 취소됨 (${allComments.length}건 수집 후)`);
+          if (dbJobId && (await isPipelineCancelled(dbJobId))) {
+            logger.info(
+              `[normalize-youtube] 댓글 수집 중 취소됨 (${allComments.length}건 수집 후)`,
+            );
             break;
           }
 
@@ -223,7 +242,11 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
         }
 
         if (allComments.length > 0) {
-          results['youtube-comments'] = { source: 'youtube-comments', items: allComments, count: allComments.length };
+          results['youtube-comments'] = {
+            source: 'youtube-comments',
+            items: allComments,
+            count: allComments.length,
+          };
         }
 
         // 유튜브 수집 완료 상태로 업데이트
@@ -234,7 +257,7 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
               videos: videos.length,
               comments: allComments.length,
               videoDetails,
-            }
+            },
           });
         }
       }
@@ -252,7 +275,7 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
 
     if (job.name === 'persist') {
       // 취소 확인
-      if (dbJobId && await isPipelineCancelled(dbJobId)) {
+      if (dbJobId && (await isPipelineCancelled(dbJobId))) {
         logger.info(`[persist] 취소됨 — 저장 건너뜀`);
         return { skipped: true, reason: 'cancelled' };
       }
@@ -260,7 +283,7 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
       // 자식 작업(normalize)의 결과를 가져와 DB에 저장
       const childValues = await job.getChildrenValues();
 
-      for (const [key, value] of Object.entries(childValues)) {
+      for (const [_key, value] of Object.entries(childValues)) {
         const normalizeResult = value as any;
         const results = normalizeResult.results || {};
         // dbJobId를 normalize 결과에서도 가져올 수 있지만, persist job 자체의 data에서 사용
@@ -315,7 +338,7 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
         for (const communitySource of COMMUNITY_SOURCES) {
           if (!results[communitySource]) continue;
 
-          const postItems = (results[communitySource] as any).items as CommunityPost[] || [];
+          const postItems = ((results[communitySource] as any).items as CommunityPost[]) || [];
           // Step 5a: 게시글 persist -> sourceId->dbId 매핑
           const normalizedPosts = postItems.map((p: CommunityPost) =>
             normalizeCommunityPost(p, communitySource),
@@ -349,7 +372,7 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
       // 취소 확인 — persist 완료 후에도 취소되었으면 분석 트리거하지 않음
       const keyword = job.data.keyword;
       if (keyword) {
-        if (dbJobId && await isPipelineCancelled(dbJobId)) {
+        if (dbJobId && (await isPipelineCancelled(dbJobId))) {
           logger.info(`[persist] 취소됨 — 분석 트리거 건너뜀 (dbJobId=${dbJobId})`);
         } else {
           await triggerAnalysis(dbJobId, keyword);

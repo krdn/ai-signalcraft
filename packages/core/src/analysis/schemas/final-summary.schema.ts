@@ -8,12 +8,16 @@ export const FinalSummarySchema = z.object({
     sentiment: z.enum(['positive', 'negative', 'mixed']),
     keyFactor: z.string(),
   }),
-  criticalActions: z.array(z.object({
-    priority: z.number(),
-    action: z.string(),
-    expectedImpact: z.string(),
-    timeline: z.string(),
-  })).describe('최우선 실행 과제 (최대 5개)'),
+  criticalActions: z
+    .array(
+      z.object({
+        priority: z.number(),
+        action: z.string(),
+        expectedImpact: z.string(),
+        timeline: z.string(),
+      }),
+    )
+    .describe('최우선 실행 과제 (최대 5개)'),
   outlook: z.object({
     shortTerm: z.string(),
     mediumTerm: z.string(),

@@ -10,13 +10,13 @@ autonomous: true
 requirements: [QUICK-VVL]
 must_haves:
   truths:
-    - "리서치 결과(방안 B 권장)가 STATE.md에 기록되어 향후 구현 시 참조 가능"
-    - "중복 분석 전략이 Pending Todos로 등록되어 추적 가능"
+    - '리서치 결과(방안 B 권장)가 STATE.md에 기록되어 향후 구현 시 참조 가능'
+    - '중복 분석 전략이 Pending Todos로 등록되어 추적 가능'
   artifacts:
-    - path: ".planning/quick/260327-vvl-duplicate-analysis-strategy/260327-vvl-RESEARCH.md"
-      provides: "중복 분석 전략 리서치 결과 (방안 A/B/C 비교, 권장 전략)"
-    - path: ".planning/STATE.md"
-      provides: "리서치 결과 요약 및 구현 TODO 등록"
+    - path: '.planning/quick/260327-vvl-duplicate-analysis-strategy/260327-vvl-RESEARCH.md'
+      provides: '중복 분석 전략 리서치 결과 (방안 A/B/C 비교, 권장 전략)'
+    - path: '.planning/STATE.md'
+      provides: '리서치 결과 요약 및 구현 TODO 등록'
   key_links: []
 ---
 
@@ -53,12 +53,12 @@ STATE.md를 업데이트한다:
 
 3. **Quick Tasks Completed 테이블**에 행 추가:
    - `| 260327-vvl | 동일 분석 날짜 겹침/중복 기사 처리 전략 리서치 | 2026-03-27 | - | [260327-vvl-duplicate-analysis-strategy](./quick/260327-vvl-duplicate-analysis-strategy/) |`
-  </action>
-  <verify>
-    <automated>grep -q "Quick-VVL" .planning/STATE.md && grep -q "조인 테이블" .planning/STATE.md && grep -q "260327-vvl" .planning/STATE.md && echo "PASS" || echo "FAIL"</automated>
-  </verify>
-  <done>STATE.md에 (1) 방안 B 채택 결정, (2) 구현 TODO, (3) Quick Task 완료 기록이 모두 존재</done>
-</task>
+     </action>
+     <verify>
+     <automated>grep -q "Quick-VVL" .planning/STATE.md && grep -q "조인 테이블" .planning/STATE.md && grep -q "260327-vvl" .planning/STATE.md && echo "PASS" || echo "FAIL"</automated>
+     </verify>
+     <done>STATE.md에 (1) 방안 B 채택 결정, (2) 구현 TODO, (3) Quick Task 완료 기록이 모두 존재</done>
+     </task>
 
 </tasks>
 

@@ -1,5 +1,5 @@
 // 데이터 정리 함수 — 분석 작업 삭제, 고아 데이터 정리, 보존 기간 기반 일괄 정리
-import { eq, lt, and, notInArray, sql, inArray } from 'drizzle-orm';
+import { eq, lt, and, sql, inArray } from 'drizzle-orm';
 import { getDb } from '../db';
 import {
   collectionJobs,
@@ -27,9 +27,17 @@ export async function deleteJob(jobId: number): Promise<{
   const db = getDb();
 
   // 작업 존재 확인
-  const [job] = await db.select({ id: collectionJobs.id, status: collectionJobs.status })
-    .from(collectionJobs).where(eq(collectionJobs.id, jobId)).limit(1);
-  if (!job) return { deleted: false, message: '작업을 찾을 수 없습니다', cleanedUp: { articles: 0, videos: 0, comments: 0 } };
+  const [job] = await db
+    .select({ id: collectionJobs.id, status: collectionJobs.status })
+    .from(collectionJobs)
+    .where(eq(collectionJobs.id, jobId))
+    .limit(1);
+  if (!job)
+    return {
+      deleted: false,
+      message: '작업을 찾을 수 없습니다',
+      cleanedUp: { articles: 0, videos: 0, comments: 0 },
+    };
 
   // 진행 중이면 BullMQ 작업 먼저 제거
   if (job.status === 'running' || job.status === 'pending' || job.status === 'paused') {
@@ -60,7 +68,9 @@ export async function deleteJob(jobId: number): Promise<{
   await db.delete(collectionJobs).where(eq(collectionJobs.id, jobId));
 
   // 5) 이 job에만 속했던 고아 콘텐츠 삭제
-  let deletedArticles = 0, deletedVideos = 0, deletedComments = 0;
+  let deletedArticles = 0,
+    deletedVideos = 0,
+    deletedComments = 0;
 
   if (orphanCommentIds.length > 0) {
     const result = await db.delete(comments).where(inArray(comments.id, orphanCommentIds));
@@ -90,7 +100,9 @@ export async function deleteJobs(jobIds: number[]): Promise<{
   message: string;
   cleanedUp: { articles: number; videos: number; comments: number };
 }> {
-  let totalArticles = 0, totalVideos = 0, totalComments = 0;
+  let totalArticles = 0,
+    totalVideos = 0,
+    totalComments = 0;
   let deleted = 0;
 
   for (const jobId of jobIds) {
@@ -126,18 +138,21 @@ export async function cleanupOldJobs(retentionDays: number): Promise<{
   const terminalStatuses = ['completed', 'failed', 'cancelled', 'partial_failure'] as const;
 
   // 삭제 대상 job ID 조회
-  const oldJobs = await db.select({ id: collectionJobs.id })
+  const oldJobs = await db
+    .select({ id: collectionJobs.id })
     .from(collectionJobs)
-    .where(and(
-      lt(collectionJobs.createdAt, cutoffDate),
-      inArray(collectionJobs.status, [...terminalStatuses]),
-    ));
+    .where(
+      and(
+        lt(collectionJobs.createdAt, cutoffDate),
+        inArray(collectionJobs.status, [...terminalStatuses]),
+      ),
+    );
 
   if (oldJobs.length === 0) {
     return { deleted: 0, message: '삭제할 작업이 없습니다' };
   }
 
-  const jobIds = oldJobs.map(j => j.id);
+  const jobIds = oldJobs.map((j) => j.id);
   const result = await deleteJobs(jobIds);
 
   return {
@@ -204,7 +219,15 @@ export async function getDataStats(): Promise<{
 }> {
   const db = getDb();
 
-  const [[jobCount], [articleCount], [videoCount], [commentCount], [resultCount], [reportCount], [oldest]] = await Promise.all([
+  const [
+    [jobCount],
+    [articleCount],
+    [videoCount],
+    [commentCount],
+    [resultCount],
+    [reportCount],
+    [oldest],
+  ] = await Promise.all([
     db.select({ count: sql<number>`count(*)::int` }).from(collectionJobs),
     db.select({ count: sql<number>`count(*)::int` }).from(articles),
     db.select({ count: sql<number>`count(*)::int` }).from(videos),
@@ -249,7 +272,7 @@ async function findExclusiveContentIds(
 }
 
 function toSnakeCase(s: string): string {
-  return s.replace(/[A-Z]/g, c => `_${c.toLowerCase()}`);
+  return s.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`);
 }
 
 /** BullMQ에서 특정 job 관련 모든 상태의 작업 제거 */

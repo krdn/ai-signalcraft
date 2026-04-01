@@ -3,6 +3,22 @@
 import { useState } from 'react';
 import { useTheme } from 'next-themes';
 import { signOut, useSession } from 'next-auth/react';
+import {
+  Activity,
+  Brain,
+  Database,
+  FileText,
+  History,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  Moon,
+  Play,
+  Settings,
+  Sun,
+  Users,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -27,21 +43,6 @@ import {
   SheetClose,
 } from '@/components/ui/sheet';
 import { Switch } from '@/components/ui/switch';
-import {
-  Activity,
-  Brain,
-  Database,
-  FileText,
-  History,
-  LayoutDashboard,
-  LogOut,
-  Menu,
-  Moon,
-  Play,
-  Settings,
-  Sun,
-  Users,
-} from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { TeamSettings } from '@/components/team/team-settings';
 import { ModelSettings } from '@/components/settings/model-settings';
@@ -49,7 +50,6 @@ import { ProviderKeys } from '@/components/settings/provider-keys';
 import { ConcurrencySettings } from '@/components/settings/concurrency-settings';
 import { CollectionLimitsSettings } from '@/components/settings/collection-limits-settings';
 import { cn } from '@/lib/utils';
-import type { LucideIcon } from 'lucide-react';
 
 const TABS: { label: string; icon: LucideIcon }[] = [
   { label: '분석 실행', icon: Play },
@@ -126,9 +126,7 @@ export function TopNav({ activeTab, onTabChange }: TopNavProps) {
       {/* 로고 */}
       <div className="flex items-center gap-1.5 shrink-0">
         <Activity className="h-5 w-5 text-primary" />
-        <span className="text-lg font-semibold text-primary">
-          SignalCraft
-        </span>
+        <span className="text-lg font-semibold text-primary">SignalCraft</span>
       </div>
 
       {/* 탭 네비게이션 -- 데스크톱만 표시 */}
@@ -158,9 +156,7 @@ export function TopNav({ activeTab, onTabChange }: TopNavProps) {
 
       {/* 모바일에서 중앙 현재 탭 표시 */}
       <div className="flex-1 md:hidden text-center">
-        <span className="text-sm font-medium text-foreground">
-          {TABS[activeTab].label}
-        </span>
+        <span className="text-sm font-medium text-foreground">{TABS[activeTab].label}</span>
       </div>
 
       {/* AI 모델 설정 */}
@@ -203,9 +199,7 @@ export function TopNav({ activeTab, onTabChange }: TopNavProps) {
       <DropdownMenu>
         <DropdownMenuTrigger className="shrink-0 rounded-full focus:outline-none focus:ring-2 focus:ring-primary">
           <Avatar className="h-8 w-8">
-            <AvatarFallback className="text-xs">
-              {userInitial.toUpperCase()}
-            </AvatarFallback>
+            <AvatarFallback className="text-xs">{userInitial.toUpperCase()}</AvatarFallback>
           </Avatar>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">

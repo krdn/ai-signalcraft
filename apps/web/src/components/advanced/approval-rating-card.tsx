@@ -2,6 +2,8 @@
 
 import { useState, useMemo } from 'react';
 import { Pie, PieChart, Cell } from 'recharts';
+import { ChevronDown, ChevronUp } from 'lucide-react';
+import { AdvancedCardHelp, ADVANCED_HELP } from './advanced-help';
 import {
   ChartContainer,
   ChartTooltip,
@@ -10,8 +12,6 @@ import {
 } from '@/components/ui/chart';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ChevronDown, ChevronUp } from 'lucide-react';
-import { AdvancedCardHelp, ADVANCED_HELP } from './advanced-help';
 
 interface ApprovalRatingData {
   estimatedRange: { min: number; max: number };
@@ -87,7 +87,10 @@ export function ApprovalRatingCard({ data }: ApprovalRatingCardProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         {!parsed ? (
-          <div className="flex items-center justify-center h-[260px] text-muted-foreground" role="status">
+          <div
+            className="flex items-center justify-center h-[260px] text-muted-foreground"
+            role="status"
+          >
             데이터 없음
           </div>
         ) : (
@@ -102,7 +105,10 @@ export function ApprovalRatingCard({ data }: ApprovalRatingCardProps) {
 
             {/* 감정 비율 도넛 차트 */}
             {sentimentData.length > 0 && (
-              <ChartContainer config={sentimentChartConfig} className="mx-auto aspect-square max-h-[160px]">
+              <ChartContainer
+                config={sentimentChartConfig}
+                className="mx-auto aspect-square max-h-[160px]"
+              >
                 <PieChart>
                   <ChartTooltip content={<ChartTooltipContent nameKey="name" />} />
                   <Pie
@@ -138,8 +144,12 @@ export function ApprovalRatingCard({ data }: ApprovalRatingCardProps) {
                       {parsed.methodology.platformBiasCorrection.map((item, i) => (
                         <tr key={i} className="border-b last:border-0">
                           <td className="px-2 py-1">{item.platform}</td>
-                          <td className="px-2 py-1">{BIAS_LABELS[item.biasDirection] ?? item.biasDirection}</td>
-                          <td className="px-2 py-1 text-right font-mono">{item.correctionFactor.toFixed(2)}</td>
+                          <td className="px-2 py-1">
+                            {BIAS_LABELS[item.biasDirection] ?? item.biasDirection}
+                          </td>
+                          <td className="px-2 py-1 text-right font-mono">
+                            {item.correctionFactor.toFixed(2)}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -155,7 +165,11 @@ export function ApprovalRatingCard({ data }: ApprovalRatingCardProps) {
                 onClick={() => setShowReasoning(!showReasoning)}
                 className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
-                {showReasoning ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                {showReasoning ? (
+                  <ChevronUp className="h-3 w-3" />
+                ) : (
+                  <ChevronDown className="h-3 w-3" />
+                )}
                 추론 과정
               </button>
               {showReasoning && (

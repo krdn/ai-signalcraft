@@ -3,13 +3,18 @@ import { z } from 'zod';
 import { eq } from 'drizzle-orm';
 import { analyzeStructured } from '@ai-signalcraft/ai-gateway';
 import { getDb } from '../db';
-import { articles, comments, collectionJobs, articleJobs, commentJobs } from '../db/schema/collections';
-import { getModuleModelConfig } from './model-config';
-import { MODULE_MODEL_MAP } from './types';
-import { getConcurrencyConfig } from './concurrency-config';
-import { classifySentiment, isAmbiguous, initClassifier } from './sentiment-classifier';
+import {
+  articles,
+  comments,
+  collectionJobs,
+  articleJobs,
+  commentJobs,
+} from '../db/schema/collections';
 import { updateJobProgress, appendJobEvent } from '../pipeline/persist';
 import { isPipelineCancelled } from '../pipeline/control';
+import { getModuleModelConfig } from './model-config';
+import { getConcurrencyConfig } from './concurrency-config';
+import { classifySentiment, isAmbiguous, initClassifier } from './sentiment-classifier';
 
 // item-analysis 모듈은 Stage 1과 동일하게 gpt-4o-mini 사용 (비용 최적화)
 const ITEM_ANALYSIS_MODULE = 'sentiment-framing';
@@ -17,20 +22,24 @@ const ITEM_ANALYSIS_MODULE = 'sentiment-framing';
 // --- Zod 스키마 ---
 
 const ArticleItemResultSchema = z.object({
-  items: z.array(z.object({
-    index: z.number(),
-    sentiment: z.enum(['positive', 'negative', 'neutral']),
-    sentimentScore: z.number().describe('감정 점수 0~1'),
-    summary: z.string(),
-  })),
+  items: z.array(
+    z.object({
+      index: z.number(),
+      sentiment: z.enum(['positive', 'negative', 'neutral']),
+      sentimentScore: z.number().describe('감정 점수 0~1'),
+      summary: z.string(),
+    }),
+  ),
 });
 
 const CommentItemResultSchema = z.object({
-  items: z.array(z.object({
-    index: z.number(),
-    sentiment: z.enum(['positive', 'negative', 'neutral']),
-    sentimentScore: z.number().describe('감정 점수 0~1'),
-  })),
+  items: z.array(
+    z.object({
+      index: z.number(),
+      sentiment: z.enum(['positive', 'negative', 'neutral']),
+      sentimentScore: z.number().describe('감정 점수 0~1'),
+    }),
+  ),
 });
 
 // --- 프롬프트 ---
@@ -39,9 +48,9 @@ function buildArticleBatchPrompt(
   keyword: string,
   batch: Array<{ id: number; title: string; content: string | null }>,
 ): string {
-  const itemList = batch.map((a, i) =>
-    `[${i}] 제목: ${a.title}\n    본문: ${(a.content ?? '').slice(0, 300)}`
-  ).join('\n\n');
+  const itemList = batch
+    .map((a, i) => `[${i}] 제목: ${a.title}\n    본문: ${(a.content ?? '').slice(0, 300)}`)
+    .join('\n\n');
 
   return `아래 뉴스 기사들을 "${keyword}" 관점에서 개별 감정 분석하세요.
 
@@ -60,9 +69,7 @@ function buildCommentBatchPrompt(
   keyword: string,
   batch: Array<{ id: number; content: string }>,
 ): string {
-  const itemList = batch.map((c, i) =>
-    `[${i}] ${c.content.slice(0, 200)}`
-  ).join('\n');
+  const itemList = batch.map((c, i) => `[${i}] ${c.content.slice(0, 200)}`).join('\n');
 
   return `아래 댓글들을 "${keyword}" 관점에서 개별 감정 분석하세요.
 
@@ -96,7 +103,9 @@ function chunk<T>(arr: T[], size: number): T[][] {
 /** Rate limit 에러 감지 */
 function isRateLimitError(error: unknown): boolean {
   const msg = error instanceof Error ? error.message : String(error);
-  return msg.includes('Rate limit') || msg.includes('429') || msg.includes('TPM') || msg.includes('RPM');
+  return (
+    msg.includes('Rate limit') || msg.includes('429') || msg.includes('TPM') || msg.includes('RPM')
+  );
 }
 
 /** Rate limit 에러에서 대기 시간 추출 (초) */
@@ -127,7 +136,9 @@ async function withRateLimitRetry<T>(
       if (isRateLimitError(error) && attempt < maxRetries) {
         const retryAfterSec = parseRetryAfter(error);
         const backoffMs = Math.max(retryAfterSec * 1000, (attempt + 1) * 5000);
-        console.log(`[item-analyzer] ${label}: rate limit, ${backoffMs}ms 후 재시도 (${attempt + 1}/${maxRetries})`);
+        console.log(
+          `[item-analyzer] ${label}: rate limit, ${backoffMs}ms 후 재시도 (${attempt + 1}/${maxRetries})`,
+        );
         await sleep(backoffMs);
         continue;
       }
@@ -212,15 +223,20 @@ export async function analyzeItems(jobId: number): Promise<{
   const articlesTotal = articleRows.length;
   const commentsTotal = commentRows.length;
 
-  await appendJobEvent(jobId, 'info',
-    `개별 감정 분석 시작 (기사 ${articlesTotal}건, 댓글 ${commentsTotal}건)`);
+  await appendJobEvent(
+    jobId,
+    'info',
+    `개별 감정 분석 시작 (기사 ${articlesTotal}건, 댓글 ${commentsTotal}건)`,
+  );
 
   await updateJobProgress(jobId, {
     'item-analysis': {
       status: 'running',
       phase: 'lightweight',
-      articlesTotal, commentsTotal,
-      articlesAnalyzed: 0, commentsAnalyzed: 0,
+      articlesTotal,
+      commentsTotal,
+      articlesAnalyzed: 0,
+      commentsAnalyzed: 0,
       ambiguousCount: 0,
     },
   });
@@ -229,11 +245,11 @@ export async function analyzeItems(jobId: number): Promise<{
   // Phase 1: 경량 모델로 기사 1차 분류
   // =============================================
   let articlesAnalyzed = 0;
-  let articleAmbiguous: typeof articleRows = [];
+  const articleAmbiguous: typeof articleRows = [];
 
   if (articlesTotal > 0) {
     console.log(`[item-analyzer] 기사 1차 경량 분류 시작: ${articlesTotal}건`);
-    const articleTexts = articleRows.map(a => `${a.title} ${(a.content ?? '').slice(0, 150)}`);
+    const articleTexts = articleRows.map((a) => `${a.title} ${(a.content ?? '').slice(0, 150)}`);
     const articleResults = await classifySentiment(articleTexts);
 
     // 확실한 건 DB 저장, 애매한 건 분리
@@ -242,26 +258,31 @@ export async function analyzeItems(jobId: number): Promise<{
       if (isAmbiguous(result.score)) {
         articleAmbiguous.push(articleRows[i]);
       } else {
-        await db.update(articles).set({
-          sentiment: result.label,
-          sentimentScore: result.score,
-        }).where(eq(articles.id, articleRows[i].id));
+        await db
+          .update(articles)
+          .set({
+            sentiment: result.label,
+            sentimentScore: result.score,
+          })
+          .where(eq(articles.id, articleRows[i].id));
         articlesAnalyzed++;
       }
     }
 
-    console.log(`[item-analyzer] 기사 1차 완료: ${articlesAnalyzed}건 확정, ${articleAmbiguous.length}건 LLM 재분석 대기`);
+    console.log(
+      `[item-analyzer] 기사 1차 완료: ${articlesAnalyzed}건 확정, ${articleAmbiguous.length}건 LLM 재분석 대기`,
+    );
   }
 
   // =============================================
   // Phase 1: 경량 모델로 댓글 1차 분류
   // =============================================
   let commentsAnalyzed = 0;
-  let commentAmbiguous: typeof commentRows = [];
+  const commentAmbiguous: typeof commentRows = [];
 
   if (commentsTotal > 0) {
     console.log(`[item-analyzer] 댓글 1차 경량 분류 시작: ${commentsTotal}건`);
-    const commentTexts = commentRows.map(c => c.content);
+    const commentTexts = commentRows.map((c) => c.content);
     const commentResults = await classifySentiment(commentTexts);
 
     for (let i = 0; i < commentRows.length; i++) {
@@ -269,27 +290,37 @@ export async function analyzeItems(jobId: number): Promise<{
       if (isAmbiguous(result.score)) {
         commentAmbiguous.push(commentRows[i]);
       } else {
-        await db.update(comments).set({
-          sentiment: result.label,
-          sentimentScore: result.score,
-        }).where(eq(comments.id, commentRows[i].id));
+        await db
+          .update(comments)
+          .set({
+            sentiment: result.label,
+            sentimentScore: result.score,
+          })
+          .where(eq(comments.id, commentRows[i].id));
         commentsAnalyzed++;
       }
     }
 
-    console.log(`[item-analyzer] 댓글 1차 완료: ${commentsAnalyzed}건 확정, ${commentAmbiguous.length}건 LLM 재분석 대기`);
+    console.log(
+      `[item-analyzer] 댓글 1차 완료: ${commentsAnalyzed}건 확정, ${commentAmbiguous.length}건 LLM 재분석 대기`,
+    );
   }
 
   const totalAmbiguous = articleAmbiguous.length + commentAmbiguous.length;
-  await appendJobEvent(jobId, 'info',
-    `1차 경량 분류 완료 (${articlesAnalyzed + commentsAnalyzed}건 확정, ${totalAmbiguous}건 LLM 재분석 대기)`);
+  await appendJobEvent(
+    jobId,
+    'info',
+    `1차 경량 분류 완료 (${articlesAnalyzed + commentsAnalyzed}건 확정, ${totalAmbiguous}건 LLM 재분석 대기)`,
+  );
 
   await updateJobProgress(jobId, {
     'item-analysis': {
       status: 'running',
       phase: totalAmbiguous > 0 ? 'llm-reanalysis' : 'completed',
-      articlesTotal, commentsTotal,
-      articlesAnalyzed, commentsAnalyzed,
+      articlesTotal,
+      commentsTotal,
+      articlesAnalyzed,
+      commentsAnalyzed,
       ambiguousCount: totalAmbiguous,
     },
   });
@@ -299,8 +330,12 @@ export async function analyzeItems(jobId: number): Promise<{
     console.log(`[item-analyzer] 취소 감지 (1차 분류 후), LLM 재분석 스킵`);
     await updateJobProgress(jobId, {
       'item-analysis': {
-        status: 'completed', phase: 'completed',
-        articlesTotal, commentsTotal, articlesAnalyzed, commentsAnalyzed,
+        status: 'completed',
+        phase: 'completed',
+        articlesTotal,
+        commentsTotal,
+        articlesAnalyzed,
+        commentsAnalyzed,
         ambiguousCount: totalAmbiguous,
       },
     });
@@ -312,25 +347,28 @@ export async function analyzeItems(jobId: number): Promise<{
   // =============================================
   if (articleAmbiguous.length > 0) {
     const batches = chunk(articleAmbiguous, ARTICLE_BATCH_SIZE);
-    console.log(`[item-analyzer] 기사 LLM 재분석 시작: ${articleAmbiguous.length}건, ${batches.length}배치`);
+    console.log(
+      `[item-analyzer] 기사 LLM 재분석 시작: ${articleAmbiguous.length}건, ${batches.length}배치`,
+    );
 
     const results = await runWithConcurrency(
       batches,
       async (batch, batchIdx) => {
         if (await isPipelineCancelled(jobId)) throw new Error('사용자에 의해 중지됨');
         const result = await withRateLimitRetry(
-          () => analyzeStructured(
-            buildArticleBatchPrompt(job.keyword, batch),
-            ArticleItemResultSchema,
-            {
-              provider: config.provider,
-              model: config.model,
-              baseUrl: config.baseUrl,
-              apiKey: config.apiKey,
-              systemPrompt: SYSTEM_PROMPT,
-              maxOutputTokens: 4096,
-            },
-          ),
+          () =>
+            analyzeStructured(
+              buildArticleBatchPrompt(job.keyword, batch),
+              ArticleItemResultSchema,
+              {
+                provider: config.provider,
+                model: config.model,
+                baseUrl: config.baseUrl,
+                apiKey: config.apiKey,
+                systemPrompt: SYSTEM_PROMPT,
+                maxOutputTokens: 4096,
+              },
+            ),
           `기사 LLM 배치 ${batchIdx + 1}/${batches.length}`,
         );
 
@@ -338,11 +376,14 @@ export async function analyzeItems(jobId: number): Promise<{
         for (const item of result.object.items) {
           const article = batch[item.index];
           if (!article) continue;
-          await db.update(articles).set({
-            sentiment: item.sentiment,
-            sentimentScore: item.sentimentScore,
-            summary: item.summary,
-          }).where(eq(articles.id, article.id));
+          await db
+            .update(articles)
+            .set({
+              sentiment: item.sentiment,
+              sentimentScore: item.sentimentScore,
+              summary: item.summary,
+            })
+            .where(eq(articles.id, article.id));
           batchAnalyzed++;
         }
 
@@ -369,25 +410,28 @@ export async function analyzeItems(jobId: number): Promise<{
   // =============================================
   if (commentAmbiguous.length > 0) {
     const batches = chunk(commentAmbiguous, COMMENT_BATCH_SIZE);
-    console.log(`[item-analyzer] 댓글 LLM 재분석 시작: ${commentAmbiguous.length}건, ${batches.length}배치`);
+    console.log(
+      `[item-analyzer] 댓글 LLM 재분석 시작: ${commentAmbiguous.length}건, ${batches.length}배치`,
+    );
 
     const results = await runWithConcurrency(
       batches,
       async (batch, batchIdx) => {
         if (await isPipelineCancelled(jobId)) throw new Error('사용자에 의해 중지됨');
         const result = await withRateLimitRetry(
-          () => analyzeStructured(
-            buildCommentBatchPrompt(job.keyword, batch),
-            CommentItemResultSchema,
-            {
-              provider: config.provider,
-              model: config.model,
-              baseUrl: config.baseUrl,
-              apiKey: config.apiKey,
-              systemPrompt: SYSTEM_PROMPT,
-              maxOutputTokens: 4096,
-            },
-          ),
+          () =>
+            analyzeStructured(
+              buildCommentBatchPrompt(job.keyword, batch),
+              CommentItemResultSchema,
+              {
+                provider: config.provider,
+                model: config.model,
+                baseUrl: config.baseUrl,
+                apiKey: config.apiKey,
+                systemPrompt: SYSTEM_PROMPT,
+                maxOutputTokens: 4096,
+              },
+            ),
           `댓글 LLM 배치 ${batchIdx + 1}/${batches.length}`,
         );
 
@@ -395,10 +439,13 @@ export async function analyzeItems(jobId: number): Promise<{
         for (const item of result.object.items) {
           const comment = batch[item.index];
           if (!comment) continue;
-          await db.update(comments).set({
-            sentiment: item.sentiment,
-            sentimentScore: item.sentimentScore,
-          }).where(eq(comments.id, comment.id));
+          await db
+            .update(comments)
+            .set({
+              sentiment: item.sentiment,
+              sentimentScore: item.sentimentScore,
+            })
+            .where(eq(comments.id, comment.id));
           batchAnalyzed++;
         }
 
@@ -425,17 +472,24 @@ export async function analyzeItems(jobId: number): Promise<{
     'item-analysis': {
       status: 'completed',
       phase: 'completed',
-      articlesTotal, commentsTotal,
-      articlesAnalyzed, commentsAnalyzed,
+      articlesTotal,
+      commentsTotal,
+      articlesAnalyzed,
+      commentsAnalyzed,
       ambiguousCount: totalAmbiguous,
     },
   });
 
   const llmReanalyzed = totalAmbiguous;
-  const lightweightClassified = (articlesAnalyzed + commentsAnalyzed) - llmReanalyzed;
-  await appendJobEvent(jobId, 'info',
-    `개별 감정 분석 완료 (경량 ${lightweightClassified}건 + LLM ${llmReanalyzed}건, 토큰 ${totalTokens})`);
+  const lightweightClassified = articlesAnalyzed + commentsAnalyzed - llmReanalyzed;
+  await appendJobEvent(
+    jobId,
+    'info',
+    `개별 감정 분석 완료 (경량 ${lightweightClassified}건 + LLM ${llmReanalyzed}건, 토큰 ${totalTokens})`,
+  );
 
-  console.log(`[item-analyzer] 완료: 기사 ${articlesAnalyzed}건, 댓글 ${commentsAnalyzed}건, LLM 재분석 ${totalAmbiguous}건, 토큰 ${totalTokens}`);
+  console.log(
+    `[item-analyzer] 완료: 기사 ${articlesAnalyzed}건, 댓글 ${commentsAnalyzed}건, LLM 재분석 ${totalAmbiguous}건, 토큰 ${totalTokens}`,
+  );
   return { articlesAnalyzed, commentsAnalyzed, totalTokens };
 }

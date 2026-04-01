@@ -4,10 +4,10 @@
 // 핵심 원칙: BullMQ Queue API만 사용하여 안전하게 작업 제거
 // Redis 직접 조작(lrem, del 등)은 BullMQ 내부 상태를 오염시키므로 금지
 import { Queue } from 'bullmq';
-import { getRedisConnection } from './connection';
+import { eq } from 'drizzle-orm';
 import { getDb } from '../db';
 import { collectionJobs } from '../db/schema/collections';
-import { eq } from 'drizzle-orm';
+import { getRedisConnection } from './connection';
 
 export async function cleanupOrphanedRedisJobs(): Promise<number> {
   const db = getDb();
@@ -23,15 +23,20 @@ export async function cleanupOrphanedRedisJobs(): Promise<number> {
       for (const job of jobs) {
         if (!job?.data?.dbJobId) continue;
 
-        const [dbJob] = await db.select({ status: collectionJobs.status })
-          .from(collectionJobs).where(eq(collectionJobs.id, job.data.dbJobId)).limit(1);
+        const [dbJob] = await db
+          .select({ status: collectionJobs.status })
+          .from(collectionJobs)
+          .where(eq(collectionJobs.id, job.data.dbJobId))
+          .limit(1);
 
         const shouldRemove = !dbJob || dbJob.status === 'cancelled' || dbJob.status === 'failed';
         if (shouldRemove) {
           try {
             await job.remove();
             cleaned++;
-            console.log(`[startup-cleanup] ${queueName}:${job.id} 제거 (dbJobId=${job.data.dbJobId}, status=${dbJob?.status ?? 'deleted'})`);
+            console.log(
+              `[startup-cleanup] ${queueName}:${job.id} 제거 (dbJobId=${job.data.dbJobId}, status=${dbJob?.status ?? 'deleted'})`,
+            );
           } catch {
             // 이미 상태 변경됨 — 무시
           }
@@ -44,15 +49,20 @@ export async function cleanupOrphanedRedisJobs(): Promise<number> {
       for (const job of wcJobs) {
         if (!job?.data?.dbJobId) continue;
 
-        const [dbJob] = await db.select({ status: collectionJobs.status })
-          .from(collectionJobs).where(eq(collectionJobs.id, job.data.dbJobId)).limit(1);
+        const [dbJob] = await db
+          .select({ status: collectionJobs.status })
+          .from(collectionJobs)
+          .where(eq(collectionJobs.id, job.data.dbJobId))
+          .limit(1);
 
         const shouldRemove = !dbJob || dbJob.status === 'cancelled' || dbJob.status === 'failed';
         if (shouldRemove) {
           try {
             await job.remove();
             cleaned++;
-            console.log(`[startup-cleanup] ${queueName}:${job.id} (wc) 제거 (dbJobId=${job.data.dbJobId})`);
+            console.log(
+              `[startup-cleanup] ${queueName}:${job.id} (wc) 제거 (dbJobId=${job.data.dbJobId})`,
+            );
           } catch {
             // 이미 상태 변경됨 — 무시
           }

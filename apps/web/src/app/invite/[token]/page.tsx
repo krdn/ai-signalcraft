@@ -4,17 +4,17 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useMutation } from '@tanstack/react-query';
+import { Loader2, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
 import { trpcClient } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
 
 type AcceptStatus = 'loading' | 'success' | 'expired' | 'already_accepted' | 'error';
 
 export default function InviteAcceptPage() {
   const params = useParams();
   const router = useRouter();
-  const { data: session, status: authStatus } = useSession();
+  const { status: authStatus } = useSession();
   const token = params.token as string;
   const [acceptStatus, setAcceptStatus] = useState<AcceptStatus>('loading');
   const [teamName, setTeamName] = useState<string>('');
@@ -51,8 +51,7 @@ export default function InviteAcceptPage() {
     if (authStatus === 'authenticated' && acceptStatus === 'loading') {
       acceptMutation.mutate();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authStatus, acceptStatus]);
+  }, [authStatus, acceptStatus]); // acceptMutation.mutate는 안정 참조
 
   // 로딩 중
   if (authStatus === 'loading' || acceptStatus === 'loading') {
@@ -107,14 +106,8 @@ export default function InviteAcceptPage() {
           {acceptStatus === 'already_accepted' && (
             <>
               <AlertTriangle className="h-12 w-12 text-yellow-500" />
-              <p className="text-center text-muted-foreground">
-                이미 수락된 초대입니다.
-              </p>
-              <Button
-                variant="outline"
-                onClick={() => router.push('/')}
-                className="w-full"
-              >
+              <p className="text-center text-muted-foreground">이미 수락된 초대입니다.</p>
+              <Button variant="outline" onClick={() => router.push('/')} className="w-full">
                 대시보드로 이동
               </Button>
             </>
@@ -123,9 +116,7 @@ export default function InviteAcceptPage() {
           {acceptStatus === 'error' && (
             <>
               <XCircle className="h-12 w-12 text-destructive" />
-              <p className="text-center text-muted-foreground">
-                {errorMessage}
-              </p>
+              <p className="text-center text-muted-foreground">{errorMessage}</p>
             </>
           )}
         </CardContent>

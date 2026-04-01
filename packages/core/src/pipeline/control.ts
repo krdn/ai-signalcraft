@@ -13,16 +13,16 @@ let _analysis: Queue | null = null;
 
 // 완료된 작업 자동 정리 — Redis 메모리 누적 방지
 const DEFAULT_JOB_OPTIONS = {
-  removeOnComplete: { age: 3600, count: 200 },   // 1시간 경과 또는 200개 초과 시 제거
-  removeOnFail: { age: 86400, count: 100 },       // 24시간 경과 또는 100개 초과 시 제거
+  removeOnComplete: { age: 3600, count: 200 }, // 1시간 경과 또는 200개 초과 시 제거
+  removeOnFail: { age: 86400, count: 100 }, // 24시간 경과 또는 100개 초과 시 제거
 };
 
 function getQueue(name: string): Queue {
   const conn = getRedisConnection();
   const opts = { connection: conn, defaultJobOptions: DEFAULT_JOB_OPTIONS };
-  if (name === 'collectors') return _collectors ??= new Queue('collectors', opts);
-  if (name === 'pipeline') return _pipeline ??= new Queue('pipeline', opts);
-  return _analysis ??= new Queue('analysis', opts);
+  if (name === 'collectors') return (_collectors ??= new Queue('collectors', opts));
+  if (name === 'pipeline') return (_pipeline ??= new Queue('pipeline', opts));
+  return (_analysis ??= new Queue('analysis', opts));
 }
 
 /**
@@ -34,12 +34,17 @@ function getQueue(name: string): Queue {
  * active 작업은 건드리지 않음 — Worker 핸들러가 자체 종료 후
  * BullMQ가 정상적으로 완료/실패 처리.
  */
-export async function cancelPipeline(jobId: number): Promise<{ cancelled: boolean; message: string }> {
+export async function cancelPipeline(
+  jobId: number,
+): Promise<{ cancelled: boolean; message: string }> {
   const db = getDb();
 
   // 현재 상태 확인
-  const [job] = await db.select({ status: collectionJobs.status })
-    .from(collectionJobs).where(eq(collectionJobs.id, jobId)).limit(1);
+  const [job] = await db
+    .select({ status: collectionJobs.status })
+    .from(collectionJobs)
+    .where(eq(collectionJobs.id, jobId))
+    .limit(1);
   if (!job) return { cancelled: false, message: '작업을 찾을 수 없습니다' };
 
   // cancelled/failed는 즉시 반환, completed는 분석 진행 중일 수 있으므로 취소 허용
@@ -52,17 +57,21 @@ export async function cancelPipeline(jobId: number): Promise<{ cancelled: boolea
 
   // 1단계: DB 상태를 먼저 cancelled로 변경
   // 이것이 핵심 — 모든 Worker 핸들러가 isPipelineCancelled()로 확인하고 조기 종료
-  await db.update(collectionJobs)
+  await db
+    .update(collectionJobs)
     .set({ status: 'cancelled', updatedAt: new Date() })
     .where(eq(collectionJobs.id, jobId));
 
   // 2단계: 진행 중/대기 중인 분석 모듈을 failed로 표시 (완료된 결과는 보존)
-  await db.update(analysisResults)
+  await db
+    .update(analysisResults)
     .set({ status: 'failed', errorMessage: '사용자에 의해 중지됨', updatedAt: new Date() })
-    .where(and(
-      eq(analysisResults.jobId, jobId),
-      notInArray(analysisResults.status, ['completed', 'skipped']),
-    ));
+    .where(
+      and(
+        eq(analysisResults.jobId, jobId),
+        notInArray(analysisResults.status, ['completed', 'skipped']),
+      ),
+    );
 
   // 3단계: 대기 중인 BullMQ 작업만 안전하게 제거
   // active 작업은 건드리지 않음 — 핸들러가 isPipelineCancelled()로 자체 종료
@@ -83,10 +92,14 @@ export async function cancelPipeline(jobId: number): Promise<{ cancelled: boolea
 export async function pausePipeline(jobId: number): Promise<{ paused: boolean; message: string }> {
   const db = getDb();
 
-  const [job] = await db.select({ status: collectionJobs.status })
-    .from(collectionJobs).where(eq(collectionJobs.id, jobId)).limit(1);
+  const [job] = await db
+    .select({ status: collectionJobs.status })
+    .from(collectionJobs)
+    .where(eq(collectionJobs.id, jobId))
+    .limit(1);
   if (!job) return { paused: false, message: '작업을 찾을 수 없습니다' };
-  if (job.status !== 'running') return { paused: false, message: `현재 ${job.status} 상태에서는 일시정지할 수 없습니다` };
+  if (job.status !== 'running')
+    return { paused: false, message: `현재 ${job.status} 상태에서는 일시정지할 수 없습니다` };
 
   // 분석 큐만 일시정지 (수집은 이미 진행 중이면 중단 어려움)
   try {
@@ -96,7 +109,8 @@ export async function pausePipeline(jobId: number): Promise<{ paused: boolean; m
     // 큐 연결 실패 시 무시
   }
 
-  await db.update(collectionJobs)
+  await db
+    .update(collectionJobs)
     .set({ status: 'paused', updatedAt: new Date() })
     .where(eq(collectionJobs.id, jobId));
 
@@ -108,13 +122,19 @@ export async function pausePipeline(jobId: number): Promise<{ paused: boolean; m
  * - BullMQ 큐 재개
  * - DB 상태를 running으로 복원
  */
-export async function resumePipeline(jobId: number): Promise<{ resumed: boolean; message: string }> {
+export async function resumePipeline(
+  jobId: number,
+): Promise<{ resumed: boolean; message: string }> {
   const db = getDb();
 
-  const [job] = await db.select({ status: collectionJobs.status })
-    .from(collectionJobs).where(eq(collectionJobs.id, jobId)).limit(1);
+  const [job] = await db
+    .select({ status: collectionJobs.status })
+    .from(collectionJobs)
+    .where(eq(collectionJobs.id, jobId))
+    .limit(1);
   if (!job) return { resumed: false, message: '작업을 찾을 수 없습니다' };
-  if (job.status !== 'paused') return { resumed: false, message: `현재 ${job.status} 상태에서는 재개할 수 없습니다` };
+  if (job.status !== 'paused')
+    return { resumed: false, message: `현재 ${job.status} 상태에서는 재개할 수 없습니다` };
 
   try {
     const analysisQueue = getQueue('analysis');
@@ -123,7 +143,8 @@ export async function resumePipeline(jobId: number): Promise<{ resumed: boolean;
     // 큐 연결 실패 시 무시
   }
 
-  await db.update(collectionJobs)
+  await db
+    .update(collectionJobs)
     .set({ status: 'running', updatedAt: new Date() })
     .where(eq(collectionJobs.id, jobId));
 
@@ -135,14 +156,21 @@ export async function resumePipeline(jobId: number): Promise<{ resumed: boolean;
  * - skippedModules 목록을 DB에 저장
  * - runner에서 실행 전 체크하여 해당 모듈 건너뜀
  */
-export async function setSkippedModules(jobId: number, modules: string[]): Promise<{ success: boolean; message: string }> {
+export async function setSkippedModules(
+  jobId: number,
+  modules: string[],
+): Promise<{ success: boolean; message: string }> {
   const db = getDb();
 
-  const [job] = await db.select({ status: collectionJobs.status })
-    .from(collectionJobs).where(eq(collectionJobs.id, jobId)).limit(1);
+  const [job] = await db
+    .select({ status: collectionJobs.status })
+    .from(collectionJobs)
+    .where(eq(collectionJobs.id, jobId))
+    .limit(1);
   if (!job) return { success: false, message: '작업을 찾을 수 없습니다' };
 
-  await db.update(collectionJobs)
+  await db
+    .update(collectionJobs)
     .set({ skippedModules: modules, updatedAt: new Date() })
     .where(eq(collectionJobs.id, jobId));
 
@@ -154,18 +182,28 @@ export async function setSkippedModules(jobId: number, modules: string[]): Promi
  * - costLimitUsd를 DB에 저장
  * - runner에서 매 모듈 실행 후 체크하여 초과 시 자동 중지
  */
-export async function setCostLimit(jobId: number, limitUsd: number | null): Promise<{ success: boolean; message: string }> {
+export async function setCostLimit(
+  jobId: number,
+  limitUsd: number | null,
+): Promise<{ success: boolean; message: string }> {
   const db = getDb();
 
-  const [job] = await db.select({ status: collectionJobs.status })
-    .from(collectionJobs).where(eq(collectionJobs.id, jobId)).limit(1);
+  const [job] = await db
+    .select({ status: collectionJobs.status })
+    .from(collectionJobs)
+    .where(eq(collectionJobs.id, jobId))
+    .limit(1);
   if (!job) return { success: false, message: '작업을 찾을 수 없습니다' };
 
-  await db.update(collectionJobs)
+  await db
+    .update(collectionJobs)
     .set({ costLimitUsd: limitUsd, updatedAt: new Date() })
     .where(eq(collectionJobs.id, jobId));
 
-  const msg = limitUsd != null ? `비용 한도가 $${limitUsd.toFixed(2)}로 설정되었습니다` : '비용 한도가 해제되었습니다';
+  const msg =
+    limitUsd != null
+      ? `비용 한도가 $${limitUsd.toFixed(2)}로 설정되었습니다`
+      : '비용 한도가 해제되었습니다';
   return { success: true, message: msg };
 }
 
@@ -174,8 +212,11 @@ export async function setCostLimit(jobId: number, limitUsd: number | null): Prom
  */
 export async function isPipelineCancelled(jobId: number): Promise<boolean> {
   const db = getDb();
-  const [job] = await db.select({ status: collectionJobs.status })
-    .from(collectionJobs).where(eq(collectionJobs.id, jobId)).limit(1);
+  const [job] = await db
+    .select({ status: collectionJobs.status })
+    .from(collectionJobs)
+    .where(eq(collectionJobs.id, jobId))
+    .limit(1);
   // DB에 없거나 cancelled 상태이면 취소된 것으로 간주
   return !job || job.status === 'cancelled';
 }
@@ -191,13 +232,16 @@ export async function waitIfPaused(jobId: number): Promise<boolean> {
   let waited = 0;
 
   while (waited < maxWaitMs) {
-    const [job] = await db.select({ status: collectionJobs.status })
-      .from(collectionJobs).where(eq(collectionJobs.id, jobId)).limit(1);
+    const [job] = await db
+      .select({ status: collectionJobs.status })
+      .from(collectionJobs)
+      .where(eq(collectionJobs.id, jobId))
+      .limit(1);
 
     if (!job || job.status === 'cancelled') return false; // 취소됨
     if (job.status !== 'paused') return true; // 재개됨 또는 진행 중
 
-    await new Promise(resolve => setTimeout(resolve, pollIntervalMs));
+    await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
     waited += pollIntervalMs;
   }
 
@@ -209,15 +253,21 @@ export async function waitIfPaused(jobId: number): Promise<boolean> {
 /**
  * 현재 누적 비용 확인 + 한도 초과 체크 (runner에서 호출)
  */
-export async function checkCostLimit(jobId: number): Promise<{ exceeded: boolean; currentCost: number; limit: number | null }> {
+export async function checkCostLimit(
+  jobId: number,
+): Promise<{ exceeded: boolean; currentCost: number; limit: number | null }> {
   const db = getDb();
 
-  const [job] = await db.select({ costLimitUsd: collectionJobs.costLimitUsd })
-    .from(collectionJobs).where(eq(collectionJobs.id, jobId)).limit(1);
+  const [job] = await db
+    .select({ costLimitUsd: collectionJobs.costLimitUsd })
+    .from(collectionJobs)
+    .where(eq(collectionJobs.id, jobId))
+    .limit(1);
   if (!job || job.costLimitUsd == null) return { exceeded: false, currentCost: 0, limit: null };
 
   // 완료된 모듈의 토큰 사용량 조회
-  const results = await db.select({ usage: analysisResults.usage })
+  const results = await db
+    .select({ usage: analysisResults.usage })
     .from(analysisResults)
     .where(eq(analysisResults.jobId, jobId));
 
@@ -228,11 +278,17 @@ export async function checkCostLimit(jobId: number): Promise<{ exceeded: boolean
 
   let totalCost = 0;
   for (const row of results) {
-    const usage = row.usage as { inputTokens?: number; outputTokens?: number; model?: string } | null;
+    const usage = row.usage as {
+      inputTokens?: number;
+      outputTokens?: number;
+      model?: string;
+    } | null;
     if (!usage) continue;
     const cost = TOKEN_COST_PER_1K[usage.model ?? ''];
     if (cost) {
-      totalCost += ((usage.inputTokens ?? 0) / 1000) * cost.input + ((usage.outputTokens ?? 0) / 1000) * cost.output;
+      totalCost +=
+        ((usage.inputTokens ?? 0) / 1000) * cost.input +
+        ((usage.outputTokens ?? 0) / 1000) * cost.output;
     }
   }
 
@@ -248,8 +304,11 @@ export async function checkCostLimit(jobId: number): Promise<{ exceeded: boolean
  */
 export async function getSkippedModules(jobId: number): Promise<string[]> {
   const db = getDb();
-  const [job] = await db.select({ skippedModules: collectionJobs.skippedModules })
-    .from(collectionJobs).where(eq(collectionJobs.id, jobId)).limit(1);
+  const [job] = await db
+    .select({ skippedModules: collectionJobs.skippedModules })
+    .from(collectionJobs)
+    .where(eq(collectionJobs.id, jobId))
+    .limit(1);
   return (job?.skippedModules as string[]) ?? [];
 }
 
@@ -305,18 +364,28 @@ export async function getQueueStatus() {
       const queue = getQueue(queueName);
 
       const counts = await queue.getJobCounts(
-        'active', 'waiting', 'delayed', 'waiting-children', 'completed', 'failed',
+        'active',
+        'waiting',
+        'delayed',
+        'waiting-children',
+        'completed',
+        'failed',
       );
 
       const allJobs = await queue.getJobs(
         ['active', 'waiting', 'delayed', 'waiting-children', 'failed'],
-        0, 50,
+        0,
+        50,
       );
 
       const jobs = await Promise.all(
         allJobs.map(async (job) => {
           let state = 'unknown';
-          try { state = await job.getState(); } catch { /* ignore */ }
+          try {
+            state = await job.getState();
+          } catch {
+            /* ignore */
+          }
           return {
             id: job.id ?? '',
             name: job.name,
@@ -334,7 +403,14 @@ export async function getQueueStatus() {
       // Redis 연결 실패 등 — 해당 큐는 에러 표시
       result.push({
         name: queueName,
-        counts: { active: 0, waiting: 0, delayed: 0, 'waiting-children': 0, completed: 0, failed: 0 },
+        counts: {
+          active: 0,
+          waiting: 0,
+          delayed: 0,
+          'waiting-children': 0,
+          completed: 0,
+          failed: 0,
+        },
         jobs: [],
         error: err instanceof Error ? err.message : 'Unknown error',
       });
@@ -375,8 +451,11 @@ export async function cleanupBeforeNewPipeline(): Promise<number> {
         if (!job?.data?.dbJobId) continue;
 
         // DB에서 해당 작업의 상태 확인
-        const [dbJob] = await db.select({ status: collectionJobs.status })
-          .from(collectionJobs).where(eq(collectionJobs.id, job.data.dbJobId)).limit(1);
+        const [dbJob] = await db
+          .select({ status: collectionJobs.status })
+          .from(collectionJobs)
+          .where(eq(collectionJobs.id, job.data.dbJobId))
+          .limit(1);
 
         // DB에 없거나 cancelled/failed 상태이면 잔여물 → 제거
         const shouldRemove = !dbJob || dbJob.status === 'cancelled' || dbJob.status === 'failed';

@@ -1,12 +1,12 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { trpcClient } from '@/lib/trpc';
-import { Button } from '@/components/ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { GitCompareArrows, Check } from 'lucide-react';
 import { format } from 'date-fns';
 import { CardHelp, DASHBOARD_HELP } from './card-help';
+import { trpcClient } from '@/lib/trpc';
+import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface CompareSelectorProps {
   currentJobId: number;
@@ -20,9 +20,8 @@ export function CompareSelector({ currentJobId, compareJobId, onSelect }: Compar
     queryFn: () => trpcClient.history.list.query({ page: 1, perPage: 10 }),
   });
 
-  const completedJobs = data?.items.filter(
-    (job) => job.status === 'completed' && job.id !== currentJobId
-  ) ?? [];
+  const completedJobs =
+    data?.items.filter((job) => job.status === 'completed' && job.id !== currentJobId) ?? [];
 
   return (
     <div className="flex items-center gap-2">
@@ -53,9 +52,7 @@ export function CompareSelector({ currentJobId, compareJobId, onSelect }: Compar
                       {format(new Date(job.createdAt), 'MM/dd HH:mm')}
                     </p>
                   </div>
-                  {compareJobId === job.id && (
-                    <Check className="h-4 w-4 text-primary shrink-0" />
-                  )}
+                  {compareJobId === job.id && <Check className="h-4 w-4 text-primary shrink-0" />}
                 </button>
               ))}
             </div>
@@ -63,7 +60,12 @@ export function CompareSelector({ currentJobId, compareJobId, onSelect }: Compar
         </PopoverContent>
       </Popover>
       {compareJobId && (
-        <Button variant="ghost" size="sm" onClick={() => onSelect(null)} className="text-xs text-muted-foreground">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => onSelect(null)}
+          className="text-xs text-muted-foreground"
+        >
           비교 해제
         </Button>
       )}

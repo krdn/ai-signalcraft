@@ -27,51 +27,51 @@
 
 ### System Layers (Top to Bottom)
 
-| Layer | Description | Technology |
-|-------|-------------|------------|
-| **Presentation** | 분석 결과 시각화, 분석 실행 트리거 | Next.js Dashboard |
-| **API** | REST/tRPC API, 인증, 분석 작업 관리 | Next.js API Routes or Hono |
-| **Orchestration** | 파이프라인 잡 관리, 큐잉, 재시도 | BullMQ + Redis |
-| **Collection** | 데이터 수집 (API + Scraping) | Crawlee, Cheerio, Playwright |
-| **Processing** | 데이터 정규화, 중복 제거, 정제 | Custom TypeScript modules |
-| **Analysis** | AI 기반 여론 분석 (8개 모듈 + 4개 추가 기능) | Claude API, OpenAI API |
-| **Storage** | 수집 데이터 + 분석 결과 저장 | PostgreSQL (192.168.0.5) |
+| Layer             | Description                                  | Technology                   |
+| ----------------- | -------------------------------------------- | ---------------------------- |
+| **Presentation**  | 분석 결과 시각화, 분석 실행 트리거           | Next.js Dashboard            |
+| **API**           | REST/tRPC API, 인증, 분석 작업 관리          | Next.js API Routes or Hono   |
+| **Orchestration** | 파이프라인 잡 관리, 큐잉, 재시도             | BullMQ + Redis               |
+| **Collection**    | 데이터 수집 (API + Scraping)                 | Crawlee, Cheerio, Playwright |
+| **Processing**    | 데이터 정규화, 중복 제거, 정제               | Custom TypeScript modules    |
+| **Analysis**      | AI 기반 여론 분석 (8개 모듈 + 4개 추가 기능) | Claude API, OpenAI API       |
+| **Storage**       | 수집 데이터 + 분석 결과 저장                 | PostgreSQL (192.168.0.5)     |
 
 ## Component Boundaries
 
 ### 1. Dashboard (Presentation Layer)
 
-| Responsibility | Communicates With |
-|----------------|-------------------|
-| 분석 대상 인물 검색/등록 | API Server |
-| 분석 실행 트리거 (수동) | API Server |
-| 파이프라인 진행 상태 모니터링 | API Server (polling or SSE) |
-| 분석 결과 시각화 (차트, 테이블, 타임라인) | API Server |
-| 팀 멀티유저 접근 제어 | API Server |
+| Responsibility                            | Communicates With           |
+| ----------------------------------------- | --------------------------- |
+| 분석 대상 인물 검색/등록                  | API Server                  |
+| 분석 실행 트리거 (수동)                   | API Server                  |
+| 파이프라인 진행 상태 모니터링             | API Server (polling or SSE) |
+| 분석 결과 시각화 (차트, 테이블, 타임라인) | API Server                  |
+| 팀 멀티유저 접근 제어                     | API Server                  |
 
 **경계 규칙:** Dashboard는 DB에 직접 접근하지 않는다. 모든 데이터는 API를 통해 흐른다.
 
 ### 2. API Server
 
-| Responsibility | Communicates With |
-|----------------|-------------------|
-| 인증/인가 (팀 멤버 관리) | PostgreSQL |
-| 분석 작업 CRUD (생성, 조회, 삭제) | PostgreSQL |
-| 파이프라인 실행 명령 발행 | BullMQ (Job Queue) |
-| 작업 진행 상태 조회 | BullMQ + PostgreSQL |
-| 분석 결과 데이터 제공 | PostgreSQL |
+| Responsibility                    | Communicates With   |
+| --------------------------------- | ------------------- |
+| 인증/인가 (팀 멤버 관리)          | PostgreSQL          |
+| 분석 작업 CRUD (생성, 조회, 삭제) | PostgreSQL          |
+| 파이프라인 실행 명령 발행         | BullMQ (Job Queue)  |
+| 작업 진행 상태 조회               | BullMQ + PostgreSQL |
+| 분석 결과 데이터 제공             | PostgreSQL          |
 
 **경계 규칙:** API Server는 수집/분석 로직을 직접 실행하지 않는다. Job Queue에 작업을 넣고 Worker가 처리한다.
 
 ### 3. Pipeline Orchestrator (BullMQ)
 
-| Responsibility | Communicates With |
-|----------------|-------------------|
-| 파이프라인 단계별 잡 생성/관리 | Redis |
-| 잡 간 의존성 관리 (parent-child) | Redis |
-| 재시도 로직 (exponential backoff) | Redis |
-| Worker 부하 분산 | Workers |
-| 진행 상태 이벤트 발행 | API Server (via QueueEvents) |
+| Responsibility                    | Communicates With            |
+| --------------------------------- | ---------------------------- |
+| 파이프라인 단계별 잡 생성/관리    | Redis                        |
+| 잡 간 의존성 관리 (parent-child)  | Redis                        |
+| 재시도 로직 (exponential backoff) | Redis                        |
+| Worker 부하 분산                  | Workers                      |
+| 진행 상태 이벤트 발행             | API Server (via QueueEvents) |
 
 **핵심 설계:** BullMQ의 parent-child job 관계를 활용하여 파이프라인 DAG를 구성한다.
 
@@ -112,14 +112,14 @@ Analysis Job (parent)
 
 각 소스별 독립 모듈로 구성. 새 소스 추가가 기존 코드에 영향을 주지 않는 플러그인 구조.
 
-| Collector | Method | Rate Limiting | Notes |
-|-----------|--------|---------------|-------|
-| **Naver News** | Scraping (Cheerio/Playwright) | 요청 간 딜레이, robots.txt 준수 | 기사 본문 + 댓글 |
-| **YouTube** | YouTube Data API v3 | API 쿼터 관리 (10,000 units/day) | 영상 메타 + 댓글 |
-| **X (Twitter)** | X API v2 | Rate limit 준수 | 트윗 + 반응 |
-| **DC Gallery** | Scraping (Playwright) | 딜레이, UA rotation | 게시글 + 댓글 |
-| **FM Korea** | Scraping (Playwright) | 딜레이, UA rotation | 게시글 + 댓글 |
-| **Clien** | Scraping (Cheerio) | 딜레이 | 게시글 + 댓글 |
+| Collector       | Method                        | Rate Limiting                    | Notes            |
+| --------------- | ----------------------------- | -------------------------------- | ---------------- |
+| **Naver News**  | Scraping (Cheerio/Playwright) | 요청 간 딜레이, robots.txt 준수  | 기사 본문 + 댓글 |
+| **YouTube**     | YouTube Data API v3           | API 쿼터 관리 (10,000 units/day) | 영상 메타 + 댓글 |
+| **X (Twitter)** | X API v2                      | Rate limit 준수                  | 트윗 + 반응      |
+| **DC Gallery**  | Scraping (Playwright)         | 딜레이, UA rotation              | 게시글 + 댓글    |
+| **FM Korea**    | Scraping (Playwright)         | 딜레이, UA rotation              | 게시글 + 댓글    |
+| **Clien**       | Scraping (Cheerio)            | 딜레이                           | 게시글 + 댓글    |
 
 **인터페이스 규칙:** 모든 Collector는 동일한 인터페이스를 구현한다.
 
@@ -144,13 +144,13 @@ interface RawDocument {
 
 ### 5. Processor (Data Processing Layer)
 
-| Responsibility | Details |
-|----------------|---------|
-| 정규화(Normalization) | RawDocument -> NormalizedDocument 변환 |
-| 중복 제거(Deduplication) | content hash 기반 중복 필터링 |
-| 텍스트 정제(Cleaning) | HTML 태그 제거, 이모지 처리, 욕설 마스킹 |
-| 메타데이터 보강(Enrichment) | 날짜 정규화, 소스 분류 태깅 |
-| 배치 구성(Batching) | AI 분석을 위한 적절한 크기로 문서 배치 구성 |
+| Responsibility              | Details                                     |
+| --------------------------- | ------------------------------------------- |
+| 정규화(Normalization)       | RawDocument -> NormalizedDocument 변환      |
+| 중복 제거(Deduplication)    | content hash 기반 중복 필터링               |
+| 텍스트 정제(Cleaning)       | HTML 태그 제거, 이모지 처리, 욕설 마스킹    |
+| 메타데이터 보강(Enrichment) | 날짜 정규화, 소스 분류 태깅                 |
+| 배치 구성(Batching)         | AI 분석을 위한 적절한 크기로 문서 배치 구성 |
 
 **핵심 설계:** Processor는 stateless pure function으로 구현한다. 동일 입력에 동일 출력을 보장한다.
 
@@ -183,13 +183,13 @@ interface ModelConfig {
 
 **모델 라우팅 전략:**
 
-| Module | Recommended Model | Rationale |
-|--------|-------------------|-----------|
-| Macro View, Segmentation | Claude (Sonnet) | 긴 문맥 이해, 구조화 능력 |
-| Sentiment & Framing | GPT-4o | 한국어 감정 분석 강점 |
-| Risk/Opportunity | Claude (Sonnet) | 분석적 추론 |
-| Strategy, Win Probability | Claude (Opus) | 복잡한 전략적 사고 |
-| AI Polling Simulation | Claude (Sonnet) | 정량적 추론 |
+| Module                    | Recommended Model | Rationale                 |
+| ------------------------- | ----------------- | ------------------------- |
+| Macro View, Segmentation  | Claude (Sonnet)   | 긴 문맥 이해, 구조화 능력 |
+| Sentiment & Framing       | GPT-4o            | 한국어 감정 분석 강점     |
+| Risk/Opportunity          | Claude (Sonnet)   | 분석적 추론               |
+| Strategy, Win Probability | Claude (Opus)     | 복잡한 전략적 사고        |
+| AI Polling Simulation     | Claude (Sonnet)   | 정량적 추론               |
 
 **주의:** 모델 선택은 실제 테스트 후 조정해야 한다. 위 권장 사항은 LOW confidence이며 벤치마크 필요.
 
@@ -219,6 +219,7 @@ interface ModelConfig {
 ```
 
 **PostgreSQL을 선택하는 이유 (MongoDB 대비):**
+
 - 분석 결과가 구조화된 테이블 형태 (감정 비율, 지지율 등 정량 데이터)
 - 시계열 쿼리 (여론 추이 분석)에 PostgreSQL이 유리
 - JSONB 컬럼으로 비정형 메타데이터도 유연하게 저장 가능
@@ -274,13 +275,13 @@ interface ModelConfig {
 
 ### Data Size Estimates (Per Analysis Run)
 
-| Stage | Volume | Storage |
-|-------|--------|---------|
-| Raw collection | 500-5,000 documents | ~5-50 MB |
-| Normalized | 300-3,000 documents (deduped) | ~3-30 MB |
-| AI API calls | 10-30 calls (batched) | N/A |
-| Analysis results | 12 modules x 1 result | ~500 KB JSON |
-| Total per run | - | ~10-80 MB |
+| Stage            | Volume                        | Storage      |
+| ---------------- | ----------------------------- | ------------ |
+| Raw collection   | 500-5,000 documents           | ~5-50 MB     |
+| Normalized       | 300-3,000 documents (deduped) | ~3-30 MB     |
+| AI API calls     | 10-30 calls (batched)         | N/A          |
+| Analysis results | 12 modules x 1 result         | ~500 KB JSON |
+| Total per run    | -                             | ~10-80 MB    |
 
 ## Patterns to Follow
 
@@ -307,7 +308,9 @@ export function getCollector(source: SourceType): Collector {
 // src/collectors/naver-news.ts
 registerCollector({
   source: 'naver-news',
-  async collect(params) { /* ... */ }
+  async collect(params) {
+    /* ... */
+  },
 });
 ```
 
@@ -320,20 +323,31 @@ registerCollector({
 // 모듈 의존성 그래프
 const MODULE_DEPS: Record<string, string[]> = {
   'macro-view': [],
-  'segmentation': [],
+  segmentation: [],
   'sentiment-framing': [],
   'message-impact': [],
   'risk-map': [],
-  'opportunity': [],
-  'strategy': ['macro-view', 'segmentation', 'sentiment-framing',
-               'message-impact', 'risk-map', 'opportunity'],
+  opportunity: [],
+  strategy: [
+    'macro-view',
+    'segmentation',
+    'sentiment-framing',
+    'message-impact',
+    'risk-map',
+    'opportunity',
+  ],
   'ai-polling': ['macro-view', 'segmentation', 'sentiment-framing'],
   'frame-battle': ['sentiment-framing'],
   'crisis-sim': ['risk-map'],
-  'win-probability': ['macro-view', 'segmentation', 'sentiment-framing',
-                       'message-impact', 'risk-map', 'opportunity'],
-  'final-summary': ['strategy', 'ai-polling', 'frame-battle',
-                     'crisis-sim', 'win-probability'],
+  'win-probability': [
+    'macro-view',
+    'segmentation',
+    'sentiment-framing',
+    'message-impact',
+    'risk-map',
+    'opportunity',
+  ],
+  'final-summary': ['strategy', 'ai-polling', 'frame-battle', 'crisis-sim', 'win-probability'],
 };
 ```
 
@@ -396,13 +410,13 @@ await aiGateway.analyze({
 
 ## Scalability Considerations
 
-| Concern | 3-10 Users (MVP) | 50+ Users | 100+ Concurrent Analyses |
-|---------|-------------------|-----------|--------------------------|
-| API Server | 단일 Next.js 인스턴스 | PM2 cluster mode | Kubernetes + Load Balancer |
-| Job Queue | 단일 Redis 인스턴스 | Redis Sentinel | Redis Cluster |
-| DB | 단일 PostgreSQL | Read replica 추가 | Connection pooling (PgBouncer) |
-| AI API | 순차 호출, 기본 rate limit | 병렬 호출, 큐잉 | API key rotation, 멀티 계정 |
-| Worker | 단일 프로세스 | 복수 Worker 프로세스 | 분산 Worker (별도 서버) |
+| Concern    | 3-10 Users (MVP)           | 50+ Users            | 100+ Concurrent Analyses       |
+| ---------- | -------------------------- | -------------------- | ------------------------------ |
+| API Server | 단일 Next.js 인스턴스      | PM2 cluster mode     | Kubernetes + Load Balancer     |
+| Job Queue  | 단일 Redis 인스턴스        | Redis Sentinel       | Redis Cluster                  |
+| DB         | 단일 PostgreSQL            | Read replica 추가    | Connection pooling (PgBouncer) |
+| AI API     | 순차 호출, 기본 rate limit | 병렬 호출, 큐잉      | API key rotation, 멀티 계정    |
+| Worker     | 단일 프로세스              | 복수 Worker 프로세스 | 분산 Worker (별도 서버)        |
 
 **MVP 단계에서는 단일 서버(192.168.0.5)로 충분하다.** 3-10명 팀의 수동 트리거 분석이므로 동시 분석 실행은 1-3건 이내로 예상.
 
@@ -443,6 +457,7 @@ Phase 6: Polish
 ```
 
 **의존성 근거:**
+
 - Storage가 먼저 있어야 수집 데이터를 저장할 수 있다
 - Collection이 있어야 Processing을 테스트할 수 있다
 - Processing이 있어야 Analysis에 정제된 데이터를 제공할 수 있다

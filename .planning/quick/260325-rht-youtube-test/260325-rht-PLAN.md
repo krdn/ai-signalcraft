@@ -9,15 +9,15 @@ autonomous: false
 requirements: []
 must_haves:
   truths:
-    - "YouTube 수집 파이프라인이 API Key로 정상 인증됨"
-    - "분석 실행 화면에서 YouTube 소스 선택 후 트리거가 동작함"
-    - "collect-youtube-videos, collect-youtube-comments 작업이 BullMQ에서 처리됨"
+    - 'YouTube 수집 파이프라인이 API Key로 정상 인증됨'
+    - '분석 실행 화면에서 YouTube 소스 선택 후 트리거가 동작함'
+    - 'collect-youtube-videos, collect-youtube-comments 작업이 BullMQ에서 처리됨'
   artifacts: []
   key_links:
-    - from: "apps/web TriggerForm"
-      to: "packages/core/src/queue/flows.ts triggerCollection"
-      via: "tRPC analysis.trigger mutation"
-      pattern: "triggerCollection"
+    - from: 'apps/web TriggerForm'
+      to: 'packages/core/src/queue/flows.ts triggerCollection'
+      via: 'tRPC analysis.trigger mutation'
+      pattern: 'triggerCollection'
 ---
 
 <objective>

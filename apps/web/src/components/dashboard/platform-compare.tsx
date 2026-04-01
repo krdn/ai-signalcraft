@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
+import { CardHelp, DASHBOARD_HELP } from './card-help';
 import {
   ChartContainer,
   ChartTooltip,
@@ -11,7 +12,6 @@ import {
   type ChartConfig,
 } from '@/components/ui/chart';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { CardHelp, DASHBOARD_HELP } from './card-help';
 
 // 소스별 한국어 레이블 매핑
 const SOURCE_LABELS: Record<string, string> = {
@@ -67,22 +67,27 @@ export function PlatformCompare({ data }: PlatformCompareProps) {
       </CardHeader>
       <CardContent>
         {!chartData || chartData.length === 0 ? (
-          <div className="flex items-center justify-center h-[200px] text-muted-foreground" role="status">
+          <div
+            className="flex items-center justify-center h-[200px] text-muted-foreground"
+            role="status"
+          >
             데이터 없음
           </div>
         ) : (
           <ChartContainer config={chartConfig} className="aspect-[2/1] w-full">
             <BarChart data={chartData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis
-                dataKey="platform"
-                tick={{ fontSize: 12 }}
-              />
+              <XAxis dataKey="platform" tick={{ fontSize: 12 }} />
               <YAxis tick={{ fontSize: 12, fontFamily: 'Geist Mono, monospace' }} />
               <ChartTooltip content={<ChartTooltipContent />} />
               <Bar dataKey="positive" stackId="a" fill="var(--color-positive)" />
               <Bar dataKey="negative" stackId="a" fill="var(--color-negative)" />
-              <Bar dataKey="neutral" stackId="a" fill="var(--color-neutral)" radius={[4, 4, 0, 0]} />
+              <Bar
+                dataKey="neutral"
+                stackId="a"
+                fill="var(--color-neutral)"
+                radius={[4, 4, 0, 0]}
+              />
               <ChartLegend content={<ChartLegendContent />} />
             </BarChart>
           </ChartContainer>

@@ -4,7 +4,15 @@ import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createOpenAI } from '@ai-sdk/openai';
 import { z } from 'zod';
 
-export type AIProvider = 'anthropic' | 'openai' | 'gemini' | 'ollama' | 'deepseek' | 'xai' | 'openrouter' | 'custom';
+export type AIProvider =
+  | 'anthropic'
+  | 'openai'
+  | 'gemini'
+  | 'ollama'
+  | 'deepseek'
+  | 'xai'
+  | 'openrouter'
+  | 'custom';
 
 export interface AIGatewayOptions {
   provider?: AIProvider;
@@ -35,7 +43,9 @@ const DEFAULT_BASE_URLS: Partial<Record<AIProvider, string>> = {
 
 export function getModel(provider: AIProvider, model?: string, baseUrl?: string, apiKey?: string) {
   const modelName = model ?? DEFAULT_MODELS[provider] ?? 'gpt-4o-mini';
-  console.log(`[ai-gateway] getModel: provider=${provider}, model=${modelName}, baseUrl=${baseUrl ?? 'none'}, hasApiKey=${!!apiKey}`);
+  console.log(
+    `[ai-gateway] getModel: provider=${provider}, model=${modelName}, baseUrl=${baseUrl ?? 'none'}, hasApiKey=${!!apiKey}`,
+  );
   switch (provider) {
     case 'anthropic': {
       const client = createAnthropic({
@@ -84,10 +94,7 @@ export function getModel(provider: AIProvider, model?: string, baseUrl?: string,
 }
 
 // 텍스트 분석 -- systemPrompt + usage 반환 지원
-export async function analyzeText(
-  prompt: string,
-  options: AIGatewayOptions = {},
-) {
+export async function analyzeText(prompt: string, options: AIGatewayOptions = {}) {
   const provider = options.provider ?? 'anthropic';
   const result = await generateText({
     model: getModel(provider, options.model, options.baseUrl, options.apiKey),

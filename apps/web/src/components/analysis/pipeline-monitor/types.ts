@@ -1,6 +1,13 @@
 // 파이프라인 모니터 공유 타입
 
-export type StageStatus = 'pending' | 'running' | 'completed' | 'failed' | 'skipped' | 'cancelled' | 'paused';
+export type StageStatus =
+  | 'pending'
+  | 'running'
+  | 'completed'
+  | 'failed'
+  | 'skipped'
+  | 'cancelled'
+  | 'paused';
 export type ModuleStatus = 'pending' | 'running' | 'completed' | 'failed';
 
 export interface ItemDetail {

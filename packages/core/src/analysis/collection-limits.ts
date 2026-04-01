@@ -17,8 +17,10 @@ export const DEFAULT_COLLECTION_LIMITS: CollectionLimits = {
 /** 수집 한도 기본값 조회 */
 export async function getCollectionLimits(): Promise<CollectionLimits> {
   const db = getDb();
-  const rows = await db.select({ collectionLimits: concurrencySettings.collectionLimits })
-    .from(concurrencySettings).limit(1);
+  const rows = await db
+    .select({ collectionLimits: concurrencySettings.collectionLimits })
+    .from(concurrencySettings)
+    .limit(1);
 
   if (rows.length === 0 || !rows[0].collectionLimits) {
     return { ...DEFAULT_COLLECTION_LIMITS };
@@ -48,7 +50,8 @@ export async function updateCollectionLimits(
       collectionLimits: merged,
     });
   } else {
-    await db.update(concurrencySettings)
+    await db
+      .update(concurrencySettings)
       .set({ collectionLimits: merged, updatedAt: new Date() })
       .where(eq(concurrencySettings.id, rows[0].id));
   }

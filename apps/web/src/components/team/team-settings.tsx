@@ -2,15 +2,15 @@
 
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { Loader2, Users } from 'lucide-react';
+import { InviteDialog } from './invite-dialog';
+import { MemberList } from './member-list';
 import { trpcClient } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { InviteDialog } from './invite-dialog';
-import { MemberList } from './member-list';
-import { toast } from 'sonner';
-import { Loader2, Users } from 'lucide-react';
 
 export function TeamSettings() {
   const queryClient = useQueryClient();
@@ -53,8 +53,7 @@ export function TeamSettings() {
       <Card className="mx-auto max-w-md">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-            <Users className="h-5 w-5" />
-            팀 생성
+            <Users className="h-5 w-5" />팀 생성
           </CardTitle>
         </CardHeader>
         <CardContent>

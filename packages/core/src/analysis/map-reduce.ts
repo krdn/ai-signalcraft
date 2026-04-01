@@ -2,13 +2,13 @@
 // 대량 데이터(59K+ 토큰)를 청크로 분할하여 개별 분석(Map) 후 종합(Reduce)
 // Context Rot 방지 + Rate Limit 완화 + 정확도 향상
 import { analyzeStructured, type AIGatewayOptions } from '@ai-signalcraft/ai-gateway';
+import { appendJobEvent } from '../pipeline/persist';
+import { isPipelineCancelled } from '../pipeline/control';
 import { persistAnalysisResult } from './persist-analysis';
 import { getModuleModelConfig } from './model-config';
 import { runModule } from './runner';
 import { isRateLimitError, parseRetryAfter, sleep, MAX_RATE_LIMIT_RETRIES } from './retry-utils';
 import { getConcurrencyConfig } from './concurrency-config';
-import { appendJobEvent } from '../pipeline/persist';
-import { isPipelineCancelled } from '../pipeline/control';
 import type { AnalysisModule, AnalysisInput, AnalysisModuleResult } from './types';
 
 // --- 청킹 설정 ---
@@ -100,18 +100,19 @@ export function chunkAnalysisInput(
 function isTimeoutError(error: unknown): boolean {
   if (error instanceof Error) {
     const msg = error.message.toLowerCase();
-    return msg.includes('timeout') || msg.includes('aborted') || error.name === 'AbortError' || error.name === 'TimeoutError';
+    return (
+      msg.includes('timeout') ||
+      msg.includes('aborted') ||
+      error.name === 'AbortError' ||
+      error.name === 'TimeoutError'
+    );
   }
   return false;
 }
 
 const MAX_TIMEOUT_RETRIES = 1;
 
-async function callWithRetry<T>(
-  fn: () => Promise<T>,
-  label: string,
-  jobId?: number,
-): Promise<T> {
+async function callWithRetry<T>(fn: () => Promise<T>, label: string, jobId?: number): Promise<T> {
   let lastError: unknown;
   let rateLimitAttempts = 0;
   let timeoutAttempts = 0;
@@ -196,7 +197,9 @@ export async function runModuleMapReduce<T>(
     return runModule(module, input, priorResults);
   }
 
-  console.log(`[map-reduce] ${module.name}: ${chunks.length}개 청크로 Map-Reduce 실행 (총 기사=${input.articles.length}, 댓글=${input.comments.length})`);
+  console.log(
+    `[map-reduce] ${module.name}: ${chunks.length}개 청크로 Map-Reduce 실행 (총 기사=${input.articles.length}, 댓글=${input.comments.length})`,
+  );
 
   try {
     // DB에 running 상태 기록
@@ -232,7 +235,9 @@ export async function runModuleMapReduce<T>(
           if (await isPipelineCancelled(input.jobId)) {
             batchAbort.abort(new Error('사용자에 의해 중지됨'));
           }
-        } catch { /* DB 조회 실패 무시 */ }
+        } catch {
+          /* DB 조회 실패 무시 */
+        }
       }, 3000);
 
       const batchResults = await Promise.allSettled(
@@ -275,14 +280,21 @@ export async function runModuleMapReduce<T>(
       for (const settled of batchResults) {
         if (settled.status === 'fulfilled') {
           const { result, chunkIndex, usage } = settled.value;
-          totalUsage.inputTokens += (usage as any)?.promptTokens ?? (usage as any)?.inputTokens ?? 0;
-          totalUsage.outputTokens += (usage as any)?.completionTokens ?? (usage as any)?.outputTokens ?? 0;
+          totalUsage.inputTokens +=
+            (usage as any)?.promptTokens ?? (usage as any)?.inputTokens ?? 0;
+          totalUsage.outputTokens +=
+            (usage as any)?.completionTokens ?? (usage as any)?.outputTokens ?? 0;
           totalUsage.totalTokens += (usage as any)?.totalTokens ?? 0;
           mapResults.push({ result, chunkIndex });
         } else {
-          const errMsg = settled.reason instanceof Error ? settled.reason.message : String(settled.reason);
+          const errMsg =
+            settled.reason instanceof Error ? settled.reason.message : String(settled.reason);
           console.error(`[map-reduce] ${module.name}[chunk]: 실패 — ${errMsg}`);
-          appendJobEvent(input.jobId, 'warn', `${module.name} 청크 분석 실패 (계속 진행): ${errMsg}`).catch(() => {});
+          appendJobEvent(
+            input.jobId,
+            'warn',
+            `${module.name} 청크 분석 실패 (계속 진행): ${errMsg}`,
+          ).catch(() => {});
         }
       }
     }
@@ -333,7 +345,9 @@ export async function runModuleMapReduce<T>(
         if (await isPipelineCancelled(input.jobId)) {
           reduceAbort.abort(new Error('사용자에 의해 중지됨'));
         }
-      } catch { /* DB 조회 실패 무시 */ }
+      } catch {
+        /* DB 조회 실패 무시 */
+      }
     }, 3000);
 
     const reduceOptions: AIGatewayOptions = {
@@ -358,8 +372,12 @@ export async function runModuleMapReduce<T>(
       clearInterval(reduceCancelPoller);
     }
 
-    totalUsage.inputTokens += (reduceResult.usage as any)?.promptTokens ?? (reduceResult.usage as any)?.inputTokens ?? 0;
-    totalUsage.outputTokens += (reduceResult.usage as any)?.completionTokens ?? (reduceResult.usage as any)?.outputTokens ?? 0;
+    totalUsage.inputTokens +=
+      (reduceResult.usage as any)?.promptTokens ?? (reduceResult.usage as any)?.inputTokens ?? 0;
+    totalUsage.outputTokens +=
+      (reduceResult.usage as any)?.completionTokens ??
+      (reduceResult.usage as any)?.outputTokens ??
+      0;
     totalUsage.totalTokens += (reduceResult.usage as any)?.totalTokens ?? 0;
 
     const moduleResult: AnalysisModuleResult<T> = {
@@ -377,9 +395,10 @@ export async function runModuleMapReduce<T>(
       usage: moduleResult.usage,
     });
 
-    console.log(`[map-reduce] ${module.name}: 완료 (Map ${mapResults.length}/${chunks.length} + Reduce, 토큰=${totalUsage.totalTokens})`);
+    console.log(
+      `[map-reduce] ${module.name}: 완료 (Map ${mapResults.length}/${chunks.length} + Reduce, 토큰=${totalUsage.totalTokens})`,
+    );
     return moduleResult;
-
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
 
@@ -390,7 +409,11 @@ export async function runModuleMapReduce<T>(
       errorMessage,
     });
 
-    appendJobEvent(input.jobId, 'error', `${module.name} Map-Reduce 분석 실패: ${errorMessage}`).catch(() => {});
+    appendJobEvent(
+      input.jobId,
+      'error',
+      `${module.name} Map-Reduce 분석 실패: ${errorMessage}`,
+    ).catch(() => {});
     return { module: module.name, status: 'failed', errorMessage };
   }
 }

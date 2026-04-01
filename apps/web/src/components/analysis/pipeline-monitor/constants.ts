@@ -2,66 +2,59 @@
 
 // --- 파이프라인 단계 도움말 ---
 
-export const STAGE_HELP: Record<
-  string,
-  { title: string; description: string; details: string[] }
-> = {
-  collection: {
-    title: '데이터 수집',
-    description:
-      '선택된 플랫폼에서 키워드 관련 기사, 영상, 게시글, 댓글을 자동으로 수집합니다.',
-    details: [
-      '네이버 뉴스: Playwright로 기사 본문과 댓글 스크래핑',
-      '유튜브: YouTube Data API v3로 영상 메타데이터 + 댓글 수집',
-      '커뮤니티(DC갤러리, 에펨코리아, 클리앙): 게시글 + 댓글 스크래핑',
-      '각 소스는 독립적으로 실행되며, 일부 실패 시에도 나머지는 계속 진행',
-      '기본 수집 한도: 뉴스 100건, 유튜브 50건, 커뮤니티 50건, 댓글 500건/항목',
-    ],
-  },
-  normalization: {
-    title: '데이터 정규화',
-    description:
-      '수집된 원본 데이터를 통일된 형식으로 변환하고 DB에 저장합니다.',
-    details: [
-      '각 플랫폼별 다른 데이터 구조를 공통 스키마로 변환',
-      'sourceId 기반 중복 제거 (같은 기사/댓글 재수집 방지)',
-      '기사→댓글, 영상→댓글 간 FK(외래키) 관계 매핑',
-    ],
-  },
-  'item-analysis': {
-    title: '개별 감정 분석',
-    description:
-      '각 기사/댓글의 감정(긍정/부정/중립)을 개별적으로 판별합니다.',
-    details: [
-      '1차: 경량 AI 모델로 전체 항목을 빠르게 분류 (1~2초)',
-      '2차: 판별이 애매한 항목만 LLM으로 정밀 재분석',
-      '결과는 기사/댓글 개별 레코드에 sentiment, sentimentScore로 저장',
-      '이 단계는 옵션이며, 비활성화 시 건너뜁니다',
-    ],
-  },
-  analysis: {
-    title: 'AI 분석',
-    description:
-      '수집된 데이터를 12개 분석 모듈이 AI(GPT/Claude)로 심층 분석합니다.',
-    details: [
-      'Stage 1 (병렬): 감정 프레이밍, 거시 분석, 세그멘테이션, 메시지 임팩트',
-      'Stage 2 (순차): 리스크 맵, 기회 발굴, 전략 제안 — Stage 1 결과 참조',
-      'Stage 3: 종합 요약 — 전체 결과 통합',
-      'Stage 4 (고급): 지지율 분석, 프레임 전쟁, 위기 시나리오, 승리 시뮬레이션',
-      '각 모듈은 Zod 스키마로 구조화된 JSON 결과를 생성',
-    ],
-  },
-  report: {
-    title: '리포트 생성',
-    description:
-      '모든 분석 결과를 종합하여 마크다운 형식의 전략 리포트를 생성합니다.',
-    details: [
-      'Stage 1~3 완료 후 1차 리포트 생성',
-      'Stage 4 고급 분석 완료 시 리포트 재생성 (고급 분석 포함)',
-      '부분 실패 시에도 가용한 결과로 리포트 작성',
-    ],
-  },
-};
+export const STAGE_HELP: Record<string, { title: string; description: string; details: string[] }> =
+  {
+    collection: {
+      title: '데이터 수집',
+      description: '선택된 플랫폼에서 키워드 관련 기사, 영상, 게시글, 댓글을 자동으로 수집합니다.',
+      details: [
+        '네이버 뉴스: Playwright로 기사 본문과 댓글 스크래핑',
+        '유튜브: YouTube Data API v3로 영상 메타데이터 + 댓글 수집',
+        '커뮤니티(DC갤러리, 에펨코리아, 클리앙): 게시글 + 댓글 스크래핑',
+        '각 소스는 독립적으로 실행되며, 일부 실패 시에도 나머지는 계속 진행',
+        '기본 수집 한도: 뉴스 100건, 유튜브 50건, 커뮤니티 50건, 댓글 500건/항목',
+      ],
+    },
+    normalization: {
+      title: '데이터 정규화',
+      description: '수집된 원본 데이터를 통일된 형식으로 변환하고 DB에 저장합니다.',
+      details: [
+        '각 플랫폼별 다른 데이터 구조를 공통 스키마로 변환',
+        'sourceId 기반 중복 제거 (같은 기사/댓글 재수집 방지)',
+        '기사→댓글, 영상→댓글 간 FK(외래키) 관계 매핑',
+      ],
+    },
+    'item-analysis': {
+      title: '개별 감정 분석',
+      description: '각 기사/댓글의 감정(긍정/부정/중립)을 개별적으로 판별합니다.',
+      details: [
+        '1차: 경량 AI 모델로 전체 항목을 빠르게 분류 (1~2초)',
+        '2차: 판별이 애매한 항목만 LLM으로 정밀 재분석',
+        '결과는 기사/댓글 개별 레코드에 sentiment, sentimentScore로 저장',
+        '이 단계는 옵션이며, 비활성화 시 건너뜁니다',
+      ],
+    },
+    analysis: {
+      title: 'AI 분석',
+      description: '수집된 데이터를 12개 분석 모듈이 AI(GPT/Claude)로 심층 분석합니다.',
+      details: [
+        'Stage 1 (병렬): 감정 프레이밍, 거시 분석, 세그멘테이션, 메시지 임팩트',
+        'Stage 2 (순차): 리스크 맵, 기회 발굴, 전략 제안 — Stage 1 결과 참조',
+        'Stage 3: 종합 요약 — 전체 결과 통합',
+        'Stage 4 (고급): 지지율 분석, 프레임 전쟁, 위기 시나리오, 승리 시뮬레이션',
+        '각 모듈은 Zod 스키마로 구조화된 JSON 결과를 생성',
+      ],
+    },
+    report: {
+      title: '리포트 생성',
+      description: '모든 분석 결과를 종합하여 마크다운 형식의 전략 리포트를 생성합니다.',
+      details: [
+        'Stage 1~3 완료 후 1차 리포트 생성',
+        'Stage 4 고급 분석 완료 시 리포트 재생성 (고급 분석 포함)',
+        '부분 실패 시에도 가용한 결과로 리포트 작성',
+      ],
+    },
+  };
 
 // --- 분석 모듈 도움말 ---
 
@@ -210,10 +203,7 @@ export const MODULE_LABELS: Record<string, string> = {
 
 // --- 소스 도움말 ---
 
-export const SOURCE_HELP: Record<
-  string,
-  { label: string; description: string; method: string }
-> = {
+export const SOURCE_HELP: Record<string, { label: string; description: string; method: string }> = {
   'naver-news': {
     label: '네이버 뉴스',
     description: '네이버 뉴스 기사 본문과 댓글을 수집합니다.',
@@ -258,10 +248,7 @@ export const SOURCE_HELP: Record<
 
 // --- AI 토큰 비용 상수 (USD per 1K tokens) ---
 
-export const TOKEN_COST_PER_1K: Record<
-  string,
-  { input: number; output: number }
-> = {
+export const TOKEN_COST_PER_1K: Record<string, { input: number; output: number }> = {
   'gpt-4o-mini': { input: 0.00015, output: 0.0006 },
   'claude-sonnet-4-20250514': { input: 0.003, output: 0.015 },
   // Gemini 2.5 Flash Lite (<=128K context)
@@ -273,11 +260,7 @@ export const TOKEN_COST_PER_1K: Record<
 };
 
 /** 토큰 사용량으로 추정 비용(USD) 계산 */
-export function estimateCostUsd(
-  inputTokens: number,
-  outputTokens: number,
-  model: string,
-): number {
+export function estimateCostUsd(inputTokens: number, outputTokens: number, model: string): number {
   const cost = TOKEN_COST_PER_1K[model];
   if (!cost) return 0;
   return (inputTokens / 1000) * cost.input + (outputTokens / 1000) * cost.output;

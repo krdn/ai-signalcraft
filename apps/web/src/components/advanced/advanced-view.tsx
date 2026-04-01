@@ -1,17 +1,16 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { trpcClient } from '@/lib/trpc';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent } from '@/components/ui/card';
 import { AlertCircle, Brain } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-
 import { ApprovalRatingCard } from './approval-rating-card';
 import { FrameWarChart } from './frame-war-chart';
 import { CrisisScenarios } from './crisis-scenarios';
 import { WinSimulationCard } from './win-simulation-card';
 import { AdvancedHelp } from './advanced-help';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { trpcClient } from '@/lib/trpc';
 
 interface AdvancedViewProps {
   jobId: number | null;
@@ -21,7 +20,10 @@ interface AdvancedViewProps {
 const ADVN_MODULES = ['approval-rating', 'frame-war', 'crisis-scenario', 'win-simulation'];
 
 // 모듈별 결과를 파싱하는 유틸
-function parseModuleResult(results: Array<{ module: string; result: unknown }>, moduleName: string) {
+function parseModuleResult(
+  results: Array<{ module: string; result: unknown }>,
+  moduleName: string,
+) {
   const found = results.find((r) => r.module === moduleName);
   return found?.result as Record<string, unknown> | undefined;
 }

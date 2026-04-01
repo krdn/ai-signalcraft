@@ -123,14 +123,26 @@ export function parseDateTextOrNull(text: string): Date | null {
   const shortDateMatch = text.match(/^(\d{1,2})\.(\d{1,2})\s+(\d{1,2}):(\d{1,2})$/);
   if (shortDateMatch) {
     const now = new Date();
-    return new Date(now.getFullYear(), parseInt(shortDateMatch[1], 10) - 1, parseInt(shortDateMatch[2], 10), parseInt(shortDateMatch[3], 10), parseInt(shortDateMatch[4], 10));
+    return new Date(
+      now.getFullYear(),
+      parseInt(shortDateMatch[1], 10) - 1,
+      parseInt(shortDateMatch[2], 10),
+      parseInt(shortDateMatch[3], 10),
+      parseInt(shortDateMatch[4], 10),
+    );
   }
 
   // "MM/DD HH:mm" 형식
   const slashDateMatch = text.match(/^(\d{1,2})\/(\d{1,2})\s+(\d{1,2}):(\d{1,2})$/);
   if (slashDateMatch) {
     const now = new Date();
-    return new Date(now.getFullYear(), parseInt(slashDateMatch[1], 10) - 1, parseInt(slashDateMatch[2], 10), parseInt(slashDateMatch[3], 10), parseInt(slashDateMatch[4], 10));
+    return new Date(
+      now.getFullYear(),
+      parseInt(slashDateMatch[1], 10) - 1,
+      parseInt(slashDateMatch[2], 10),
+      parseInt(slashDateMatch[3], 10),
+      parseInt(slashDateMatch[4], 10),
+    );
   }
 
   return null;

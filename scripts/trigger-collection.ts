@@ -1,15 +1,18 @@
 // 수집 트리거 CLI 스크립트
 // 사용법: pnpm trigger <keyword> [days=7]
-import { config } from 'dotenv';
 import { resolve } from 'path';
+import { config } from 'dotenv';
 
 // apps/web/.env.local 우선 로드 (시스템 환경변수 override)
 const scriptDir = new URL('.', import.meta.url).pathname;
 config({ path: resolve(scriptDir, '..', 'apps/web/.env.local'), override: true });
 config({ path: resolve(scriptDir, '..', '.env') });
 
-import { triggerCollection, CollectionTriggerSchema } from '@ai-signalcraft/core';
-import { createCollectionJob } from '@ai-signalcraft/core';
+import {
+  triggerCollection,
+  CollectionTriggerSchema,
+  createCollectionJob,
+} from '@ai-signalcraft/core';
 
 async function main() {
   const keyword = process.argv[2];
@@ -38,7 +41,9 @@ async function main() {
 
   console.log(`Collection job created: #${job.id}`);
   console.log(`  Keyword: ${keyword}`);
-  console.log(`  Period: ${startDate.toLocaleDateString('ko-KR')} ~ ${endDate.toLocaleDateString('ko-KR')}`);
+  console.log(
+    `  Period: ${startDate.toLocaleDateString('ko-KR')} ~ ${endDate.toLocaleDateString('ko-KR')}`,
+  );
 
   // BullMQ Flow 트리거 -- job.id (정수 DB PK)를 dbJobId로 전달
   const { flowId } = await triggerCollection(params, job.id);

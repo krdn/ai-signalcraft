@@ -25,10 +25,10 @@ export class FMKoreaCollector extends CommunityBaseCollector {
 
   protected readonly selectors: SiteSelectors = {
     list: [
-      'ul.searchResult li dt a',        // IS 모듈 검색 결과 (ul > li > dl > dt > a)
-      '.searchResult .title a',         // 이전 구조 (fallback)
-      '.search_list .title a',          // 대체 검색 결과 셀렉터
-      'li.searchResult a.title',        // 리스트 아이템 형식
+      'ul.searchResult li dt a', // IS 모듈 검색 결과 (ul > li > dl > dt > a)
+      '.searchResult .title a', // 이전 구조 (fallback)
+      '.search_list .title a', // 대체 검색 결과 셀렉터
+      'li.searchResult a.title', // 리스트 아이템 형식
     ],
     content: ['.xe_content', '.rd_body .xe_content', '#xe_content'],
     comment: ['.fdb_lst_ul .xe_content', '.comment_content .xe_content'],
@@ -36,8 +36,12 @@ export class FMKoreaCollector extends CommunityBaseCollector {
 
   // 차단 감지 override (에펨코리아 전용)
   protected detectBlocked(html: string): boolean {
-    return html.includes('자동등록방지') || html.includes('captcha')
-      || html.includes('접근이 제한') || html.includes('에펨코리아 보안 시스템');
+    return (
+      html.includes('자동등록방지') ||
+      html.includes('captcha') ||
+      html.includes('접근이 제한') ||
+      html.includes('에펨코리아 보안 시스템')
+    );
   }
 
   /**
@@ -63,7 +67,7 @@ export class FMKoreaCollector extends CommunityBaseCollector {
       elapsed += pollInterval;
 
       const cookies = await page.context().cookies();
-      const hasLiteYear = cookies.some(c => c.name === 'lite_year');
+      const hasLiteYear = cookies.some((c) => c.name === 'lite_year');
       if (hasLiteYear) {
         console.log(`[fmkorea] 보안 쿠키 확인됨 (lite_year) -- ${elapsed}ms 소요`);
         return true;
@@ -140,7 +144,10 @@ export class FMKoreaCollector extends CommunityBaseCollector {
     const dateText = $('.date, .regdate, .side .date').first().text().trim();
     const publishedAt = parseDateText(dateText);
     const viewCount = parseInt($('.count').text().replace(/[^\d]/g, '') || '0', 10);
-    const likeCount = parseInt($('.voted_count, .vote_num').text().replace(/[^\d]/g, '') || '0', 10);
+    const likeCount = parseInt(
+      $('.voted_count, .vote_num').text().replace(/[^\d]/g, '') || '0',
+      10,
+    );
 
     // 게시판 이름 추출
     const boardName = $('h1.page_name, .board_name').text().trim() || this.extractBoardFromUrl(url);

@@ -18,29 +18,29 @@ files_modified:
 autonomous: true
 must_haves:
   truths:
-    - "사용자가 설정 UI에서 12개 모듈 각각의 AI 프로바이더와 모델을 변경할 수 있다"
-    - "변경된 설정이 DB에 저장되고, 분석 실행 시 DB 설정이 우선 적용된다"
-    - "DB에 설정이 없는 모듈은 MODULE_MODEL_MAP 기본값으로 동작한다"
+    - '사용자가 설정 UI에서 12개 모듈 각각의 AI 프로바이더와 모델을 변경할 수 있다'
+    - '변경된 설정이 DB에 저장되고, 분석 실행 시 DB 설정이 우선 적용된다'
+    - 'DB에 설정이 없는 모듈은 MODULE_MODEL_MAP 기본값으로 동작한다'
   artifacts:
-    - path: "packages/core/src/db/schema/settings.ts"
-      provides: "model_settings 테이블 스키마"
-      contains: "modelSettings"
-    - path: "packages/core/src/analysis/model-config.ts"
-      provides: "DB 조회 + 기본값 폴백 함수"
-      exports: ["getModuleModelConfig", "getAllModelSettings"]
-    - path: "apps/web/src/server/trpc/routers/settings.ts"
-      provides: "settings tRPC 라우터 (list, update)"
-      exports: ["settingsRouter"]
-    - path: "apps/web/src/components/settings/model-settings.tsx"
-      provides: "모듈별 모델 설정 UI 컴포넌트"
+    - path: 'packages/core/src/db/schema/settings.ts'
+      provides: 'model_settings 테이블 스키마'
+      contains: 'modelSettings'
+    - path: 'packages/core/src/analysis/model-config.ts'
+      provides: 'DB 조회 + 기본값 폴백 함수'
+      exports: ['getModuleModelConfig', 'getAllModelSettings']
+    - path: 'apps/web/src/server/trpc/routers/settings.ts'
+      provides: 'settings tRPC 라우터 (list, update)'
+      exports: ['settingsRouter']
+    - path: 'apps/web/src/components/settings/model-settings.tsx'
+      provides: '모듈별 모델 설정 UI 컴포넌트'
   key_links:
-    - from: "packages/core/src/analysis/runner.ts"
-      to: "model-config.ts -> DB"
-      via: "runModule에서 getModuleModelConfig() 호출"
-      pattern: "getModuleModelConfig"
-    - from: "apps/web/src/components/settings/model-settings.tsx"
-      to: "/api/trpc/settings.*"
-      via: "tRPC client hooks"
+    - from: 'packages/core/src/analysis/runner.ts'
+      to: 'model-config.ts -> DB'
+      via: 'runModule에서 getModuleModelConfig() 호출'
+      pattern: 'getModuleModelConfig'
+    - from: 'apps/web/src/components/settings/model-settings.tsx'
+      to: '/api/trpc/settings.*'
+      via: 'tRPC client hooks'
       pattern: "trpc\\.settings\\."
 ---
 
@@ -67,16 +67,18 @@ Output: DB 테이블 + Core 조회 함수 + tRPC API + 설정 UI 다이얼로그
 <!-- 핵심 타입과 함수 시그니처 -->
 
 From packages/core/src/analysis/types.ts:
+
 ```typescript
 export type AIProvider = 'anthropic' | 'openai';
 
 export const MODULE_MODEL_MAP: Record<string, { provider: AIProvider; model: string }> = {
-  'macro-view':        { provider: 'openai',    model: 'gpt-4o-mini' },
+  'macro-view': { provider: 'openai', model: 'gpt-4o-mini' },
   // ... 12 modules total
 };
 ```
 
 From packages/core/src/db/schema/analysis.ts (패턴):
+
 ```typescript
 import { pgTable, text, timestamp, integer, jsonb, uniqueIndex } from 'drizzle-orm/pg-core';
 // identity column: integer('id').primaryKey().generatedAlwaysAsIdentity()
@@ -84,6 +86,7 @@ import { pgTable, text, timestamp, integer, jsonb, uniqueIndex } from 'drizzle-o
 ```
 
 From apps/web/src/server/trpc/init.ts:
+
 ```typescript
 export const router: typeof t.router;
 export const protectedProcedure: typeof t.procedure; // 인증 + teamId 주입
@@ -91,6 +94,7 @@ export const protectedProcedure: typeof t.procedure; // 인증 + teamId 주입
 ```
 
 From apps/web/src/server/trpc/router.ts:
+
 ```typescript
 export const appRouter = router({
   analysis: analysisRouter,
@@ -100,6 +104,7 @@ export const appRouter = router({
 ```
 
 From runner.ts (수정 대상):
+
 ```typescript
 export async function runModule<T>(
   module: AnalysisModule<T>,
@@ -114,6 +119,7 @@ export async function runModule<T>(
   });
 }
 ```
+
 </interfaces>
 </context>
 
@@ -152,6 +158,7 @@ export async function runModule<T>(
     6. `packages/core/src/index.ts`는 이미 `export * from './analysis'`가 있으므로 model-config가 자동 export됨. `export * from './db/schema'`도 있으므로 modelSettings도 자동 export됨. 추가 작업 불필요.
 
     주의: getModuleModelConfig는 분석 실행 시점에 매번 DB를 조회한다. 12개 모듈이 순차/병렬로 실행되므로 12번 조회되지만, 분석 1회 실행당 호출이므로 성능 이슈 없음. 캐싱 불필요.
+
   </action>
   <verify>
     cd /home/gon/projects/ai/ai-signalcraft && pnpm -F @ai-signalcraft/core exec tsc --noEmit
@@ -221,6 +228,7 @@ export async function runModule<T>(
     crisis-scenario -> 위기 시나리오
     win-simulation -> 승리 시뮬레이션
     ```
+
   </action>
   <verify>
     cd /home/gon/projects/ai/ai-signalcraft && pnpm build
@@ -250,6 +258,7 @@ export async function runModule<T>(
     ```
 
     주의: 운영 서버(192.168.0.5:5433) DB push는 별도 작업. 이 태스크는 로컬/개발 DB만 대상.
+
   </action>
   <verify>
     cd /home/gon/projects/ai/ai-signalcraft/packages/core && pnpm drizzle-kit push --force 2>&1 | tail -5
@@ -270,11 +279,12 @@ export async function runModule<T>(
 </verification>
 
 <success_criteria>
+
 - 12개 모듈 각각의 AI 프로바이더/모델을 웹 UI에서 변경 가능
 - 변경 사항이 DB에 영속되고, 분석 실행 시 DB 설정이 우선 적용됨
 - DB 설정이 없으면 기존 MODULE_MODEL_MAP 기본값으로 폴백
 - 기본값 복원 기능 동작
-</success_criteria>
+  </success_criteria>
 
 <output>
 After completion, create `.planning/quick/260325-tge-ai-llm/260325-tge-SUMMARY.md`

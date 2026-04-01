@@ -1,14 +1,9 @@
 'use client';
 
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 import { PIPELINE_STEPS } from './constants';
 import { formatElapsed } from './utils';
 import type { PipelineTimeline, StageStatus } from './types';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface TimelineBarProps {
   timeline: PipelineTimeline;
@@ -64,9 +59,10 @@ export function computeSegments(
     ? new Date(timeline.analysisStartedAt).getTime()
     : collectionEnd;
   // item-analysis가 실행되었으면 정규화 완료 ~ 분석 시작 구간의 일부를 할당
-  const itemAnalysisMs = itemAnalysisStatus === 'completed' || itemAnalysisStatus === 'running'
-    ? Math.max(analysisStart - collectionEnd - normMs, Math.round(collectionMs * 0.05))
-    : 0;
+  const itemAnalysisMs =
+    itemAnalysisStatus === 'completed' || itemAnalysisStatus === 'running'
+      ? Math.max(analysisStart - collectionEnd - normMs, Math.round(collectionMs * 0.05))
+      : 0;
 
   // 분석: analysisStarted ~ analysisCompleted
   const analysisEnd = timeline.analysisCompletedAt
@@ -95,7 +91,7 @@ export function computeSegments(
 
   // 전체 합계 기준 퍼센트 계산
   const totalSegmentMs = segments.reduce((sum, s) => sum + s.ms, 0) || 1;
-  return segments.map(s => ({
+  return segments.map((s) => ({
     ...s,
     percent: Math.max(Math.round((s.ms / totalSegmentMs) * 100), 2), // 최소 2% 보장
     seconds: Math.round(s.ms / 1000),
@@ -106,7 +102,7 @@ export function TimelineBar({ timeline, stages, elapsedSeconds }: TimelineBarPro
   const segments = computeSegments(timeline, stages, elapsedSeconds);
   // 퍼센트 합계를 100%로 정규화
   const totalPercent = segments.reduce((sum, s) => sum + s.percent, 0);
-  const normalized = segments.map(s => ({
+  const normalized = segments.map((s) => ({
     ...s,
     percent: Math.round((s.percent / totalPercent) * 100),
   }));
@@ -121,7 +117,7 @@ export function TimelineBar({ timeline, stages, elapsedSeconds }: TimelineBarPro
         <TooltipProvider delay={200}>
           {normalized.map((seg) => {
             const status = (stages[seg.key]?.status ?? 'pending') as StageStatus;
-            const stepLabel = PIPELINE_STEPS.find(s => s.key === seg.key)?.label ?? seg.key;
+            const stepLabel = PIPELINE_STEPS.find((s) => s.key === seg.key)?.label ?? seg.key;
             const colors = STAGE_COLORS[seg.key];
             const isActive = status === 'running';
             const isCompleted = status === 'completed';

@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { Loader2, Plus, MessageSquare, Send, PlusCircle } from 'lucide-react';
 import { trpcClient } from '@/lib/trpc';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -16,22 +18,6 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { toast } from 'sonner';
-import {
-  Loader2,
-  Plus,
-  Trash2,
-  TestTube,
-  Pencil,
-  Check,
-  X,
-  Key,
-  MessageSquare,
-  Send,
-  ChevronDown,
-  ChevronUp,
-  PlusCircle,
-} from 'lucide-react';
 
 // 프로바이더 정의
 const PROVIDERS = [
@@ -70,11 +56,7 @@ function ProviderBadge({ type }: { type: string }) {
 }
 
 // 프로바이더 선택 그리드
-function ProviderGrid({
-  onSelect,
-}: {
-  onSelect: (type: string, name: string) => void;
-}) {
+function ProviderGrid({ onSelect }: { onSelect: (type: string, name: string) => void }) {
   return (
     <div className="grid grid-cols-2 gap-2">
       {PROVIDERS.map((p) => (
@@ -107,7 +89,6 @@ function AddKeyForm({
   const [apiKey, setApiKey] = useState('');
   const [baseUrl, setBaseUrl] = useState('');
 
-  const needsKey = true; // 모든 프로바이더에서 키 입력 허용 (Ollama도 Open WebUI 인증 키 필요 가능)
   const keyRequired = providerType !== 'ollama'; // Ollama만 키가 선택 사항
   const needsUrl = ['ollama', 'custom', 'openrouter'].includes(providerType);
 
@@ -134,7 +115,15 @@ function AddKeyForm({
     }
     addMutation.mutate({
       name: name.trim(),
-      providerType: providerType as 'openai' | 'anthropic' | 'gemini' | 'ollama' | 'deepseek' | 'xai' | 'openrouter' | 'custom',
+      providerType: providerType as
+        | 'openai'
+        | 'anthropic'
+        | 'gemini'
+        | 'ollama'
+        | 'deepseek'
+        | 'xai'
+        | 'openrouter'
+        | 'custom',
       providerName,
       key: apiKey.trim() || undefined,
       baseUrl: baseUrl.trim() || undefined,
@@ -185,7 +174,15 @@ function AddKeyForm({
 }
 
 // LLM Playground (채팅 테스트)
-function Playground({ keyId, providerType, selectedModel }: { keyId: number; providerType: string; selectedModel: string | null }) {
+function Playground({
+  keyId,
+  providerType: _providerType,
+  selectedModel,
+}: {
+  keyId: number;
+  providerType: string;
+  selectedModel: string | null;
+}) {
   const [prompt, setPrompt] = useState('');
   const [response, setResponse] = useState('');
   const [usedModel, setUsedModel] = useState('');
@@ -217,7 +214,9 @@ function Playground({ keyId, providerType, selectedModel }: { keyId: number; pro
     <div className="space-y-2">
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <MessageSquare className="h-3 w-3" />
-        <span>모델: <strong className="text-foreground">{selectedModel || '기본값'}</strong></span>
+        <span>
+          모델: <strong className="text-foreground">{selectedModel || '기본값'}</strong>
+        </span>
       </div>
       <Textarea
         rows={3}
@@ -242,9 +241,7 @@ function Playground({ keyId, providerType, selectedModel }: { keyId: number; pro
       {response && (
         <div className="rounded-md border bg-muted/30 p-3 text-sm whitespace-pre-wrap leading-relaxed max-h-[200px] overflow-y-auto">
           {usedModel && (
-            <div className="mb-2 text-[10px] text-muted-foreground">
-              응답 모델: {usedModel}
-            </div>
+            <div className="mb-2 text-[10px] text-muted-foreground">응답 모델: {usedModel}</div>
           )}
           {response}
         </div>
@@ -280,7 +277,9 @@ function EditForm({
   });
 
   const handleSave = () => {
-    const data: Parameters<typeof trpcClient.settings.providerKeys.update.mutate>[0] = { id: item.id };
+    const data: Parameters<typeof trpcClient.settings.providerKeys.update.mutate>[0] = {
+      id: item.id,
+    };
     if (name.trim() !== item.name) data.name = name.trim();
     if (apiKey.trim()) data.key = apiKey.trim();
     if (baseUrl !== (item.baseUrl ?? '')) data.baseUrl = baseUrl.trim();
@@ -341,8 +340,7 @@ function KeyCard({
   const [customModel, setCustomModel] = useState('');
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) =>
-      trpcClient.settings.providerKeys.delete.mutate({ id }),
+    mutationFn: (id: number) => trpcClient.settings.providerKeys.delete.mutate({ id }),
     onSuccess: () => {
       toast.success('API 키가 삭제되었습니다');
       onDeleted();
@@ -389,12 +387,6 @@ function KeyCard({
     }
   };
 
-  const handleModelSelect = (model: string | null) => {
-    if (!model) return;
-    updateMutation.mutate({ id: item.id, selectedModel: model });
-    setShowModels(false);
-  };
-
   const handleAddCustomModel = () => {
     const trimmed = customModel.trim();
     if (!trimmed) return;
@@ -425,9 +417,7 @@ function KeyCard({
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 flex-wrap min-w-0 text-xs">
             <ProviderBadge type={item.providerType} />
-            {item.maskedKey && (
-              <code className="text-muted-foreground">{item.maskedKey}</code>
-            )}
+            {item.maskedKey && <code className="text-muted-foreground">{item.maskedKey}</code>}
             {item.baseUrl && (
               <span className="text-muted-foreground truncate max-w-[180px]">{item.baseUrl}</span>
             )}
@@ -444,7 +434,11 @@ function KeyCard({
               variant="outline"
               size="sm"
               className="h-7 px-2.5 text-xs"
-              onClick={() => { setEditing(!editing); setShowModels(false); setShowPlayground(false); }}
+              onClick={() => {
+                setEditing(!editing);
+                setShowModels(false);
+                setShowPlayground(false);
+              }}
             >
               Edit
             </Button>
@@ -463,9 +457,7 @@ function KeyCard({
               }}
               disabled={testing}
             >
-              {testing ? (
-                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-              ) : null}
+              {testing ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : null}
               {showModels ? 'Close' : 'Test & Select'}
             </Button>
             <Button
@@ -541,8 +533,12 @@ function KeyCard({
                 <Input
                   placeholder="모델명 직접 입력 (예: gpt-4o, llama3:8b)"
                   value={customModel}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomModel(e.target.value)}
-                  onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && handleAddCustomModel()}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setCustomModel(e.target.value)
+                  }
+                  onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) =>
+                    e.key === 'Enter' && handleAddCustomModel()
+                  }
                   className="text-xs h-8 bg-background"
                 />
                 <Button
@@ -566,7 +562,11 @@ function KeyCard({
             variant="ghost"
             size="sm"
             className="w-full justify-center gap-1 text-xs text-muted-foreground h-7"
-            onClick={() => { setShowPlayground(!showPlayground); setEditing(false); setShowModels(false); }}
+            onClick={() => {
+              setShowPlayground(!showPlayground);
+              setEditing(false);
+              setShowModels(false);
+            }}
           >
             <MessageSquare className="h-3 w-3" />
             {showPlayground ? 'Close Playground' : 'Test Prompt (Playground)'}
@@ -622,12 +622,7 @@ export function ProviderKeys() {
         {keys && keys.length > 0 && (
           <div className="space-y-2">
             {keys.map((item) => (
-              <KeyCard
-                key={item.id}
-                item={item}
-                onDeleted={invalidate}
-                onUpdated={invalidate}
-              />
+              <KeyCard key={item.id} item={item} onDeleted={invalidate} onUpdated={invalidate} />
             ))}
           </div>
         )}
@@ -652,12 +647,8 @@ export function ProviderKeys() {
           />
         ) : (
           <div>
-            <p className="mb-2 text-xs font-medium text-muted-foreground">
-              프로바이더 선택
-            </p>
-            <ProviderGrid
-              onSelect={(type, name) => setAddingProvider({ type, name })}
-            />
+            <p className="mb-2 text-xs font-medium text-muted-foreground">프로바이더 선택</p>
+            <ProviderGrid onSelect={(type, name) => setAddingProvider({ type, name })} />
           </div>
         )}
       </div>

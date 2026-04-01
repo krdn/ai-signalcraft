@@ -2,14 +2,11 @@
 
 import { useMemo } from 'react';
 import { RadialBarChart, RadialBar, PolarAngleAxis } from 'recharts';
-import {
-  ChartContainer,
-  type ChartConfig,
-} from '@/components/ui/chart';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Check, Minus, X, AlertTriangle } from 'lucide-react';
 import { AdvancedCardHelp, ADVANCED_HELP } from './advanced-help';
+import { ChartContainer, type ChartConfig } from '@/components/ui/chart';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 
 interface WinCondition {
   condition: string;
@@ -118,7 +115,10 @@ export function WinSimulationCard({ data }: WinSimulationCardProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         {!parsed ? (
-          <div className="flex items-center justify-center h-[260px] text-muted-foreground" role="status">
+          <div
+            className="flex items-center justify-center h-[260px] text-muted-foreground"
+            role="status"
+          >
             데이터 없음
           </div>
         ) : (
@@ -173,7 +173,10 @@ export function WinSimulationCard({ data }: WinSimulationCardProps) {
               <p className="text-xs font-medium text-muted-foreground">패배 리스크</p>
               <div className="space-y-1">
                 {parsed.loseConditions.map((cond, i) => (
-                  <div key={i} className={`rounded border p-2 text-xs ${getRiskColor(cond.currentRisk)}`}>
+                  <div
+                    key={i}
+                    className={`rounded border p-2 text-xs ${getRiskColor(cond.currentRisk)}`}
+                  >
                     <div className="flex items-start gap-1">
                       <AlertTriangle className="h-3 w-3 shrink-0 mt-0.5" />
                       <div>

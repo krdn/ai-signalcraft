@@ -78,6 +78,7 @@ completed: 2026-03-24
 - **Files modified:** 41
 
 ## Accomplishments
+
 - 로그인 페이지 + NextAuth v5 미들웨어로 미인증 사용자 /login 리다이렉트
 - 4탭 대시보드 셸 (분석 실행/결과 대시보드/AI 리포트/히스토리) + 상단 네비게이션
 - tRPC 라우터 3개: analysis (trigger + getResults + getReport), pipeline (getStatus 4단계 파생), history (list + 페이지네이션)
@@ -93,6 +94,7 @@ Each task was committed atomically:
 3. **Task 3: 분석 실행 UI + 파이프라인 모니터 + 히스토리 테이블** - `b9e2127` (feat)
 
 ## Files Created/Modified
+
 - `apps/web/src/middleware.ts` - NextAuth v5 미들웨어 (경량 auth.config 사용)
 - `apps/web/src/server/auth.config.ts` - 미들웨어용 경량 인증 설정 (DB 의존성 없음)
 - `apps/web/src/server/auth.ts` - authConfig 기반으로 리팩토링 (DB 프로바이더 오버라이드)
@@ -115,6 +117,7 @@ Each task was committed atomically:
 - `apps/web/src/components/ui/*` - shadcn 컴포넌트 19개
 
 ## Decisions Made
+
 - auth.config.ts 분리: 미들웨어가 `@ai-signalcraft/core`를 import하면 Playwright/BullMQ가 번들에 포함되어 빌드 실패. 경량 설정 파일을 분리하여 해결.
 - sonner 사용: shadcn의 toast 컴포넌트가 deprecated 되어 sonner로 대체
 - vanilla tRPC + TanStack Query 직접 조합: v11의 createTRPCOptionsProxy 대신 vanilla client + useQuery/useMutation 패턴
@@ -125,6 +128,7 @@ Each task was committed atomically:
 ### Auto-fixed Issues
 
 **1. [Rule 3 - Blocking] auth.config.ts 분리로 미들웨어 빌드 에러 해결**
+
 - **Found during:** Task 1 (미들웨어 설정)
 - **Issue:** `middleware.ts`에서 `@/server/auth`를 import하면 `@ai-signalcraft/core` 전체가 번들에 포함되어 Playwright/chromium-bidi 모듈 미발견 에러
 - **Fix:** DB 의존성 없는 `auth.config.ts` 분리, 미들웨어에서 경량 설정만 사용
@@ -133,6 +137,7 @@ Each task was committed atomically:
 - **Committed in:** a0f84f8
 
 **2. [Rule 3 - Blocking] DropdownMenuTrigger asChild 속성 제거**
+
 - **Found during:** Task 1 (빌드 검증)
 - **Issue:** shadcn/ui가 @base-ui/react 기반으로 생성되어 Radix의 `asChild` 속성 미지원
 - **Fix:** `asChild` 제거, className을 DropdownMenuTrigger에 직접 적용
@@ -146,30 +151,35 @@ Each task was committed atomically:
 **Impact on plan:** 모든 auto-fix가 빌드 통과에 필수적. 스코프 변경 없음.
 
 ## Issues Encountered
+
 - shadcn toast 컴포넌트 deprecated: sonner로 자동 대체됨 (shadcn add 시 안내)
 - Next.js 16의 middleware deprecation 경고: "proxy" 사용 권장이나 NextAuth v5가 middleware 패턴 사용하므로 현재 유지
 
 ## Known Stubs
+
 None - 모든 컴포넌트가 tRPC 라우터와 실제 연결됨. 결과 대시보드/AI 리포트 탭은 Plan 03/04에서 구현 예정이며 placeholder 표시.
 
 ## User Setup Required
+
 None - 외부 서비스 설정 불필요.
 
 ## Superpowers 호출 기록
 
-| # | 스킬명 | 호출 시점 | 결과 요약 |
-|---|--------|----------|----------|
-| - | - | - | GSD executor 병렬 실행 환경에서 Superpowers 스킬 호출 불가 (Agent tool 미사용) |
+| #   | 스킬명 | 호출 시점 | 결과 요약                                                                      |
+| --- | ------ | --------- | ------------------------------------------------------------------------------ |
+| -   | -      | -         | GSD executor 병렬 실행 환경에서 Superpowers 스킬 호출 불가 (Agent tool 미사용) |
 
 ### 미호출 스킬 사유
-| 스킬명 | 미호출 사유 |
-|--------|-----------|
-| superpowers:brainstorming | 병렬 실행 agent - Agent tool 미사용 |
-| superpowers:test-driven-development | Plan이 tdd="true" 미지정 |
-| superpowers:systematic-debugging | 빌드 에러는 직접 수정으로 해결 |
-| superpowers:requesting-code-review | 병렬 실행 agent - Agent tool 미사용 |
+
+| 스킬명                              | 미호출 사유                         |
+| ----------------------------------- | ----------------------------------- |
+| superpowers:brainstorming           | 병렬 실행 agent - Agent tool 미사용 |
+| superpowers:test-driven-development | Plan이 tdd="true" 미지정            |
+| superpowers:systematic-debugging    | 빌드 에러는 직접 수정으로 해결      |
+| superpowers:requesting-code-review  | 병렬 실행 agent - Agent tool 미사용 |
 
 ## Next Phase Readiness
+
 - 로그인 + 인증 미들웨어 완성, 모든 대시보드 라우트 보호됨
 - tRPC analysis/pipeline/history 라우터 사용 가능
 - 분석 실행 -> 모니터링 -> 히스토리 조회 핵심 워크플로우 완성
@@ -185,5 +195,6 @@ None - 외부 서비스 설정 불필요.
 - `pnpm --filter @ai-signalcraft/web build` exit 0
 
 ---
-*Phase: 03-dashboard-team*
-*Completed: 2026-03-24*
+
+_Phase: 03-dashboard-team_
+_Completed: 2026-03-24_

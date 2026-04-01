@@ -1,16 +1,15 @@
 import { Newspaper, CirclePlay, MessageSquareMore, Monitor, Users } from 'lucide-react';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 // 소스별 아이콘·라벨·색상 매핑
-export const SOURCE_META: Record<string, {
-  label: string;
-  icon: typeof Newspaper;
-  color: string;
-}> = {
+export const SOURCE_META: Record<
+  string,
+  {
+    label: string;
+    icon: typeof Newspaper;
+    color: string;
+  }
+> = {
   naver: {
     label: '네이버',
     icon: Newspaper,
@@ -39,7 +38,10 @@ export const SOURCE_META: Record<string, {
 };
 
 // progress JSONB에서 소스 키 목록 추출
-type ProgressData = Record<string, { status: string; posts?: number; articles?: number; videos?: number; comments: number }>;
+type ProgressData = Record<
+  string,
+  { status: string; posts?: number; articles?: number; videos?: number; comments: number }
+>;
 
 export function extractSources(progress: unknown): string[] {
   if (!progress || typeof progress !== 'object') return [];

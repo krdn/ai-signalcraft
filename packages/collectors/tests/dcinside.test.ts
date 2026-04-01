@@ -1,7 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { DCInsideCollector } from '../src/adapters/dcinside';
 import type { CommunityPost, CommunityComment } from '../src/types/community';
-import { parseDateText, randomDelay, sanitizeContent, buildSearchUrl } from '../src/utils/community-parser';
+import {
+  parseDateText,
+  randomDelay,
+  sanitizeContent,
+  buildSearchUrl,
+} from '../src/utils/community-parser';
 
 describe('CommunityPost 타입', () => {
   it('필수 필드를 포함한다', () => {

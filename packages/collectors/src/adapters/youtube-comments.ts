@@ -1,6 +1,6 @@
 // YouTube 댓글 수집기 (YouTube Data API v3 commentThreads)
-import type { Collector, CollectionOptions } from './base';
 import { getYoutubeClient } from '../utils/youtube-client';
+import type { Collector, CollectionOptions } from './base';
 
 /** 수집된 YouTube 댓글 */
 export interface YoutubeComment {
@@ -93,9 +93,7 @@ export class YoutubeCommentsCollector implements Collector<YoutubeComment> {
                 content: reply.snippet.textDisplay ?? '',
                 author: reply.snippet.authorDisplayName ?? '',
                 likeCount: reply.snippet.likeCount ?? 0,
-                publishedAt: reply.snippet.publishedAt
-                  ? new Date(reply.snippet.publishedAt)
-                  : null,
+                publishedAt: reply.snippet.publishedAt ? new Date(reply.snippet.publishedAt) : null,
                 rawData: reply as unknown as Record<string, unknown>,
               });
             }

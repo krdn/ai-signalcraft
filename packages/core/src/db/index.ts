@@ -28,7 +28,10 @@ export function getDb() {
 
 // Next.js 환경에서는 process.env가 이미 주입되어 있으므로 즉시 초기화 안전
 // DrizzleAdapter 등 instanceof 검사가 필요한 곳에서 사용
-export const db = drizzle(new pg.Pool({
-  connectionString: process.env.DATABASE_URL,
-}), { schema });
+export const db = drizzle(
+  new pg.Pool({
+    connectionString: process.env.DATABASE_URL,
+  }),
+  { schema },
+);
 export type Database = typeof db;

@@ -35,6 +35,7 @@
 - **D-09:** 분할 기준은 모듈/describe 블록 단위로 한다 — 논리적 그룹별로 파일 분리
 
 ### Claude's Discretion
+
 - types/ 디렉토리 내 파일 분류 방식 (analysis.ts, pipeline.ts, report.ts 등 또는 단일 index.ts)
 - ai-gateway 테스트 파일 위치 및 구조
 - advn-schema.test.ts 분할 시 정확한 경계점
@@ -42,11 +43,13 @@
 </decisions>
 
 <canonical_refs>
+
 ## Canonical References
 
 **Downstream agents MUST read these before planning or implementing.**
 
 ### 타입 분산 현황 (이동 대상)
+
 - `packages/core/src/analysis/types.ts` — AIProvider(중복, 제거 대상), AnalysisModule, AnalysisInput, AnalysisModuleResult
 - `packages/core/src/analysis/model-config.ts` — ModuleModelConfig interface
 - `packages/core/src/analysis/provider-keys.ts` — ProviderKeyInfo interface
@@ -55,17 +58,21 @@
 - `packages/core/src/pipeline/normalize.ts` — CommunitySource type
 
 ### 기존 types/ 디렉토리
+
 - `packages/core/src/types/index.ts` — CollectionTrigger, SourceStatus, JobProgress (이미 중앙화됨)
 - `packages/collectors/src/types/community.ts` — CommunityPost, CommunityComment (이미 중앙화됨)
 
 ### ai-gateway 소스 (테스트 대상)
+
 - `packages/ai-gateway/src/gateway.ts` — getModel, analyzeText, analyzeStructured (112줄, 테스트 0개)
 - `packages/ai-gateway/src/index.ts` — barrel export
 
 ### 대형 테스트 파일 (분할 대상)
+
 - `packages/core/tests/advn-schema.test.ts` — 300줄 (분할 대상)
 
 ### barrel export 파일 (import 경로 영향)
+
 - `packages/core/src/analysis/index.ts` — analysis barrel export
 - `packages/core/src/index.ts` — 패키지 최상위 export
 - `packages/ai-gateway/src/index.ts` — gateway barrel export
@@ -73,19 +80,23 @@
 </canonical_refs>
 
 <code_context>
+
 ## Existing Code Insights
 
 ### Reusable Assets
+
 - `packages/core/src/types/index.ts`: 이미 Zod schema + re-export 패턴 사용 중 — 동일 패턴으로 분산 타입 수집
 - `packages/collectors/src/types/community.ts`: collectors 패키지의 타입 중앙화 선례 — core도 동일 구조 적용
 - `packages/core/tests/`: Vitest 사용 중, vi.mock 패턴 적용 가능
 
 ### Established Patterns
+
 - Barrel export: 모든 패키지가 `export * from` 패턴 사용 — 타입 이동 후에도 동일 패턴 유지
 - 테스트: Vitest + describe/it 구조, vi.mock으로 외부 의존성 mock
 - 패키지 간 의존: core가 ai-gateway에 이미 의존 (`@ai-signalcraft/ai-gateway` import)
 
 ### Integration Points
+
 - `AIProvider` 제거 시 core의 analysis/types.ts → ai-gateway import로 변경 필요
 - types/ 이동 시 기존 직접 import 경로 → barrel export import로 리다이렉트
 - ai-gateway 테스트 추가 시 package.json에 vitest devDependency 확인 필요
@@ -108,5 +119,5 @@ None — discussion stayed within phase scope
 
 ---
 
-*Phase: 09-types-tests*
-*Context gathered: 2026-03-27*
+_Phase: 09-types-tests_
+_Context gathered: 2026-03-27_

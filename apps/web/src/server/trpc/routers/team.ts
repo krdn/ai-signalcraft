@@ -1,14 +1,14 @@
 import { z } from 'zod';
-import { protectedProcedure, adminProcedure, router } from '../init';
 import { teams, teamMembers, invitations, users } from '@ai-signalcraft/core';
 import { eq, and, gt, isNull } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
+import { protectedProcedure, adminProcedure, router } from '../init';
 import { sendInviteEmail } from '../../email';
 
 export const teamRouter = router({
   // 내 팀 정보 조회
   getMyTeam: protectedProcedure.query(async ({ ctx }) => {
-    const userId = ctx.session.user?.id!;
+    const userId = ctx.session.user?.id ?? '';
 
     const result = await ctx.db
       .select({
@@ -34,7 +34,7 @@ export const teamRouter = router({
   create: protectedProcedure
     .input(z.object({ name: z.string().min(1).max(100) }))
     .mutation(async ({ input, ctx }) => {
-      const userId = ctx.session.user?.id!;
+      const userId = ctx.session.user?.id ?? '';
 
       // 이미 팀에 속해 있는지 확인
       if (ctx.teamId) {
@@ -104,12 +104,7 @@ export const teamRouter = router({
         const existingMember = await ctx.db
           .select({ id: teamMembers.id })
           .from(teamMembers)
-          .where(
-            and(
-              eq(teamMembers.teamId, teamId),
-              eq(teamMembers.userId, existingUser[0].id),
-            ),
-          )
+          .where(and(eq(teamMembers.teamId, teamId), eq(teamMembers.userId, existingUser[0].id)))
           .limit(1);
 
         if (existingMember.length > 0) {
@@ -156,7 +151,7 @@ export const teamRouter = router({
   acceptInvite: protectedProcedure
     .input(z.object({ token: z.string() }))
     .mutation(async ({ input, ctx }) => {
-      const userId = ctx.session.user?.id!;
+      const userId = ctx.session.user?.id ?? '';
 
       // 초대 정보 조회
       const [invitation] = await ctx.db
@@ -192,12 +187,7 @@ export const teamRouter = router({
       const existingMember = await ctx.db
         .select({ id: teamMembers.id })
         .from(teamMembers)
-        .where(
-          and(
-            eq(teamMembers.teamId, invitation.teamId),
-            eq(teamMembers.userId, userId),
-          ),
-        )
+        .where(and(eq(teamMembers.teamId, invitation.teamId), eq(teamMembers.userId, userId)))
         .limit(1);
 
       if (existingMember.length > 0) {
@@ -245,12 +235,7 @@ export const teamRouter = router({
 
       const result = await ctx.db
         .delete(teamMembers)
-        .where(
-          and(
-            eq(teamMembers.teamId, ctx.teamId),
-            eq(teamMembers.userId, input.userId),
-          ),
-        )
+        .where(and(eq(teamMembers.teamId, ctx.teamId), eq(teamMembers.userId, input.userId)))
         .returning();
 
       if (result.length === 0) {
@@ -283,12 +268,7 @@ export const teamRouter = router({
       const result = await ctx.db
         .update(teamMembers)
         .set({ role: input.role })
-        .where(
-          and(
-            eq(teamMembers.teamId, ctx.teamId),
-            eq(teamMembers.userId, input.userId),
-          ),
-        )
+        .where(and(eq(teamMembers.teamId, ctx.teamId), eq(teamMembers.userId, input.userId)))
         .returning();
 
       if (result.length === 0) {

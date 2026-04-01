@@ -1,6 +1,9 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { format } from 'date-fns';
+import { CalendarRange, Clock, FileText, MessageSquare } from 'lucide-react';
+import { SourceBadges, extractSources, summarizeCounts, formatDuration } from './source-icons';
 import { trpcClient } from '@/lib/trpc';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -13,14 +16,12 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  TooltipProvider,
-} from '@/components/ui/tooltip';
-import { format } from 'date-fns';
-import { CalendarRange, Clock, FileText, MessageSquare } from 'lucide-react';
-import { SourceBadges, extractSources, summarizeCounts, formatDuration } from './source-icons';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
-const STATUS_BADGE: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string }> = {
+const STATUS_BADGE: Record<
+  string,
+  { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string }
+> = {
   completed: { variant: 'default', label: '완료' },
   running: { variant: 'secondary', label: '진행 중' },
   pending: { variant: 'outline', label: '대기' },
@@ -111,7 +112,10 @@ export function RecentJobs({ onSelectJob }: RecentJobsProps) {
                       {job.startDate && job.endDate && (
                         <div className="flex items-center gap-0.5 text-muted-foreground mt-0.5">
                           <CalendarRange className="h-3 w-3" />
-                          <span>{format(new Date(job.startDate), 'MM.dd')}~{format(new Date(job.endDate), 'MM.dd')}</span>
+                          <span>
+                            {format(new Date(job.startDate), 'MM.dd')}~
+                            {format(new Date(job.endDate), 'MM.dd')}
+                          </span>
                         </div>
                       )}
                     </TableCell>
@@ -123,13 +127,17 @@ export function RecentJobs({ onSelectJob }: RecentJobsProps) {
                       {counts.items > 0 ? (
                         <div className="flex flex-col gap-0.5">
                           <span className="flex items-center gap-0.5">
-                            <FileText className="h-3 w-3" />{counts.items}
+                            <FileText className="h-3 w-3" />
+                            {counts.items}
                           </span>
                           <span className="flex items-center gap-0.5">
-                            <MessageSquare className="h-3 w-3" />{counts.comments}
+                            <MessageSquare className="h-3 w-3" />
+                            {counts.comments}
                           </span>
                         </div>
-                      ) : '-'}
+                      ) : (
+                        '-'
+                      )}
                     </TableCell>
                     <TableCell>
                       <Badge variant={badgeInfo.variant}>{badgeInfo.label}</Badge>

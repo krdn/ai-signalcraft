@@ -26,9 +26,7 @@ export function SectionNav({ sections, activeSection }: SectionNavProps) {
     <>
       {/* 데스크톱: 좌측 고정 사이드바 */}
       <nav className="hidden md:block w-[200px] shrink-0 sticky top-[48px] h-[calc(100vh-48px)] overflow-y-auto bg-secondary/50 p-4 border-r">
-        <p className="text-sm font-semibold mb-3 text-muted-foreground">
-          목차
-        </p>
+        <p className="text-sm font-semibold mb-3 text-muted-foreground">목차</p>
         <ul className="space-y-1">
           {sections.map((section) => (
             <li key={section.id}>
@@ -39,7 +37,7 @@ export function SectionNav({ sections, activeSection }: SectionNavProps) {
                   'hover:bg-accent/10',
                   activeSection === section.id
                     ? 'border-l-2 border-accent text-accent-foreground font-semibold'
-                    : 'text-muted-foreground border-l-2 border-transparent'
+                    : 'text-muted-foreground border-l-2 border-transparent',
                 )}
               >
                 {section.title}
@@ -60,7 +58,7 @@ export function SectionNav({ sections, activeSection }: SectionNavProps) {
                 'px-3 py-1.5 text-xs whitespace-nowrap rounded-sm transition-colors',
                 activeSection === section.id
                   ? 'bg-accent/20 text-accent-foreground font-semibold'
-                  : 'text-muted-foreground hover:bg-accent/10'
+                  : 'text-muted-foreground hover:bg-accent/10',
               )}
             >
               {section.title}

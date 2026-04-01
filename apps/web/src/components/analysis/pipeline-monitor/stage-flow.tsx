@@ -2,12 +2,6 @@
 
 import { memo } from 'react';
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
-import {
   CheckCircle2,
   Loader2,
   XCircle,
@@ -24,6 +18,7 @@ import { STAGE_HELP, PIPELINE_STEPS } from './constants';
 import { computeSegments } from './timeline-bar';
 import { formatElapsedCompact } from './utils';
 import type { PipelineTimeline, StageStatus } from './types';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface StageFlowProps {
   stages: Record<string, { status: string }>;
@@ -128,10 +123,12 @@ export const StageFlow = memo(function StageFlow({
 
               {/* 연결선 */}
               {idx < PIPELINE_STEPS.length - 1 && (
-                <div className={`w-4 shrink-0 mx-0.5 ${connectorClass(
-                  status,
-                  stages[PIPELINE_STEPS[idx + 1].key]?.status ?? 'pending',
-                )}`} />
+                <div
+                  className={`w-4 shrink-0 mx-0.5 ${connectorClass(
+                    status,
+                    stages[PIPELINE_STEPS[idx + 1].key]?.status ?? 'pending',
+                  )}`}
+                />
               )}
             </div>
           );

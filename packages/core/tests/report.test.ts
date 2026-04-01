@@ -52,13 +52,25 @@ describe('report/generator', () => {
           module: 'macro-view',
           status: 'completed',
           result: { overview: '테스트 결과' },
-          usage: { inputTokens: 100, outputTokens: 50, totalTokens: 150, provider: 'openai', model: 'gpt-4o-mini' },
+          usage: {
+            inputTokens: 100,
+            outputTokens: 50,
+            totalTokens: 150,
+            provider: 'openai',
+            model: 'gpt-4o-mini',
+          },
         },
         'final-summary': {
           module: 'final-summary',
           status: 'completed',
           result: { oneLiner: '테스트 한 줄 요약' },
-          usage: { inputTokens: 100, outputTokens: 50, totalTokens: 150, provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
+          usage: {
+            inputTokens: 100,
+            outputTokens: 50,
+            totalTokens: 150,
+            provider: 'anthropic',
+            model: 'claude-sonnet-4-20250514',
+          },
         },
       },
       completedModules: ['macro-view', 'final-summary'],
@@ -83,9 +95,15 @@ describe('report/generator', () => {
           module: 'macro-view',
           status: 'completed',
           result: { overview: '테스트' },
-          usage: { inputTokens: 100, outputTokens: 50, totalTokens: 150, provider: 'openai', model: 'gpt-4o-mini' },
+          usage: {
+            inputTokens: 100,
+            outputTokens: 50,
+            totalTokens: 150,
+            provider: 'openai',
+            model: 'gpt-4o-mini',
+          },
         },
-        'segmentation': {
+        segmentation: {
           module: 'segmentation',
           status: 'failed',
           errorMessage: 'API 실패',
@@ -123,7 +141,7 @@ describe('report/persist-analysis', () => {
     const config = getTableConfig(analysisReports);
     // uniqueConstraints 또는 indexes에 job_id 관련 항목 존재
     const hasJobIdIndex = config.indexes.some(
-      (idx) => idx.config.name === 'analysis_reports_job_id_idx'
+      (idx) => idx.config.name === 'analysis_reports_job_id_idx',
     );
     expect(hasJobIdIndex).toBe(true);
   });

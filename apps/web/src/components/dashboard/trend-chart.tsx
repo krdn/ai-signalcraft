@@ -1,6 +1,7 @@
 'use client';
 
 import { Line, LineChart, CartesianGrid, XAxis, YAxis, ReferenceLine } from 'recharts';
+import { CardHelp, DASHBOARD_HELP } from './card-help';
 import {
   ChartContainer,
   ChartTooltip,
@@ -10,7 +11,6 @@ import {
   type ChartConfig,
 } from '@/components/ui/chart';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { CardHelp, DASHBOARD_HELP } from './card-help';
 
 interface TrendDataPoint {
   date: string;
@@ -52,8 +52,7 @@ const chartConfig = {
 export function TrendChart({ data, events }: TrendChartProps) {
   // prefers-reduced-motion 시 애니메이션 비활성화
   const prefersReducedMotion =
-    typeof window !== 'undefined' &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   return (
     <Card className="min-h-[280px]">
@@ -65,7 +64,10 @@ export function TrendChart({ data, events }: TrendChartProps) {
       </CardHeader>
       <CardContent>
         {!data || data.length === 0 ? (
-          <div className="flex items-center justify-center h-[200px] text-muted-foreground" role="status">
+          <div
+            className="flex items-center justify-center h-[200px] text-muted-foreground"
+            role="status"
+          >
             데이터 없음
           </div>
         ) : (

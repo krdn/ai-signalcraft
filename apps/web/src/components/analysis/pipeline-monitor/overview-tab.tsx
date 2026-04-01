@@ -1,10 +1,10 @@
 'use client';
 
-import { Card, CardContent } from '@/components/ui/card';
 import { AlertCircle, Database, Beaker, Coins } from 'lucide-react';
 import { TimelineBar } from './timeline-bar';
 import { formatTokens, formatCostUsd } from './utils';
 import type { PipelineStatusData, SourceDetail } from './types';
+import { Card, CardContent } from '@/components/ui/card';
 
 interface OverviewTabProps {
   data: PipelineStatusData;
@@ -21,9 +21,7 @@ export function OverviewTab({ data }: OverviewTabProps) {
   const failedSources = Object.values(data.sourceDetails).filter(
     (s: SourceDetail) => s.status === 'failed',
   ).length;
-  const failedModules = data.analysisModulesDetailed.filter(
-    (m) => m.status === 'failed',
-  ).length;
+  const failedModules = data.analysisModulesDetailed.filter((m) => m.status === 'failed').length;
   const hasErrors = failedSources > 0 || failedModules > 0;
 
   return (

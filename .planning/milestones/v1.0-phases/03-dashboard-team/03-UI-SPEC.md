@@ -15,13 +15,13 @@ created: 2026-03-24
 
 ## Design System
 
-| Property | Value |
-|----------|-------|
-| Tool | shadcn (to be initialized via `npx shadcn@latest init` in apps/web) |
-| Preset | Default (neutral) -- dark mode default via next-themes |
-| Component library | Radix UI (via shadcn/ui) |
-| Icon library | Lucide React (shadcn default) |
-| Font | Geist Sans (shadcn default) + Geist Mono for data values |
+| Property          | Value                                                               |
+| ----------------- | ------------------------------------------------------------------- |
+| Tool              | shadcn (to be initialized via `npx shadcn@latest init` in apps/web) |
+| Preset            | Default (neutral) -- dark mode default via next-themes              |
+| Component library | Radix UI (via shadcn/ui)                                            |
+| Icon library      | Lucide React (shadcn default)                                       |
+| Font              | Geist Sans (shadcn default) + Geist Mono for data values            |
 
 **Initialization note:** `components.json` does not exist yet. First plan must run `npx shadcn@latest init` in `apps/web/` with Tailwind CSS 4 (CSS-first config, no tailwind.config.js). Set `darkMode` to `class` for next-themes integration.
 
@@ -31,24 +31,25 @@ created: 2026-03-24
 
 Declared values (must be multiples of 4):
 
-| Token | Value | Usage |
-|-------|-------|-------|
-| xs | 4px | Icon gaps, badge padding, inline spacing |
-| sm | 8px | Compact card padding, chip gaps, table cell padding |
-| md | 16px | Default card padding, form field gaps, nav item spacing |
-| lg | 24px | Card content sections, tab panel padding |
-| xl | 32px | Dashboard grid gaps, page horizontal padding |
-| 2xl | 48px | Top nav height (fixed), major vertical section breaks |
-| 3xl | 64px | Page top padding (below nav) |
+| Token | Value | Usage                                                   |
+| ----- | ----- | ------------------------------------------------------- |
+| xs    | 4px   | Icon gaps, badge padding, inline spacing                |
+| sm    | 8px   | Compact card padding, chip gaps, table cell padding     |
+| md    | 16px  | Default card padding, form field gaps, nav item spacing |
+| lg    | 24px  | Card content sections, tab panel padding                |
+| xl    | 32px  | Dashboard grid gaps, page horizontal padding            |
+| 2xl   | 48px  | Top nav height (fixed), major vertical section breaks   |
+| 3xl   | 64px  | Page top padding (below nav)                            |
 
 ### Component height tokens:
 
-| Token | Value | Usage |
-|-------|-------|-------|
-| tab-height | 40px | Tab bar item height for compact navigation feel |
-| touch-min | 36px | Minimum touch target size for buttons, checkboxes, interactive controls |
+| Token      | Value | Usage                                                                   |
+| ---------- | ----- | ----------------------------------------------------------------------- |
+| tab-height | 40px  | Tab bar item height for compact navigation feel                         |
+| touch-min  | 36px  | Minimum touch target size for buttons, checkboxes, interactive controls |
 
 Exceptions:
+
 - Top navigation bar height: 48px (2xl)
 - Chart card minimum height: 280px (content-driven, not spacing token)
 
@@ -56,12 +57,12 @@ Exceptions:
 
 ## Typography
 
-| Role | Size | Weight | Line Height | Usage |
-|------|------|--------|-------------|-------|
-| Body | 14px | 400 (regular) | 1.5 | Default text, descriptions, table cells |
-| Label | 12px | 400 (regular) | 1.4 | Form labels, chart axis labels, metadata, badges |
-| Heading | 18px | 600 (semibold) | 1.3 | Card titles, section headers, tab labels |
-| Display | 28px | 600 (semibold) | 1.2 | Page title ("AI SignalCraft"), large metric values |
+| Role    | Size | Weight         | Line Height | Usage                                              |
+| ------- | ---- | -------------- | ----------- | -------------------------------------------------- |
+| Body    | 14px | 400 (regular)  | 1.5         | Default text, descriptions, table cells            |
+| Label   | 12px | 400 (regular)  | 1.4         | Form labels, chart axis labels, metadata, badges   |
+| Heading | 18px | 600 (semibold) | 1.3         | Card titles, section headers, tab labels           |
+| Display | 28px | 600 (semibold) | 1.2         | Page title ("AI SignalCraft"), large metric values |
 
 **Weights used:** 2 only — 400 (regular) and 600 (semibold). No other weights permitted.
 
@@ -76,14 +77,15 @@ Exceptions:
 
 Dark mode is the default theme (D-03). All colors defined for dark mode first. Light mode uses shadcn default inversion.
 
-| Role | Dark Mode Value | Light Mode Value | Usage |
-|------|----------------|-----------------|-------|
-| Dominant (60%) | `hsl(240 10% 4%)` (near-black) | `hsl(0 0% 100%)` (white) | Page background, base surface |
-| Secondary (30%) | `hsl(240 6% 10%)` (dark card) | `hsl(240 5% 96%)` (light gray) | Cards, nav bar, sidebar, tab bar background |
-| Accent (10%) | `hsl(217 91% 60%)` (blue-500) | `hsl(217 91% 50%)` (blue-600) | See reserved list below |
-| Destructive | `hsl(0 84% 60%)` (red-500) | `hsl(0 84% 50%)` (red-600) | Delete actions, error states, high-risk indicators |
+| Role            | Dark Mode Value                | Light Mode Value               | Usage                                              |
+| --------------- | ------------------------------ | ------------------------------ | -------------------------------------------------- |
+| Dominant (60%)  | `hsl(240 10% 4%)` (near-black) | `hsl(0 0% 100%)` (white)       | Page background, base surface                      |
+| Secondary (30%) | `hsl(240 6% 10%)` (dark card)  | `hsl(240 5% 96%)` (light gray) | Cards, nav bar, sidebar, tab bar background        |
+| Accent (10%)    | `hsl(217 91% 60%)` (blue-500)  | `hsl(217 91% 50%)` (blue-600)  | See reserved list below                            |
+| Destructive     | `hsl(0 84% 60%)` (red-500)     | `hsl(0 84% 50%)` (red-600)     | Delete actions, error states, high-risk indicators |
 
 ### Accent reserved for (exhaustive list):
+
 - Primary CTA button ("분석 실행" button)
 - Active tab indicator (bottom border)
 - Pipeline progress bar fill (in-progress state)
@@ -92,56 +94,59 @@ Dark mode is the default theme (D-03). All colors defined for dark mode first. L
 - Focus ring on form inputs
 
 ### Semantic chart colors (via shadcn chart CSS variables):
-| Variable | Color | Usage |
-|----------|-------|-------|
+
+| Variable    | Color                      | Usage                             |
+| ----------- | -------------------------- | --------------------------------- |
 | `--chart-1` | `hsl(142 71% 45%)` (green) | Positive sentiment, opportunities |
-| `--chart-2` | `hsl(0 84% 60%)` (red) | Negative sentiment, risks |
-| `--chart-3` | `hsl(240 5% 64%)` (gray) | Neutral sentiment |
-| `--chart-4` | `hsl(217 91% 60%)` (blue) | Trend lines, primary data series |
-| `--chart-5` | `hsl(38 92% 50%)` (amber) | Warning level, medium-risk items |
+| `--chart-2` | `hsl(0 84% 60%)` (red)     | Negative sentiment, risks         |
+| `--chart-3` | `hsl(240 5% 64%)` (gray)   | Neutral sentiment                 |
+| `--chart-4` | `hsl(217 91% 60%)` (blue)  | Trend lines, primary data series  |
+| `--chart-5` | `hsl(38 92% 50%)` (amber)  | Warning level, medium-risk items  |
 
 ### Risk/Opportunity color coding (D-08):
-| Level | Color | Usage |
-|-------|-------|-------|
-| Critical/High | `hsl(0 84% 60%)` red | High-impact risks, urgent items |
-| Medium | `hsl(38 92% 50%)` amber | Medium-impact items |
-| Low | `hsl(142 71% 45%)` green | Low-risk, high-opportunity items |
+
+| Level         | Color                    | Usage                            |
+| ------------- | ------------------------ | -------------------------------- |
+| Critical/High | `hsl(0 84% 60%)` red     | High-impact risks, urgent items  |
+| Medium        | `hsl(38 92% 50%)` amber  | Medium-impact items              |
+| Low           | `hsl(142 71% 45%)` green | Low-risk, high-opportunity items |
 
 ### Border and muted:
-| Element | Value |
-|---------|-------|
+
+| Element     | Value                                                |
+| ----------- | ---------------------------------------------------- |
 | Card border | `hsl(240 4% 16%)` (dark) / `hsl(240 6% 90%)` (light) |
-| Muted text | `hsl(240 5% 65%)` (dark) / `hsl(240 4% 46%)` (light) |
-| Divider | `hsl(240 4% 16%)` same as card border |
+| Muted text  | `hsl(240 5% 65%)` (dark) / `hsl(240 4% 46%)` (light) |
+| Divider     | `hsl(240 4% 16%)` same as card border                |
 
 ---
 
 ## Copywriting Contract
 
-| Element | Copy (Korean) | Context |
-|---------|--------------|---------|
-| Primary CTA | "분석 실행" | Trigger form submit button (D-04) |
-| Secondary CTA | "PDF 내보내기" | Report viewer top action (D-09) |
-| Empty state heading (분석 실행) | "분석 내역이 없습니다" | No recent jobs in trigger tab |
-| Empty state body (분석 실행) | "키워드를 입력하고 분석을 실행해 보세요." | Below empty heading, with arrow pointing to form |
-| Empty state heading (결과 대시보드) | "분석 결과가 없습니다" | No results selected |
-| Empty state body (결과 대시보드) | "분석 실행 탭에서 새 분석을 시작하거나, 히스토리에서 이전 결과를 선택하세요." | Guide to other tabs |
-| Empty state heading (히스토리) | "분석 기록이 없습니다" | No history records |
-| Empty state body (히스토리) | "첫 번째 분석을 실행하면 여기에 기록됩니다." | Points to trigger tab |
-| Error state (파이프라인) | "수집 중 오류가 발생했습니다. 일부 소스에서 데이터를 가져오지 못했습니다." | Inline error (D-13) |
-| Error action | "다시 시도" | Retry button next to error message (D-13) |
-| Error state (인증) | "로그인에 실패했습니다. 이메일과 비밀번호를 확인해 주세요." | Login form error |
-| Error state (네트워크) | "서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요." | Network failure |
-| Loading state | "분석 중..." | Pipeline in-progress indicator |
-| Pipeline stages | "수집 → 정규화 → 분석 → 리포트" | Progress bar labels (D-12) |
-| Destructive: 팀원 제거 | "팀원 제거": "정말 {name}님을 팀에서 제거하시겠습니까? 이 작업은 되돌릴 수 없습니다." | Confirmation dialog (AlertDialog) |
-| Destructive: 분석 삭제 | 없음 | Phase 3에서 분석 삭제 기능 없음 |
-| Login page title | "AI SignalCraft" | Login form heading |
-| Login page subtitle | "여론 분석 대시보드에 로그인" | Below logo |
-| Login CTA (credentials) | "이메일로 로그인" | Credentials login button -- distinguishes from Google OAuth |
-| Login CTA (Google) | "Google로 로그인" | Google OAuth button (outline style) |
-| Invite email subject | "[AI SignalCraft] 팀 초대" | Email subject line |
-| Tab labels | "분석 실행" / "결과 대시보드" / "AI 리포트" / "히스토리" | Top nav tabs (D-02) |
+| Element                             | Copy (Korean)                                                                         | Context                                                     |
+| ----------------------------------- | ------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| Primary CTA                         | "분석 실행"                                                                           | Trigger form submit button (D-04)                           |
+| Secondary CTA                       | "PDF 내보내기"                                                                        | Report viewer top action (D-09)                             |
+| Empty state heading (분석 실행)     | "분석 내역이 없습니다"                                                                | No recent jobs in trigger tab                               |
+| Empty state body (분석 실행)        | "키워드를 입력하고 분석을 실행해 보세요."                                             | Below empty heading, with arrow pointing to form            |
+| Empty state heading (결과 대시보드) | "분석 결과가 없습니다"                                                                | No results selected                                         |
+| Empty state body (결과 대시보드)    | "분석 실행 탭에서 새 분석을 시작하거나, 히스토리에서 이전 결과를 선택하세요."         | Guide to other tabs                                         |
+| Empty state heading (히스토리)      | "분석 기록이 없습니다"                                                                | No history records                                          |
+| Empty state body (히스토리)         | "첫 번째 분석을 실행하면 여기에 기록됩니다."                                          | Points to trigger tab                                       |
+| Error state (파이프라인)            | "수집 중 오류가 발생했습니다. 일부 소스에서 데이터를 가져오지 못했습니다."            | Inline error (D-13)                                         |
+| Error action                        | "다시 시도"                                                                           | Retry button next to error message (D-13)                   |
+| Error state (인증)                  | "로그인에 실패했습니다. 이메일과 비밀번호를 확인해 주세요."                           | Login form error                                            |
+| Error state (네트워크)              | "서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요."                              | Network failure                                             |
+| Loading state                       | "분석 중..."                                                                          | Pipeline in-progress indicator                              |
+| Pipeline stages                     | "수집 → 정규화 → 분석 → 리포트"                                                       | Progress bar labels (D-12)                                  |
+| Destructive: 팀원 제거              | "팀원 제거": "정말 {name}님을 팀에서 제거하시겠습니까? 이 작업은 되돌릴 수 없습니다." | Confirmation dialog (AlertDialog)                           |
+| Destructive: 분석 삭제              | 없음                                                                                  | Phase 3에서 분석 삭제 기능 없음                             |
+| Login page title                    | "AI SignalCraft"                                                                      | Login form heading                                          |
+| Login page subtitle                 | "여론 분석 대시보드에 로그인"                                                         | Below logo                                                  |
+| Login CTA (credentials)             | "이메일로 로그인"                                                                     | Credentials login button -- distinguishes from Google OAuth |
+| Login CTA (Google)                  | "Google로 로그인"                                                                     | Google OAuth button (outline style)                         |
+| Invite email subject                | "[AI SignalCraft] 팀 초대"                                                            | Email subject line                                          |
+| Tab labels                          | "분석 실행" / "결과 대시보드" / "AI 리포트" / "히스토리"                              | Top nav tabs (D-02)                                         |
 
 ---
 
@@ -149,54 +154,56 @@ Dark mode is the default theme (D-03). All colors defined for dark mode first. L
 
 ### shadcn/ui components to install (official registry):
 
-| Component | Usage |
-|-----------|-------|
-| button | CTA buttons, retry, PDF export |
-| card | All dashboard cards, form container, risk/opportunity cards |
-| input | Keyword input, email input |
-| label | Form field labels |
-| checkbox | Source selection (All/Naver/YouTube) |
-| tabs | 4-tab navigation (D-02) |
-| select | Period preset selector |
-| calendar | Date range picker base |
-| popover | Date picker popover container |
-| progress | Pipeline stage progress bars, risk impact bars (D-08, D-12) |
-| badge | Status badges (running/completed/failed), role badges |
-| table | History data table, team member list |
-| dialog | Team member invite form |
-| alert-dialog | Destructive action confirmation (member removal) |
-| dropdown-menu | User menu (profile, logout, theme toggle) |
-| avatar | User avatar in nav, team member list |
-| skeleton | Loading states for all cards |
-| toast | Success/error notifications (analysis started, invite sent) |
-| separator | Section dividers in report viewer |
-| scroll-area | Report viewer scrollable content |
-| chart | Recharts wrapper (ChartContainer, ChartTooltip) |
-| form | React Hook Form integration for trigger form |
-| navigation-menu | Top navigation bar |
-| tooltip | Icon-only button descriptions, chart data hover |
-| switch | Theme toggle (dark/light) |
-| sheet | Mobile nav drawer (responsive) |
-| command | Keyboard shortcuts (optional enhancement) |
+| Component       | Usage                                                       |
+| --------------- | ----------------------------------------------------------- |
+| button          | CTA buttons, retry, PDF export                              |
+| card            | All dashboard cards, form container, risk/opportunity cards |
+| input           | Keyword input, email input                                  |
+| label           | Form field labels                                           |
+| checkbox        | Source selection (All/Naver/YouTube)                        |
+| tabs            | 4-tab navigation (D-02)                                     |
+| select          | Period preset selector                                      |
+| calendar        | Date range picker base                                      |
+| popover         | Date picker popover container                               |
+| progress        | Pipeline stage progress bars, risk impact bars (D-08, D-12) |
+| badge           | Status badges (running/completed/failed), role badges       |
+| table           | History data table, team member list                        |
+| dialog          | Team member invite form                                     |
+| alert-dialog    | Destructive action confirmation (member removal)            |
+| dropdown-menu   | User menu (profile, logout, theme toggle)                   |
+| avatar          | User avatar in nav, team member list                        |
+| skeleton        | Loading states for all cards                                |
+| toast           | Success/error notifications (analysis started, invite sent) |
+| separator       | Section dividers in report viewer                           |
+| scroll-area     | Report viewer scrollable content                            |
+| chart           | Recharts wrapper (ChartContainer, ChartTooltip)             |
+| form            | React Hook Form integration for trigger form                |
+| navigation-menu | Top navigation bar                                          |
+| tooltip         | Icon-only button descriptions, chart data hover             |
+| switch          | Theme toggle (dark/light)                                   |
+| sheet           | Mobile nav drawer (responsive)                              |
+| command         | Keyboard shortcuts (optional enhancement)                   |
 
 ### Third-party visualization components:
 
-| Library | Component | Usage |
-|---------|-----------|-------|
-| Recharts (via shadcn chart) | PieChart/Pie | Sentiment ratio donut chart (D-06) |
-| Recharts (via shadcn chart) | LineChart/Line | Time series trend chart (D-06) |
-| Recharts (via shadcn chart) | BarChart/Bar | Platform comparison, keyword frequency |
-| @isoterik/react-word-cloud | WordCloud | Keyword/related terms visualization (D-07) |
-| react-markdown + remark-gfm | Markdown | AI report rendering (D-09, D-10) |
+| Library                     | Component      | Usage                                      |
+| --------------------------- | -------------- | ------------------------------------------ |
+| Recharts (via shadcn chart) | PieChart/Pie   | Sentiment ratio donut chart (D-06)         |
+| Recharts (via shadcn chart) | LineChart/Line | Time series trend chart (D-06)             |
+| Recharts (via shadcn chart) | BarChart/Bar   | Platform comparison, keyword frequency     |
+| @isoterik/react-word-cloud  | WordCloud      | Keyword/related terms visualization (D-07) |
+| react-markdown + remark-gfm | Markdown       | AI report rendering (D-09, D-10)           |
 
 ---
 
 ## Layout Contract
 
 ### Top Navigation Bar (D-01):
+
 ```
 [Logo: "SignalCraft"] [Tab: 분석 실행 | 결과 대시보드 | AI 리포트 | 히스토리] [User Avatar + Dropdown]
 ```
+
 - Fixed at top, height: 48px
 - Background: secondary color (card surface)
 - Logo: semibold (600), accent color, 18px
@@ -204,6 +211,7 @@ Dark mode is the default theme (D-03). All colors defined for dark mode first. L
 - User dropdown: avatar 32px circle, dropdown with profile/team/logout/theme
 
 ### Tab: 분석 실행 (D-04)
+
 ```
 +------------------------------------------+
 | Trigger Form Card (max-w-xl, centered)   |
@@ -226,6 +234,7 @@ Dark mode is the default theme (D-03). All colors defined for dark mode first. L
 ```
 
 ### Tab: 결과 대시보드 (D-05, D-06, D-07, D-08)
+
 ```
 +-------------------+-------------------+
 | Sentiment Donut   | Trend Line Chart  |
@@ -240,11 +249,13 @@ Dark mode is the default theme (D-03). All colors defined for dark mode first. L
 | (리스크 목록)      | (기회 목록)         |
 +-------------------+-------------------+
 ```
+
 - 2-column grid on desktop (grid-cols-2, gap-xl)
 - 1-column stack on mobile (< 768px)
 - Each card: secondary background, 16px padding, rounded-lg border
 
 ### Tab: AI 리포트 (D-09, D-10)
+
 ```
 +--------+--------------------------------+
 | Section| Report Content (Markdown)      |
@@ -258,11 +269,13 @@ Dark mode is the default theme (D-03). All colors defined for dark mode first. L
 | ...    |                                |
 +--------+--------------------------------+
 ```
+
 - Left sidebar: 200px fixed width, sticky, secondary background
 - Content area: flex-1, max-w-3xl, body text rendering
 - Mobile: section nav collapses to horizontal scroll tabs above content
 
 ### Tab: 히스토리 (D-17, D-18)
+
 ```
 +------------------------------------------+
 | DataTable                                |
@@ -275,6 +288,7 @@ Dark mode is the default theme (D-03). All colors defined for dark mode first. L
 ```
 
 ### Login Page
+
 ```
 +------------------------------------------+
 |          [Logo: AI SignalCraft]           |
@@ -289,6 +303,7 @@ Dark mode is the default theme (D-03). All colors defined for dark mode first. L
 | [Google로 로그인 Button (outline)]         |
 +------------------------------------------+
 ```
+
 - Centered card, max-w-sm
 - Dark background (dominant), card (secondary)
 
@@ -297,6 +312,7 @@ Dark mode is the default theme (D-03). All colors defined for dark mode first. L
 ## Interaction Contracts
 
 ### Analysis Trigger Flow:
+
 1. User types keyword in input field
 2. User checks sources (All selected by default)
 3. User selects date range (default: last 7 days)
@@ -307,23 +323,27 @@ Dark mode is the default theme (D-03). All colors defined for dark mode first. L
 8. On completion: toast notification + auto-navigate to 결과 대시보드 tab
 
 ### Pipeline Error Recovery (D-13):
+
 1. Error appears inline below the failed stage
 2. "다시 시도" button visible next to error
 3. Successful source results remain visible
 4. Retry triggers only the failed portion
 
 ### Report Viewer Navigation (D-09):
+
 1. Click section in left nav -- smooth scroll to section in content
 2. Scroll position updates active section highlight in nav
 3. "PDF 내보내기" button triggers download (uses Phase 2 PDF generator)
 
 ### Authentication Flow:
+
 1. Unauthenticated user lands on `/login`
 2. Login success redirects to main dashboard
 3. All dashboard routes protected by NextAuth middleware
 4. Session expires: redirect to login with "세션이 만료되었습니다" toast
 
 ### Team Invite Flow (D-16):
+
 1. Admin clicks "팀원 초대" in user dropdown or team settings
 2. Dialog opens with email input + role select (Admin/Member)
 3. Submit sends invite via Resend API
@@ -335,34 +355,34 @@ Dark mode is the default theme (D-03). All colors defined for dark mode first. L
 
 ## States Matrix
 
-| Component | Empty | Loading | Loaded | Error | Partial |
-|-----------|-------|---------|--------|-------|---------|
-| Trigger Form | Default form state | Button spinner + disabled | N/A | Inline error below form | N/A |
-| Pipeline Monitor | Hidden | Progress bars animating | Completed badge + summary | Stage-level error + "다시 시도" | Some stages done, one failed |
-| Sentiment Chart | "데이터 없음" placeholder | Skeleton (circle) | Donut chart rendered | Error card + "다시 시도" | N/A |
-| Trend Chart | "데이터 없음" placeholder | Skeleton (rectangle) | Line chart rendered | Error card + "다시 시도" | N/A |
-| Word Cloud | "키워드 없음" placeholder | Skeleton (cloud shape) | Words rendered | Error card + "다시 시도" | N/A |
-| Risk Cards | "리스크 없음" placeholder | Skeleton (3 card stack) | Card list rendered | Error card + "다시 시도" | N/A |
-| Report Viewer | "리포트 없음" placeholder | Skeleton (text blocks) | Markdown rendered | Error card + "다시 시도" | N/A |
-| History Table | Empty state illustration | Skeleton rows (5) | Data table with pagination | Error banner + "다시 시도" | N/A |
-| Team Members | "팀원 없음" (admin only) | Skeleton rows (3) | Member list | Error toast | N/A |
+| Component        | Empty                     | Loading                   | Loaded                     | Error                           | Partial                      |
+| ---------------- | ------------------------- | ------------------------- | -------------------------- | ------------------------------- | ---------------------------- |
+| Trigger Form     | Default form state        | Button spinner + disabled | N/A                        | Inline error below form         | N/A                          |
+| Pipeline Monitor | Hidden                    | Progress bars animating   | Completed badge + summary  | Stage-level error + "다시 시도" | Some stages done, one failed |
+| Sentiment Chart  | "데이터 없음" placeholder | Skeleton (circle)         | Donut chart rendered       | Error card + "다시 시도"        | N/A                          |
+| Trend Chart      | "데이터 없음" placeholder | Skeleton (rectangle)      | Line chart rendered        | Error card + "다시 시도"        | N/A                          |
+| Word Cloud       | "키워드 없음" placeholder | Skeleton (cloud shape)    | Words rendered             | Error card + "다시 시도"        | N/A                          |
+| Risk Cards       | "리스크 없음" placeholder | Skeleton (3 card stack)   | Card list rendered         | Error card + "다시 시도"        | N/A                          |
+| Report Viewer    | "리포트 없음" placeholder | Skeleton (text blocks)    | Markdown rendered          | Error card + "다시 시도"        | N/A                          |
+| History Table    | Empty state illustration  | Skeleton rows (5)         | Data table with pagination | Error banner + "다시 시도"      | N/A                          |
+| Team Members     | "팀원 없음" (admin only)  | Skeleton rows (3)         | Member list                | Error toast                     | N/A                          |
 
 ---
 
 ## Responsive Breakpoints
 
-| Breakpoint | Width | Layout Changes |
-|------------|-------|----------------|
-| Mobile | < 768px | Single column, tabs become horizontal scroll, report nav collapses to top bar, nav drawer via Sheet |
-| Tablet | 768px - 1024px | 2-column grid maintained, reduced padding (lg -> md) |
-| Desktop | > 1024px | Full 2-column grid, fixed left nav in report, all features visible |
+| Breakpoint | Width          | Layout Changes                                                                                      |
+| ---------- | -------------- | --------------------------------------------------------------------------------------------------- |
+| Mobile     | < 768px        | Single column, tabs become horizontal scroll, report nav collapses to top bar, nav drawer via Sheet |
+| Tablet     | 768px - 1024px | 2-column grid maintained, reduced padding (lg -> md)                                                |
+| Desktop    | > 1024px       | Full 2-column grid, fixed left nav in report, all features visible                                  |
 
 ---
 
 ## Registry Safety
 
-| Registry | Blocks Used | Safety Gate |
-|----------|-------------|-------------|
+| Registry        | Blocks Used                                                                                                                                                                                                                                        | Safety Gate  |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
 | shadcn official | button, card, input, label, checkbox, tabs, select, calendar, popover, progress, badge, table, dialog, alert-dialog, dropdown-menu, avatar, skeleton, toast, separator, scroll-area, chart, form, navigation-menu, tooltip, switch, sheet, command | not required |
 
 No third-party shadcn registries declared. All visualization handled by direct npm packages (Recharts, @isoterik/react-word-cloud, react-markdown) which are vetted via RESEARCH.md.
@@ -371,14 +391,14 @@ No third-party shadcn registries declared. All visualization handled by direct n
 
 ## Accessibility Contract
 
-| Requirement | Implementation |
-|-------------|---------------|
-| Keyboard navigation | All interactive elements focusable via Tab. Tabs navigable with Arrow keys. |
-| Screen reader | Chart cards include `aria-label` with data summary. Empty states use `role="status"`. |
-| Color contrast | All text meets WCAG 2.1 AA (4.5:1 minimum). Chart colors distinguishable in grayscale. |
-| Focus indicator | 2px accent-colored focus ring on all interactive elements (shadcn default). |
-| Reduced motion | Charts respect `prefers-reduced-motion` -- disable animations. |
-| Language | `lang="ko"` on html element (already set in layout.tsx). |
+| Requirement         | Implementation                                                                         |
+| ------------------- | -------------------------------------------------------------------------------------- |
+| Keyboard navigation | All interactive elements focusable via Tab. Tabs navigable with Arrow keys.            |
+| Screen reader       | Chart cards include `aria-label` with data summary. Empty states use `role="status"`.  |
+| Color contrast      | All text meets WCAG 2.1 AA (4.5:1 minimum). Chart colors distinguishable in grayscale. |
+| Focus indicator     | 2px accent-colored focus ring on all interactive elements (shadcn default).            |
+| Reduced motion      | Charts respect `prefers-reduced-motion` -- disable animations.                         |
+| Language            | `lang="ko"` on html element (already set in layout.tsx).                               |
 
 ---
 

@@ -132,7 +132,10 @@ export async function updateProviderKey(
  */
 export async function deleteProviderKey(id: number): Promise<void> {
   const db = getDb();
-  const result = await db.delete(providerKeys).where(eq(providerKeys.id, id)).returning({ id: providerKeys.id });
+  const result = await db
+    .delete(providerKeys)
+    .where(eq(providerKeys.id, id))
+    .returning({ id: providerKeys.id });
   if (result.length === 0) throw new Error(`프로바이더 키 ID ${id}를 찾을 수 없습니다`);
 }
 

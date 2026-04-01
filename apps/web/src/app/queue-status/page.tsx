@@ -1,11 +1,11 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { RefreshCw, ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
 import { trpcClient } from '@/lib/trpc';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, ArrowLeft } from 'lucide-react';
-import Link from 'next/link';
 
 const STATE_COLORS: Record<string, string> = {
   active: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
@@ -24,8 +24,15 @@ export default function QueueStatusPage() {
   });
 
   const totalActive = data?.queues.reduce((sum, q) => sum + (q.counts.active ?? 0), 0) ?? 0;
-  const totalWaiting = data?.queues.reduce((sum, q) =>
-    sum + (q.counts.waiting ?? 0) + (q.counts['waiting-children'] ?? 0) + (q.counts.delayed ?? 0), 0) ?? 0;
+  const totalWaiting =
+    data?.queues.reduce(
+      (sum, q) =>
+        sum +
+        (q.counts.waiting ?? 0) +
+        (q.counts['waiting-children'] ?? 0) +
+        (q.counts.delayed ?? 0),
+      0,
+    ) ?? 0;
 
   return (
     <div className="min-h-screen bg-background p-6 max-w-4xl mx-auto">
@@ -40,27 +47,30 @@ export default function QueueStatusPage() {
           {data && (
             <div className="flex gap-2">
               {totalActive > 0 && (
-                <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/30">
+                <Badge
+                  variant="outline"
+                  className="bg-blue-500/10 text-blue-400 border-blue-500/30"
+                >
                   Active {totalActive}
                 </Badge>
               )}
               {totalWaiting > 0 && (
-                <Badge variant="outline" className="bg-yellow-500/10 text-yellow-400 border-yellow-500/30">
+                <Badge
+                  variant="outline"
+                  className="bg-yellow-500/10 text-yellow-400 border-yellow-500/30"
+                >
                   대기 {totalWaiting}
                 </Badge>
               )}
               {totalActive === 0 && totalWaiting === 0 && (
-                <Badge variant="outline" className="text-muted-foreground">Idle</Badge>
+                <Badge variant="outline" className="text-muted-foreground">
+                  Idle
+                </Badge>
               )}
             </div>
           )}
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => refetch()}
-          disabled={isFetching}
-        >
+        <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
           <RefreshCw className={`h-4 w-4 mr-1 ${isFetching ? 'animate-spin' : ''}`} />
           새로고침
         </Button>
@@ -88,7 +98,7 @@ export default function QueueStatusPage() {
                         {state}: {count}
                       </Badge>
                     ))}
-                  {Object.values(queue.counts).every(c => c === 0) && (
+                  {Object.values(queue.counts).every((c) => c === 0) && (
                     <span className="text-xs text-muted-foreground">비어있음</span>
                   )}
                 </div>
@@ -117,7 +127,10 @@ export default function QueueStatusPage() {
                         </span>
                       )}
                       {job.failedReason && (
-                        <span className="text-red-400 truncate max-w-[300px]" title={job.failedReason}>
+                        <span
+                          className="text-red-400 truncate max-w-[300px]"
+                          title={job.failedReason}
+                        >
                           {job.failedReason}
                         </span>
                       )}

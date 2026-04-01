@@ -1,8 +1,16 @@
 // DB에서 jobId 기반으로 수집 데이터를 로드하여 AnalysisInput 형식으로 변환
 // N:M 조인 테이블 경유 조회
-import { getDb } from '../db';
-import { articles, videos, comments, collectionJobs, articleJobs, videoJobs, commentJobs } from '../db/schema/collections';
 import { eq, desc } from 'drizzle-orm';
+import { getDb } from '../db';
+import {
+  articles,
+  videos,
+  comments,
+  collectionJobs,
+  articleJobs,
+  videoJobs,
+  commentJobs,
+} from '../db/schema/collections';
 import type { AnalysisInput } from './types';
 
 // 토큰 절약 상수 (Pitfall 1 대응)

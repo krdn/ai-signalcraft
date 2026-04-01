@@ -71,6 +71,7 @@ completed: 2026-03-24
 - **Files modified:** 12
 
 ## Accomplishments
+
 - 감성 비율 Donut 차트 (3색 긍정/부정/중립, innerRadius 도넛 형태)
 - 시계열 트렌드 Line 차트 (4개 데이터 시리즈, prefers-reduced-motion 대응)
 - 워드클라우드 (d3-cloud 기반, SSR 비활성화 dynamic import)
@@ -87,6 +88,7 @@ Each task was committed atomically:
 2. **Task 2: 리스크/기회 카드 + 대시보드 그리드 조합 + 탭 연결** - `a1fe106` (feat)
 
 ## Files Created/Modified
+
 - `apps/web/src/components/dashboard/sentiment-chart.tsx` - 감성 비율 Donut 차트 (PieChart + ChartContainer)
 - `apps/web/src/components/dashboard/trend-chart.tsx` - 시계열 Line 차트 (4개 데이터 시리즈)
 - `apps/web/src/components/dashboard/word-cloud.tsx` - 워드클라우드 (dynamic import, SSR false)
@@ -101,6 +103,7 @@ Each task was committed atomically:
 - `apps/web/src/components/team/member-list.tsx` - 타입 캐스팅 수정
 
 ## Decisions Made
+
 - shadcn chart 컴포넌트(ChartContainer + ChartConfig) 사용: Recharts를 직접 사용하지 않고 shadcn 래퍼로 통일하여 테마 색상 변수 자동 적용
 - 워드클라우드 dynamic import + 타입 캐스팅: @isoterik/react-word-cloud의 export 구조가 TypeScript와 호환되지 않아 `as any` + ComponentType 캐스팅 적용
 - resend serverExternalPackages 추가: 병렬 에이전트가 추가한 team.ts의 Resend 패키지가 빌드 시 API 키를 요구하여 외부 패키지로 격리
@@ -110,6 +113,7 @@ Each task was committed atomically:
 ### Auto-fixed Issues
 
 **1. [Rule 3 - Blocking] 워드클라우드 타입 에러 수정**
+
 - **Found during:** Task 1
 - **Issue:** @isoterik/react-word-cloud의 default export 구조가 TypeScript와 호환되지 않아 dynamic import 타입 에러
 - **Fix:** `as any` 캐스팅 + ComponentType 타입 단언으로 해결
@@ -118,6 +122,7 @@ Each task was committed atomically:
 - **Committed in:** f60365c
 
 **2. [Rule 3 - Blocking] Resend API 키 빌드 에러 해결**
+
 - **Found during:** Task 1 (빌드 검증)
 - **Issue:** 병렬 에이전트(03-05)가 추가한 team.ts의 Resend 패키지가 빌드 시 API 키 없이 초기화 실패
 - **Fix:** next.config.ts serverExternalPackages에 'resend' 추가
@@ -126,6 +131,7 @@ Each task was committed atomically:
 - **Committed in:** f60365c
 
 **3. [Rule 3 - Blocking] team.ts/member-list.tsx 타입 에러 수정**
+
 - **Found during:** Task 1 (빌드 검증)
 - **Issue:** 병렬 에이전트(03-05)가 추가한 team.ts에서 ctx.session.user optional chaining 누락, member-list.tsx에서 joinedAt Date/string 타입 불일치
 - **Fix:** optional chaining 추가, `as unknown as TeamMember[]` 캐스팅
@@ -139,34 +145,40 @@ Each task was committed atomically:
 **Impact on plan:** 모든 auto-fix가 빌드 통과에 필수적. 병렬 에이전트 코드 호환성 이슈. 스코프 변경 없음.
 
 ## Issues Encountered
+
 - 병렬 에이전트 간 빌드 충돌: `next build` 프로세스 동시 실행 시 lock file 충돌로 대기 필요
 - Resend v6 빌드 시 초기화: serverExternalPackages로 해결
 
 ## Known Stubs
+
 None - 모든 차트/카드 컴포넌트가 trpc.analysis.getResults를 통해 실제 분석 결과 데이터를 소비함. 빈 상태 표시는 데이터 미존재 시 정상 동작.
 
 ## User Setup Required
+
 None - 외부 서비스 설정 불필요.
 
 ## Superpowers 호출 기록
 
-| # | 스킬명 | 호출 시점 | 결과 요약 |
-|---|--------|----------|----------|
-| - | - | - | GSD executor 병렬 실행 환경에서 Superpowers 스킬 호출 불가 (Agent tool 미사용) |
+| #   | 스킬명 | 호출 시점 | 결과 요약                                                                      |
+| --- | ------ | --------- | ------------------------------------------------------------------------------ |
+| -   | -      | -         | GSD executor 병렬 실행 환경에서 Superpowers 스킬 호출 불가 (Agent tool 미사용) |
 
 ### 미호출 스킬 사유
-| 스킬명 | 미호출 사유 |
-|--------|-----------|
-| superpowers:brainstorming | 병렬 실행 agent - Agent tool 미사용 |
-| superpowers:test-driven-development | Plan이 tdd="true" 미지정 |
-| superpowers:systematic-debugging | 빌드 에러는 직접 수정으로 해결 |
-| superpowers:requesting-code-review | 병렬 실행 agent - Agent tool 미사용 |
+
+| 스킬명                              | 미호출 사유                         |
+| ----------------------------------- | ----------------------------------- |
+| superpowers:brainstorming           | 병렬 실행 agent - Agent tool 미사용 |
+| superpowers:test-driven-development | Plan이 tdd="true" 미지정            |
+| superpowers:systematic-debugging    | 빌드 에러는 직접 수정으로 해결      |
+| superpowers:requesting-code-review  | 병렬 실행 agent - Agent tool 미사용 |
 
 ## Next Phase Readiness
+
 - 6개 시각화 컴포넌트 완성, 대시보드 탭에서 분석 결과 즉시 확인 가능
 - Plan 04 (AI 리포트)와 독립적으로 동작
 - Plan 05/06 (팀 관리)에서 추가 대시보드 기능 확장 가능
 
 ---
-*Phase: 03-dashboard-team*
-*Completed: 2026-03-24*
+
+_Phase: 03-dashboard-team_
+_Completed: 2026-03-24_

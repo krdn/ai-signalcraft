@@ -3,12 +3,12 @@
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Loader2 } from 'lucide-react';
 
 export function LoginForm() {
   const router = useRouter();
@@ -51,12 +51,8 @@ export function LoginForm() {
   return (
     <Card className="w-full max-w-sm">
       <CardHeader className="space-y-2 text-center">
-        <h1 className="text-[28px] font-semibold leading-[1.2] text-accent">
-          AI SignalCraft
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          여론 분석 대시보드에 로그인
-        </p>
+        <h1 className="text-[28px] font-semibold leading-[1.2] text-accent">AI SignalCraft</h1>
+        <p className="text-sm text-muted-foreground">여론 분석 대시보드에 로그인</p>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleCredentialsLogin} className="space-y-4">
@@ -85,15 +81,9 @@ export function LoginForm() {
             />
           </div>
 
-          {error && (
-            <p className="text-sm text-destructive">{error}</p>
-          )}
+          {error && <p className="text-sm text-destructive">{error}</p>}
 
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={loading}
-          >
+          <Button type="submit" className="w-full" disabled={loading}>
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -112,12 +102,7 @@ export function LoginForm() {
           </span>
         </div>
 
-        <Button
-          variant="outline"
-          className="w-full"
-          onClick={handleGoogleLogin}
-          disabled={loading}
-        >
+        <Button variant="outline" className="w-full" onClick={handleGoogleLogin} disabled={loading}>
           Google로 로그인
         </Button>
       </CardContent>

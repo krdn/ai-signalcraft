@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
+import { describe, it, expect } from 'vitest';
 
 describe('worker', () => {
   it('should export createCollectorWorker', async () => {
@@ -38,7 +38,10 @@ describe('naver comments pipeline integration', () => {
   });
 
   it('pipeline-worker.ts에서 normalize-naver 시 collectForArticle을 호출한다', () => {
-    const workerContent = readFileSync(resolve(__dirname, '../src/queue/pipeline-worker.ts'), 'utf-8');
+    const workerContent = readFileSync(
+      resolve(__dirname, '../src/queue/pipeline-worker.ts'),
+      'utf-8',
+    );
     expect(workerContent).toContain('collectForArticle');
     expect(workerContent).toContain("job.name === 'normalize-naver'");
   });

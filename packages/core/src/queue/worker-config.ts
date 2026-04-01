@@ -1,7 +1,7 @@
 // Worker 프로세스 공통 설정 -- env 로드, API 키 검증, 수집기 등록
-import { config } from 'dotenv';
 import { resolve } from 'path';
 import { existsSync } from 'fs';
+import { config } from 'dotenv';
 import {
   NaverNewsCollector,
   NaverCommentsCollector,
@@ -40,14 +40,22 @@ export function initEnv(): void {
 export function validateApiKeys(): void {
   const requiredApiKeys = [
     { name: 'OPENAI_API_KEY', prefix: 'sk-', usage: 'Stage 1 분석 (gpt-4o-mini)' },
-    { name: 'ANTHROPIC_API_KEY', prefix: 'sk-ant-', usage: 'Stage 2~3 분석 + 리포트 생성 (Claude)' },
+    {
+      name: 'ANTHROPIC_API_KEY',
+      prefix: 'sk-ant-',
+      usage: 'Stage 2~3 분석 + 리포트 생성 (Claude)',
+    },
   ];
   for (const key of requiredApiKeys) {
     const value = process.env[key.name];
     if (!value) {
-      logger.warn(`${key.name} 미설정 -- ${key.usage} 실패 예상. apps/web/.env.local에 추가하세요.`);
+      logger.warn(
+        `${key.name} 미설정 -- ${key.usage} 실패 예상. apps/web/.env.local에 추가하세요.`,
+      );
     } else if (key.prefix && !value.startsWith(key.prefix)) {
-      logger.warn(`${key.name} 형식 의심 (${key.prefix}로 시작하지 않음) -- ${key.usage} 실패 가능`);
+      logger.warn(
+        `${key.name} 형식 의심 (${key.prefix}로 시작하지 않음) -- ${key.usage} 실패 가능`,
+      );
     }
   }
 }
@@ -74,7 +82,10 @@ export function countBySourceType(source: string, items: unknown[]): Record<stri
   if (source === 'youtube-comments') return { comments: count };
   // 커뮤니티 소스: 게시글 수 + 내장 댓글 수
   const posts = count;
-  const commentCount = items.reduce<number>((sum, item: any) => sum + (item?.comments?.length ?? 0), 0);
+  const commentCount = items.reduce<number>(
+    (sum, item: any) => sum + (item?.comments?.length ?? 0),
+    0,
+  );
   return { posts, comments: commentCount };
 }
 

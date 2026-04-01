@@ -1,27 +1,17 @@
 'use client';
 
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from '@/components/ui/hover-card';
-import {
-  CheckCircle2,
-  Loader2,
-  Clock,
-  XCircle,
-  RefreshCw,
-} from 'lucide-react';
+import { CheckCircle2, Loader2, Clock, XCircle, RefreshCw } from 'lucide-react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { trpcClient } from '@/lib/trpc';
 import { toast } from 'sonner';
 import { MODULE_HELP, STAGE_LABELS } from './constants';
 import { formatTokens, formatElapsed } from './utils';
 import { CostSummary } from './cost-summary';
 import type { PipelineStatusData, AnalysisModuleDetailed, ModuleStatus } from './types';
+import { trpcClient } from '@/lib/trpc';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
+import { Progress } from '@/components/ui/progress';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 interface AnalysisTabProps {
   data: PipelineStatusData;
@@ -66,7 +56,17 @@ const PROVIDER_DISPLAY: Record<string, string> = {
   custom: 'Custom',
 };
 
-function ModuleCard({ mod, modelSetting, jobId, canRetry }: { mod: AnalysisModuleDetailed; modelSetting?: { provider: string; model: string }; jobId?: number | null; canRetry?: boolean }) {
+function ModuleCard({
+  mod,
+  modelSetting,
+  jobId,
+  canRetry,
+}: {
+  mod: AnalysisModuleDetailed;
+  modelSetting?: { provider: string; model: string };
+  jobId?: number | null;
+  canRetry?: boolean;
+}) {
   const retryMutation = useMutation({
     mutationFn: () => trpcClient.analysis.retryModule.mutate({ jobId: jobId!, module: mod.module }),
     onSuccess: () => toast.success(`${mod.label} 재실행 시작`),
@@ -90,9 +90,7 @@ function ModuleCard({ mod, modelSetting, jobId, canRetry }: { mod: AnalysisModul
       {/* 토큰 + 소요시간 */}
       {(totalTokens > 0 || mod.durationSeconds) && (
         <div className="flex items-center gap-2 text-[10px] text-muted-foreground ml-6">
-          {totalTokens > 0 && (
-            <span className="font-mono">{formatTokens(totalTokens)}</span>
-          )}
+          {totalTokens > 0 && <span className="font-mono">{formatTokens(totalTokens)}</span>}
           {mod.durationSeconds != null && (
             <span className="font-mono">{formatElapsed(mod.durationSeconds)}</span>
           )}
@@ -102,7 +100,10 @@ function ModuleCard({ mod, modelSetting, jobId, canRetry }: { mod: AnalysisModul
       {mod.status === 'failed' && (
         <div className="flex items-center gap-1 ml-6">
           {mod.errorMessage && (
-            <p className="text-[10px] text-red-600 dark:text-red-400 truncate flex-1" title={mod.errorMessage}>
+            <p
+              className="text-[10px] text-red-600 dark:text-red-400 truncate flex-1"
+              title={mod.errorMessage}
+            >
               {mod.errorMessage}
             </p>
           )}
@@ -112,13 +113,17 @@ function ModuleCard({ mod, modelSetting, jobId, canRetry }: { mod: AnalysisModul
               size="icon"
               className="h-5 w-5 shrink-0"
               title="재실행"
-              onClick={(e) => { e.stopPropagation(); retryMutation.mutate(); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                retryMutation.mutate();
+              }}
               disabled={retryMutation.isPending}
             >
-              {retryMutation.isPending
-                ? <Loader2 className="h-3 w-3 animate-spin" />
-                : <RefreshCw className="h-3 w-3 text-red-500 hover:text-red-600" />
-              }
+              {retryMutation.isPending ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <RefreshCw className="h-3 w-3 text-red-500 hover:text-red-600" />
+              )}
             </Button>
           )}
         </div>
@@ -137,8 +142,12 @@ function ModuleCard({ mod, modelSetting, jobId, canRetry }: { mod: AnalysisModul
           <h4 className="font-semibold">{mod.label}</h4>
           <p className="text-muted-foreground leading-relaxed">{help.description}</p>
           <div className="flex items-center gap-2 text-[10px] text-muted-foreground pt-1 border-t">
-            <Badge variant="outline" className="text-[10px] px-1.5">{help.stageLabel}</Badge>
-            <span>{PROVIDER_DISPLAY[displayProvider] ?? displayProvider} / {displayModel}</span>
+            <Badge variant="outline" className="text-[10px] px-1.5">
+              {help.stageLabel}
+            </Badge>
+            <span>
+              {PROVIDER_DISPLAY[displayProvider] ?? displayProvider} / {displayModel}
+            </span>
           </div>
         </div>
       </HoverCardContent>
@@ -176,9 +185,10 @@ export function AnalysisTab({ data, jobId }: AnalysisTabProps) {
     stages.get(stage)!.push(mod);
   }
 
-  const progressPercent = data.analysisModuleCount.total > 0
-    ? Math.round((data.analysisModuleCount.completed / data.analysisModuleCount.total) * 100)
-    : 0;
+  const progressPercent =
+    data.analysisModuleCount.total > 0
+      ? Math.round((data.analysisModuleCount.completed / data.analysisModuleCount.total) * 100)
+      : 0;
 
   return (
     <div className="space-y-4">
@@ -187,7 +197,8 @@ export function AnalysisTab({ data, jobId }: AnalysisTabProps) {
         <div className="flex items-center justify-between text-xs">
           <span className="text-muted-foreground">분석 진행률</span>
           <span className="font-mono text-muted-foreground">
-            {data.analysisModuleCount.completed}/{data.analysisModuleCount.total} 완료 ({progressPercent}%)
+            {data.analysisModuleCount.completed}/{data.analysisModuleCount.total} 완료 (
+            {progressPercent}%)
           </span>
         </div>
         <Progress value={progressPercent} className="h-1.5" />
@@ -202,9 +213,7 @@ export function AnalysisTab({ data, jobId }: AnalysisTabProps) {
             <div key={stageNum} className="space-y-2">
               {stageInfo && (
                 <div className="flex items-center gap-2">
-                  <h4 className="text-xs font-medium text-muted-foreground">
-                    {stageInfo.label}
-                  </h4>
+                  <h4 className="text-xs font-medium text-muted-foreground">{stageInfo.label}</h4>
                   <span className="text-[10px] text-muted-foreground/60">
                     {stageInfo.description}
                   </span>
@@ -212,7 +221,13 @@ export function AnalysisTab({ data, jobId }: AnalysisTabProps) {
               )}
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                 {mods.map((mod) => (
-                  <ModuleCard key={mod.module} mod={mod} modelSetting={settingsMap.get(mod.module)} jobId={jobId} canRetry={canRetry} />
+                  <ModuleCard
+                    key={mod.module}
+                    mod={mod}
+                    modelSetting={settingsMap.get(mod.module)}
+                    jobId={jobId}
+                    canRetry={canRetry}
+                  />
                 ))}
               </div>
             </div>

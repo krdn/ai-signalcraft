@@ -2,13 +2,13 @@
 
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { trpcClient } from '@/lib/trpc';
+import { FileDown, FileText } from 'lucide-react';
 import { SectionNav, type Section } from './section-nav';
 import { ReportViewer } from './report-viewer';
 import { ReportHelp } from './report-help';
+import { trpcClient } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { FileDown, FileText } from 'lucide-react';
 
 interface ReportViewProps {
   jobId: number | null;
@@ -25,7 +25,7 @@ function parseSections(markdown: string): Section[] {
     const title = match[1].trim();
     const id = title
       .replace(/\s+/g, '-')
-      .replace(/[^가-힣a-zA-Z0-9\-]/g, '')
+      .replace(/[^가-힣a-zA-Z0-9-]/g, '')
       .toLowerCase();
     sections.push({ id, title });
   }
@@ -101,9 +101,7 @@ export function ReportView({ jobId }: ReportViewProps) {
       <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
         <FileText className="h-12 w-12 mb-4 opacity-50" />
         <p className="text-lg font-semibold">리포트 없음</p>
-        <p className="text-sm mt-2">
-          이 분석에 대한 리포트가 아직 생성되지 않았습니다.
-        </p>
+        <p className="text-sm mt-2">이 분석에 대한 리포트가 아직 생성되지 않았습니다.</p>
       </div>
     );
   }
@@ -113,43 +111,37 @@ export function ReportView({ jobId }: ReportViewProps) {
       {/* 상단: 리포트 메타데이터 + 도움말/PDF */}
       <div className="flex items-start justify-between px-4 py-4 md:px-8 border-b print:hidden">
         <div className="space-y-1">
-          <h1 className="text-[28px] font-semibold leading-tight">
-            {report.title}
-          </h1>
+          <h1 className="text-[28px] font-semibold leading-tight">{report.title}</h1>
           {report.oneLiner && (
             <p className="text-sm border-l-2 border-accent pl-3 text-muted-foreground">
               {report.oneLiner}
             </p>
           )}
-          {report.metadata && (() => {
-            const meta = report.metadata as {
-              generatedAt?: string;
-              totalTokens?: number;
-              reportModel?: { provider: string; model: string };
-            };
-            return (
-              <div className="flex items-center gap-3 text-xs font-mono text-muted-foreground">
-                {meta.generatedAt && <span>{meta.generatedAt}</span>}
-                {meta.reportModel && (
-                  <span className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 text-[10px]">
-                    {meta.reportModel.provider}/{meta.reportModel.model}
-                  </span>
-                )}
-                {meta.totalTokens != null && meta.totalTokens > 0 && (
-                  <span className="text-[10px]">{meta.totalTokens.toLocaleString()} 토큰</span>
-                )}
-              </div>
-            );
-          })()}
+          {report.metadata &&
+            (() => {
+              const meta = report.metadata as {
+                generatedAt?: string;
+                totalTokens?: number;
+                reportModel?: { provider: string; model: string };
+              };
+              return (
+                <div className="flex items-center gap-3 text-xs font-mono text-muted-foreground">
+                  {meta.generatedAt && <span>{meta.generatedAt}</span>}
+                  {meta.reportModel && (
+                    <span className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 text-[10px]">
+                      {meta.reportModel.provider}/{meta.reportModel.model}
+                    </span>
+                  )}
+                  {meta.totalTokens != null && meta.totalTokens > 0 && (
+                    <span className="text-[10px]">{meta.totalTokens.toLocaleString()} 토큰</span>
+                  )}
+                </div>
+              );
+            })()}
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <ReportHelp />
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={handleExportPdf}
-            className="gap-2"
-          >
+          <Button variant="secondary" size="sm" onClick={handleExportPdf} className="gap-2">
             <FileDown className="h-4 w-4" />
             PDF 내보내기
           </Button>

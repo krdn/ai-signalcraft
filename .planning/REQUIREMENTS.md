@@ -38,37 +38,39 @@
 
 ## Out of Scope
 
-| Feature | Reason |
-|---------|--------|
-| 새 기능 추가 | 리팩토링 전용 마일스톤 — 동작 변경 없음 |
-| DB 스키마 변경 | 기존 데이터 호환성 유지 |
-| UI/대시보드 변경 | 백엔드 코드 구조만 개선 |
-| 패키지 추가/제거 | 기존 의존성 유지 |
+| Feature          | Reason                                  |
+| ---------------- | --------------------------------------- |
+| 새 기능 추가     | 리팩토링 전용 마일스톤 — 동작 변경 없음 |
+| DB 스키마 변경   | 기존 데이터 호환성 유지                 |
+| UI/대시보드 변경 | 백엔드 코드 구조만 개선                 |
+| 패키지 추가/제거 | 기존 의존성 유지                        |
 
 ## Traceability
 
-| Requirement | Phase | Status |
-|-------------|-------|--------|
-| COL-01 | Phase 7 | Complete |
-| COL-02 | Phase 7 | Complete |
-| COL-03 | Phase 7 | Complete |
-| COL-04 | Phase 7 | Complete |
-| COL-05 | Phase 7 | Complete |
-| CORE-01 | Phase 8 | Complete |
-| CORE-02 | Phase 8 | Complete |
-| CORE-03 | Phase 8 | Complete |
-| CORE-04 | Phase 8 | Complete |
-| CORE-05 | Phase 8 | Complete |
-| TYPE-01 | Phase 9 | Complete |
-| TYPE-02 | Phase 9 | Complete |
-| TYPE-03 | Phase 9 | Complete |
-| TYPE-04 | Phase 9 | Complete |
+| Requirement | Phase   | Status   |
+| ----------- | ------- | -------- |
+| COL-01      | Phase 7 | Complete |
+| COL-02      | Phase 7 | Complete |
+| COL-03      | Phase 7 | Complete |
+| COL-04      | Phase 7 | Complete |
+| COL-05      | Phase 7 | Complete |
+| CORE-01     | Phase 8 | Complete |
+| CORE-02     | Phase 8 | Complete |
+| CORE-03     | Phase 8 | Complete |
+| CORE-04     | Phase 8 | Complete |
+| CORE-05     | Phase 8 | Complete |
+| TYPE-01     | Phase 9 | Complete |
+| TYPE-02     | Phase 9 | Complete |
+| TYPE-03     | Phase 9 | Complete |
+| TYPE-04     | Phase 9 | Complete |
 
 **Coverage:**
+
 - v1.1 requirements: 14 total
 - Mapped to phases: 14/14
 - Unmapped: 0
 
 ---
-*Requirements defined: 2026-03-27*
-*Last updated: 2026-03-27 after roadmap creation*
+
+_Requirements defined: 2026-03-27_
+_Last updated: 2026-03-27 after roadmap creation_

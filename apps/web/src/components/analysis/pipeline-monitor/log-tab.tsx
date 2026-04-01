@@ -1,15 +1,11 @@
 'use client';
 
 import { useEffect, useRef, useState, useMemo } from 'react';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Badge } from '@/components/ui/badge';
-import {
-  Info,
-  AlertTriangle,
-  XCircle,
-} from 'lucide-react';
+import { Info, AlertTriangle, XCircle } from 'lucide-react';
 import { formatTime } from './utils';
 import type { PipelineEvent } from './types';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface LogTabProps {
   events: PipelineEvent[];
@@ -32,9 +28,7 @@ export function LogTab({ events: incomingEvents }: LogTabProps) {
     if (!incomingEvents || incomingEvents.length === 0) return;
     setAccumulated((prev) => {
       const existing = new Set(prev.map((e) => `${e.timestamp}:${e.message}`));
-      const newEvents = incomingEvents.filter(
-        (e) => !existing.has(`${e.timestamp}:${e.message}`),
-      );
+      const newEvents = incomingEvents.filter((e) => !existing.has(`${e.timestamp}:${e.message}`));
       if (newEvents.length === 0) return prev;
       return [...prev, ...newEvents];
     });
@@ -105,9 +99,7 @@ export function LogTab({ events: incomingEvents }: LogTabProps) {
       <ScrollArea className="h-[240px] rounded-md border bg-muted/20" ref={scrollRef}>
         <div className="p-2 space-y-0.5">
           {filtered.length === 0 ? (
-            <p className="text-xs text-muted-foreground text-center py-8">
-              이벤트가 없습니다.
-            </p>
+            <p className="text-xs text-muted-foreground text-center py-8">이벤트가 없습니다.</p>
           ) : (
             filtered.map((event, i) => {
               const cfg = LEVEL_CONFIG[event.level];

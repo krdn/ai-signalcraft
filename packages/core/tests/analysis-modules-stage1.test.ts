@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { z } from 'zod';
-
 import { macroViewModule } from '../src/analysis/modules/macro-view';
 import { segmentationModule } from '../src/analysis/modules/segmentation';
 import { sentimentFramingModule } from '../src/analysis/modules/sentiment-framing';
@@ -217,9 +216,7 @@ describe('Stage 1 Zod 스키마', () => {
   it('SentimentFramingSchema.parse()가 유효한 데이터에 성공한다', () => {
     const valid = {
       sentimentRatio: { positive: 0.5, negative: 0.3, neutral: 0.2 },
-      topKeywords: [
-        { keyword: '정책', count: 50, sentiment: 'positive' as const },
-      ],
+      topKeywords: [{ keyword: '정책', count: 50, sentiment: 'positive' as const }],
       relatedKeywords: [
         {
           keyword: '정책',
@@ -228,12 +225,8 @@ describe('Stage 1 Zod 스키마', () => {
           context: '경제 정책 관련 논의',
         },
       ],
-      positiveFrames: [
-        { frame: '개혁', description: '개혁 리더', strength: 8 },
-      ],
-      negativeFrames: [
-        { frame: '독단', description: '독단적 의사결정', strength: 6 },
-      ],
+      positiveFrames: [{ frame: '개혁', description: '개혁 리더', strength: 8 }],
+      negativeFrames: [{ frame: '독단', description: '독단적 의사결정', strength: 6 }],
       frameConflict: {
         description: '개혁 vs 독단 프레임 충돌',
         dominantFrame: '개혁',

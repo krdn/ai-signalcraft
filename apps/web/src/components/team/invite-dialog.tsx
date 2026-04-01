@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { Loader2, UserPlus } from 'lucide-react';
 import { trpcClient } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,8 +24,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { toast } from 'sonner';
-import { Loader2, UserPlus } from 'lucide-react';
 
 export function InviteDialog() {
   const [open, setOpen] = useState(false);
@@ -99,10 +99,7 @@ export function InviteDialog() {
             </Select>
           </div>
           <DialogFooter>
-            <Button
-              type="submit"
-              disabled={inviteMutation.isPending || !email.trim()}
-            >
+            <Button type="submit" disabled={inviteMutation.isPending || !email.trim()}>
               {inviteMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

@@ -71,23 +71,24 @@
 
 ## Key Decisions
 
-| Decision | Rationale | Outcome |
-|----------|-----------|---------|
-| API 우선 + 스크래핑 보조 수집 전략 | 안정성과 데이터 품질 확보 | ✓ Good — YouTube API + 커뮤니티 스크래핑 안정 동작 |
-| 수동 트리거 실행 방식 | 비용 관리 및 필요 시점 집중 실행 | ✓ Good — BullMQ 파이프라인으로 구현 |
-| 다중 AI 모델 유연 전환 | 분석별 최적 모델 선택, 비용/품질 균형 | ✓ Good — AI SDK v6 Gateway로 구현 |
-| 운영 서버 DB 저장 | 기존 인프라 활용, 데이터 보안 | ✓ Good — PostgreSQL + Drizzle ORM |
-| TypeScript 모노리포 통일 | 단일 언어, 타입 공유, 배포 단순 | ✓ Good — kiwi-nlp npm으로 Python 불필요 |
-| Next.js 16 + tRPC 11 | App Router SSR + 타입 안전 API | ✓ Good — Server Components 활용 |
-| BullMQ Flow 단순화 | 단일 runner가 내부 3단계 관리 | ✓ Good — 디버깅 용이 |
-| window.print() PDF | 서버 Playwright 대신 클라이언트 인쇄 | ⚠️ Revisit — pdf-exporter 미사용 |
-| X 수집기 v2 이월 | API $200/월 비용, 우선순위 낮음 | — Pending (v2에서 결정) |
+| Decision                           | Rationale                             | Outcome                                            |
+| ---------------------------------- | ------------------------------------- | -------------------------------------------------- |
+| API 우선 + 스크래핑 보조 수집 전략 | 안정성과 데이터 품질 확보             | ✓ Good — YouTube API + 커뮤니티 스크래핑 안정 동작 |
+| 수동 트리거 실행 방식              | 비용 관리 및 필요 시점 집중 실행      | ✓ Good — BullMQ 파이프라인으로 구현                |
+| 다중 AI 모델 유연 전환             | 분석별 최적 모델 선택, 비용/품질 균형 | ✓ Good — AI SDK v6 Gateway로 구현                  |
+| 운영 서버 DB 저장                  | 기존 인프라 활용, 데이터 보안         | ✓ Good — PostgreSQL + Drizzle ORM                  |
+| TypeScript 모노리포 통일           | 단일 언어, 타입 공유, 배포 단순       | ✓ Good — kiwi-nlp npm으로 Python 불필요            |
+| Next.js 16 + tRPC 11               | App Router SSR + 타입 안전 API        | ✓ Good — Server Components 활용                    |
+| BullMQ Flow 단순화                 | 단일 runner가 내부 3단계 관리         | ✓ Good — 디버깅 용이                               |
+| window.print() PDF                 | 서버 Playwright 대신 클라이언트 인쇄  | ⚠️ Revisit — pdf-exporter 미사용                   |
+| X 수집기 v2 이월                   | API $200/월 비용, 우선순위 낮음       | — Pending (v2에서 결정)                            |
 
 ## Current Milestone: v1.1 코드베이스 리팩토링
 
 **Goal:** 코드 품질 5.3→8/10 개선 — 기능 변경 없이 내부 구조만 개선
 
 **Target features:**
+
 - Collector 추상화 클래스 도입 (4개 커뮤니티 어댑터 중복 제거 ~620줄)
 - Core 대형 파일 분할 (worker-process 451줄, provider-keys 443줄, runner 383줄)
 - 에러 처리 패턴 통일 (공통 에러 클래스 + 로거)
@@ -100,6 +101,7 @@
 This document evolves at phase transitions and milestone boundaries.
 
 **After each phase transition** (via `/gsd:transition`):
+
 1. Requirements invalidated? → Move to Out of Scope with reason
 2. Requirements validated? → Move to Validated with phase reference
 3. New requirements emerged? → Add to Active
@@ -107,10 +109,12 @@ This document evolves at phase transitions and milestone boundaries.
 5. "What This Is" still accurate? → Update if drifted
 
 **After each milestone** (via `/gsd:complete-milestone`):
+
 1. Full review of all sections
 2. Core Value check — still the right priority?
 3. Audit Out of Scope — reasons still valid?
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-27 — v1.1 리팩토링 마일스톤 시작*
+
+_Last updated: 2026-03-27 — v1.1 리팩토링 마일스톤 시작_

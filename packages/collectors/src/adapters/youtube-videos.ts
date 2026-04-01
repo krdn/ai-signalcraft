@@ -1,6 +1,6 @@
 // YouTube 영상 메타데이터 수집기 (YouTube Data API v3)
-import type { Collector, CollectionOptions } from './base';
 import { getYoutubeClient } from '../utils/youtube-client';
+import type { Collector, CollectionOptions } from './base';
 
 /** 수집된 YouTube 영상 메타데이터 */
 export interface YoutubeVideo {
@@ -95,9 +95,7 @@ export class YoutubeVideosCollector implements Collector<YoutubeVideo> {
         viewCount: parseInt(item.statistics?.viewCount ?? '0', 10),
         likeCount: parseInt(item.statistics?.likeCount ?? '0', 10),
         commentCount: parseInt(item.statistics?.commentCount ?? '0', 10),
-        publishedAt: item.snippet?.publishedAt
-          ? new Date(item.snippet.publishedAt)
-          : null,
+        publishedAt: item.snippet?.publishedAt ? new Date(item.snippet.publishedAt) : null,
         rawData: item as unknown as Record<string, unknown>,
       }));
 

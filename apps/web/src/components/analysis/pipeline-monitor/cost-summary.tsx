@@ -1,5 +1,8 @@
 'use client';
 
+import { formatTokens, formatCostUsd } from './utils';
+import { estimateCostUsd } from './constants';
+import type { TokenUsage } from './types';
 import {
   Table,
   TableBody,
@@ -8,9 +11,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { formatTokens, formatCostUsd } from './utils';
-import { estimateCostUsd } from './constants';
-import type { TokenUsage } from './types';
 
 interface CostSummaryProps {
   tokenUsage: TokenUsage;
@@ -46,8 +46,12 @@ export function CostSummary({ tokenUsage }: CostSummaryProps) {
           {Object.entries(byProvider).map(([key, val]) => (
             <TableRow key={key} className="text-xs">
               <TableCell className="py-1.5 font-mono text-[11px]">{val.model}</TableCell>
-              <TableCell className="py-1.5 text-right font-mono">{formatTokens(val.input)}</TableCell>
-              <TableCell className="py-1.5 text-right font-mono">{formatTokens(val.output)}</TableCell>
+              <TableCell className="py-1.5 text-right font-mono">
+                {formatTokens(val.input)}
+              </TableCell>
+              <TableCell className="py-1.5 text-right font-mono">
+                {formatTokens(val.output)}
+              </TableCell>
               <TableCell className="py-1.5 text-right font-mono">
                 {formatCostUsd(estimateCostUsd(val.input, val.output, val.model))}
               </TableCell>

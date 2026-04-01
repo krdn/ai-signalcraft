@@ -77,14 +77,16 @@ export async function classifySentiment(
   for (let i = 0; i < texts.length; i += batchSize) {
     const batch = texts.slice(i, i + batchSize).map(
       // 모델 입력 최대 512 토큰 — 한국어 약 200자
-      t => (t.length > 200 ? t.slice(0, 200) : t),
+      (t) => (t.length > 200 ? t.slice(0, 200) : t),
     );
     const rawResults = await classifier(batch, { topk: 1 });
 
     // 결과 정규화: 단일 입력이면 배열이 아닌 객체로 올 수 있음
     const normalized = Array.isArray(rawResults[0])
-      ? (rawResults as Array<Array<{ label: string; score: number }>>).map(r => normalizeSentiment(r[0]))
-      : (rawResults as Array<{ label: string; score: number }>).map(r => normalizeSentiment(r));
+      ? (rawResults as Array<Array<{ label: string; score: number }>>).map((r) =>
+          normalizeSentiment(r[0]),
+        )
+      : (rawResults as Array<{ label: string; score: number }>).map((r) => normalizeSentiment(r));
 
     results.push(...normalized);
   }

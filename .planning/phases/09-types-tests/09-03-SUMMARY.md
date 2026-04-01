@@ -28,11 +28,11 @@ key-files:
   modified: []
 
 key-decisions:
-  - "ZodError import를 모든 분할 파일에 포함 (사용하지 않는 파일 포함, tree-shaking 의존)"
-  - "advn-exports.test.ts에서는 ZodError 미사용이므로 import 제외"
+  - 'ZodError import를 모든 분할 파일에 포함 (사용하지 않는 파일 포함, tree-shaking 의존)'
+  - 'advn-exports.test.ts에서는 ZodError 미사용이므로 import 제외'
 
 patterns-established:
-  - "테스트 파일 분할: describe 블록 단위로 독립 파일 분리, 공통 import 각 파일에 복사"
+  - '테스트 파일 분할: describe 블록 단위로 독립 파일 분리, 공통 import 각 파일에 복사'
 
 requirements-completed: [TYPE-03, TYPE-04]
 
@@ -53,6 +53,7 @@ completed: 2026-03-27
 - **Files modified:** 6 (5 created, 1 deleted)
 
 ## Accomplishments
+
 - advn-schema.test.ts(301줄)를 5개 파일로 분할 (38~79줄, 모두 300줄 이하)
 - Phase 9 전체 빌드 성공 (pnpm -r build exit 0)
 - 전체 테스트 결과: collectors 49 passed, core 96 passed (사전 실패 6개), ai-gateway 22 passed
@@ -67,6 +68,7 @@ Each task was committed atomically:
 **Plan metadata:** (아래 final commit에 포함)
 
 ## Files Created/Modified
+
 - `packages/core/tests/advn-approval-rating.test.ts` - ADVN-01 ApprovalRatingSchema 테스트 (75줄)
 - `packages/core/tests/advn-frame-war.test.ts` - ADVN-02 FrameWarSchema 테스트 (53줄)
 - `packages/core/tests/advn-crisis-scenario.test.ts` - ADVN-03 CrisisScenarioSchema 테스트 (62줄)
@@ -75,6 +77,7 @@ Each task was committed atomically:
 - `packages/core/tests/advn-schema.test.ts` - 삭제 (원본 301줄)
 
 ## Decisions Made
+
 - ZodError를 사용하는 4개 파일에만 import하고, advn-exports.test.ts에서는 제외 (불필요한 import 방지)
 - 각 파일에 vitest import를 독립적으로 포함하여 파일 간 의존성 제거
 
@@ -83,18 +86,20 @@ Each task was committed atomically:
 None - plan executed exactly as written.
 
 ## Issues Encountered
+
 None
 
 ## User Setup Required
+
 None - no external service configuration required.
 
 ## Phase 9 Final Verification Results
 
-| Package | Tests Passed | Tests Failed | Notes |
-|---------|-------------|-------------|-------|
-| collectors | 49 | 0 | 전체 통과 |
-| core | 96 | 6 | 사전 실패 (DB 연결 필요) |
-| ai-gateway | 22 | 0 | 전체 통과 |
+| Package    | Tests Passed | Tests Failed | Notes                    |
+| ---------- | ------------ | ------------ | ------------------------ |
+| collectors | 49           | 0            | 전체 통과                |
+| core       | 96           | 6            | 사전 실패 (DB 연결 필요) |
+| ai-gateway | 22           | 0            | 전체 통과                |
 
 **Build:** pnpm -r build 성공 (exit 0)
 **Split files:** 5개 모두 300줄 이하 (38~79줄)
@@ -102,19 +107,21 @@ None - no external service configuration required.
 
 ## Superpowers 호출 기록
 
-| # | 스킬명 | 호출 시점 | 결과 요약 |
-|---|--------|----------|----------|
-| - | - | - | - |
+| #   | 스킬명 | 호출 시점 | 결과 요약 |
+| --- | ------ | --------- | --------- |
+| -   | -      | -         | -         |
 
 ### 미호출 스킬 사유
-| 스킬명 | 미호출 사유 |
-|--------|-----------|
-| superpowers:brainstorming | 단순 파일 분할 작업으로 브레인스토밍 불필요 |
-| superpowers:test-driven-development | 기존 테스트 분할만 수행, 새 코드 구현 없음 |
-| superpowers:systematic-debugging | 버그 미발생 |
-| superpowers:requesting-code-review | 코드 로직 변경 없이 파일 분할만 수행 |
+
+| 스킬명                              | 미호출 사유                                 |
+| ----------------------------------- | ------------------------------------------- |
+| superpowers:brainstorming           | 단순 파일 분할 작업으로 브레인스토밍 불필요 |
+| superpowers:test-driven-development | 기존 테스트 분할만 수행, 새 코드 구현 없음  |
+| superpowers:systematic-debugging    | 버그 미발생                                 |
+| superpowers:requesting-code-review  | 코드 로직 변경 없이 파일 분할만 수행        |
 
 ## Next Phase Readiness
+
 - Phase 9 전체 목표(타입 중앙화 + ai-gateway 테스트 + 테스트 분할) 달성
 - v1.1 리팩토링 마일스톤의 나머지 Phase 진행 가능
 
@@ -129,5 +136,6 @@ None - no external service configuration required.
 - [x] Commit c71151f found
 
 ---
-*Phase: 09-types-tests*
-*Completed: 2026-03-27*
+
+_Phase: 09-types-tests_
+_Completed: 2026-03-27_

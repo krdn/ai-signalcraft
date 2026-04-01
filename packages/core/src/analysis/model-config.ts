@@ -3,9 +3,9 @@ import { eq, and } from 'drizzle-orm';
 import { getDb } from '../db';
 import { modelSettings, providerKeys } from '../db/schema/settings';
 import { decrypt } from '../utils/crypto';
+import type { ModuleModelConfig } from '../types/analysis';
 import type { AIProvider } from './types';
 import { MODULE_MODEL_MAP } from './types';
-import type { ModuleModelConfig } from '../types/analysis';
 
 export type { ModuleModelConfig } from '../types/analysis';
 
@@ -26,18 +26,18 @@ export const MODEL_SCENARIO_PRESETS: ModelScenarioPreset[] = [
     description: '핵심 모듈에 Sonnet, Stage 1은 Gemini Pro. 분석 품질 최대화.',
     estimatedCost: '~$1.00/실행',
     modules: {
-      'macro-view':        { provider: 'gemini',    model: 'gemini-2.5-pro' },
-      'segmentation':      { provider: 'gemini',    model: 'gemini-2.5-pro' },
+      'macro-view': { provider: 'gemini', model: 'gemini-2.5-pro' },
+      segmentation: { provider: 'gemini', model: 'gemini-2.5-pro' },
       'sentiment-framing': { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
-      'message-impact':    { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
-      'risk-map':          { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
-      'opportunity':       { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
-      'strategy':          { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
-      'final-summary':     { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
-      'approval-rating':   { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
-      'frame-war':         { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
-      'crisis-scenario':   { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
-      'win-simulation':    { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
+      'message-impact': { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
+      'risk-map': { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
+      opportunity: { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
+      strategy: { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
+      'final-summary': { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
+      'approval-rating': { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
+      'frame-war': { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
+      'crisis-scenario': { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
+      'win-simulation': { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
     },
   },
   {
@@ -46,18 +46,18 @@ export const MODEL_SCENARIO_PRESETS: ModelScenarioPreset[] = [
     description: 'Stage 1은 Gemini Flash, 심화분석은 Haiku, 핵심전략만 Sonnet. 비용 59% 절감.',
     estimatedCost: '~$0.35/실행',
     modules: {
-      'macro-view':        { provider: 'gemini',    model: 'gemini-2.5-flash' },
-      'segmentation':      { provider: 'gemini',    model: 'gemini-2.5-flash' },
+      'macro-view': { provider: 'gemini', model: 'gemini-2.5-flash' },
+      segmentation: { provider: 'gemini', model: 'gemini-2.5-flash' },
       'sentiment-framing': { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
-      'message-impact':    { provider: 'gemini',    model: 'gemini-2.5-flash' },
-      'risk-map':          { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
-      'opportunity':       { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
-      'strategy':          { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
-      'final-summary':     { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
-      'approval-rating':   { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
-      'frame-war':         { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
-      'crisis-scenario':   { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
-      'win-simulation':    { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
+      'message-impact': { provider: 'gemini', model: 'gemini-2.5-flash' },
+      'risk-map': { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
+      opportunity: { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
+      strategy: { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
+      'final-summary': { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
+      'approval-rating': { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
+      'frame-war': { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
+      'crisis-scenario': { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
+      'win-simulation': { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
     },
   },
   {
@@ -66,18 +66,18 @@ export const MODEL_SCENARIO_PRESETS: ModelScenarioPreset[] = [
     description: 'Stage 1을 Gemini Flash로, 일부를 Haiku로 변경. 기존 대비 41% 절감.',
     estimatedCost: '~$0.50/실행',
     modules: {
-      'macro-view':        { provider: 'gemini',    model: 'gemini-2.5-flash' },
-      'segmentation':      { provider: 'gemini',    model: 'gemini-2.5-flash' },
-      'sentiment-framing': { provider: 'gemini',    model: 'gemini-2.5-flash' },
-      'message-impact':    { provider: 'gemini',    model: 'gemini-2.5-flash' },
-      'risk-map':          { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
-      'opportunity':       { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
-      'strategy':          { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
-      'final-summary':     { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
-      'approval-rating':   { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
-      'frame-war':         { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
-      'crisis-scenario':   { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
-      'win-simulation':    { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
+      'macro-view': { provider: 'gemini', model: 'gemini-2.5-flash' },
+      segmentation: { provider: 'gemini', model: 'gemini-2.5-flash' },
+      'sentiment-framing': { provider: 'gemini', model: 'gemini-2.5-flash' },
+      'message-impact': { provider: 'gemini', model: 'gemini-2.5-flash' },
+      'risk-map': { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
+      opportunity: { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
+      strategy: { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
+      'final-summary': { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
+      'approval-rating': { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
+      'frame-war': { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
+      'crisis-scenario': { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
+      'win-simulation': { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
     },
   },
 ];
@@ -117,12 +117,7 @@ async function getProviderKeyInfo(
       encryptedKey: providerKeys.encryptedKey,
     })
     .from(providerKeys)
-    .where(
-      and(
-        eq(providerKeys.providerType, providerType),
-        eq(providerKeys.isActive, true),
-      ),
-    )
+    .where(and(eq(providerKeys.providerType, providerType), eq(providerKeys.isActive, true)))
     .limit(1);
 
   if (!row) return null;
@@ -138,9 +133,7 @@ async function getProviderKeyInfo(
  * 우선순위: 1) modelSettings DB → 2) providerKeys.selectedModel → 3) MODULE_MODEL_MAP 기본값
  * 프로바이더 키의 baseUrl/apiKey도 함께 반환하여 gateway에서 올바른 연결 설정 가능
  */
-export async function getModuleModelConfig(
-  moduleName: string,
-): Promise<ModuleModelConfig> {
+export async function getModuleModelConfig(moduleName: string): Promise<ModuleModelConfig> {
   const db = getDb();
 
   // 1) modelSettings 테이블에서 모듈별 설정 조회
@@ -161,7 +154,9 @@ export async function getModuleModelConfig(
       baseUrl: keyInfo?.baseUrl ?? undefined,
       apiKey: keyInfo?.apiKey ? '***' : undefined,
     };
-    console.log(`[model-config] ${moduleName}: DB설정 사용 → provider=${config.provider}, model=${config.model}, baseUrl=${config.baseUrl}, hasApiKey=${!!keyInfo?.apiKey}`);
+    console.log(
+      `[model-config] ${moduleName}: DB설정 사용 → provider=${config.provider}, model=${config.model}, baseUrl=${config.baseUrl}, hasApiKey=${!!keyInfo?.apiKey}`,
+    );
     return {
       provider: dbSetting.provider as AIProvider,
       model: dbSetting.model,

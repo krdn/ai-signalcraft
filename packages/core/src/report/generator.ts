@@ -2,7 +2,6 @@
 import { analyzeText } from '@ai-signalcraft/ai-gateway';
 import { persistAnalysisReport } from '../analysis/persist-analysis';
 import { getModuleModelConfig } from '../analysis/model-config';
-import type { AnalysisModuleResult } from '../analysis/types';
 import type { ReportGenerationInput } from '../types/report';
 
 export type { ReportGenerationInput } from '../types/report';
@@ -11,8 +10,9 @@ export type { ReportGenerationInput } from '../types/report';
 const ADVN_MODULES = ['approval-rating', 'frame-war', 'crisis-scenario', 'win-simulation'];
 
 function buildAdvancedAnalysisSection(input: ReportGenerationInput): string {
-  const advnResults = Object.entries(input.results)
-    .filter(([k, r]) => ADVN_MODULES.includes(k) && r.status === 'completed');
+  const advnResults = Object.entries(input.results).filter(
+    ([k, r]) => ADVN_MODULES.includes(k) && r.status === 'completed',
+  );
 
   if (advnResults.length === 0) return '';
 
@@ -46,22 +46,24 @@ export async function generateIntegratedReport(input: ReportGenerationInput): Pr
     Object.fromEntries(
       Object.entries(input.results)
         .filter(([_, r]) => r.status === 'completed')
-        .map(([k, r]) => [k, r.result])
+        .map(([k, r]) => [k, r.result]),
     ),
     null,
     2,
   );
 
   // 누락 섹션 명시
-  const failedSection = input.failedModules.length > 0
-    ? `\n\n> **주의:** 다음 분석 모듈이 실패하여 해당 섹션은 포함되지 않았습니다: ${input.failedModules.join(', ')}`
-    : '';
+  const failedSection =
+    input.failedModules.length > 0
+      ? `\n\n> **주의:** 다음 분석 모듈이 실패하여 해당 섹션은 포함되지 않았습니다: ${input.failedModules.join(', ')}`
+      : '';
 
   // final-summary 결과에서 oneLiner 추출
   const finalSummaryResult = input.results['final-summary'];
-  const oneLiner = (finalSummaryResult?.status === 'completed' && finalSummaryResult?.result)
-    ? (finalSummaryResult.result as any).oneLiner ?? ''
-    : '';
+  const oneLiner =
+    finalSummaryResult?.status === 'completed' && finalSummaryResult?.result
+      ? ((finalSummaryResult.result as any).oneLiner ?? '')
+      : '';
 
   const config = await getModuleModelConfig('integrated-report');
 
@@ -98,7 +100,8 @@ ${resultsJson}
     model: config.model,
     baseUrl: config.baseUrl,
     apiKey: config.apiKey,
-    systemPrompt: '당신은 정치·여론·미디어 전략을 설계하는 최고 수준의 데이터 전략가이자 선거 캠프 수석 분석관입니다. 단순 요약이 아니라, 실제 의사결정자가 즉시 전략을 실행할 수 있는 수준의 분석 보고서를 작성합니다.',
+    systemPrompt:
+      '당신은 정치·여론·미디어 전략을 설계하는 최고 수준의 데이터 전략가이자 선거 캠프 수석 분석관입니다. 단순 요약이 아니라, 실제 의사결정자가 즉시 전략을 실행할 수 있는 수준의 분석 보고서를 작성합니다.',
     maxOutputTokens: 16384,
   });
 
@@ -106,7 +109,7 @@ ${resultsJson}
 
   // 총 토큰 계산: 모듈별 토큰 + 리포트 생성 토큰
   const moduleTokens = Object.values(input.results)
-    .filter(r => r.usage)
+    .filter((r) => r.usage)
     .reduce((sum, r) => sum + (r.usage?.totalTokens ?? 0), 0);
   const reportTokens = (result.usage as any)?.totalTokens ?? 0;
   const totalTokens = moduleTokens + reportTokens;

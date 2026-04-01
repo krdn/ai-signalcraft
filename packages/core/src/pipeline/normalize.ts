@@ -1,5 +1,12 @@
 // 수집 데이터를 DB 스키마에 맞게 정규화
-import type { NaverArticle, NaverComment, YoutubeVideo, YoutubeComment, CommunityPost, CommunityComment } from '@ai-signalcraft/collectors';
+import type {
+  NaverArticle,
+  NaverComment,
+  YoutubeVideo,
+  YoutubeComment,
+  CommunityPost,
+  CommunityComment,
+} from '@ai-signalcraft/collectors';
 import type { articles, videos, comments } from '../db/schema/collections';
 import type { CommunitySource } from '../types/pipeline';
 
@@ -14,9 +21,7 @@ function toDate(value: Date | string | null | undefined): Date | null {
 }
 
 /** NaverArticle -> articles 테이블 insert 형식 */
-export function normalizeNaverArticle(
-  article: NaverArticle,
-): typeof articles.$inferInsert {
+export function normalizeNaverArticle(article: NaverArticle): typeof articles.$inferInsert {
   return {
     source: 'naver-news',
     sourceId: article.sourceId,
@@ -51,9 +56,7 @@ export function normalizeNaverComment(
 }
 
 /** YoutubeVideo -> videos 테이블 insert 형식 */
-export function normalizeYoutubeVideo(
-  video: YoutubeVideo,
-): typeof videos.$inferInsert {
+export function normalizeYoutubeVideo(video: YoutubeVideo): typeof videos.$inferInsert {
   return {
     source: 'youtube',
     sourceId: video.sourceId,

@@ -2,6 +2,17 @@
 
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import {
+  HelpCircle,
+  Loader2,
+  RotateCcw,
+  AlertTriangle,
+  ChevronsUpDown,
+  Sparkles,
+  Zap,
+  ArrowRight,
+} from 'lucide-react';
 import { trpcClient } from '@/lib/trpc';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,12 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { toast } from 'sonner';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,7 +35,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { HelpCircle, Loader2, RotateCcw, AlertTriangle, ChevronsUpDown, Sparkles, Zap, ArrowRight } from 'lucide-react';
 
 // 모듈 메타데이터: 이름, 설명, 분석 내용, 추천 모델, 비용 팁
 type ModuleMeta = {
@@ -50,10 +55,14 @@ const MODULE_META: Record<string, ModuleMeta> = {
       '플랫폼 간 여론 차이 비교',
       '핵심 키워드 및 토픽 클러스터링',
     ],
-    recommended: { provider: 'openai', model: 'gpt-4o-mini', reason: '대량 텍스트 요약에 비용 효율적' },
+    recommended: {
+      provider: 'openai',
+      model: 'gpt-4o-mini',
+      reason: '대량 텍스트 요약에 비용 효율적',
+    },
     costTip: '데이터 양이 많아 토큰 소비가 큽니다. 비용 절감이 중요하면 경량 모델을 추천합니다.',
   },
-  'segmentation': {
+  segmentation: {
     name: '여론 진영 세분화',
     description: '여론 참여자를 성향, 관심사, 입장에 따라 세부 진영으로 분류합니다.',
     analyzes: [
@@ -62,7 +71,11 @@ const MODULE_META: Record<string, ModuleMeta> = {
       '진영 간 대립 포인트 매핑',
       '이탈 가능성이 높은 유동층 식별',
     ],
-    recommended: { provider: 'openai', model: 'gpt-4o-mini', reason: '패턴 분류 작업에 충분한 성능' },
+    recommended: {
+      provider: 'openai',
+      model: 'gpt-4o-mini',
+      reason: '패턴 분류 작업에 충분한 성능',
+    },
     costTip: '분류 작업은 비교적 단순하므로 경량 모델로도 정확도가 높습니다.',
   },
   'sentiment-framing': {
@@ -74,7 +87,11 @@ const MODULE_META: Record<string, ModuleMeta> = {
       '특정 이슈에 대한 프레이밍 전략 탐지',
       '감정 유발 키워드 및 표현 패턴 추출',
     ],
-    recommended: { provider: 'openai', model: 'gpt-4o-mini', reason: '감정 분류에 비용 대비 성능 우수' },
+    recommended: {
+      provider: 'openai',
+      model: 'gpt-4o-mini',
+      reason: '감정 분류에 비용 대비 성능 우수',
+    },
     costTip: '한국어 뉘앙스 파악이 중요한 경우 고급 모델이 더 정확합니다.',
   },
   'message-impact': {
@@ -98,10 +115,14 @@ const MODULE_META: Record<string, ModuleMeta> = {
       '위험 요소의 영향 범위 및 심각도 매트릭스',
       '조기 경보 신호 탐지',
     ],
-    recommended: { provider: 'anthropic', model: 'claude-sonnet-4-20250514', reason: '복합적 위험 분석에 높은 추론 능력 필요' },
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-20250514',
+      reason: '복합적 위험 분석에 높은 추론 능력 필요',
+    },
     costTip: '정확한 위험 평가가 중요하므로 고급 모델 사용을 권장합니다.',
   },
-  'opportunity': {
+  opportunity: {
     name: '기회 요소 분석',
     description: '여론 데이터에서 활용 가능한 긍정적 기회와 전략적 포인트를 발굴합니다.',
     analyzes: [
@@ -110,10 +131,14 @@ const MODULE_META: Record<string, ModuleMeta> = {
       '미디어 어젠다 선점 기회',
       '지지층 확대 가능 타겟 그룹 식별',
     ],
-    recommended: { provider: 'anthropic', model: 'claude-sonnet-4-20250514', reason: '창의적 인사이트 도출에 강점' },
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-20250514',
+      reason: '창의적 인사이트 도출에 강점',
+    },
     costTip: '전략적 판단이 필요한 영역으로, 모델 품질이 결과에 직접 영향을 줍니다.',
   },
-  'strategy': {
+  strategy: {
     name: '전략 제안',
     description: '분석 결과를 종합하여 실행 가능한 구체적 전략 방안을 제시합니다.',
     analyzes: [
@@ -122,7 +147,11 @@ const MODULE_META: Record<string, ModuleMeta> = {
       '위기 대응 시나리오별 액션 플랜',
       '미디어 채널별 최적 커뮤니케이션 방안',
     ],
-    recommended: { provider: 'anthropic', model: 'claude-sonnet-4-20250514', reason: '전략 수립에 깊은 추론 능력 필수' },
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-20250514',
+      reason: '전략 수립에 깊은 추론 능력 필수',
+    },
     costTip: '최종 의사결정에 활용되므로 가장 높은 품질의 모델을 추천합니다.',
   },
   'final-summary': {
@@ -134,7 +163,11 @@ const MODULE_META: Record<string, ModuleMeta> = {
       '즉시 대응 필요 항목 하이라이트',
       '의사결정자용 원페이지 브리핑',
     ],
-    recommended: { provider: 'anthropic', model: 'claude-sonnet-4-20250514', reason: '다중 분석 결과 종합에 뛰어난 정리 능력' },
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-20250514',
+      reason: '다중 분석 결과 종합에 뛰어난 정리 능력',
+    },
     costTip: '입력이 다른 모듈 결과 전체이므로 토큰 소비가 클 수 있습니다.',
   },
   'integrated-report': {
@@ -146,7 +179,11 @@ const MODULE_META: Record<string, ModuleMeta> = {
       '참고 데이터 원문 인용 및 출처 표기',
       '배포 가능한 최종 문서 형태 출력',
     ],
-    recommended: { provider: 'anthropic', model: 'claude-sonnet-4-20250514', reason: '긴 형식의 구조화된 문서 생성에 최적' },
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-20250514',
+      reason: '긴 형식의 구조화된 문서 생성에 최적',
+    },
     costTip: '출력 토큰이 매우 많습니다. 비용에 민감하면 요약 수준을 조절하세요.',
   },
   'approval-rating': {
@@ -158,7 +195,11 @@ const MODULE_META: Record<string, ModuleMeta> = {
       '지지율 영향 핵심 변수 식별',
       '과거 유사 사례와의 패턴 비교',
     ],
-    recommended: { provider: 'anthropic', model: 'claude-sonnet-4-20250514', reason: '수치 예측에 정밀한 추론 필요' },
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-20250514',
+      reason: '수치 예측에 정밀한 추론 필요',
+    },
     costTip: '정량적 예측의 정확도는 모델 성능에 크게 의존합니다.',
   },
   'frame-war': {
@@ -170,7 +211,11 @@ const MODULE_META: Record<string, ModuleMeta> = {
       '프레임 우세/열세 판단',
       '역프레이밍 전략 제안',
     ],
-    recommended: { provider: 'anthropic', model: 'claude-sonnet-4-20250514', reason: '미묘한 언어 전략 분석에 고급 모델 필수' },
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-20250514',
+      reason: '미묘한 언어 전략 분석에 고급 모델 필수',
+    },
     costTip: '담론 분석은 컨텍스트 이해가 핵심이므로 모델 품질이 중요합니다.',
   },
   'crisis-scenario': {
@@ -182,7 +227,11 @@ const MODULE_META: Record<string, ModuleMeta> = {
       '시나리오별 피해 규모 추정',
       '단계별 위기 대응 매뉴얼 생성',
     ],
-    recommended: { provider: 'anthropic', model: 'claude-sonnet-4-20250514', reason: '복합 시나리오 생성에 고급 추론 필요' },
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-20250514',
+      reason: '복합 시나리오 생성에 고급 추론 필요',
+    },
     costTip: '여러 시나리오를 생성하므로 출력 토큰이 많습니다.',
   },
   'win-simulation': {
@@ -194,7 +243,11 @@ const MODULE_META: Record<string, ModuleMeta> = {
       '경쟁 대상 전략 대응 시뮬레이션',
       '최적 자원 배분 방안 제안',
     ],
-    recommended: { provider: 'anthropic', model: 'claude-sonnet-4-20250514', reason: '게임 이론 기반 전략 시뮬레이션에 최고 성능 필요' },
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-20250514',
+      reason: '게임 이론 기반 전략 시뮬레이션에 최고 성능 필요',
+    },
     costTip: '가장 복잡한 분석 모듈입니다. 최고 품질 모델 사용을 강력 권장합니다.',
   },
 };
@@ -247,18 +300,18 @@ export function ModelSettings() {
 
     // 주요 모델 패턴 — 이 패턴에 매칭되는 모델만 드롭다운에 표시
     const MAIN_MODEL_PATTERNS = [
-      /^gpt-4/,        // gpt-4o, gpt-4o-mini, gpt-4.1, gpt-4.1-mini 등
-      /^gpt-5/,        // gpt-5 시리즈
-      /^gpt-3\.5/,     // gpt-3.5-turbo
-      /^o[1-9]/,       // o1, o3, o4 등 reasoning 모델
-      /^claude/,       // claude 시리즈
-      /^gemini/,       // gemini 시리즈
-      /^qwen/,         // qwen 시리즈 (Ollama)
-      /^llama/,        // llama 시리즈 (Ollama)
-      /^mistral/,      // mistral 시리즈
-      /^deepseek/,     // deepseek 시리즈
-      /^codestral/,    // codestral
-      /^command/,      // cohere command
+      /^gpt-4/, // gpt-4o, gpt-4o-mini, gpt-4.1, gpt-4.1-mini 등
+      /^gpt-5/, // gpt-5 시리즈
+      /^gpt-3\.5/, // gpt-3.5-turbo
+      /^o[1-9]/, // o1, o3, o4 등 reasoning 모델
+      /^claude/, // claude 시리즈
+      /^gemini/, // gemini 시리즈
+      /^qwen/, // qwen 시리즈 (Ollama)
+      /^llama/, // llama 시리즈 (Ollama)
+      /^mistral/, // mistral 시리즈
+      /^deepseek/, // deepseek 시리즈
+      /^codestral/, // codestral
+      /^command/, // cohere command
     ];
     function isMainModel(model: string): boolean {
       return MAIN_MODEL_PATTERNS.some((p) => p.test(model));
@@ -293,7 +346,9 @@ export function ModelSettings() {
 
   const updateMutation = useMutation({
     mutationFn: (input: { moduleName: string; provider: string; model: string }) =>
-      trpcClient.settings.update.mutate(input as Parameters<typeof trpcClient.settings.update.mutate>[0]),
+      trpcClient.settings.update.mutate(
+        input as Parameters<typeof trpcClient.settings.update.mutate>[0],
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [['settings', 'list']] });
       toast.success('모델 설정이 변경되었습니다');
@@ -304,8 +359,7 @@ export function ModelSettings() {
   });
 
   const resetMutation = useMutation({
-    mutationFn: (moduleName: string) =>
-      trpcClient.settings.resetToDefault.mutate({ moduleName }),
+    mutationFn: (moduleName: string) => trpcClient.settings.resetToDefault.mutate({ moduleName }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [['settings', 'list']] });
       toast.success('기본값으로 복원되었습니다');
@@ -317,7 +371,9 @@ export function ModelSettings() {
 
   const bulkUpdateMutation = useMutation({
     mutationFn: (input: { provider: string; model: string }) =>
-      trpcClient.settings.bulkUpdate.mutate(input as Parameters<typeof trpcClient.settings.bulkUpdate.mutate>[0]),
+      trpcClient.settings.bulkUpdate.mutate(
+        input as Parameters<typeof trpcClient.settings.bulkUpdate.mutate>[0],
+      ),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: [['settings', 'list']] });
       toast.success(`전체 ${data.updated}개 모듈의 모델이 변경되었습니다`);
@@ -376,207 +432,205 @@ export function ModelSettings() {
   }
 
   if (!settings || settings.length === 0) {
-    return (
-      <div className="py-8 text-center text-muted-foreground">
-        설정을 불러올 수 없습니다.
-      </div>
-    );
+    return <div className="py-8 text-center text-muted-foreground">설정을 불러올 수 없습니다.</div>;
   }
 
-  const isPending = updateMutation.isPending || resetMutation.isPending || bulkUpdateMutation.isPending || scenarioMutation.isPending;
+  const isPending =
+    updateMutation.isPending ||
+    resetMutation.isPending ||
+    bulkUpdateMutation.isPending ||
+    scenarioMutation.isPending;
   const hasProviders = availableProviders.length > 0;
 
   const bulkModels = bulkProvider ? (providerModels[bulkProvider] ?? []) : [];
 
   return (
-      <div className="space-y-3">
-        {/* 등록된 API 키가 없으면 안내 */}
-        {!hasProviders && (
-          <div className="flex items-start gap-2 rounded-lg border border-amber-500/20 bg-amber-500/5 p-3">
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
-            <div className="text-sm text-muted-foreground">
-              <p className="font-medium text-foreground">등록된 API 키가 없습니다</p>
-              <p className="mt-1">
-                위의 <strong>API 키 관리</strong> 탭에서 프로바이더를 등록하고 모델을 선택(Test &amp; Select)해주세요.
-                등록된 프로바이더와 모델이 여기에 자동으로 표시됩니다.
-              </p>
-            </div>
+    <div className="space-y-3">
+      {/* 등록된 API 키가 없으면 안내 */}
+      {!hasProviders && (
+        <div className="flex items-start gap-2 rounded-lg border border-amber-500/20 bg-amber-500/5 p-3">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+          <div className="text-sm text-muted-foreground">
+            <p className="font-medium text-foreground">등록된 API 키가 없습니다</p>
+            <p className="mt-1">
+              위의 <strong>API 키 관리</strong> 탭에서 프로바이더를 등록하고 모델을 선택(Test &amp;
+              Select)해주세요. 등록된 프로바이더와 모델이 여기에 자동으로 표시됩니다.
+            </p>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* 시나리오 프리셋 */}
-        {scenarioPresets && scenarioPresets.length > 0 && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-1.5">
-              <Sparkles className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium">시나리오 프리셋</span>
-              <span className="text-xs text-muted-foreground">— 모듈별 최적 모델을 한 번에 적용합니다</span>
-            </div>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-              {scenarioPresets.map((preset) => {
-                const isRecommended = preset.id === 'scenario-b';
-                return (
-                  <div
-                    key={preset.id}
-                    className={`relative rounded-lg border p-3 ${
-                      isRecommended
-                        ? 'border-primary/40 bg-primary/5'
-                        : 'border-border'
-                    }`}
-                  >
-                    {isRecommended && (
-                      <Badge className="absolute -top-2 right-2 text-[10px]">
-                        추천
-                      </Badge>
+      {/* 시나리오 프리셋 */}
+      {scenarioPresets && scenarioPresets.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-1.5">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <span className="text-sm font-medium">시나리오 프리셋</span>
+            <span className="text-xs text-muted-foreground">
+              — 모듈별 최적 모델을 한 번에 적용합니다
+            </span>
+          </div>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            {scenarioPresets.map((preset) => {
+              const isRecommended = preset.id === 'scenario-b';
+              return (
+                <div
+                  key={preset.id}
+                  className={`relative rounded-lg border p-3 ${
+                    isRecommended ? 'border-primary/40 bg-primary/5' : 'border-border'
+                  }`}
+                >
+                  {isRecommended && (
+                    <Badge className="absolute -top-2 right-2 text-[10px]">추천</Badge>
+                  )}
+                  <div className="flex items-center gap-1.5 mb-1">
+                    {isRecommended ? (
+                      <Zap className="h-3.5 w-3.5 text-primary" />
+                    ) : (
+                      <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
                     )}
-                    <div className="flex items-center gap-1.5 mb-1">
-                      {isRecommended ? (
-                        <Zap className="h-3.5 w-3.5 text-primary" />
-                      ) : (
-                        <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
-                      )}
-                      <span className="text-sm font-medium">{preset.name}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground mb-2 leading-relaxed">
-                      {preset.description}
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-mono text-muted-foreground">
-                        {preset.estimatedCost}
-                      </span>
-                      <AlertDialog
-                        open={scenarioDialogOpen === preset.id}
-                        onOpenChange={(open) => setScenarioDialogOpen(open ? preset.id : null)}
-                      >
-                        <AlertDialogTrigger
-                          className={`inline-flex items-center justify-center rounded-md text-xs h-7 px-3 ${
-                            isRecommended
-                              ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                              : 'border border-input bg-background hover:bg-accent hover:text-accent-foreground'
-                          } ${isPending ? 'pointer-events-none opacity-50' : 'cursor-pointer'}`}
-                        >
-                          적용
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>시나리오 적용</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              &quot;{preset.name}&quot; 시나리오를 적용하면 12개 모듈의 모델 설정이 일괄 변경됩니다. 계속하시겠습니까?
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>취소</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={(e) => {
-                                e.preventDefault();
-                                scenarioMutation.mutate(preset.id);
-                              }}
-                            >
-                              {scenarioMutation.isPending ? (
-                                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                              ) : null}
-                              적용
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
+                    <span className="text-sm font-medium">{preset.name}</span>
                   </div>
-                );
-              })}
-            </div>
+                  <p className="text-xs text-muted-foreground mb-2 leading-relaxed">
+                    {preset.description}
+                  </p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono text-muted-foreground">
+                      {preset.estimatedCost}
+                    </span>
+                    <AlertDialog
+                      open={scenarioDialogOpen === preset.id}
+                      onOpenChange={(open) => setScenarioDialogOpen(open ? preset.id : null)}
+                    >
+                      <AlertDialogTrigger
+                        className={`inline-flex items-center justify-center rounded-md text-xs h-7 px-3 ${
+                          isRecommended
+                            ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                            : 'border border-input bg-background hover:bg-accent hover:text-accent-foreground'
+                        } ${isPending ? 'pointer-events-none opacity-50' : 'cursor-pointer'}`}
+                      >
+                        적용
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>시나리오 적용</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            &quot;{preset.name}&quot; 시나리오를 적용하면 12개 모듈의 모델 설정이
+                            일괄 변경됩니다. 계속하시겠습니까?
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>취소</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={(e) => {
+                              e.preventDefault();
+                              scenarioMutation.mutate(preset.id);
+                            }}
+                          >
+                            {scenarioMutation.isPending ? (
+                              <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                            ) : null}
+                            적용
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        )}
+        </div>
+      )}
 
-        {/* 전체 일괄 변경 */}
-        {hasProviders && (
-          <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
-            <div className="flex items-center gap-1.5 mb-2">
-              <ChevronsUpDown className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium">전체 일괄 변경</span>
-              <span className="text-xs text-muted-foreground">— 모든 모듈의 모델을 한 번에 변경합니다</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Select
-                value={bulkProvider}
-                onValueChange={(val) => {
-                  setBulkProvider(val ?? '');
-                  setBulkModel('');
-                }}
-                disabled={isPending}
-              >
-                <SelectTrigger className="w-[130px]" size="sm">
-                  <SelectValue placeholder="프로바이더" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableProviders.map((provider) => (
-                    <SelectItem key={provider} value={provider}>
-                      {PROVIDER_LABELS[provider] ?? provider}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+      {/* 전체 일괄 변경 */}
+      {hasProviders && (
+        <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
+          <div className="flex items-center gap-1.5 mb-2">
+            <ChevronsUpDown className="h-4 w-4 text-primary" />
+            <span className="text-sm font-medium">전체 일괄 변경</span>
+            <span className="text-xs text-muted-foreground">
+              — 모든 모듈의 모델을 한 번에 변경합니다
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Select
+              value={bulkProvider}
+              onValueChange={(val) => {
+                setBulkProvider(val ?? '');
+                setBulkModel('');
+              }}
+              disabled={isPending}
+            >
+              <SelectTrigger className="w-[130px]" size="sm">
+                <SelectValue placeholder="프로바이더" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableProviders.map((provider) => (
+                  <SelectItem key={provider} value={provider}>
+                    {PROVIDER_LABELS[provider] ?? provider}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-              <Select
-                value={bulkModel}
-                onValueChange={(val) => setBulkModel(val ?? '')}
-                disabled={isPending || bulkModels.length === 0}
-              >
-                <SelectTrigger className="flex-1" size="sm">
-                  <SelectValue placeholder={bulkModels.length > 0 ? '모델 선택' : '프로바이더를 먼저 선택'} />
-                </SelectTrigger>
-                <SelectContent>
-                  {bulkModels.map((model) => (
-                    <SelectItem key={model} value={model}>
-                      {model}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <Select
+              value={bulkModel}
+              onValueChange={(val) => setBulkModel(val ?? '')}
+              disabled={isPending || bulkModels.length === 0}
+            >
+              <SelectTrigger className="flex-1" size="sm">
+                <SelectValue
+                  placeholder={bulkModels.length > 0 ? '모델 선택' : '프로바이더를 먼저 선택'}
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {bulkModels.map((model) => (
+                  <SelectItem key={model} value={model}>
+                    {model}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-              <Button
-                size="sm"
-                disabled={isPending || !bulkProvider || !bulkModel}
-                onClick={() => {
-                  bulkUpdateMutation.mutate(
-                    { provider: bulkProvider, model: bulkModel },
-                    {
-                      onSuccess: () => {
-                        setBulkProvider('');
-                        setBulkModel('');
-                      },
+            <Button
+              size="sm"
+              disabled={isPending || !bulkProvider || !bulkModel}
+              onClick={() => {
+                bulkUpdateMutation.mutate(
+                  { provider: bulkProvider, model: bulkModel },
+                  {
+                    onSuccess: () => {
+                      setBulkProvider('');
+                      setBulkModel('');
                     },
-                  );
-                }}
-              >
-                {bulkUpdateMutation.isPending ? (
-                  <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                ) : null}
-                전체 적용
-              </Button>
-            </div>
+                  },
+                );
+              }}
+            >
+              {bulkUpdateMutation.isPending ? (
+                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+              ) : null}
+              전체 적용
+            </Button>
           </div>
-        )}
+        </div>
+      )}
 
-        {settings.map((item) => {
-          // 현재 설정된 모델이 등록된 목록에 있는지 확인
-          const currentModels = providerModels[item.provider] ?? [];
-          const isModelAvailable = currentModels.includes(item.model);
+      {settings.map((item) => {
+        // 현재 설정된 모델이 등록된 목록에 있는지 확인
+        const currentModels = providerModels[item.provider] ?? [];
+        const isModelAvailable = currentModels.includes(item.model);
 
-          return (
-          <div
-            key={item.moduleName}
-            className="flex flex-col gap-2 rounded-lg border p-3"
-          >
+        return (
+          <div key={item.moduleName} className="flex flex-col gap-2 rounded-lg border p-3">
             {/* 모듈명 + 도움말 + 커스텀 뱃지 */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
                 <span className="text-sm font-medium">
                   {MODULE_META[item.moduleName]?.name ?? item.moduleName}
                 </span>
-                <span className="text-xs font-mono text-muted-foreground">
-                  {item.moduleName}
-                </span>
+                <span className="text-xs font-mono text-muted-foreground">{item.moduleName}</span>
                 <ModuleHelpPopover moduleName={item.moduleName} />
                 {item.isCustom && (
                   <Badge variant="secondary" className="text-[10px]">
@@ -601,7 +655,9 @@ export function ModelSettings() {
             {/* 프로바이더 + 모델 선택 */}
             <div className="flex items-center gap-2">
               <Select
-                value={hasProviders && availableProviders.includes(item.provider) ? item.provider : ''}
+                value={
+                  hasProviders && availableProviders.includes(item.provider) ? item.provider : ''
+                }
                 onValueChange={(val) => handleProviderChange(item, val)}
                 disabled={isPending || !hasProviders}
               >
@@ -636,16 +692,21 @@ export function ModelSettings() {
             </div>
 
             {/* 현재 설정이 등록된 키와 맞지 않으면 경고 */}
-            {item.isCustom && hasProviders && (!availableProviders.includes(item.provider) || !isModelAvailable) && (
-              <p className="text-xs text-amber-500">
-                현재 설정된 {!availableProviders.includes(item.provider) ? `프로바이더(${item.provider})` : `모델(${item.model})`}이(가)
-                API 키 관리에 등록되지 않았습니다.
-              </p>
-            )}
+            {item.isCustom &&
+              hasProviders &&
+              (!availableProviders.includes(item.provider) || !isModelAvailable) && (
+                <p className="text-xs text-amber-500">
+                  현재 설정된{' '}
+                  {!availableProviders.includes(item.provider)
+                    ? `프로바이더(${item.provider})`
+                    : `모델(${item.model})`}
+                  이(가) API 키 관리에 등록되지 않았습니다.
+                </p>
+              )}
           </div>
-          );
-        })}
-      </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -655,17 +716,13 @@ function ModuleHelpPopover({ moduleName }: { moduleName: string }) {
 
   return (
     <Popover>
-      <PopoverTrigger
-        className="inline-flex items-center justify-center rounded-full text-muted-foreground/60 hover:text-muted-foreground transition-colors cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary"
-      >
+      <PopoverTrigger className="inline-flex items-center justify-center rounded-full text-muted-foreground/60 hover:text-muted-foreground transition-colors cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary">
         <HelpCircle className="h-3.5 w-3.5" />
       </PopoverTrigger>
       <PopoverContent side="right" align="start" className="w-80 p-0">
         <div className="space-y-3 p-4">
           {/* 설명 */}
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            {meta.description}
-          </p>
+          <p className="text-sm text-muted-foreground leading-relaxed">{meta.description}</p>
 
           {/* 분석 항목 */}
           <div>

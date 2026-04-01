@@ -1,10 +1,10 @@
 // 네이버 뉴스 기사 수집기 (하이브리드: 검색=fetch, 본문=Playwright)
 import type { Browser, Page } from 'playwright';
 import * as cheerio from 'cheerio';
-import type { Collector, CollectionOptions } from './base';
 import { buildNaverSearchUrl, parseNaverArticleUrl } from '../utils/naver-parser';
 import { parseDateTextOrNull } from '../utils/community-parser';
 import { getRandomUserAgent, launchBrowser, createBrowserContext, sleep } from '../utils/browser';
+import type { Collector, CollectionOptions } from './base';
 
 /** 수집된 네이버 뉴스 기사 */
 export interface NaverArticle {
@@ -37,8 +37,8 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
   readonly source = 'naver-news';
 
   private readonly config = {
-    searchDelay: { min: 300, max: 600 },   // 검색 페이지 간 딜레이 (fetch이므로 짧게)
-    postDelay: { min: 500, max: 1000 },    // 기사 본문 간 딜레이
+    searchDelay: { min: 300, max: 600 }, // 검색 페이지 간 딜레이 (fetch이므로 짧게)
+    postDelay: { min: 500, max: 1000 }, // 기사 본문 간 딜레이
     defaultMaxItems: 1000,
     maxSearchPages: 100,
   };
@@ -178,7 +178,9 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
 
       const blockText = $block.text();
       const dateMatch = blockText.match(/(\d+)(분|시간|일)\s*전/);
-      const publishedAt = dateMatch ? parseDateTextOrNull(`${dateMatch[1]}${dateMatch[2]} 전`) : null;
+      const publishedAt = dateMatch
+        ? parseDateTextOrNull(`${dateMatch[1]}${dateMatch[2]} 전`)
+        : null;
 
       let naverUrl: string | null = null;
       $block.find('a[href*="n.news.naver.com"]').each((_, a) => {
@@ -189,9 +191,7 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
       });
 
       const parsed = naverUrl ? parseNaverArticleUrl(naverUrl) : null;
-      const sourceId = parsed
-        ? `${parsed.oid}_${parsed.aid}`
-        : this.urlToSourceId(articleUrl);
+      const sourceId = parsed ? `${parsed.oid}_${parsed.aid}` : this.urlToSourceId(articleUrl);
 
       articles.push({
         sourceId,
@@ -216,7 +216,7 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
       if (!parsed) return;
 
       const sourceId = `${parsed.oid}_${parsed.aid}`;
-      if (articles.some(a => a.sourceId === sourceId)) return;
+      if (articles.some((a) => a.sourceId === sourceId)) return;
       if (seen.has(naverUrl)) return;
       seen.add(naverUrl);
 
@@ -237,17 +237,24 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
 
       if (!title) {
         const blockText = block.text().trim();
-        const segments = blockText.split('\n').map(s => s.trim()).filter(s => s.length > 15);
+        const segments = blockText
+          .split('\n')
+          .map((s) => s.trim())
+          .filter((s) => s.length > 15);
         title = segments[0] ?? blockText.substring(0, 100);
       }
 
       if (!title) return;
 
       const blockText = block.text();
-      const pubMatch = blockText.match(/([가-힣A-Za-z0-9\s]+?)(?:\d+(?:분|시간|일)\s*전|네이버뉴스)/);
+      const pubMatch = blockText.match(
+        /([가-힣A-Za-z0-9\s]+?)(?:\d+(?:분|시간|일)\s*전|네이버뉴스)/,
+      );
       const publisher = pubMatch?.[1]?.trim() || '알 수 없음';
       const dateMatch = blockText.match(/(\d+)(분|시간|일)\s*전/);
-      const publishedAt = dateMatch ? parseDateTextOrNull(`${dateMatch[1]}${dateMatch[2]} 전`) : null;
+      const publishedAt = dateMatch
+        ? parseDateTextOrNull(`${dateMatch[1]}${dateMatch[2]} 전`)
+        : null;
 
       articles.push({
         sourceId,
@@ -276,8 +283,13 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
         const sourceId = parsedUrl ? `${parsedUrl.oid}_${parsedUrl.aid}` : url;
 
         articles.push({
-          sourceId, url, title, content: null, author: null,
-          publisher, publishedAt: parseDateTextOrNull(dateText),
+          sourceId,
+          url,
+          title,
+          content: null,
+          author: null,
+          publisher,
+          publishedAt: parseDateTextOrNull(dateText),
           rawData: { dateText },
         });
       });
@@ -338,10 +350,21 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
     const $ = cheerio.load(html);
 
     const contentSelectors = [
-      '#newsct_article', '.newsct_article', '#dic_area',
-      '#articeBody', '#articleBody', '.article_body', '.article-body',
-      '#article-body', '#article_body', '.news_content', '.article_content',
-      '.story-news', '#article_content', '.view_article', '#news_body',
+      '#newsct_article',
+      '.newsct_article',
+      '#dic_area',
+      '#articeBody',
+      '#articleBody',
+      '.article_body',
+      '.article-body',
+      '#article-body',
+      '#article_body',
+      '.news_content',
+      '.article_content',
+      '.story-news',
+      '#article_content',
+      '.view_article',
+      '#news_body',
       'article',
     ];
 

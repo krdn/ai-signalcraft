@@ -1,6 +1,9 @@
 import type { AnalysisModule, AnalysisInput } from '../types';
 import { MODULE_MODEL_MAP } from '../types';
-import { SentimentFramingSchema, type SentimentFramingResult } from '../schemas/sentiment-framing.schema';
+import {
+  SentimentFramingSchema,
+  type SentimentFramingResult,
+} from '../schemas/sentiment-framing.schema';
 import { formatInputData } from './prompt-utils';
 
 // 모듈3: 감정 및 프레임 분석 (ANLZ-01, ANLZ-02, DEEP-01)

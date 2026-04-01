@@ -4,7 +4,7 @@ milestone: v1.1
 milestone_name: 코드베이스 리팩토링
 status: executing
 stopped_at: Completed 09-03-PLAN.md
-last_updated: "2026-03-27T01:56:48.516Z"
+last_updated: '2026-03-27T01:56:48.516Z'
 last_activity: 2026-03-27
 progress:
   total_phases: 3
@@ -36,13 +36,13 @@ Progress: [░░░░░░░░░░] 0%
 
 **v1.0 Velocity:**
 
-| Phase | Plans | Avg/Plan |
-|-------|-------|----------|
-| Phase 01 | 6 plans | 4min |
-| Phase 02 | 5 plans | 4min |
-| Phase 03 | 6 plans | 8min |
-| Phase 04 | 3 plans | 6min |
-| Phase 05 | 1 plan | 4min |
+| Phase    | Plans   | Avg/Plan |
+| -------- | ------- | -------- |
+| Phase 01 | 6 plans | 4min     |
+| Phase 02 | 5 plans | 4min     |
+| Phase 03 | 6 plans | 8min     |
+| Phase 04 | 3 plans | 6min     |
+| Phase 05 | 1 plan  | 4min     |
 
 **Total:** 21 plans, ~5min avg, 118 commits, 24,443 LOC
 | Phase 07 P01 | 3min | 2 tasks | 3 files |
@@ -74,17 +74,17 @@ None.
 
 ### Quick Tasks Completed
 
-| # | Description | Date | Commit | Directory |
-|---|-------------|------|--------|-----------|
-| 260325-r8r | 분석 실행 화면에서 자세한 도움말 추가 | 2026-03-25 | 673b5b8 | [260325-r8r-analysis-help](./quick/260325-r8r-analysis-help/) |
-| 260325-rht | 유튜브 수집 파이프라인 E2E 테스트 (성공) | 2026-03-25 | - | [260325-rht-youtube-test](./quick/260325-rht-youtube-test/) |
-| 260325-tge | AI 모델 설정 UI (모듈별 프로바이더/모델 동적 변경) | 2026-03-25 | e083269 | [260325-tge-ai-llm](./quick/260325-tge-ai-llm/) |
-| 260325-pvk | LLM 프로바이더 API 키 관리 (암호화 저장, 연결 테스트, 모델 선택) | 2026-03-25 | fef0124 | - |
-| 260326-d4v | API 키 관리와 모듈별 모델 설정 연동 | 2026-03-26 | - | [260326-d4v-api-api-llm](./quick/260326-d4v-api-api-llm/) |
-| 260326-cicd | GitHub Actions CI/CD 파이프라인 (CI + Docker 배포) | 2026-03-26 | - | [260326-cicd-github-actions](./quick/260326-cicd-github-actions/) |
-| 260327-0b8 | 최근 분석 UI 개선 (날짜+시분, 소스 아이콘, 수집 건수, 소요 시간) | 2026-03-27 | - | [260327-0b8-ui](./quick/260327-0b8-ui/) |
-| 260327-vvl | 동일 분석실행 날짜 겹침 및 중복 기사 처리 전략 리서치 | 2026-03-27 | - | [260327-vvl-duplicate-analysis-strategy](./quick/260327-vvl-duplicate-analysis-strategy/) |
-| 260329-kmr | 하이브리드 날짜 분할 수집 (Date-Chunked Collection) | 2026-03-29 | - | [260329-kmr-naver-news-ts-date-chunked-collection](./quick/260329-kmr-naver-news-ts-date-chunked-collection/) |
+| #           | Description                                                      | Date       | Commit  | Directory                                                                                                     |
+| ----------- | ---------------------------------------------------------------- | ---------- | ------- | ------------------------------------------------------------------------------------------------------------- |
+| 260325-r8r  | 분석 실행 화면에서 자세한 도움말 추가                            | 2026-03-25 | 673b5b8 | [260325-r8r-analysis-help](./quick/260325-r8r-analysis-help/)                                                 |
+| 260325-rht  | 유튜브 수집 파이프라인 E2E 테스트 (성공)                         | 2026-03-25 | -       | [260325-rht-youtube-test](./quick/260325-rht-youtube-test/)                                                   |
+| 260325-tge  | AI 모델 설정 UI (모듈별 프로바이더/모델 동적 변경)               | 2026-03-25 | e083269 | [260325-tge-ai-llm](./quick/260325-tge-ai-llm/)                                                               |
+| 260325-pvk  | LLM 프로바이더 API 키 관리 (암호화 저장, 연결 테스트, 모델 선택) | 2026-03-25 | fef0124 | -                                                                                                             |
+| 260326-d4v  | API 키 관리와 모듈별 모델 설정 연동                              | 2026-03-26 | -       | [260326-d4v-api-api-llm](./quick/260326-d4v-api-api-llm/)                                                     |
+| 260326-cicd | GitHub Actions CI/CD 파이프라인 (CI + Docker 배포)               | 2026-03-26 | -       | [260326-cicd-github-actions](./quick/260326-cicd-github-actions/)                                             |
+| 260327-0b8  | 최근 분석 UI 개선 (날짜+시분, 소스 아이콘, 수집 건수, 소요 시간) | 2026-03-27 | -       | [260327-0b8-ui](./quick/260327-0b8-ui/)                                                                       |
+| 260327-vvl  | 동일 분석실행 날짜 겹침 및 중복 기사 처리 전략 리서치            | 2026-03-27 | -       | [260327-vvl-duplicate-analysis-strategy](./quick/260327-vvl-duplicate-analysis-strategy/)                     |
+| 260329-kmr  | 하이브리드 날짜 분할 수집 (Date-Chunked Collection)              | 2026-03-29 | -       | [260329-kmr-naver-news-ts-date-chunked-collection](./quick/260329-kmr-naver-news-ts-date-chunked-collection/) |
 
 ## Session Continuity
 

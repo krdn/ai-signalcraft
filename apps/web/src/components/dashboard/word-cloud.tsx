@@ -1,8 +1,8 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { CardHelp, DASHBOARD_HELP } from './card-help';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
 interface WordCloudProps {
   words: Array<{ text: string; value: number }> | null;
@@ -27,10 +27,7 @@ export function WordCloud({ words }: WordCloudProps) {
     return words.slice(0, 20).map((word) => {
       const ratio = (word.value - minValue) / range;
       const fontSize = 14 + ratio * 28; // 14px ~ 42px
-      const colorIndex = Math.min(
-        Math.floor(ratio * WORD_COLORS.length),
-        WORD_COLORS.length - 1,
-      );
+      const colorIndex = Math.min(Math.floor(ratio * WORD_COLORS.length), WORD_COLORS.length - 1);
       return {
         text: word.text,
         value: word.value,
@@ -51,7 +48,10 @@ export function WordCloud({ words }: WordCloudProps) {
       </CardHeader>
       <CardContent>
         {!words || words.length === 0 ? (
-          <div className="flex items-center justify-center h-[200px] text-muted-foreground" role="status">
+          <div
+            className="flex items-center justify-center h-[200px] text-muted-foreground"
+            role="status"
+          >
             키워드 없음
           </div>
         ) : (

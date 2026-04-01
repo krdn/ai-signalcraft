@@ -2,16 +2,12 @@
 
 import { useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { Loader2, Shield, Zap, Rocket, Info } from 'lucide-react';
 import { trpcClient } from '@/lib/trpc';
 import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
-import { toast } from 'sonner';
-import { Loader2, Shield, Zap, Rocket, Info } from 'lucide-react';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 // 프로바이더 표시명
 const PROVIDER_LABELS: Record<string, string> = {
@@ -109,11 +105,7 @@ export function ConcurrencySettings() {
   }
 
   if (!config) {
-    return (
-      <div className="py-8 text-center text-muted-foreground">
-        설정을 불러올 수 없습니다.
-      </div>
-    );
+    return <div className="py-8 text-center text-muted-foreground">설정을 불러올 수 없습니다.</div>;
   }
 
   const isPending = applyPresetMutation.isPending || updateMutation.isPending;
@@ -131,10 +123,12 @@ export function ConcurrencySettings() {
           <span className="text-sm font-medium">속도 프리셋</span>
           {config.activePreset ? (
             <Badge variant="secondary" className="text-[10px]">
-              {presets?.find(p => p.id === config.activePreset)?.name ?? config.activePreset}
+              {presets?.find((p) => p.id === config.activePreset)?.name ?? config.activePreset}
             </Badge>
           ) : (
-            <Badge variant="outline" className="text-[10px]">커스텀</Badge>
+            <Badge variant="outline" className="text-[10px]">
+              커스텀
+            </Badge>
           )}
         </div>
         <div className="grid grid-cols-3 gap-2">
@@ -147,9 +141,10 @@ export function ConcurrencySettings() {
                 disabled={isPending}
                 onClick={() => applyPresetMutation.mutate(preset.id)}
                 className={`flex flex-col items-center gap-1 rounded-lg border p-3 text-center transition-colors cursor-pointer
-                  ${isActive
-                    ? 'border-primary bg-primary/5 text-primary'
-                    : 'border-border hover:border-muted-foreground/30 hover:bg-muted/30'
+                  ${
+                    isActive
+                      ? 'border-primary bg-primary/5 text-primary'
+                      : 'border-border hover:border-muted-foreground/30 hover:bg-muted/30'
                   }
                   disabled:opacity-50 disabled:cursor-not-allowed`}
               >
@@ -170,7 +165,9 @@ export function ConcurrencySettings() {
       {activeProviders.length > 0 && (
         <div>
           <span className="text-sm font-medium">프로바이더별 동시 호출 수</span>
-          <p className="text-xs text-muted-foreground mb-3">같은 프로바이더의 모듈이 동시에 실행되는 최대 수</p>
+          <p className="text-xs text-muted-foreground mb-3">
+            같은 프로바이더의 모듈이 동시에 실행되는 최대 수
+          </p>
           <div className="space-y-3">
             {activeProviders.map((provider) => {
               const value = config.providerConcurrency[provider] ?? 2;
@@ -178,8 +175,12 @@ export function ConcurrencySettings() {
               return (
                 <div key={provider} className="space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium">{PROVIDER_LABELS[provider] ?? provider}</span>
-                    <span className="text-xs tabular-nums text-muted-foreground w-6 text-right">{value}</span>
+                    <span className="text-xs font-medium">
+                      {PROVIDER_LABELS[provider] ?? provider}
+                    </span>
+                    <span className="text-xs tabular-nums text-muted-foreground w-6 text-right">
+                      {value}
+                    </span>
                   </div>
                   <Slider
                     value={[value]}
@@ -189,9 +190,7 @@ export function ConcurrencySettings() {
                     disabled={isPending}
                     onValueCommit={([v]) => handleProviderConcurrencyChange(provider, v)}
                   />
-                  {rpmInfo && (
-                    <p className="text-[10px] text-muted-foreground">{rpmInfo}</p>
-                  )}
+                  {rpmInfo && <p className="text-[10px] text-muted-foreground">{rpmInfo}</p>}
                 </div>
               );
             })}
@@ -247,7 +246,8 @@ export function ConcurrencySettings() {
               </div>
             ))}
             <p className="text-[10px] text-muted-foreground mt-2 pt-2 border-t">
-              동시 호출 수가 RPM 한도를 초과하면 429 에러가 발생합니다. 자동 재시도가 적용되지만, 지나치게 높으면 분석이 느려질 수 있습니다.
+              동시 호출 수가 RPM 한도를 초과하면 429 에러가 발생합니다. 자동 재시도가 적용되지만,
+              지나치게 높으면 분석이 느려질 수 있습니다.
             </p>
           </div>
         </CollapsibleContent>

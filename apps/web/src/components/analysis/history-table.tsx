@@ -2,6 +2,18 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { format } from 'date-fns';
+import {
+  CalendarRange,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  FileText,
+  MessageSquare,
+  Trash2,
+} from 'lucide-react';
+import { toast } from 'sonner';
+import { SourceBadges, extractSources, summarizeCounts, formatDuration } from './source-icons';
 import { trpcClient } from '@/lib/trpc';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -26,15 +38,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import {
-  TooltipProvider,
-} from '@/components/ui/tooltip';
-import { format } from 'date-fns';
-import { CalendarRange, ChevronLeft, ChevronRight, Clock, FileText, MessageSquare, Trash2 } from 'lucide-react';
-import { SourceBadges, extractSources, summarizeCounts, formatDuration } from './source-icons';
-import { toast } from 'sonner';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
-const STATUS_BADGE: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string }> = {
+const STATUS_BADGE: Record<
+  string,
+  { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string }
+> = {
   completed: { variant: 'default', label: '완료' },
   running: { variant: 'secondary', label: '진행 중' },
   pending: { variant: 'outline', label: '대기' },
@@ -53,7 +62,10 @@ export function HistoryTable({ onViewResult }: HistoryTableProps) {
   const [page, setPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
-  const [singleDeleteTarget, setSingleDeleteTarget] = useState<{ id: number; keyword: string } | null>(null);
+  const [singleDeleteTarget, setSingleDeleteTarget] = useState<{
+    id: number;
+    keyword: string;
+  } | null>(null);
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
@@ -88,7 +100,7 @@ export function HistoryTable({ onViewResult }: HistoryTableProps) {
   });
 
   const toggleSelect = (id: number) => {
-    setSelectedIds(prev => {
+    setSelectedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
@@ -98,8 +110,8 @@ export function HistoryTable({ onViewResult }: HistoryTableProps) {
 
   const toggleSelectAll = () => {
     if (!data?.items) return;
-    const allIds = data.items.map(j => j.id);
-    const allSelected = allIds.every(id => selectedIds.has(id));
+    const allIds = data.items.map((j) => j.id);
+    const allSelected = allIds.every((id) => selectedIds.has(id));
     if (allSelected) {
       setSelectedIds(new Set());
     } else {
@@ -112,9 +124,8 @@ export function HistoryTable({ onViewResult }: HistoryTableProps) {
     return status !== 'running' && status !== 'pending' && status !== 'paused';
   };
 
-  const deletableSelected = data?.items
-    .filter(j => selectedIds.has(j.id) && canDelete(j.status))
-    .map(j => j.id) ?? [];
+  const deletableSelected =
+    data?.items.filter((j) => selectedIds.has(j.id) && canDelete(j.status)).map((j) => j.id) ?? [];
 
   if (isLoading) {
     return (
@@ -170,9 +181,8 @@ export function HistoryTable({ onViewResult }: HistoryTableProps) {
                   <AlertDialogHeader>
                     <AlertDialogTitle>분석 작업 삭제</AlertDialogTitle>
                     <AlertDialogDescription>
-                      선택한 {deletableSelected.length}개 작업을 삭제합니다.
-                      관련된 수집 데이터, 분석 결과, 리포트가 모두 삭제됩니다.
-                      이 작업은 되돌릴 수 없습니다.
+                      선택한 {deletableSelected.length}개 작업을 삭제합니다. 관련된 수집 데이터,
+                      분석 결과, 리포트가 모두 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
@@ -195,7 +205,9 @@ export function HistoryTable({ onViewResult }: HistoryTableProps) {
               <TableRow>
                 <TableHead className="w-10">
                   <Checkbox
-                    checked={data.items.length > 0 && data.items.every(j => selectedIds.has(j.id))}
+                    checked={
+                      data.items.length > 0 && data.items.every((j) => selectedIds.has(j.id))
+                    }
                     onCheckedChange={toggleSelectAll}
                   />
                 </TableHead>
@@ -234,7 +246,10 @@ export function HistoryTable({ onViewResult }: HistoryTableProps) {
                       {job.startDate && job.endDate && (
                         <div className="flex items-center gap-0.5 text-muted-foreground mt-0.5">
                           <CalendarRange className="h-3 w-3" />
-                          <span>{format(new Date(job.startDate), 'MM.dd')}~{format(new Date(job.endDate), 'MM.dd')}</span>
+                          <span>
+                            {format(new Date(job.startDate), 'MM.dd')}~
+                            {format(new Date(job.endDate), 'MM.dd')}
+                          </span>
                         </div>
                       )}
                     </TableCell>
@@ -246,24 +261,24 @@ export function HistoryTable({ onViewResult }: HistoryTableProps) {
                       {counts.items > 0 ? (
                         <div className="flex flex-col gap-0.5">
                           <span className="flex items-center gap-0.5">
-                            <FileText className="h-3 w-3" />{counts.items}
+                            <FileText className="h-3 w-3" />
+                            {counts.items}
                           </span>
                           <span className="flex items-center gap-0.5">
-                            <MessageSquare className="h-3 w-3" />{counts.comments}
+                            <MessageSquare className="h-3 w-3" />
+                            {counts.comments}
                           </span>
                         </div>
-                      ) : '-'}
+                      ) : (
+                        '-'
+                      )}
                     </TableCell>
                     <TableCell>
                       <Badge variant={badgeInfo.variant}>{badgeInfo.label}</Badge>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => onViewResult?.(job.id)}
-                        >
+                        <Button variant="ghost" size="sm" onClick={() => onViewResult?.(job.id)}>
                           보기
                         </Button>
                         {isDeletable && (
@@ -272,7 +287,9 @@ export function HistoryTable({ onViewResult }: HistoryTableProps) {
                             size="sm"
                             className="text-muted-foreground hover:text-destructive"
                             disabled={deleteMutation.isPending}
-                            onClick={() => setSingleDeleteTarget({ id: job.id, keyword: job.keyword })}
+                            onClick={() =>
+                              setSingleDeleteTarget({ id: job.id, keyword: job.keyword })
+                            }
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -312,14 +329,16 @@ export function HistoryTable({ onViewResult }: HistoryTableProps) {
           {/* 개별 삭제 확인 다이얼로그 */}
           <AlertDialog
             open={singleDeleteTarget !== null}
-            onOpenChange={(open) => { if (!open) setSingleDeleteTarget(null); }}
+            onOpenChange={(open) => {
+              if (!open) setSingleDeleteTarget(null);
+            }}
           >
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>작업 삭제</AlertDialogTitle>
                 <AlertDialogDescription>
-                  &quot;{singleDeleteTarget?.keyword}&quot; 분석 작업을 삭제합니다.
-                  수집 데이터, 분석 결과, 리포트가 모두 삭제됩니다.
+                  &quot;{singleDeleteTarget?.keyword}&quot; 분석 작업을 삭제합니다. 수집 데이터,
+                  분석 결과, 리포트가 모두 삭제됩니다.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

@@ -1,8 +1,8 @@
 'use client';
 
-import { Card, CardContent } from '@/components/ui/card';
 import { Lightbulb } from 'lucide-react';
 import { CardHelp, DASHBOARD_HELP } from './card-help';
+import { Card, CardContent } from '@/components/ui/card';
 
 interface CriticalAction {
   priority: number;
@@ -31,9 +31,7 @@ export function InsightSummary({ oneLiner, currentState, criticalActions }: Insi
           <CardHelp {...DASHBOARD_HELP.insight} />
         </div>
 
-        {oneLiner && (
-          <p className="text-sm font-medium leading-relaxed">{oneLiner}</p>
-        )}
+        {oneLiner && <p className="text-sm font-medium leading-relaxed">{oneLiner}</p>}
 
         <ul className="space-y-1.5">
           {currentState && (
@@ -43,7 +41,8 @@ export function InsightSummary({ oneLiner, currentState, criticalActions }: Insi
           )}
           {currentState?.keyFactor && (
             <li className="text-sm text-muted-foreground">
-              <span className="text-foreground font-medium">핵심 요인:</span> {currentState.keyFactor}
+              <span className="text-foreground font-medium">핵심 요인:</span>{' '}
+              {currentState.keyFactor}
             </li>
           )}
           {criticalActions?.slice(0, 3).map((action) => (

@@ -1,6 +1,6 @@
 // 네이버 뉴스 댓글 수집기 (비공식 API)
-import type { Collector, CollectionOptions } from './base';
 import { parseNaverArticleUrl, buildObjectId, buildCommentApiUrl } from '../utils/naver-parser';
+import type { Collector, CollectionOptions } from './base';
 
 /** 수집된 네이버 뉴스 댓글 */
 export interface NaverComment {
@@ -64,11 +64,12 @@ export class NaverCommentsCollector implements Collector<NaverComment> {
    * 주의: 댓글 수집은 보통 기사 URL 목록이 필요하므로,
    * 이 메서드는 단독 사용보다 NaverNewsCollector와 함께 사용하는 것을 권장
    */
-  async *collect(options: CollectionOptions): AsyncGenerator<NaverComment[], void, unknown> {
+  async *collect(_options: CollectionOptions): AsyncGenerator<NaverComment[], void, unknown> {
     // collect 인터페이스는 keyword 기반이지만
     // 댓글 수집은 기사 URL이 필요한 특수한 경우
     // 별도 collectForArticle 메서드로 기사별 수집 가능
     // 기본 collect는 빈 제너레이터 (파이프라인에서 기사 URL 전달받아 사용)
+    yield []; // require-yield: 빈 배열 yield로 Generator 계약 충족
     return;
   }
 

@@ -24,7 +24,7 @@ interface ReportViewerProps {
 function generateSectionId(text: string): string {
   return text
     .replace(/\s+/g, '-')
-    .replace(/[^가-힣a-zA-Z0-9\-]/g, '')
+    .replace(/[^가-힣a-zA-Z0-9-]/g, '')
     .toLowerCase();
 }
 
@@ -57,7 +57,7 @@ export function ReportViewer({ markdownContent, onActiveSectionChange }: ReportV
       {
         rootMargin: '-48px 0px -60% 0px',
         threshold: 0.1,
-      }
+      },
     );
 
     headings.forEach((heading) => observer.observe(heading));
@@ -127,10 +127,7 @@ export function ReportViewer({ markdownContent, onActiveSectionChange }: ReportV
               // 인라인 코드
               if (!className) {
                 return (
-                  <code
-                    className="font-mono text-xs bg-secondary px-1.5 py-0.5 rounded"
-                    {...props}
-                  >
+                  <code className="font-mono text-xs bg-secondary px-1.5 py-0.5 rounded" {...props}>
                     {children}
                   </code>
                 );
@@ -155,15 +152,9 @@ export function ReportViewer({ markdownContent, onActiveSectionChange }: ReportV
                 <Table {...props}>{children}</Table>
               </div>
             ),
-            thead: ({ children, ...props }) => (
-              <TableHeader {...props}>{children}</TableHeader>
-            ),
-            tbody: ({ children, ...props }) => (
-              <TableBody {...props}>{children}</TableBody>
-            ),
-            tr: ({ children, ...props }) => (
-              <TableRow {...props}>{children}</TableRow>
-            ),
+            thead: ({ children, ...props }) => <TableHeader {...props}>{children}</TableHeader>,
+            tbody: ({ children, ...props }) => <TableBody {...props}>{children}</TableBody>,
+            tr: ({ children, ...props }) => <TableRow {...props}>{children}</TableRow>,
             th: ({ children, ...props }) => (
               <TableHead className="text-xs font-semibold" {...props}>
                 {children}
@@ -175,11 +166,11 @@ export function ReportViewer({ markdownContent, onActiveSectionChange }: ReportV
               </TableCell>
             ),
             strong: ({ children, ...props }) => (
-              <strong className="font-semibold" {...props}>{children}</strong>
+              <strong className="font-semibold" {...props}>
+                {children}
+              </strong>
             ),
-            hr: (props) => (
-              <hr className="my-6 border-border" {...props} />
-            ),
+            hr: (props) => <hr className="my-6 border-border" {...props} />,
           }}
         >
           {markdownContent}

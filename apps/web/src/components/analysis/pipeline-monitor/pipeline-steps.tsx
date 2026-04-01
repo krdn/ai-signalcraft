@@ -12,13 +12,9 @@ import {
   XCircle,
   Info,
 } from 'lucide-react';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
 import { STAGE_HELP, PIPELINE_STEPS } from './constants';
 import type { StageStatus } from './types';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 // 스텝 아이콘 매핑
 const STEP_ICONS = {
@@ -44,11 +40,16 @@ function StepStatusIcon({ status }: { status: StageStatus }) {
 
 function statusLabel(status: StageStatus): string {
   switch (status) {
-    case 'completed': return '완료';
-    case 'running': return '진행 중';
-    case 'failed': return '실패';
-    case 'skipped': return '건너뜀';
-    default: return '대기';
+    case 'completed':
+      return '완료';
+    case 'running':
+      return '진행 중';
+    case 'failed':
+      return '실패';
+    case 'skipped':
+      return '건너뜀';
+    default:
+      return '대기';
   }
 }
 
@@ -113,20 +114,23 @@ export function PipelineSteps({ stages }: PipelineStepsProps) {
               <div className="flex items-center gap-1.5">
                 <Icon
                   className={`h-3.5 w-3.5 ${
-                    isActive ? 'text-blue-500'
-                    : isCompleted ? 'text-green-500'
-                    : isFailed ? 'text-red-500'
-                    : 'text-muted-foreground'
+                    isActive
+                      ? 'text-blue-500'
+                      : isCompleted
+                        ? 'text-green-500'
+                        : isFailed
+                          ? 'text-red-500'
+                          : 'text-muted-foreground'
                   }`}
                 />
                 <StepStatusIcon status={status} />
               </div>
-              <span className={`text-xs font-medium ${isActive ? 'text-blue-700 dark:text-blue-300' : ''}`}>
+              <span
+                className={`text-xs font-medium ${isActive ? 'text-blue-700 dark:text-blue-300' : ''}`}
+              >
                 {step.label}
               </span>
-              <span className="text-[10px] text-muted-foreground">
-                {statusLabel(status)}
-              </span>
+              <span className="text-[10px] text-muted-foreground">{statusLabel(status)}</span>
             </div>
 
             {/* 화살표 연결선 */}

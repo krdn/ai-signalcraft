@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { Pie, PieChart, Cell } from 'recharts';
+import { CardHelp, DASHBOARD_HELP } from './card-help';
 import {
   ChartContainer,
   ChartTooltip,
@@ -11,7 +12,6 @@ import {
   type ChartConfig,
 } from '@/components/ui/chart';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { CardHelp, DASHBOARD_HELP } from './card-help';
 
 interface SentimentChartProps {
   data: { positive: number; negative: number; neutral: number } | null;
@@ -34,8 +34,8 @@ const chartConfig = {
 
 const COLORS = [
   'hsl(142 71% 45%)', // 긍정 - green
-  'hsl(0 84% 60%)',   // 부정 - red
-  'hsl(240 5% 64%)',  // 중립 - gray
+  'hsl(0 84% 60%)', // 부정 - red
+  'hsl(240 5% 64%)', // 중립 - gray
 ];
 
 export function SentimentChart({ data }: SentimentChartProps) {
@@ -58,7 +58,10 @@ export function SentimentChart({ data }: SentimentChartProps) {
       </CardHeader>
       <CardContent>
         {!data || (data.positive === 0 && data.negative === 0 && data.neutral === 0) ? (
-          <div className="flex items-center justify-center h-[200px] text-muted-foreground" role="status">
+          <div
+            className="flex items-center justify-center h-[200px] text-muted-foreground"
+            role="status"
+          >
             데이터 없음
           </div>
         ) : (

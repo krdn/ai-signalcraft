@@ -25,10 +25,10 @@ key-files:
     - packages/collectors/src/adapters/index.ts
 
 key-decisions:
-  - "parseDateTextOrNull은 파싱 실패 시 null 반환 -- 기존 parseDateText(new Date() fallback)와 구분"
+  - 'parseDateTextOrNull은 파싱 실패 시 null 반환 -- 기존 parseDateText(new Date() fallback)와 구분'
 
 patterns-established:
-  - "뉴스 수집기도 BrowserCollector.doCollect() 패턴 사용 (커뮤니티와 동일한 라이프사이클)"
+  - '뉴스 수집기도 BrowserCollector.doCollect() 패턴 사용 (커뮤니티와 동일한 라이프사이클)'
 
 requirements-completed: [COL-02, COL-04, COL-05]
 
@@ -49,6 +49,7 @@ completed: 2026-03-27
 - **Files modified:** 3
 
 ## Accomplishments
+
 - NaverNewsCollector가 BrowserCollector<NaverArticle>를 상속하여 브라우저 라이프사이클 관리 위임
 - 자체 delay() 함수와 parseDateText() 메서드 제거 (공통 유틸로 대체)
 - community-parser.ts에 parseDateTextOrNull(Date | null) 함수 추가
@@ -63,11 +64,13 @@ Each task was committed atomically:
 2. **Task 2: naver-news.ts BrowserCollector 상속 + index.ts export 정리** - `fface65` (refactor)
 
 ## Files Created/Modified
+
 - `packages/collectors/src/utils/community-parser.ts` - parseDateTextOrNull 함수 추가 (파싱 실패 시 null 반환)
 - `packages/collectors/src/adapters/naver-news.ts` - BrowserCollector 상속, 중복 코드 제거 (delay, parseDateText, 브라우저 초기화/종료)
 - `packages/collectors/src/adapters/index.ts` - BrowserCollector, CommunityBaseCollector export 추가
 
 ## Decisions Made
+
 - parseDateTextOrNull은 기존 parseDateText와 별도 함수로 추가 -- 기존 커뮤니티 수집기들이 사용하는 parseDateText(fallback: new Date())와 호환성 유지
 
 ## Deviations from Plan
@@ -75,28 +78,33 @@ Each task was committed atomically:
 None - plan executed exactly as written.
 
 ## Issues Encountered
+
 None
 
 ## User Setup Required
+
 None - no external service configuration required.
 
 ## Next Phase Readiness
+
 - NaverNewsCollector 리팩토링 완료, Plan 02(커뮤니티 3개)와 독립적으로 완성
 - 모든 수집기가 BrowserCollector 계층을 공유하는 구조 완성
 
 ## Superpowers 호출 기록
 
-| # | 스킬명 | 호출 시점 | 결과 요약 |
-|---|--------|----------|----------|
+| #   | 스킬명 | 호출 시점 | 결과 요약 |
+| --- | ------ | --------- | --------- |
 
 ### 미호출 스킬 사유
-| 스킬명 | 미호출 사유 |
-|--------|-----------|
-| superpowers:brainstorming | 리팩토링 작업으로 Plan 지시가 명확하여 브레인스토밍 불필요 |
+
+| 스킬명                              | 미호출 사유                                                      |
+| ----------------------------------- | ---------------------------------------------------------------- |
+| superpowers:brainstorming           | 리팩토링 작업으로 Plan 지시가 명확하여 브레인스토밍 불필요       |
 | superpowers:test-driven-development | 기존 테스트 49개가 이미 존재하며 리팩토링이므로 새 테스트 불필요 |
-| superpowers:systematic-debugging | 버그 미발생 |
-| superpowers:requesting-code-review | 단순 리팩토링으로 코드 리뷰 가치 낮음 |
+| superpowers:systematic-debugging    | 버그 미발생                                                      |
+| superpowers:requesting-code-review  | 단순 리팩토링으로 코드 리뷰 가치 낮음                            |
 
 ---
-*Phase: 07-collector*
-*Completed: 2026-03-27*
+
+_Phase: 07-collector_
+_Completed: 2026-03-27_

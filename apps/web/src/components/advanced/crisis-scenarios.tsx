@@ -1,9 +1,9 @@
 'use client';
 
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, Shield, TrendingUp } from 'lucide-react';
 import { AdvancedCardHelp, ADVANCED_HELP } from './advanced-help';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 
 interface Scenario {
   type: 'spread' | 'control' | 'reverse';
@@ -88,7 +88,10 @@ export function CrisisScenarios({ data }: CrisisscenariosProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         {!parsed ? (
-          <div className="flex items-center justify-center h-[260px] text-muted-foreground" role="status">
+          <div
+            className="flex items-center justify-center h-[260px] text-muted-foreground"
+            role="status"
+          >
             데이터 없음
           </div>
         ) : (
@@ -116,7 +119,9 @@ export function CrisisScenarios({ data }: CrisisscenariosProps) {
                     <div className="space-y-1">
                       <div className="flex items-center justify-between text-xs">
                         <span className="text-muted-foreground">발생 확률</span>
-                        <span className="font-mono font-medium tabular-nums">{scenario.probability}%</span>
+                        <span className="font-mono font-medium tabular-nums">
+                          {scenario.probability}%
+                        </span>
                       </div>
                       <div className="h-1.5 rounded-full bg-muted overflow-hidden">
                         <div
@@ -154,8 +159,12 @@ export function CrisisScenarios({ data }: CrisisscenariosProps) {
 
                     {/* 예상 결과 + 소요 기간 */}
                     <div className="border-t pt-2 space-y-1">
-                      <p className="text-xs"><span className="font-medium">예상 결과:</span> {scenario.expectedOutcome}</p>
-                      <p className="text-xs text-muted-foreground">소요 기간: {scenario.timeframe}</p>
+                      <p className="text-xs">
+                        <span className="font-medium">예상 결과:</span> {scenario.expectedOutcome}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        소요 기간: {scenario.timeframe}
+                      </p>
                     </div>
                   </div>
                 );

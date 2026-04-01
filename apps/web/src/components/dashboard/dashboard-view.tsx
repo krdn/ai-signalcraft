@@ -2,12 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { trpcClient } from '@/lib/trpc';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { AlertCircle } from 'lucide-react';
-
 import { KpiCards } from './kpi-cards';
 import { InsightSummary } from './insight-summary';
 import { SentimentChart } from './sentiment-chart';
@@ -18,13 +13,20 @@ import { RiskCards } from './risk-cards';
 import { OpportunityCards } from './opportunity-cards';
 import { CompareSelector } from './compare-selector';
 import { CompareView } from './compare-view';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { trpcClient } from '@/lib/trpc';
 
 interface DashboardViewProps {
   jobId: number | null;
 }
 
 // 모듈별 결과를 파싱하는 유틸
-function parseModuleResult(results: Array<{ module: string; result: unknown }>, moduleName: string) {
+function parseModuleResult(
+  results: Array<{ module: string; result: unknown }>,
+  moduleName: string,
+) {
   const found = results.find((r) => r.module === moduleName);
   return found?.result as Record<string, unknown> | undefined;
 }
@@ -97,107 +99,151 @@ export function DashboardView({ jobId }: DashboardViewProps) {
   const finalSummary = parseModuleResult(moduleResults, 'final-summary');
 
   // 감성 비율 데이터 — sentiment-framing.sentimentRatio (일치)
-  const sentimentData = sentimentFraming?.sentimentRatio as {
-    positive: number;
-    negative: number;
-    neutral: number;
-  } | undefined;
+  const sentimentData = sentimentFraming?.sentimentRatio as
+    | {
+        positive: number;
+        negative: number;
+        neutral: number;
+      }
+    | undefined;
 
   // 시계열 트렌드 데이터 — macro-view.dailyMentionTrend (수정: sentiment-framing → macro-view)
-  const rawTrend = macroView?.dailyMentionTrend as Array<{
-    date: string;
-    count: number;
-    sentimentRatio: { positive: number; negative: number; neutral: number };
-  }> | undefined;
+  const rawTrend = macroView?.dailyMentionTrend as
+    | Array<{
+        date: string;
+        count: number;
+        sentimentRatio: { positive: number; negative: number; neutral: number };
+      }>
+    | undefined;
   // 이벤트 마커 데이터 — macro-view.inflectionPoints
-  const inflectionPoints = macroView?.inflectionPoints as Array<{
-    date: string;
-    description: string;
-  }> | undefined;
-  const trendEvents = inflectionPoints?.map((p) => ({
-    date: p.date,
-    label: p.description.length > 15 ? p.description.slice(0, 15) + '…' : p.description,
-  })) ?? null;
+  const inflectionPoints = macroView?.inflectionPoints as
+    | Array<{
+        date: string;
+        description: string;
+      }>
+    | undefined;
+  const trendEvents =
+    inflectionPoints?.map((p) => ({
+      date: p.date,
+      label: p.description.length > 15 ? p.description.slice(0, 15) + '…' : p.description,
+    })) ?? null;
 
   // TrendChart 형식으로 변환
-  const trendData = rawTrend?.map((t) => ({
-    date: t.date,
-    mentions: t.count,
-    positive: Math.round(t.count * (t.sentimentRatio?.positive ?? 0)),
-    negative: Math.round(t.count * (t.sentimentRatio?.negative ?? 0)),
-    neutral: Math.round(t.count * (t.sentimentRatio?.neutral ?? 0)),
-  })) ?? null;
+  const trendData =
+    rawTrend?.map((t) => ({
+      date: t.date,
+      mentions: t.count,
+      positive: Math.round(t.count * (t.sentimentRatio?.positive ?? 0)),
+      negative: Math.round(t.count * (t.sentimentRatio?.negative ?? 0)),
+      neutral: Math.round(t.count * (t.sentimentRatio?.neutral ?? 0)),
+    })) ?? null;
 
   // 키워드 데이터 — sentiment-framing.topKeywords (수정: macro-view.keyTopics → sentiment-framing.topKeywords)
-  const topKeywords = sentimentFraming?.topKeywords as Array<{
-    keyword: string;
-    count: number;
-    sentiment: string;
-  }> | undefined;
+  const topKeywords = sentimentFraming?.topKeywords as
+    | Array<{
+        keyword: string;
+        count: number;
+        sentiment: string;
+      }>
+    | undefined;
   const wordCloudData = topKeywords?.map((t) => ({ text: t.keyword, value: t.count })) ?? null;
 
   // 플랫폼 비교 데이터 — segmentation.platformSegments (수정: sentimentByPlatform → platformSegments)
-  const platformSegments = segmentation?.platformSegments as Array<{
-    platform: string;
-    sentiment: string;
-    volume: number;
-    keyTopics: string[];
-    characteristics: string;
-  }> | undefined;
+  const platformSegments = segmentation?.platformSegments as
+    | Array<{
+        platform: string;
+        sentiment: string;
+        volume: number;
+        keyTopics: string[];
+        characteristics: string;
+      }>
+    | undefined;
   // sentiment enum을 수치로 변환
-  const platformData = platformSegments?.map((seg) => ({
-    platform: seg.platform,
-    positive: seg.sentiment === 'positive' ? seg.volume : seg.sentiment === 'mixed' ? Math.round(seg.volume * 0.4) : 0,
-    negative: seg.sentiment === 'negative' ? seg.volume : seg.sentiment === 'mixed' ? Math.round(seg.volume * 0.3) : 0,
-    neutral: seg.sentiment === 'mixed' ? Math.round(seg.volume * 0.3) : 0,
-  })) ?? null;
+  const platformData =
+    platformSegments?.map((seg) => ({
+      platform: seg.platform,
+      positive:
+        seg.sentiment === 'positive'
+          ? seg.volume
+          : seg.sentiment === 'mixed'
+            ? Math.round(seg.volume * 0.4)
+            : 0,
+      negative:
+        seg.sentiment === 'negative'
+          ? seg.volume
+          : seg.sentiment === 'mixed'
+            ? Math.round(seg.volume * 0.3)
+            : 0,
+      neutral: seg.sentiment === 'mixed' ? Math.round(seg.volume * 0.3) : 0,
+    })) ?? null;
 
   // 리스크 데이터 — risk-map.topRisks (수정: risks → topRisks, 구조 변환)
-  const topRisks = riskMap?.topRisks as Array<{
-    rank: number;
-    title: string;
-    description: string;
-    impactLevel: string;
-    spreadProbability: number;
-    currentStatus: string;
-    triggerConditions: string[];
-  }> | undefined;
-  const risks = topRisks?.map((r) => ({
-    title: r.title,
-    description: r.description,
-    impact: r.impactLevel === 'critical' ? 90 : r.impactLevel === 'high' ? 70 : r.impactLevel === 'medium' ? 45 : 20,
-    urgency: r.impactLevel,
-    spreadPotential: `${Math.round(r.spreadProbability * 100)}%`,
-  })) ?? null;
+  const topRisks = riskMap?.topRisks as
+    | Array<{
+        rank: number;
+        title: string;
+        description: string;
+        impactLevel: string;
+        spreadProbability: number;
+        currentStatus: string;
+        triggerConditions: string[];
+      }>
+    | undefined;
+  const risks =
+    topRisks?.map((r) => ({
+      title: r.title,
+      description: r.description,
+      impact:
+        r.impactLevel === 'critical'
+          ? 90
+          : r.impactLevel === 'high'
+            ? 70
+            : r.impactLevel === 'medium'
+              ? 45
+              : 20,
+      urgency: r.impactLevel,
+      spreadPotential: `${Math.round(r.spreadProbability * 100)}%`,
+    })) ?? null;
 
   // 기회 데이터 — opportunity.positiveAssets (수정: opportunities → positiveAssets, 구조 변환)
-  const positiveAssets = opportunity?.positiveAssets as Array<{
-    title: string;
-    description: string;
-    expandability: string;
-    currentUtilization: string;
-    recommendation: string;
-  }> | undefined;
-  const opportunities = positiveAssets?.map((a) => ({
-    title: a.title,
-    description: `${a.description}\n추천: ${a.recommendation}`,
-    impact: a.expandability === 'high' ? 80 : a.expandability === 'medium' ? 50 : 25,
-    feasibility: a.expandability,
-  })) ?? null;
+  const positiveAssets = opportunity?.positiveAssets as
+    | Array<{
+        title: string;
+        description: string;
+        expandability: string;
+        currentUtilization: string;
+        recommendation: string;
+      }>
+    | undefined;
+  const opportunities =
+    positiveAssets?.map((a) => ({
+      title: a.title,
+      description: `${a.description}\n추천: ${a.recommendation}`,
+      impact: a.expandability === 'high' ? 80 : a.expandability === 'medium' ? 50 : 25,
+      feasibility: a.expandability,
+    })) ?? null;
 
   // KPI 데이터
   const totalMentions = rawTrend?.reduce((sum, t) => sum + t.count, 0) ?? null;
   const topKeywordText = topKeywords?.[0]?.keyword ?? null;
-  const overallDirection = (macroView?.overallDirection as 'positive' | 'negative' | 'mixed') ?? null;
+  const overallDirection =
+    (macroView?.overallDirection as 'positive' | 'negative' | 'mixed') ?? null;
 
   // 인사이트 요약 데이터 (final-summary 모듈)
   const insightOneLiner = (finalSummary?.oneLiner as string) ?? null;
-  const insightCurrentState = finalSummary?.currentState as {
-    summary: string; sentiment: string; keyFactor: string;
-  } | null ?? null;
-  const insightActions = finalSummary?.criticalActions as Array<{
-    priority: number; action: string; expectedImpact: string; timeline: string;
-  }> | null ?? null;
+  const insightCurrentState =
+    (finalSummary?.currentState as {
+      summary: string;
+      sentiment: string;
+      keyFactor: string;
+    } | null) ?? null;
+  const insightActions =
+    (finalSummary?.criticalActions as Array<{
+      priority: number;
+      action: string;
+      expectedImpact: string;
+      timeline: string;
+    }> | null) ?? null;
 
   return (
     <div className="space-y-6">
@@ -209,9 +255,7 @@ export function DashboardView({ jobId }: DashboardViewProps) {
       />
 
       {/* 비교 모드일 때 CompareView 표시 */}
-      {compareJobId && (
-        <CompareView baseJobId={jobId} compareJobId={compareJobId} />
-      )}
+      {compareJobId && <CompareView baseJobId={jobId} compareJobId={compareJobId} />}
 
       {/* KPI 카드 — 핵심 지표 한눈에 */}
       <KpiCards

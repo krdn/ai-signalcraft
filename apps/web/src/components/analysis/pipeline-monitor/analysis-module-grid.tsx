@@ -2,35 +2,20 @@
 
 import { memo } from 'react';
 import { motion } from 'motion/react';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from '@/components/ui/hover-card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Button } from '@/components/ui/button';
-import {
-  CheckCircle2,
-  Loader2,
-  XCircle,
-  Clock,
-  ChevronDown,
-  RefreshCw,
-} from 'lucide-react';
+import { CheckCircle2, Loader2, XCircle, Clock, ChevronDown, RefreshCw } from 'lucide-react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { trpcClient } from '@/lib/trpc';
 import { toast } from 'sonner';
 import { PulseRing } from './pulse-ring';
 import { CostSummary } from './cost-summary';
 import { MODULE_HELP, STAGE_LABELS } from './constants';
 import { formatTokens, formatElapsedCompact } from './utils';
-import type { PipelineStatusData, AnalysisModuleDetailed, ModuleStatus, TokenUsage } from './types';
+import type { AnalysisModuleDetailed, ModuleStatus, TokenUsage } from './types';
+import { trpcClient } from '@/lib/trpc';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface AnalysisModuleGridProps {
   modules: AnalysisModuleDetailed[];
@@ -72,7 +57,17 @@ const STATUS_STYLES: Record<string, string> = {
   pending: 'border-border bg-muted/30 text-muted-foreground',
 };
 
-function ModuleCard({ mod, modelSetting, jobId, canRetry }: { mod: AnalysisModuleDetailed; modelSetting?: { provider: string; model: string }; jobId?: number | null; canRetry?: boolean }) {
+function ModuleCard({
+  mod,
+  modelSetting,
+  jobId,
+  canRetry,
+}: {
+  mod: AnalysisModuleDetailed;
+  modelSetting?: { provider: string; model: string };
+  jobId?: number | null;
+  canRetry?: boolean;
+}) {
   const retryMutation = useMutation({
     mutationFn: () => trpcClient.analysis.retryModule.mutate({ jobId: jobId!, module: mod.module }),
     onSuccess: () => toast.success(`${mod.label} 재실행 시작`),
@@ -100,7 +95,8 @@ function ModuleCard({ mod, modelSetting, jobId, canRetry }: { mod: AnalysisModul
         {/* 모델명 표시 */}
         {(displayProvider || displayModel) && mod.status !== 'pending' && (
           <div className="text-[9px] text-muted-foreground/70 ml-5 font-mono truncate">
-            {PROVIDER_DISPLAY[displayProvider] ?? displayProvider}{displayModel ? ` · ${displayModel}` : ''}
+            {PROVIDER_DISPLAY[displayProvider] ?? displayProvider}
+            {displayModel ? ` · ${displayModel}` : ''}
           </div>
         )}
         {(totalTokens > 0 || mod.durationSeconds) && (
@@ -114,7 +110,10 @@ function ModuleCard({ mod, modelSetting, jobId, canRetry }: { mod: AnalysisModul
         {mod.status === 'failed' && (
           <div className="flex items-center gap-1 ml-5">
             {mod.errorMessage && (
-              <p className="text-[10px] text-red-600 dark:text-red-400 truncate flex-1" title={mod.errorMessage}>
+              <p
+                className="text-[10px] text-red-600 dark:text-red-400 truncate flex-1"
+                title={mod.errorMessage}
+              >
                 {mod.errorMessage}
               </p>
             )}
@@ -124,13 +123,17 @@ function ModuleCard({ mod, modelSetting, jobId, canRetry }: { mod: AnalysisModul
                 size="icon"
                 className="h-5 w-5 shrink-0"
                 title="재실행"
-                onClick={(e) => { e.stopPropagation(); retryMutation.mutate(); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  retryMutation.mutate();
+                }}
                 disabled={retryMutation.isPending}
               >
-                {retryMutation.isPending
-                  ? <Loader2 className="h-3 w-3 animate-spin" />
-                  : <RefreshCw className="h-3 w-3 text-red-500 hover:text-red-600" />
-                }
+                {retryMutation.isPending ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-3 w-3 text-red-500 hover:text-red-600" />
+                )}
               </Button>
             )}
           </div>
@@ -149,8 +152,12 @@ function ModuleCard({ mod, modelSetting, jobId, canRetry }: { mod: AnalysisModul
           <h4 className="font-semibold">{mod.label}</h4>
           <p className="text-muted-foreground leading-relaxed">{help.description}</p>
           <div className="flex items-center gap-2 text-[10px] text-muted-foreground pt-1 border-t">
-            <Badge variant="outline" className="text-[10px] px-1.5">{help.stageLabel}</Badge>
-            <span>{PROVIDER_DISPLAY[displayProvider] ?? displayProvider} / {displayModel}</span>
+            <Badge variant="outline" className="text-[10px] px-1.5">
+              {help.stageLabel}
+            </Badge>
+            <span>
+              {PROVIDER_DISPLAY[displayProvider] ?? displayProvider} / {displayModel}
+            </span>
           </div>
         </div>
       </HoverCardContent>
@@ -188,9 +195,8 @@ export const AnalysisModuleGrid = memo(function AnalysisModuleGrid({
     stages.get(stage)!.push(mod);
   }
 
-  const progressPercent = moduleCount.total > 0
-    ? Math.round((moduleCount.completed / moduleCount.total) * 100)
-    : 0;
+  const progressPercent =
+    moduleCount.total > 0 ? Math.round((moduleCount.completed / moduleCount.total) * 100) : 0;
 
   return (
     <div className="space-y-3">
@@ -206,7 +212,7 @@ export const AnalysisModuleGrid = memo(function AnalysisModuleGrid({
       {/* Stage별 모듈 그리드 + 연결선 */}
       {Array.from(stages.entries())
         .sort(([a], [b]) => a - b)
-        .map(([stageNum, mods], idx, arr) => {
+        .map(([stageNum, mods], idx, _arr) => {
           const stageInfo = STAGE_LABELS[stageNum];
           return (
             <div key={stageNum}>
@@ -219,14 +225,24 @@ export const AnalysisModuleGrid = memo(function AnalysisModuleGrid({
 
               {stageInfo && (
                 <div className="flex items-center gap-2 mb-1.5">
-                  <h5 className="text-[11px] font-medium text-muted-foreground">{stageInfo.label}</h5>
-                  <span className="text-[10px] text-muted-foreground/60">{stageInfo.description}</span>
+                  <h5 className="text-[11px] font-medium text-muted-foreground">
+                    {stageInfo.label}
+                  </h5>
+                  <span className="text-[10px] text-muted-foreground/60">
+                    {stageInfo.description}
+                  </span>
                 </div>
               )}
 
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1.5">
                 {mods.map((mod) => (
-                  <ModuleCard key={mod.module} mod={mod} modelSetting={settingsMap.get(mod.module)} jobId={jobId} canRetry={canRetry} />
+                  <ModuleCard
+                    key={mod.module}
+                    mod={mod}
+                    modelSetting={settingsMap.get(mod.module)}
+                    jobId={jobId}
+                    canRetry={canRetry}
+                  />
                 ))}
               </div>
             </div>

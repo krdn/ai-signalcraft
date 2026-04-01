@@ -34,12 +34,12 @@ key-files:
     - packages/core/src/pipeline/normalize.ts
 
 key-decisions:
-  - "AIProvider를 ai-gateway에서 import type + re-export로 단일 소스화"
-  - "원본 파일에서 re-export 유지하여 기존 import 경로 호환성 보장"
+  - 'AIProvider를 ai-gateway에서 import type + re-export로 단일 소스화'
+  - '원본 파일에서 re-export 유지하여 기존 import 경로 호환성 보장'
 
 patterns-established:
-  - "타입 중앙화: 인라인 타입 -> types/ 디렉토리 이동 + 원본에서 re-export"
-  - "패키지 간 타입 공유: ai-gateway -> core re-export 체인"
+  - '타입 중앙화: 인라인 타입 -> types/ 디렉토리 이동 + 원본에서 re-export'
+  - '패키지 간 타입 공유: ai-gateway -> core re-export 체인'
 
 requirements-completed: [TYPE-01, TYPE-04]
 
@@ -61,6 +61,7 @@ completed: 2026-03-27
 - **Files modified:** 10
 
 ## Accomplishments
+
 - ModuleModelConfig, ProviderKeyInfo, ReportGenerationInput, PdfExportOptions, CommunitySource 5개 타입을 types/ 디렉토리로 이동
 - AIProvider 타입을 ai-gateway 패키지에서 단일 정의하고 core에서 re-export 체인 구축
 - 기존 import 경로(@ai-signalcraft/core) 호환성 완전 유지
@@ -74,6 +75,7 @@ Each task was committed atomically:
 2. **Task 2: 전체 빌드 및 테스트 검증** - 검증 전용 (코드 변경 없음)
 
 ## Files Created/Modified
+
 - `packages/core/src/types/analysis.ts` - ModuleModelConfig, ProviderKeyInfo 타입 정의 (신규)
 - `packages/core/src/types/report.ts` - ReportGenerationInput, PdfExportOptions 타입 정의 (신규)
 - `packages/core/src/types/pipeline.ts` - CommunitySource 타입 정의 (신규)
@@ -86,6 +88,7 @@ Each task was committed atomically:
 - `packages/core/src/pipeline/normalize.ts` - CommunitySource 인라인 정의 제거, types/pipeline에서 import + re-export
 
 ## Decisions Made
+
 - AIProvider를 `import type + re-export` 패턴으로 ai-gateway 단일 소스화 (ProviderType 호환성 유지)
 - 원본 파일에서 `export type { X } from '../types/...'` 형태로 re-export 유지하여 기존 import 경로 깨뜨리지 않음
 
@@ -94,6 +97,7 @@ Each task was committed atomically:
 None - plan executed exactly as written.
 
 ## Issues Encountered
+
 - worker-config.ts 파일이 존재하지 않아 해당 단계 건너뜀 (Plan에 명시되었으나 실제 파일 없음, 영향 없음)
 
 ## User Setup Required
@@ -101,22 +105,25 @@ None - plan executed exactly as written.
 None - no external service configuration required.
 
 ## Next Phase Readiness
+
 - 타입 중앙화 완료, 09-02 (ai-gateway 테스트) 및 09-03 (테스트 분할) 진행 가능
 - barrel export 체인이 올바르게 구성되어 외부 패키지에서 기존 import 경로 유지
 
 ## Superpowers 호출 기록
 
-| # | 스킬명 | 호출 시점 | 결과 요약 |
-|---|--------|----------|----------|
+| #   | 스킬명 | 호출 시점 | 결과 요약 |
+| --- | ------ | --------- | --------- |
 
 ### 미호출 스킬 사유
-| 스킬명 | 미호출 사유 |
-|--------|-----------|
-| superpowers:brainstorming | 리팩토링 작업으로 설계 결정 불필요 |
+
+| 스킬명                              | 미호출 사유                                   |
+| ----------------------------------- | --------------------------------------------- |
+| superpowers:brainstorming           | 리팩토링 작업으로 설계 결정 불필요            |
 | superpowers:test-driven-development | 타입 이동 작업으로 새 테스트 코드 작성 불필요 |
-| superpowers:systematic-debugging | 버그 미발생 |
-| superpowers:requesting-code-review | 타입 이동만 수행, 로직 변경 없음 |
+| superpowers:systematic-debugging    | 버그 미발생                                   |
+| superpowers:requesting-code-review  | 타입 이동만 수행, 로직 변경 없음              |
 
 ---
-*Phase: 09-types-tests*
-*Completed: 2026-03-27*
+
+_Phase: 09-types-tests_
+_Completed: 2026-03-27_

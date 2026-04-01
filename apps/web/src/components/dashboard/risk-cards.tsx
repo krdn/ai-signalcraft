@@ -1,10 +1,10 @@
 'use client';
 
 import { useMemo } from 'react';
+import { CardHelp, DASHBOARD_HELP } from './card-help';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { CardHelp, DASHBOARD_HELP } from './card-help';
 
 interface Risk {
   title: string;
@@ -55,7 +55,9 @@ export function RiskCards({ risks }: RiskCardsProps) {
   const sortedRisks = useMemo(() => {
     if (!risks) return [];
     return [...risks].sort(
-      (a, b) => (URGENCY_ORDER[a.urgency.toLowerCase()] ?? 99) - (URGENCY_ORDER[b.urgency.toLowerCase()] ?? 99)
+      (a, b) =>
+        (URGENCY_ORDER[a.urgency.toLowerCase()] ?? 99) -
+        (URGENCY_ORDER[b.urgency.toLowerCase()] ?? 99),
     );
   }, [risks]);
 
@@ -69,16 +71,16 @@ export function RiskCards({ risks }: RiskCardsProps) {
       </CardHeader>
       <CardContent>
         {!risks || risks.length === 0 ? (
-          <div className="flex items-center justify-center h-[200px] text-muted-foreground" role="status">
+          <div
+            className="flex items-center justify-center h-[200px] text-muted-foreground"
+            role="status"
+          >
             리스크 없음
           </div>
         ) : (
           <div className="space-y-3">
             {sortedRisks.map((risk, index) => (
-              <div
-                key={index}
-                className="rounded-lg border p-3 space-y-2"
-              >
+              <div key={index} className="rounded-lg border p-3 space-y-2">
                 <div className="flex items-center justify-between gap-2">
                   <h4 className="text-lg font-semibold leading-tight">{risk.title}</h4>
                   {getUrgencyBadge(risk.urgency)}

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { z } from 'zod';
+import { z } from 'zod'; // eslint-disable-line import-x/order
 
 // mock 함수 정의
 const mockGenerateText = vi.fn();
@@ -12,6 +12,7 @@ vi.mock('ai', () => ({
 
 const mockCreateAnthropic = vi.fn();
 const mockCreateOpenAI = vi.fn();
+const mockCreateGoogleGenerativeAI = vi.fn();
 
 vi.mock('@ai-sdk/anthropic', () => ({
   createAnthropic: (...args: unknown[]) => mockCreateAnthropic(...args),
@@ -19,6 +20,10 @@ vi.mock('@ai-sdk/anthropic', () => ({
 
 vi.mock('@ai-sdk/openai', () => ({
   createOpenAI: (...args: unknown[]) => mockCreateOpenAI(...args),
+}));
+
+vi.mock('@ai-sdk/google', () => ({
+  createGoogleGenerativeAI: (...args: unknown[]) => mockCreateGoogleGenerativeAI(...args),
 }));
 
 // mock 이후 import
@@ -39,6 +44,9 @@ describe('getModel', () => {
     const openaiClient = vi.fn(() => mockOpenAIModel);
     openaiClient.chat = vi.fn(() => mockChatModel);
     mockCreateOpenAI.mockReturnValue(openaiClient);
+
+    // gemini: createGoogleGenerativeAI → client(modelName) 반환
+    mockCreateGoogleGenerativeAI.mockReturnValue(vi.fn(() => 'gemini-model-instance'));
   });
 
   it('anthropic 프로바이더에 createAnthropic 호출', () => {
@@ -123,11 +131,10 @@ describe('getModel', () => {
     expect(clientFn).toHaveBeenCalledWith('gpt-4o-mini');
   });
 
-  it('DEFAULT_MODELS에 없는 프로바이더는 gpt-4o-mini 폴백', () => {
-    getModel('gemini');
-    // gemini는 default 케이스로 openai와 동일 경로
-    const clientFn = mockCreateOpenAI.mock.results[0].value;
-    expect(clientFn).toHaveBeenCalledWith('gpt-4o-mini');
+  it('gemini 프로바이더에 createGoogleGenerativeAI 호출', () => {
+    const result = getModel('gemini');
+    expect(mockCreateGoogleGenerativeAI).toHaveBeenCalledOnce();
+    expect(result).toBe('gemini-model-instance');
   });
 
   it('apiKey가 전달되면 anthropic 클라이언트에 포함', () => {

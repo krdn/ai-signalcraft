@@ -15,13 +15,13 @@ created: 2026-03-24
 
 ## Test Infrastructure
 
-| Property | Value |
-|----------|-------|
-| **Framework** | Vitest 3.x |
-| **Config file** | `packages/core/vitest.config.ts`, `apps/web/vitest.config.ts` |
-| **Quick run command** | `pnpm --filter @ai-signalcraft/core test` |
-| **Full suite command** | `pnpm -r test` |
-| **Estimated runtime** | ~30 seconds |
+| Property               | Value                                                         |
+| ---------------------- | ------------------------------------------------------------- |
+| **Framework**          | Vitest 3.x                                                    |
+| **Config file**        | `packages/core/vitest.config.ts`, `apps/web/vitest.config.ts` |
+| **Quick run command**  | `pnpm --filter @ai-signalcraft/core test`                     |
+| **Full suite command** | `pnpm -r test`                                                |
+| **Estimated runtime**  | ~30 seconds                                                   |
 
 ---
 
@@ -36,14 +36,14 @@ created: 2026-03-24
 
 ## Per-Task Verification Map
 
-| Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
-|---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 05-01-01 | 01 | 1 | INT-01 (COLL-01~08, FOUND-03) | unit | `pnpm --filter @ai-signalcraft/core vitest run tests/queue.test.ts -x` | ❌ W0 | ⬜ pending |
-| 05-01-02 | 01 | 1 | INT-02 (ADVN-01~04, REPT-01) | unit | `pnpm --filter @ai-signalcraft/core vitest run tests/report.test.ts -x` | ❌ W0 | ⬜ pending |
-| 05-01-03 | 01 | 1 | FLOW-01 (TEAM-01) | manual-only | N/A | N/A | ⬜ pending |
-| 05-01-04 | 01 | 1 | FLOW-01b (TEAM-03) | unit | `pnpm --filter @ai-signalcraft/core vitest run tests/db.test.ts -x` | ❌ W0 | ⬜ pending |
+| Task ID  | Plan | Wave | Requirement                   | Test Type   | Automated Command                                                       | File Exists | Status     |
+| -------- | ---- | ---- | ----------------------------- | ----------- | ----------------------------------------------------------------------- | ----------- | ---------- |
+| 05-01-01 | 01   | 1    | INT-01 (COLL-01~08, FOUND-03) | unit        | `pnpm --filter @ai-signalcraft/core vitest run tests/queue.test.ts -x`  | ❌ W0       | ⬜ pending |
+| 05-01-02 | 01   | 1    | INT-02 (ADVN-01~04, REPT-01)  | unit        | `pnpm --filter @ai-signalcraft/core vitest run tests/report.test.ts -x` | ❌ W0       | ⬜ pending |
+| 05-01-03 | 01   | 1    | FLOW-01 (TEAM-01)             | manual-only | N/A                                                                     | N/A         | ⬜ pending |
+| 05-01-04 | 01   | 1    | FLOW-01b (TEAM-03)            | unit        | `pnpm --filter @ai-signalcraft/core vitest run tests/db.test.ts -x`     | ❌ W0       | ⬜ pending |
 
-*Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
+_Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky_
 
 ---
 
@@ -57,8 +57,8 @@ created: 2026-03-24
 
 ## Manual-Only Verifications
 
-| Behavior | Requirement | Why Manual | Test Instructions |
-|----------|-------------|------------|-------------------|
+| Behavior                         | Requirement       | Why Manual                                                  | Test Instructions                                                                                              |
+| -------------------------------- | ----------------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
 | LoginForm callbackUrl 리다이렉트 | FLOW-01 (TEAM-01) | 웹 컴포넌트 테스트 인프라 없음 (Suspense + useSearchParams) | 1. `/login?callbackUrl=/invite/test-token`으로 접속 2. 로그인 수행 3. `/invite/test-token`으로 리다이렉트 확인 |
 
 ---

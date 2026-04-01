@@ -1,4 +1,9 @@
-export { CollectionOptionsSchema, type CollectionOptions, type CollectionResult, type Collector } from './base';
+export {
+  CollectionOptionsSchema,
+  type CollectionOptions,
+  type CollectionResult,
+  type Collector,
+} from './base';
 export { BrowserCollector, type BrowserCollectorConfig } from './browser-collector';
 export { CommunityBaseCollector, type SiteSelectors } from './community-base-collector';
 export { registerCollector, getCollector, getAllCollectors } from './registry';

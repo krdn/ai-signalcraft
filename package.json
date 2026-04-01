@@ -10,11 +10,34 @@
     "db:push": "pnpm --filter @ai-signalcraft/core db:push",
     "db:studio": "pnpm --filter @ai-signalcraft/core db:studio",
     "worker": "pnpm --filter @ai-signalcraft/core worker",
-    "trigger": "tsx scripts/trigger-collection.ts"
+    "trigger": "tsx scripts/trigger-collection.ts",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,json,md}\"",
+    "prepare": "husky"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.1.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-import-resolver-typescript": "^4.4.4",
+    "eslint-plugin-import-x": "^4.16.2",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
+    "prettier": "^3.8.1",
     "typescript": "^5.8.0",
+    "typescript-eslint": "^8.58.0",
     "vitest": "^3.0.0"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md}": [
+      "prettier --write"
+    ]
   },
   "pnpm": {
     "onlyBuiltDependencies": [

@@ -43,11 +43,15 @@ describe('ADVN-02: FrameWarSchema', () => {
     const { FrameWarSchema } = await import('../src/analysis/schemas/frame-war.schema');
 
     // strength가 0~100 범위 밖
-    expect(() => FrameWarSchema.parse({
-      dominantFrames: [{ name: 'test', description: 'test', strength: 150, supportingEvidence: [] }],
-      threateningFrames: [],
-      reversibleFrames: [],
-      battlefieldSummary: 'test',
-    })).toThrow(ZodError);
+    expect(() =>
+      FrameWarSchema.parse({
+        dominantFrames: [
+          { name: 'test', description: 'test', strength: 150, supportingEvidence: [] },
+        ],
+        threateningFrames: [],
+        reversibleFrames: [],
+        battlefieldSummary: 'test',
+      }),
+    ).toThrow(ZodError);
   });
 });

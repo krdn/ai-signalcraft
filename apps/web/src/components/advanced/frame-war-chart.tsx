@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
+import { AdvancedCardHelp, ADVANCED_HELP } from './advanced-help';
 import {
   ChartContainer,
   ChartTooltip,
@@ -10,7 +11,6 @@ import {
 } from '@/components/ui/chart';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { AdvancedCardHelp, ADVANCED_HELP } from './advanced-help';
 
 interface DominantFrame {
   name: string;
@@ -88,7 +88,10 @@ export function FrameWarChart({ data }: FrameWarChartProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         {!parsed ? (
-          <div className="flex items-center justify-center h-[260px] text-muted-foreground" role="status">
+          <div
+            className="flex items-center justify-center h-[260px] text-muted-foreground"
+            role="status"
+          >
             데이터 없음
           </div>
         ) : (
@@ -101,15 +104,14 @@ export function FrameWarChart({ data }: FrameWarChartProps) {
             {/* 지배적 프레임 TOP5 BarChart */}
             {dominantChartData.length > 0 && (
               <ChartContainer config={chartConfig} className="aspect-[2/1] w-full">
-                <BarChart data={dominantChartData} layout="vertical" margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
+                <BarChart
+                  data={dominantChartData}
+                  layout="vertical"
+                  margin={{ top: 5, right: 10, left: 10, bottom: 5 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 11 }} />
-                  <YAxis
-                    dataKey="name"
-                    type="category"
-                    width={80}
-                    tick={{ fontSize: 11 }}
-                  />
+                  <YAxis dataKey="name" type="category" width={80} tick={{ fontSize: 11 }} />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Bar dataKey="strength" fill="var(--color-strength)" radius={[0, 4, 4, 0]} />
                 </BarChart>
@@ -121,13 +123,18 @@ export function FrameWarChart({ data }: FrameWarChartProps) {
               <div className="space-y-2">
                 <p className="text-xs font-medium text-muted-foreground">위협 프레임</p>
                 {parsed.threateningFrames.map((frame, i) => (
-                  <div key={i} className="rounded-lg border border-red-500/30 bg-red-500/5 p-3 space-y-1">
+                  <div
+                    key={i}
+                    className="rounded-lg border border-red-500/30 bg-red-500/5 p-3 space-y-1"
+                  >
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-sm font-medium">{frame.name}</span>
                       {getThreatBadge(frame.threatLevel)}
                     </div>
                     <p className="text-xs text-muted-foreground">{frame.description}</p>
-                    <p className="text-xs"><span className="font-medium">대응:</span> {frame.counterStrategy}</p>
+                    <p className="text-xs">
+                      <span className="font-medium">대응:</span> {frame.counterStrategy}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -138,11 +145,16 @@ export function FrameWarChart({ data }: FrameWarChartProps) {
               <div className="space-y-2">
                 <p className="text-xs font-medium text-muted-foreground">반전 가능 프레임</p>
                 {parsed.reversibleFrames.map((frame, i) => (
-                  <div key={i} className="rounded-lg border border-blue-500/30 bg-blue-500/5 p-3 space-y-1">
+                  <div
+                    key={i}
+                    className="rounded-lg border border-blue-500/30 bg-blue-500/5 p-3 space-y-1"
+                  >
                     <span className="text-sm font-medium">{frame.name}</span>
                     <p className="text-xs text-muted-foreground">현재: {frame.currentPerception}</p>
                     <p className="text-xs text-muted-foreground">반전: {frame.potentialShift}</p>
-                    <p className="text-xs"><span className="font-medium">필요 행동:</span> {frame.requiredAction}</p>
+                    <p className="text-xs">
+                      <span className="font-medium">필요 행동:</span> {frame.requiredAction}
+                    </p>
                   </div>
                 ))}
               </div>

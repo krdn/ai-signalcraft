@@ -1,10 +1,10 @@
 'use client';
 
 import { useMemo } from 'react';
+import { CardHelp, DASHBOARD_HELP } from './card-help';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { CardHelp, DASHBOARD_HELP } from './card-help';
 
 interface Opportunity {
   title: string;
@@ -53,7 +53,7 @@ export function OpportunityCards({ opportunities }: OpportunityCardsProps) {
     return [...opportunities].sort(
       (a, b) =>
         (FEASIBILITY_ORDER[a.feasibility.toLowerCase()] ?? 99) -
-        (FEASIBILITY_ORDER[b.feasibility.toLowerCase()] ?? 99)
+        (FEASIBILITY_ORDER[b.feasibility.toLowerCase()] ?? 99),
     );
   }, [opportunities]);
 
@@ -67,16 +67,16 @@ export function OpportunityCards({ opportunities }: OpportunityCardsProps) {
       </CardHeader>
       <CardContent>
         {!opportunities || opportunities.length === 0 ? (
-          <div className="flex items-center justify-center h-[200px] text-muted-foreground" role="status">
+          <div
+            className="flex items-center justify-center h-[200px] text-muted-foreground"
+            role="status"
+          >
             기회 없음
           </div>
         ) : (
           <div className="space-y-3">
             {sortedOpportunities.map((opportunity, index) => (
-              <div
-                key={index}
-                className="rounded-lg border p-3 space-y-2"
-              >
+              <div key={index} className="rounded-lg border p-3 space-y-2">
                 <div className="flex items-center justify-between gap-2">
                   <h4 className="text-lg font-semibold leading-tight">{opportunity.title}</h4>
                   {getFeasibilityBadge(opportunity.feasibility)}
@@ -87,7 +87,10 @@ export function OpportunityCards({ opportunities }: OpportunityCardsProps) {
                     <span className="text-muted-foreground">영향도</span>
                     <span className="font-mono tabular-nums">{opportunity.impact}%</span>
                   </div>
-                  <Progress value={opportunity.impact} className={getImpactColorClass(opportunity.impact)} />
+                  <Progress
+                    value={opportunity.impact}
+                    className={getImpactColorClass(opportunity.impact)}
+                  />
                 </div>
               </div>
             ))}

@@ -32,13 +32,13 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ko" className={cn('font-sans', geist.variable, geistMono.variable)} suppressHydrationWarning>
+    <html
+      lang="ko"
+      className={cn('font-sans', geist.variable, geistMono.variable)}
+      suppressHydrationWarning
+    >
       <head>
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
       </head>

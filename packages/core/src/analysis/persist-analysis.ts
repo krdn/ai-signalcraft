@@ -1,8 +1,8 @@
 // 분석 결과 및 리포트를 DB에 저장
+import { sql, eq } from 'drizzle-orm';
 import { getDb } from '../db';
 import { analysisResults, analysisReports } from '../db/schema/analysis';
 import { collectionJobs } from '../db/schema/collections';
-import { sql, eq } from 'drizzle-orm';
 
 /**
  * 분석 모듈 결과 upsert (jobId + module unique)
@@ -16,8 +16,11 @@ export async function persistAnalysisResult(data: typeof analysisResults.$inferI
 
   // 취소 보호: 파이프라인이 cancelled 상태이면 completed/running 상태 기록 차단
   if (data.jobId && (data.status === 'completed' || data.status === 'running')) {
-    const [job] = await db.select({ status: collectionJobs.status })
-      .from(collectionJobs).where(eq(collectionJobs.id, data.jobId)).limit(1);
+    const [job] = await db
+      .select({ status: collectionJobs.status })
+      .from(collectionJobs)
+      .where(eq(collectionJobs.id, data.jobId))
+      .limit(1);
     if (job?.status === 'cancelled') {
       // 취소된 파이프라인에 completed/running 상태 기록 시도 — 무시
       return null;

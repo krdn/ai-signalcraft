@@ -2,8 +2,11 @@
 
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { trpcClient } from '@/lib/trpc';
 import { useSession } from 'next-auth/react';
+import { toast } from 'sonner';
+import { MoreHorizontal, Shield, User, Trash2 } from 'lucide-react';
+import { format } from 'date-fns';
+import { trpcClient } from '@/lib/trpc';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -29,11 +32,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { toast } from 'sonner';
-import { MoreHorizontal, Shield, User, Trash2 } from 'lucide-react';
-import { format } from 'date-fns';
 
 interface TeamMember {
   id: string;
@@ -58,8 +57,7 @@ export function MemberList({ isAdmin }: MemberListProps) {
   });
 
   const removeMutation = useMutation({
-    mutationFn: (userId: string) =>
-      trpcClient.team.removeMember.mutate({ userId }),
+    mutationFn: (userId: string) => trpcClient.team.removeMember.mutate({ userId }),
     onSuccess: () => {
       toast.success('팀원이 제거되었습니다');
       queryClient.invalidateQueries({ queryKey: [['team', 'getMembers']] });
@@ -93,9 +91,7 @@ export function MemberList({ isAdmin }: MemberListProps) {
 
   if (members.length === 0) {
     return (
-      <div className="flex items-center justify-center py-8 text-muted-foreground">
-        팀원 없음
-      </div>
+      <div className="flex items-center justify-center py-8 text-muted-foreground">팀원 없음</div>
     );
   }
 
@@ -117,21 +113,21 @@ export function MemberList({ isAdmin }: MemberListProps) {
           <TableRow key={member.id}>
             <TableCell className="font-medium">
               {member.name ?? '-'}
-              {isMe(member.id) && (
-                <span className="ml-2 text-xs text-muted-foreground">(나)</span>
-              )}
+              {isMe(member.id) && <span className="ml-2 text-xs text-muted-foreground">(나)</span>}
             </TableCell>
-            <TableCell className="text-muted-foreground">
-              {member.email}
-            </TableCell>
+            <TableCell className="text-muted-foreground">{member.email}</TableCell>
             <TableCell>
-              <Badge
-                variant={member.role === 'admin' ? 'default' : 'secondary'}
-              >
+              <Badge variant={member.role === 'admin' ? 'default' : 'secondary'}>
                 {member.role === 'admin' ? (
-                  <><Shield className="mr-1 h-3 w-3" />관리자</>
+                  <>
+                    <Shield className="mr-1 h-3 w-3" />
+                    관리자
+                  </>
                 ) : (
-                  <><User className="mr-1 h-3 w-3" />멤버</>
+                  <>
+                    <User className="mr-1 h-3 w-3" />
+                    멤버
+                  </>
                 )}
               </Badge>
             </TableCell>
@@ -155,14 +151,11 @@ export function MemberList({ isAdmin }: MemberListProps) {
                         onSelect={() =>
                           updateRoleMutation.mutate({
                             userId: member.id,
-                            role:
-                              member.role === 'admin' ? 'member' : 'admin',
+                            role: member.role === 'admin' ? 'member' : 'admin',
                           })
                         }
                       >
-                        {member.role === 'admin'
-                          ? '멤버로 변경'
-                          : '관리자로 변경'}
+                        {member.role === 'admin' ? '멤버로 변경' : '관리자로 변경'}
                       </DropdownMenuItem>
                       {/* 제거 -- AlertDialog 트리거 */}
                       <DropdownMenuItem
@@ -183,17 +176,14 @@ export function MemberList({ isAdmin }: MemberListProps) {
 
       {/* 제거 확인 AlertDialog */}
       {removingId && (
-        <AlertDialog
-          open={!!removingId}
-          onOpenChange={(open) => !open && setRemovingId(null)}
-        >
+        <AlertDialog open={!!removingId} onOpenChange={(open) => !open && setRemovingId(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>팀원 제거</AlertDialogTitle>
               <AlertDialogDescription>
                 정말{' '}
-                {(members as unknown as TeamMember[]).find((m) => m.id === removingId)
-                  ?.name ?? '이 팀원'}
+                {(members as unknown as TeamMember[]).find((m) => m.id === removingId)?.name ??
+                  '이 팀원'}
                 님을 팀에서 제거하시겠습니까? 이 작업은 되돌릴 수 없습니다.
               </AlertDialogDescription>
             </AlertDialogHeader>

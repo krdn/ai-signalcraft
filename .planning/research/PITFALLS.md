@@ -16,11 +16,13 @@
 **Why it happens:** 네이버는 댓글 데이터를 외부에 제공하는 공식 API를 운영하지 않는다. 개발자들이 비공식 내부 API에 의존하게 되고, 네이버 측 변경 시 수집기가 즉시 고장난다.
 
 **Consequences:**
+
 - 수집 파이프라인 전체가 갑자기 중단됨
 - 기존 수집 로직의 전면 재작성 필요
 - 댓글 없이는 여론 분석의 핵심 데이터가 누락됨
 
 **Prevention:**
+
 - 비공식 API 호출부를 추상화 레이어(adapter pattern)로 격리하여, 엔드포인트 변경 시 어댑터만 수정
 - 수집 실패를 즉시 감지하는 헬스체크 및 알림 시스템 구축
 - 수집 실패 시 fallback으로 headless browser 스크래핑 전환 가능한 구조 설계
@@ -41,11 +43,13 @@
 **Why it happens:** Elon Musk 인수 후 X는 API 접근을 공격적으로 유료화했다. 많은 프로젝트가 "API 있으니까 되겠지"라고 가정하고 시작한 뒤, 실제 비용을 확인하고 좌절한다.
 
 **Consequences:**
+
 - 월 $200으로 시작해도 데이터 부족으로 분석 품질 저하
 - 실질적으로 유의미한 분석에는 Pro($5,000/월) 이상 필요
 - 예산 초과로 X 데이터 수집 자체를 포기하는 경우 다수
 
 **Prevention:**
+
 - 프로젝트 초기에 X API 티어별 월간 비용 시뮬레이션 실행
 - Basic 티어에서 시작하되, 쿼리를 극도로 최적화 (키워드 정제, 날짜 범위 축소)
 - X 데이터를 "필수"가 아닌 "보조" 소스로 포지셔닝 -- 네이버/유튜브/커뮤니티를 주력으로
@@ -64,16 +68,19 @@
 **What goes wrong:** LLM에 한국 여론 데이터를 넣고 "분석해줘"라고 하면, 모델이 (1) 존재하지 않는 트렌드를 만들어내거나(환각), (2) 서구 정치 프레임을 한국 맥락에 잘못 적용하거나(편향), (3) 동일한 프롬프트에 다른 결과를 반환한다(비결정성). 연구에 따르면 LLM은 지식 컷오프 이후 데이터에 대해 57.33%의 환각률을 보이며, 한국 정치 맥락에서 ChatGPT 기반 접근법은 서구 학습 데이터의 양극화 패턴을 과대 적용하는 경향이 있다.
 
 **Why it happens:**
+
 - LLM 학습 데이터에 한국 정치/여론 맥락이 상대적으로 부족
 - 한국의 정당 충성도와 정치 역학은 서구와 구조적으로 다름
 - 모델의 stochastic inference 특성상 동일 입력에 다른 출력 가능
 
 **Consequences:**
+
 - "AI 분석"이라고 했지만 실제로는 허위 인사이트 제공
 - 잘못된 분석에 기반한 전략 수립 시 치명적 의사결정 오류
 - 분석 결과의 재현 불가능으로 신뢰도 상실
 
 **Prevention:**
+
 - 분석 결과에 반드시 원본 데이터 인용(citation) 포함 -- "근거 없는 주장" 차단
 - 동일 데이터에 대해 3회 이상 분석 실행 후 결과 교차 검증 (majority voting)
 - temperature=0 설정으로 비결정성 최소화
@@ -92,6 +99,7 @@
 ### Pitfall 4: 한국어 NLP -- 신조어/슬랭/자모 분리 처리 실패
 
 **What goes wrong:** 한국 온라인 커뮤니티(DC갤러리, 에펨코리아)의 댓글에는 표준 한국어와 완전히 다른 언어 패턴이 존재한다:
+
 - 자모 분리: "ㅋㅋㅋㅋ", "ㅎㅎ", "ㄹㅇ", "ㄱㅇㄷ"
 - 초성 축약: "ㅇㅈ" (인정), "ㄴㄴ" (노노)
 - 신조어/밈: 정치 관련 신조어가 주 단위로 생성/소멸
@@ -103,11 +111,13 @@
 **Why it happens:** 한국어의 교착어(agglutinative) 특성상 형태소 분석이 원래 복잡한데, 인터넷 언어는 이 복잡성을 극대화한다. 형태소 분석기의 사전에 없는 단어가 댓글의 30-50%를 차지할 수 있다.
 
 **Consequences:**
+
 - 감성 분석 정확도 급락 (반어/풍자를 긍정으로 오분류)
 - 키워드 추출에서 핵심 담론 누락
 - 인물명 변형을 감지하지 못해 관련 댓글 수집 누락
 
 **Prevention:**
+
 - LLM 기반 감성 분석 활용 -- 전통 NLP보다 맥락 이해 우수 (단, Pitfall 3의 검증 필수)
 - 인물별 별명/변형 사전(alias dictionary) 구축 및 주기적 업데이트
 - 자모 분리(ㅋㅋㅋ → 웃음/긍정) 전처리 정규화 모듈 구축 (soynlp 활용)
@@ -126,16 +136,19 @@
 **What goes wrong:** 한국에서 웹 크롤링은 명확한 합법/불법 구분이 없는 회색지대다. 대법원 2022도1533 판결에서 크롤링의 형사법적 문제를 다뤘고, 부정경쟁방지법 개정으로 "데이터베이스의 상당 부분을 체계적으로 복제"하는 행위는 위법으로 판단될 수 있다. 한국 저작권법에는 TDM(텍스트-데이터마이닝) 면책 조항이 아직 없다.
 
 **Why it happens:**
+
 - robots.txt 위반 자체는 법적 구속력이 없지만(2025년 지프 데이비스 판결), 이용약관 위반은 민사 책임 가능
 - 댓글/게시글 수집 시 닉네임 등 개인정보 포함 가능 -- 개인정보보호법 적용 영역
 - 2025년 문화체육관광부 AI-저작권 제도개선 협의체 출범했으나 입법 성과 미정
 
 **Consequences:**
+
 - 법적 소송 리스크 (특히 네이버, DC갤러리 등 대형 플랫폼)
 - 개인정보보호법 위반 시 형사처벌 가능
 - 프로젝트 전체 중단 가능성
 
 **Prevention:**
+
 - API 우선 원칙 철저 준수 (YouTube Data API, 네이버 검색 API 등 공식 경로 최대 활용)
 - 스크래핑 시 robots.txt 준수 + 이용약관 검토 문서화
 - 수집 데이터에서 닉네임/프로필 사진 등 개인정보 즉시 익명화/해시 처리
@@ -164,6 +177,7 @@
 **What goes wrong additionally:** Quota 초과 시 다음 날 자정(Pacific Time, 한국시간 오후 5시)까지 모든 API 호출이 차단된다.
 
 **Prevention:**
+
 - search.list 대신 videos.list(1 unit)와 채널 기반 수집 병행
 - 검색 결과를 로컬 캐싱하여 중복 검색 방지
 - 댓글은 배치로 수집하고 일일 quota 예산 시스템 구축
@@ -185,6 +199,7 @@
 **Why it happens:** 댓글 텍스트는 짧지만 건수가 많아 총 토큰이 폭발적으로 증가한다. 각 댓글을 개별 분석하면 API 호출 수도 급증한다.
 
 **Prevention:**
+
 - 댓글을 배치(100~200건 단위)로 묶어 한 번에 분석 -- API 호출 수 절감
 - Prompt Caching 활용 (동일 시스템 프롬프트 반복 시 90% 절감)
 - Batch API 활용 (비동기 처리, 50% 할인)
@@ -207,6 +222,7 @@
 **Why it happens:** 커뮤니티 사이트들은 서버 부하와 데이터 무단 수집에 민감하다. API를 제공하지 않으므로 스크래핑이 유일한 수단이지만, 사이트 측에서 지속적으로 차단 수위를 높인다.
 
 **Prevention:**
+
 - Headless browser(Playwright/Puppeteer) 사용으로 JavaScript 렌더링 대응
 - 요청 간격을 인간 수준으로 조절 (3~10초 랜덤 딜레이)
 - User-Agent 로테이션 및 세션 관리
@@ -229,6 +245,7 @@
 **Why it happens:** 한국 미디어 생태계의 구조적 특성 -- 통신사(연합뉴스, 뉴시스) 기사를 수십 개 언론사가 그대로 전재하는 관행이 있고, 인기 콘텐츠는 커뮤니티 간 빠르게 퍼진다.
 
 **Prevention:**
+
 - 뉴스: 제목+본문 유사도 기반 중복 제거 (MinHash/SimHash)
 - 댓글: (사용자ID or 해시) + 타임스탬프 + 텍스트 해시 복합키로 dedup
 - 수집 시점에 URL/ID 기반 1차 중복 체크, 저장 후 텍스트 유사도 기반 2차 체크
@@ -249,6 +266,7 @@
 **Why it happens:** 한국 플랫폼은 실명제 폐지 이후 익명/닉네임 기반으로 운영되며, 인구통계 정보를 공개하지 않는다.
 
 **Prevention:**
+
 - 플랫폼별 분석으로 대체: DC갤러리 vs 클리앙 vs 네이버 뉴스 댓글의 논조 차이 비교 (플랫폼 특성이 사용자 성향의 프록시)
 - 직접적 인구통계 추정 대신 "담론 클러스터" 분석으로 전환 -- 비슷한 주장을 하는 그룹을 식별
 - 정치성향은 사용 키워드/프레임으로 간접 추정 (단, 한계를 명시)
@@ -273,6 +291,7 @@
 **What goes wrong:** "수동 트리거"라고 해도, 분석 실행에 30분~1시간이 걸릴 수 있다 (수집 + 전처리 + AI 분석). 사용자가 트리거 후 결과를 기다리는 동안 진행 상황을 알 수 없으면 시스템이 멈춘 것으로 오해한다.
 
 **Prevention:**
+
 - 비동기 작업 큐(job queue) 도입, 진행률 표시(단계별 상태)
 - 분석 완료 시 알림 (웹소켓 또는 이메일/슬랙)
 - 예상 소요 시간 표시
@@ -286,6 +305,7 @@
 **What goes wrong:** 온라인 여론 데이터로 추정한 "AI 지지율"을 실제 여론조사 결과처럼 신뢰하면 위험하다. 온라인 댓글 작성자는 전체 유권자의 극소수이며, 특정 성향으로 편향되어 있다.
 
 **Prevention:**
+
 - "AI 추정 지지율"이 아닌 "온라인 여론 지수(sentiment index)"로 명칭 변경
 - 실제 여론조사 데이터와의 상관관계 분석을 통해 보정 계수 개발
 - 대시보드에 "이 수치는 온라인 데이터 기반 추정이며 여론조사와 다를 수 있음" 경고 표시
@@ -299,6 +319,7 @@
 **What goes wrong:** Claude와 GPT는 동일 프롬프트에 다른 품질/형식의 응답을 반환한다. 모델 전환 시 분석 결과의 일관성이 깨지고, 시계열 비교가 불가능해진다.
 
 **Prevention:**
+
 - 모델별 프롬프트 버전 관리 (prompt registry)
 - 출력 형식을 JSON Schema로 강제하여 구조적 일관성 확보
 - 모델 변경 시 동일 데이터에 대한 비교 테스트(evaluation set) 실행
@@ -310,22 +331,24 @@
 
 ## Phase-Specific Warnings
 
-| Phase Topic | Likely Pitfall | Mitigation |
-|-------------|---------------|------------|
-| Phase 0: 기획/설계 | X API 비용 과소 추정 (#2), 법적 리스크 무시 (#5) | API 비용 시뮬레이션, 법률 검토 선행 |
-| Phase 1: 데이터 수집 | 네이버 비공식 API 의존 (#1), 커뮤니티 스크래핑 불안정 (#8), 데이터 중복 (#9), YouTube quota (#6) | 어댑터 패턴, 독립 모듈, dedup 파이프라인 |
-| Phase 2: AI 분석 | LLM 환각/편향 (#3), 한국어 NLP (#4), 토큰 비용 (#7), 집단 분석 근거 부재 (#10) | 검증 파이프라인, 비용 최적화, 요구사항 재정의 |
-| Phase 3: 대시보드/UX | 수동 트리거 UX (#11), 지지율 과신 (#12), 모델 일관성 (#13) | 비동기 큐 + 진행률, 한계 명시, 프롬프트 관리 |
+| Phase Topic          | Likely Pitfall                                                                                   | Mitigation                                    |
+| -------------------- | ------------------------------------------------------------------------------------------------ | --------------------------------------------- |
+| Phase 0: 기획/설계   | X API 비용 과소 추정 (#2), 법적 리스크 무시 (#5)                                                 | API 비용 시뮬레이션, 법률 검토 선행           |
+| Phase 1: 데이터 수집 | 네이버 비공식 API 의존 (#1), 커뮤니티 스크래핑 불안정 (#8), 데이터 중복 (#9), YouTube quota (#6) | 어댑터 패턴, 독립 모듈, dedup 파이프라인      |
+| Phase 2: AI 분석     | LLM 환각/편향 (#3), 한국어 NLP (#4), 토큰 비용 (#7), 집단 분석 근거 부재 (#10)                   | 검증 파이프라인, 비용 최적화, 요구사항 재정의 |
+| Phase 3: 대시보드/UX | 수동 트리거 UX (#11), 지지율 과신 (#12), 모델 일관성 (#13)                                       | 비동기 큐 + 진행률, 한계 명시, 프롬프트 관리  |
 
 ## Sources
 
 ### Legal / Regulatory
+
 - [대법원 2022도1533 판결 - 웹 크롤링 형사법적 문제](https://file.scourt.go.kr/dcboard/1727143941701_111221.pdf)
 - [데이터 크롤링의 한국법상 허용기준](https://www.mondaq.com/copyright/1266554)
 - [무단 크롤링의 법적 함정 - 법률신문](https://www.lawtimes.co.kr/opinion/202909)
 - [불법적인 크롤링 대응방안](https://www.nepla.ai/wiki/it-%EC%A0%95%EB%B3%B4-%EB%B0%A9%EC%86%A1%ED%86%B5%EC%8B%A0/%EC%9D%B8%ED%84%B0%EB%84%B7-%EB%B0%A9%EC%86%A1-%ED%86%B5%EC%8B%A0/%EB%B6%88%EB%B2%95%EC%A0%81%EC%9D%B8-%ED%81%AC%EB%A1%A4%EB%A7%81-%EA%B7%B8-%EB%8C%80%EC%9D%91%EB%B0%A9%EC%95%88%EC%9D%80-w5dnz3d4q8e6)
 
 ### API Pricing & Limits
+
 - [X API Pricing Tiers 2025](https://twitterapi.io/blog/twitter-api-pricing-2025)
 - [X API Pricing 2026 All Tiers](https://zernio.com/blog/twitter-api-pricing)
 - [YouTube Data API Quota Calculator](https://developers.google.com/youtube/v3/determine_quota_cost)
@@ -334,12 +357,14 @@
 - [LLM API Pricing Comparison 2026](https://claude5.ai/news/llm-api-pricing-comparison-2025-complete-guide)
 
 ### LLM Analysis & Korean NLP
+
 - [LLM Sentiment Analysis Uncertainty - Frontiers](https://www.frontiersin.org/journals/artificial-intelligence/articles/10.3389/frai.2025.1609097/full)
 - [LLMs for Public Opinion Analysis](https://www.cogitatiopress.com/mediaandcommunication/article/viewFile/9677/4381)
 - [KoNLPy: Korean NLP in Python](https://konlpy.org/)
 - [soynlp - 한국어 전처리](https://github.com/lovit/soynlp)
 
 ### Scraping & Bot Detection
+
 - [Cloudflare AI Crawler Default Blocking (2025)](https://www.cloudflare.com/press/press-releases/2025/cloudflare-just-changed-how-ai-crawlers-scrape-the-internet-at-large/)
 - [네이버 AI 봇 크롤링 차단](https://www.etnews.com/20250716000347)
 - [네이버 오픈 API 목록](https://naver.github.io/naver-openapi-guide/apilist.html)

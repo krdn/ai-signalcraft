@@ -15,13 +15,13 @@ created: 2026-03-27
 
 ## Test Infrastructure
 
-| Property | Value |
-|----------|-------|
-| **Framework** | vitest 3.2.4 |
-| **Config file** | `packages/collectors/vitest.config.ts` |
-| **Quick run command** | `pnpm --filter @signalcraft/collectors test` |
+| Property               | Value                                        |
+| ---------------------- | -------------------------------------------- |
+| **Framework**          | vitest 3.2.4                                 |
+| **Config file**        | `packages/collectors/vitest.config.ts`       |
+| **Quick run command**  | `pnpm --filter @signalcraft/collectors test` |
 | **Full suite command** | `pnpm --filter @signalcraft/collectors test` |
-| **Estimated runtime** | ~15 seconds |
+| **Estimated runtime**  | ~15 seconds                                  |
 
 ---
 
@@ -36,29 +36,29 @@ created: 2026-03-27
 
 ## Per-Task Verification Map
 
-| Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
-|---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 07-01-01 | 01 | 1 | COL-03 | unit | `pnpm --filter @signalcraft/collectors test` | ✅ | ⬜ pending |
-| 07-01-02 | 01 | 1 | COL-01 | unit | `pnpm --filter @signalcraft/collectors test` | ✅ | ⬜ pending |
-| 07-02-01 | 02 | 1 | COL-01, COL-02 | unit | `pnpm --filter @signalcraft/collectors test` | ✅ | ⬜ pending |
-| 07-03-01 | 03 | 2 | COL-04 | unit | `pnpm --filter @signalcraft/collectors test` | ✅ | ⬜ pending |
-| 07-04-01 | 04 | 2 | COL-05 | integration | `pnpm --filter @signalcraft/collectors test` | ✅ | ⬜ pending |
+| Task ID  | Plan | Wave | Requirement    | Test Type   | Automated Command                            | File Exists | Status     |
+| -------- | ---- | ---- | -------------- | ----------- | -------------------------------------------- | ----------- | ---------- |
+| 07-01-01 | 01   | 1    | COL-03         | unit        | `pnpm --filter @signalcraft/collectors test` | ✅          | ⬜ pending |
+| 07-01-02 | 01   | 1    | COL-01         | unit        | `pnpm --filter @signalcraft/collectors test` | ✅          | ⬜ pending |
+| 07-02-01 | 02   | 1    | COL-01, COL-02 | unit        | `pnpm --filter @signalcraft/collectors test` | ✅          | ⬜ pending |
+| 07-03-01 | 03   | 2    | COL-04         | unit        | `pnpm --filter @signalcraft/collectors test` | ✅          | ⬜ pending |
+| 07-04-01 | 04   | 2    | COL-05         | integration | `pnpm --filter @signalcraft/collectors test` | ✅          | ⬜ pending |
 
-*Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
+_Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky_
 
 ---
 
 ## Wave 0 Requirements
 
-*Existing infrastructure covers all phase requirements — vitest 3.2.4, 49 tests passing.*
+_Existing infrastructure covers all phase requirements — vitest 3.2.4, 49 tests passing._
 
 ---
 
 ## Manual-Only Verifications
 
-| Behavior | Requirement | Why Manual | Test Instructions |
-|----------|-------------|------------|-------------------|
-| 브라우저 차단 감지 동작 | COL-01 | 실제 사이트 차단은 테스트 환경에서 재현 불가 | 각 사이트에서 수동 수집 실행 후 차단 감지 로그 확인 |
+| Behavior                | Requirement | Why Manual                                   | Test Instructions                                   |
+| ----------------------- | ----------- | -------------------------------------------- | --------------------------------------------------- |
+| 브라우저 차단 감지 동작 | COL-01      | 실제 사이트 차단은 테스트 환경에서 재현 불가 | 각 사이트에서 수동 수집 실행 후 차단 감지 로그 확인 |
 
 ---
 

@@ -25,10 +25,10 @@ export class ClienCollector extends CommunityBaseCollector {
 
   protected readonly selectors: SiteSelectors = {
     list: [
-      '.list_item a.subject_fixed',            // 검색 결과 목록
-      '.list_item a[href*="/service/board/"]',  // 검색 결과 게시글 링크
-      '.list-title a.subject_fixed',            // 일반 게시판 목록 (fallback)
-      '.list-row .list-title a',                // 대체 목록 셀렉터
+      '.list_item a.subject_fixed', // 검색 결과 목록
+      '.list_item a[href*="/service/board/"]', // 검색 결과 게시글 링크
+      '.list-title a.subject_fixed', // 일반 게시판 목록 (fallback)
+      '.list-row .list-title a', // 대체 목록 셀렉터
     ],
     content: ['.post_article', '.post_content', '#div_content'],
     comment: ['.comment_view .comment_content', '.comment_row .comment_content'],
@@ -108,11 +108,18 @@ export class ClienCollector extends CommunityBaseCollector {
     const author = $('.post_author .nickname, .post_info .author').first().text().trim() || '익명';
     const dateText = $('.post_author .timestamp, .post_info .date').first().text().trim();
     const publishedAt = parseDateText(dateText);
-    const viewCount = parseInt($('.post_author .view_count, .view_count').text().replace(/[^\d]/g, '') || '0', 10);
-    const likeCount = parseInt($('.post_symph, .like_count').text().replace(/[^\d]/g, '') || '0', 10);
+    const viewCount = parseInt(
+      $('.post_author .view_count, .view_count').text().replace(/[^\d]/g, '') || '0',
+      10,
+    );
+    const likeCount = parseInt(
+      $('.post_symph, .like_count').text().replace(/[^\d]/g, '') || '0',
+      10,
+    );
 
     // 게시판 이름 추출
-    const boardName = $('.board_head h3, .board_name').text().trim() || this.extractBoardFromUrl(url);
+    const boardName =
+      $('.board_head h3, .board_name').text().trim() || this.extractBoardFromUrl(url);
 
     // 게시글 ID 추출
     const sourceId = this.extractSourceId(url);

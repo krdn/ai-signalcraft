@@ -47,11 +47,13 @@ describe('Queue - triggerCollection', () => {
 
   it('sources에 유효하지 않은 소스명은 거부된다', async () => {
     const { CollectionTriggerSchema } = await import('../src/types');
-    expect(() => CollectionTriggerSchema.parse({
-      keyword: '테스트',
-      startDate: '2026-03-17T00:00:00.000Z',
-      endDate: '2026-03-24T00:00:00.000Z',
-      sources: ['invalid-source'],
-    })).toThrow();
+    expect(() =>
+      CollectionTriggerSchema.parse({
+        keyword: '테스트',
+        startDate: '2026-03-17T00:00:00.000Z',
+        endDate: '2026-03-24T00:00:00.000Z',
+        sources: ['invalid-source'],
+      }),
+    ).toThrow();
   });
 });

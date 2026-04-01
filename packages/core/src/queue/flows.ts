@@ -1,7 +1,7 @@
 import { FlowProducer } from 'bullmq';
-import { getRedisConnection } from './connection';
 import type { CollectionTrigger } from '../types';
 import type { ResumeOptions } from '../analysis/pipeline-orchestrator';
+import { getRedisConnection } from './connection';
 
 // FlowProducer를 lazy 초기화 -- import 시 Redis 연결 시도 방지
 let flowProducer: FlowProducer | null = null;
@@ -35,23 +35,47 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
       name: 'normalize-naver',
       queueName: 'pipeline',
       data: { source: 'naver-news', flowId, dbJobId, maxComments: limits.commentsPerItem },
-      children: [{
-        name: 'collect-naver-articles',
-        queueName: 'collectors',
-        data: { ...params, source: 'naver-news', maxItems: limits.naverArticles, maxComments: limits.commentsPerItem, flowId, dbJobId },
-      }],
+      children: [
+        {
+          name: 'collect-naver-articles',
+          queueName: 'collectors',
+          data: {
+            ...params,
+            source: 'naver-news',
+            maxItems: limits.naverArticles,
+            maxComments: limits.commentsPerItem,
+            flowId,
+            dbJobId,
+          },
+        },
+      ],
     });
   }
   if (enabledSources.includes('youtube')) {
     children.push({
       name: 'normalize-youtube',
       queueName: 'pipeline',
-      data: { source: 'youtube', flowId, dbJobId, maxComments: limits.commentsPerItem, startDate: params.startDate, endDate: params.endDate },
-      children: [{
-        name: 'collect-youtube-videos',
-        queueName: 'collectors',
-        data: { ...params, source: 'youtube-videos', maxItems: limits.youtubeVideos, flowId, dbJobId },
-      }],
+      data: {
+        source: 'youtube',
+        flowId,
+        dbJobId,
+        maxComments: limits.commentsPerItem,
+        startDate: params.startDate,
+        endDate: params.endDate,
+      },
+      children: [
+        {
+          name: 'collect-youtube-videos',
+          queueName: 'collectors',
+          data: {
+            ...params,
+            source: 'youtube-videos',
+            maxItems: limits.youtubeVideos,
+            flowId,
+            dbJobId,
+          },
+        },
+      ],
     });
   }
   // 커뮤니티 수집기 -- 각 소스별 독립 실행 (부분 실패 허용)
@@ -60,11 +84,20 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
       name: 'normalize-community-dcinside',
       queueName: 'pipeline',
       data: { source: 'dcinside', flowId, dbJobId },
-      children: [{
-        name: 'collect-dcinside',
-        queueName: 'collectors',
-        data: { ...params, source: 'dcinside', maxItems: limits.communityPosts, maxComments: limits.commentsPerItem, flowId, dbJobId },
-      }],
+      children: [
+        {
+          name: 'collect-dcinside',
+          queueName: 'collectors',
+          data: {
+            ...params,
+            source: 'dcinside',
+            maxItems: limits.communityPosts,
+            maxComments: limits.commentsPerItem,
+            flowId,
+            dbJobId,
+          },
+        },
+      ],
     });
   }
   if (enabledSources.includes('fmkorea')) {
@@ -72,11 +105,20 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
       name: 'normalize-community-fmkorea',
       queueName: 'pipeline',
       data: { source: 'fmkorea', flowId, dbJobId },
-      children: [{
-        name: 'collect-fmkorea',
-        queueName: 'collectors',
-        data: { ...params, source: 'fmkorea', maxItems: limits.communityPosts, maxComments: limits.commentsPerItem, flowId, dbJobId },
-      }],
+      children: [
+        {
+          name: 'collect-fmkorea',
+          queueName: 'collectors',
+          data: {
+            ...params,
+            source: 'fmkorea',
+            maxItems: limits.communityPosts,
+            maxComments: limits.commentsPerItem,
+            flowId,
+            dbJobId,
+          },
+        },
+      ],
     });
   }
   if (enabledSources.includes('clien')) {
@@ -84,11 +126,20 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
       name: 'normalize-community-clien',
       queueName: 'pipeline',
       data: { source: 'clien', flowId, dbJobId },
-      children: [{
-        name: 'collect-clien',
-        queueName: 'collectors',
-        data: { ...params, source: 'clien', maxItems: limits.communityPosts, maxComments: limits.commentsPerItem, flowId, dbJobId },
-      }],
+      children: [
+        {
+          name: 'collect-clien',
+          queueName: 'collectors',
+          data: {
+            ...params,
+            source: 'clien',
+            maxItems: limits.communityPosts,
+            maxComments: limits.commentsPerItem,
+            flowId,
+            dbJobId,
+          },
+        },
+      ],
     });
   }
 
@@ -122,7 +173,11 @@ export async function triggerAnalysis(dbJobId: number, keyword: string) {
 }
 
 // 분석 재실행 트리거 -- 완료된 모듈은 DB에서 로드하고 실패/미실행 모듈만 재실행
-export async function triggerAnalysisResume(dbJobId: number, keyword: string, resumeOptions: ResumeOptions) {
+export async function triggerAnalysisResume(
+  dbJobId: number,
+  keyword: string,
+  resumeOptions: ResumeOptions,
+) {
   const flow = await getFlowProducer().add({
     name: 'run-analysis',
     queueName: 'analysis',

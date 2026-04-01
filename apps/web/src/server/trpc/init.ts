@@ -1,16 +1,14 @@
 import { initTRPC, TRPCError } from '@trpc/server';
-import { auth } from '../auth';
 import { db, teamMembers } from '@ai-signalcraft/core';
 import { eq, and } from 'drizzle-orm';
+import { auth } from '../auth';
 
 export const createTRPCContext = async () => {
   const session = await auth();
   return { session, db };
 };
 
-const t = initTRPC
-  .context<Awaited<ReturnType<typeof createTRPCContext>>>()
-  .create();
+const t = initTRPC.context<Awaited<ReturnType<typeof createTRPCContext>>>().create();
 
 export const router = t.router;
 export const publicProcedure = t.procedure;
@@ -43,11 +41,7 @@ export const adminProcedure = t.procedure.use(async ({ ctx, next }) => {
   const [membership] = await ctx.db
     .select()
     .from(teamMembers)
-    .where(
-      and(
-        eq(teamMembers.userId, ctx.session.user.id!),
-      ),
-    )
+    .where(and(eq(teamMembers.userId, ctx.session.user.id!)))
     .limit(1);
 
   if (!membership || membership.role !== 'admin') {

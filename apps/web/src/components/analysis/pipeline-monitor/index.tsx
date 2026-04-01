@@ -1,23 +1,7 @@
 'use client';
 
-import { useMemo, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { usePipelineStatus } from '@/hooks/use-pipeline-status';
-import { trpcClient } from '@/lib/trpc';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
 // AlertDialogTrigger: Base UI 기반으로 asChild 미지원 — className 직접 적용
 import { toast } from 'sonner';
 import {
@@ -35,7 +19,6 @@ import {
   Zap,
   Brain,
 } from 'lucide-react';
-
 import { PipelineHeader } from './pipeline-header';
 import { LiveStatsBar } from './live-stats-bar';
 import { StageFlow } from './stage-flow';
@@ -43,10 +26,26 @@ import { CollectionLanes } from './collection-lanes';
 import { AnalysisModuleGrid } from './analysis-module-grid';
 import { LiveEventFeed } from './live-event-feed';
 import { MODULE_LABELS } from './constants';
-import { Progress } from '@/components/ui/progress';
 import { PulseRing } from './pulse-ring';
 import { AnimatedNumber } from './animated-number';
 import type { PipelineStatusData, ItemAnalysisData } from './types';
+import { Progress } from '@/components/ui/progress';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { trpcClient } from '@/lib/trpc';
+import { usePipelineStatus } from '@/hooks/use-pipeline-status';
 
 interface PipelineMonitorProps {
   jobId: number | null;
@@ -62,7 +61,8 @@ export function PipelineMonitor({ jobId, onComplete, onRetry }: PipelineMonitorP
   useEffect(() => {
     if (!data) return;
 
-    const analysisAllDone = data.analysisModulesDetailed?.length > 0 &&
+    const analysisAllDone =
+      data.analysisModulesDetailed?.length > 0 &&
       !data.analysisModulesDetailed.some(
         (m: { status: string }) => m.status === 'running' || m.status === 'pending',
       );
@@ -99,7 +99,11 @@ export function PipelineMonitor({ jobId, onComplete, onRetry }: PipelineMonitorP
     costLimitUsd: data.costLimitUsd ?? null,
     skippedModules: data.skippedModules ?? [],
     overallProgress: data.overallProgress ?? 0,
-    tokenUsage: data.tokenUsage ?? { total: { input: 0, output: 0 }, byModule: [], estimatedCostUsd: 0 },
+    tokenUsage: data.tokenUsage ?? {
+      total: { input: 0, output: 0 },
+      byModule: [],
+      estimatedCostUsd: 0,
+    },
     timeline: data.timeline ?? {
       jobCreatedAt: new Date().toISOString(),
       jobUpdatedAt: new Date().toISOString(),
@@ -116,11 +120,20 @@ export function PipelineMonitor({ jobId, onComplete, onRetry }: PipelineMonitorP
   const isPaused = data.status === 'paused';
   const isRunning = data.status === 'running' || data.status === 'pending';
   const isAnalysisRunning = data.pipelineStages?.analysis?.status === 'running';
-  const isInProgress = isRunning || isPaused || isAnalysisRunning || data.pipelineStages?.report?.status === 'running';
+  const isInProgress =
+    isRunning || isPaused || isAnalysisRunning || data.pipelineStages?.report?.status === 'running';
 
   // 수집 합계 (본문/댓글 분리)
-  const sourceValues = Object.values(data.sourceDetails ?? {}) as Array<{ articles?: number; comments?: number; videos?: number; posts?: number }>;
-  const totalArticles = sourceValues.reduce((s, d) => s + (d.articles ?? 0) + (d.videos ?? 0) + (d.posts ?? 0), 0);
+  const sourceValues = Object.values(data.sourceDetails ?? {}) as Array<{
+    articles?: number;
+    comments?: number;
+    videos?: number;
+    posts?: number;
+  }>;
+  const totalArticles = sourceValues.reduce(
+    (s, d) => s + (d.articles ?? 0) + (d.videos ?? 0) + (d.posts ?? 0),
+    0,
+  );
   const totalComments = sourceValues.reduce((s, d) => s + (d.comments ?? 0), 0);
 
   return (
@@ -194,27 +207,31 @@ export function PipelineMonitor({ jobId, onComplete, onRetry }: PipelineMonitorP
         <LiveEventFeed events={statusData.events} />
 
         {/* 완료 상태 — 리포트 생성 + 모든 분석 모듈 완료 시에만 표시 */}
-        {data.hasReport && !data.analysisModulesDetailed?.some(
-          (m: { status: string }) => m.status === 'running' || m.status === 'pending',
-        ) && (
-          <div className="flex items-center justify-between rounded-md bg-green-50 dark:bg-green-950/30 border border-green-500/30 p-3">
-            <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-400">
-              <CheckCircle2 className="h-4 w-4" />
-              <span>분석이 완료되었습니다. 결과를 확인하세요.</span>
+        {data.hasReport &&
+          !data.analysisModulesDetailed?.some(
+            (m: { status: string }) => m.status === 'running' || m.status === 'pending',
+          ) && (
+            <div className="flex items-center justify-between rounded-md bg-green-50 dark:bg-green-950/30 border border-green-500/30 p-3">
+              <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-400">
+                <CheckCircle2 className="h-4 w-4" />
+                <span>분석이 완료되었습니다. 결과를 확인하세요.</span>
+              </div>
+              <Button variant="outline" size="sm" className="gap-1" onClick={() => onComplete?.()}>
+                결과 보기
+                <ChevronRight className="h-3 w-3" />
+              </Button>
             </div>
-            <Button variant="outline" size="sm" className="gap-1" onClick={() => onComplete?.()}>
-              결과 보기
-              <ChevronRight className="h-3 w-3" />
-            </Button>
-          </div>
-        )}
+          )}
 
         {/* 취소 상태 */}
         {isCancelled && (
           <div className="flex items-center justify-between rounded-md bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 p-3">
             <div className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
               <Ban className="h-4 w-4" />
-              <span>파이프라인이 중지되었습니다. {data.hasReport ? '부분 결과를 확인할 수 있습니다.' : ''}</span>
+              <span>
+                파이프라인이 중지되었습니다.{' '}
+                {data.hasReport ? '부분 결과를 확인할 수 있습니다.' : ''}
+              </span>
             </div>
             {data.hasReport && (
               <Button variant="outline" size="sm" className="gap-1" onClick={() => onComplete?.()}>
@@ -300,8 +317,12 @@ function PipelineControls({
   });
 
   const costLimitMutation = useMutation({
-    mutationFn: (limitUsd: number | null) => trpcClient.pipeline.setCostLimit.mutate({ jobId, limitUsd }),
-    onSuccess: (res) => { toast.success(res.message); setShowCostLimit(false); },
+    mutationFn: (limitUsd: number | null) =>
+      trpcClient.pipeline.setCostLimit.mutate({ jobId, limitUsd }),
+    onSuccess: (res) => {
+      toast.success(res.message);
+      setShowCostLimit(false);
+    },
     onError: () => toast.error('비용 한도 설정에 실패했습니다'),
   });
 
@@ -309,13 +330,24 @@ function PipelineControls({
 
   // 모든 분석 모듈 목록
   const ALL_MODULES = [
-    'macro-view', 'segmentation', 'sentiment-framing', 'message-impact',
-    'risk-map', 'opportunity', 'strategy', 'final-summary',
-    'approval-rating', 'frame-war', 'crisis-scenario', 'win-simulation',
+    'macro-view',
+    'segmentation',
+    'sentiment-framing',
+    'message-impact',
+    'risk-map',
+    'opportunity',
+    'strategy',
+    'final-summary',
+    'approval-rating',
+    'frame-war',
+    'crisis-scenario',
+    'win-simulation',
   ];
 
   const toggleSkip = (mod: string) => {
-    setLocalSkipped(prev => prev.includes(mod) ? prev.filter(m => m !== mod) : [...prev, mod]);
+    setLocalSkipped((prev) =>
+      prev.includes(mod) ? prev.filter((m) => m !== mod) : [...prev, mod],
+    );
   };
 
   return (
@@ -349,13 +381,33 @@ function PipelineControls({
 
         {/* 일시정지/재개 */}
         {isPaused ? (
-          <Button variant="outline" size="sm" className="h-7 gap-1 text-xs" onClick={() => resumeMutation.mutate()} disabled={isPending}>
-            {resumeMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Play className="h-3 w-3" />}
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 gap-1 text-xs"
+            onClick={() => resumeMutation.mutate()}
+            disabled={isPending}
+          >
+            {resumeMutation.isPending ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <Play className="h-3 w-3" />
+            )}
             재개
           </Button>
         ) : (
-          <Button variant="outline" size="sm" className="h-7 gap-1 text-xs" onClick={() => pauseMutation.mutate()} disabled={isPending || status !== 'running'}>
-            {pauseMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Pause className="h-3 w-3" />}
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 gap-1 text-xs"
+            onClick={() => pauseMutation.mutate()}
+            disabled={isPending || status !== 'running'}
+          >
+            {pauseMutation.isPending ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <Pause className="h-3 w-3" />
+            )}
             일시정지
           </Button>
         )}
@@ -365,7 +417,10 @@ function PipelineControls({
           variant={showSkip ? 'secondary' : 'outline'}
           size="sm"
           className="h-7 gap-1 text-xs"
-          onClick={() => { setShowSkip(!showSkip); setShowCostLimit(false); }}
+          onClick={() => {
+            setShowSkip(!showSkip);
+            setShowCostLimit(false);
+          }}
         >
           <SkipForward className="h-3 w-3" />
           모듈 스킵
@@ -376,7 +431,10 @@ function PipelineControls({
           variant={showCostLimit ? 'secondary' : 'outline'}
           size="sm"
           className="h-7 gap-1 text-xs"
-          onClick={() => { setShowCostLimit(!showCostLimit); setShowSkip(false); }}
+          onClick={() => {
+            setShowCostLimit(!showCostLimit);
+            setShowSkip(false);
+          }}
         >
           <DollarSign className="h-3 w-3" />
           비용 한도
@@ -389,9 +447,11 @@ function PipelineControls({
       {/* 모듈 스킵 패널 */}
       {showSkip && (
         <div className="rounded-lg border p-3 space-y-2">
-          <p className="text-xs text-muted-foreground">실행하지 않을 모듈을 선택하세요 (이미 완료된 모듈에는 영향 없음)</p>
+          <p className="text-xs text-muted-foreground">
+            실행하지 않을 모듈을 선택하세요 (이미 완료된 모듈에는 영향 없음)
+          </p>
           <div className="grid grid-cols-2 gap-1.5">
-            {ALL_MODULES.map(mod => (
+            {ALL_MODULES.map((mod) => (
               <button
                 key={mod}
                 onClick={() => toggleSkip(mod)}
@@ -407,13 +467,21 @@ function PipelineControls({
             ))}
           </div>
           <div className="flex justify-end gap-2 pt-1">
-            <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setShowSkip(false)}>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => setShowSkip(false)}
+            >
               닫기
             </Button>
             <Button
               size="sm"
               className="h-7 text-xs"
-              onClick={() => { skipMutation.mutate(localSkipped); setShowSkip(false); }}
+              onClick={() => {
+                skipMutation.mutate(localSkipped);
+                setShowSkip(false);
+              }}
               disabled={skipMutation.isPending}
             >
               {skipMutation.isPending && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
@@ -427,8 +495,8 @@ function PipelineControls({
       {showCostLimit && (
         <div className="rounded-lg border p-3 space-y-2">
           <p className="text-xs text-muted-foreground">
-            설정한 금액을 초과하면 남은 분석 모듈이 자동으로 중단됩니다.
-            현재 비용: <span className="font-mono font-medium text-foreground">${currentCost.toFixed(4)}</span>
+            설정한 금액을 초과하면 남은 분석 모듈이 자동으로 중단됩니다. 현재 비용:{' '}
+            <span className="font-mono font-medium text-foreground">${currentCost.toFixed(4)}</span>
           </p>
           <div className="flex gap-2">
             <div className="relative flex-1">
@@ -461,7 +529,10 @@ function PipelineControls({
                 variant="ghost"
                 size="sm"
                 className="h-8 text-xs"
-                onClick={() => { costLimitMutation.mutate(null); setCostInput(''); }}
+                onClick={() => {
+                  costLimitMutation.mutate(null);
+                  setCostInput('');
+                }}
                 disabled={costLimitMutation.isPending}
               >
                 해제
@@ -494,12 +565,10 @@ function ItemAnalysisProgress({
   const isCompleted = stageStatus === 'completed';
   const isFailed = stageStatus === 'failed';
 
-  const articlesPercent = data.articlesTotal > 0
-    ? Math.round((data.articlesAnalyzed / data.articlesTotal) * 100)
-    : 0;
-  const commentsPercent = data.commentsTotal > 0
-    ? Math.round((data.commentsAnalyzed / data.commentsTotal) * 100)
-    : 0;
+  const articlesPercent =
+    data.articlesTotal > 0 ? Math.round((data.articlesAnalyzed / data.articlesTotal) * 100) : 0;
+  const commentsPercent =
+    data.commentsTotal > 0 ? Math.round((data.commentsAnalyzed / data.commentsTotal) * 100) : 0;
 
   const phaseInfo = PHASE_LABELS[data.phase] ?? PHASE_LABELS.pending;
   const PhaseIcon = phaseInfo.icon;
@@ -513,7 +582,9 @@ function ItemAnalysisProgress({
         </div>
         <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
           <PulseRing active={isRunning} color="bg-pink-400">
-            <PhaseIcon className={`h-3 w-3 ${isRunning ? 'text-pink-500' : isCompleted ? 'text-green-500' : isFailed ? 'text-red-500' : 'text-muted-foreground'}`} />
+            <PhaseIcon
+              className={`h-3 w-3 ${isRunning ? 'text-pink-500' : isCompleted ? 'text-green-500' : isFailed ? 'text-red-500' : 'text-muted-foreground'}`}
+            />
           </PulseRing>
           <span className="font-medium">{phaseInfo.label}</span>
           {data.ambiguousCount > 0 && data.phase === 'llm-reanalysis' && (
@@ -552,7 +623,7 @@ function ItemAnalysisProgress({
       {isCompleted && data.ambiguousCount > 0 && (
         <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
           <Zap className="h-3 w-3 text-yellow-500" />
-          <span>경량 {(data.articlesAnalyzed + data.commentsAnalyzed) - data.ambiguousCount}건</span>
+          <span>경량 {data.articlesAnalyzed + data.commentsAnalyzed - data.ambiguousCount}건</span>
           <span>·</span>
           <Brain className="h-3 w-3 text-violet-500" />
           <span>LLM {data.ambiguousCount}건</span>

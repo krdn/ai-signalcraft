@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { ArrowLeft, Play } from 'lucide-react';
 import { TopNav } from '@/components/layout/top-nav';
 import { TabLayout } from '@/components/layout/tab-layout';
 import { TriggerForm } from '@/components/analysis/trigger-form';
@@ -12,7 +13,6 @@ import { DashboardView } from '@/components/dashboard/dashboard-view';
 import { CollectedDataView } from '@/components/dashboard/collected-data-view';
 import { AdvancedView } from '@/components/advanced/advanced-view';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Play } from 'lucide-react';
 
 // 분석 실행 탭 -- 트리거 폼 + 파이프라인 모니터 + 최근 작업
 function AnalysisTab({
@@ -37,8 +37,7 @@ function AnalysisTab({
           className="text-muted-foreground hover:text-foreground"
           onClick={onNewAnalysis}
         >
-          <Play className="h-4 w-4 mr-1" />
-          새 분석 실행
+          <Play className="h-4 w-4 mr-1" />새 분석 실행
         </Button>
       ) : (
         <TriggerForm onJobStarted={onJobStarted} />
@@ -74,8 +73,7 @@ function ResultTabWrapper({
           className="text-muted-foreground hover:text-foreground"
           onClick={onGoToAnalysis}
         >
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          새 분석 실행
+          <ArrowLeft className="h-4 w-4 mr-1" />새 분석 실행
         </Button>
       )}
       {children}
@@ -84,7 +82,13 @@ function ResultTabWrapper({
 }
 
 // 결과 대시보드 탭
-function DashboardTab({ jobId, onGoToAnalysis }: { jobId: number | null; onGoToAnalysis: () => void }) {
+function DashboardTab({
+  jobId,
+  onGoToAnalysis,
+}: {
+  jobId: number | null;
+  onGoToAnalysis: () => void;
+}) {
   return (
     <ResultTabWrapper jobId={jobId} onGoToAnalysis={onGoToAnalysis}>
       <DashboardView jobId={jobId} />
@@ -93,7 +97,13 @@ function DashboardTab({ jobId, onGoToAnalysis }: { jobId: number | null; onGoToA
 }
 
 // AI 리포트 탭
-function ReportTab({ jobId, onGoToAnalysis }: { jobId: number | null; onGoToAnalysis: () => void }) {
+function ReportTab({
+  jobId,
+  onGoToAnalysis,
+}: {
+  jobId: number | null;
+  onGoToAnalysis: () => void;
+}) {
   return (
     <ResultTabWrapper jobId={jobId} onGoToAnalysis={onGoToAnalysis}>
       <ReportView jobId={jobId} />
@@ -107,7 +117,13 @@ function HistoryTabPanel({ onViewResult }: { onViewResult: (jobId: number) => vo
 }
 
 // 수집 데이터 탭
-function CollectedDataTab({ jobId, onGoToAnalysis }: { jobId: number | null; onGoToAnalysis: () => void }) {
+function CollectedDataTab({
+  jobId,
+  onGoToAnalysis,
+}: {
+  jobId: number | null;
+  onGoToAnalysis: () => void;
+}) {
   return (
     <ResultTabWrapper jobId={jobId} onGoToAnalysis={onGoToAnalysis}>
       <CollectedDataView jobId={jobId} />
@@ -116,7 +132,13 @@ function CollectedDataTab({ jobId, onGoToAnalysis }: { jobId: number | null; onG
 }
 
 // 고급 분석 탭
-function AdvancedTab({ jobId, onGoToAnalysis }: { jobId: number | null; onGoToAnalysis: () => void }) {
+function AdvancedTab({
+  jobId,
+  onGoToAnalysis,
+}: {
+  jobId: number | null;
+  onGoToAnalysis: () => void;
+}) {
   return (
     <ResultTabWrapper jobId={jobId} onGoToAnalysis={onGoToAnalysis}>
       <AdvancedView jobId={jobId} />
@@ -160,7 +182,11 @@ export default function Home() {
             onNewAnalysis={handleGoToAnalysis}
           />,
           <DashboardTab key="dashboard" jobId={activeJobId} onGoToAnalysis={handleGoToAnalysis} />,
-          <CollectedDataTab key="collected" jobId={activeJobId} onGoToAnalysis={handleGoToAnalysis} />,
+          <CollectedDataTab
+            key="collected"
+            jobId={activeJobId}
+            onGoToAnalysis={handleGoToAnalysis}
+          />,
           <ReportTab key="report" jobId={activeJobId} onGoToAnalysis={handleGoToAnalysis} />,
           <HistoryTabPanel key="history" onViewResult={handleSelectJob} />,
           <AdvancedTab key="advanced" jobId={activeJobId} onGoToAnalysis={handleGoToAnalysis} />,

@@ -22,10 +22,7 @@ const providers = [
         .where(eq(users.email, credentials.email as string))
         .limit(1);
       if (!user[0]?.hashedPassword) return null;
-      const valid = await bcrypt.compare(
-        credentials.password as string,
-        user[0].hashedPassword,
-      );
+      const valid = await bcrypt.compare(credentials.password as string, user[0].hashedPassword);
       if (!valid) return null;
       return {
         id: user[0].id,

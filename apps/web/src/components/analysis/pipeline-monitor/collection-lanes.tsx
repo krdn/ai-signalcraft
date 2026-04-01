@@ -1,32 +1,15 @@
 'use client';
 
-import { memo, useState } from 'react';
+import { memo } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
-import {
-  CheckCircle2,
-  Loader2,
-  XCircle,
-  Clock,
-  ChevronDown,
-  Info,
-  Ban,
-} from 'lucide-react';
+import { CheckCircle2, Loader2, XCircle, Clock, ChevronDown, Info, Ban } from 'lucide-react';
 import { AnimatedNumber } from './animated-number';
 import { ItemDetailsSection } from './collection-tab';
 import { SOURCE_HELP } from './constants';
 import { calcRate } from './utils';
-import type { PipelineStatusData, SourceDetail } from './types';
+import type { SourceDetail } from './types';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface CollectionLanesProps {
   sourceDetails: Record<string, SourceDetail>;
@@ -73,11 +56,7 @@ export const CollectionLanes = memo(function CollectionLanes({
   const errors = errorDetails as Record<string, string> | null;
 
   if (sources.length === 0) {
-    return (
-      <div className="text-sm text-muted-foreground py-2 text-center">
-        수집 대기 중...
-      </div>
-    );
+    return <div className="text-sm text-muted-foreground py-2 text-center">수집 대기 중...</div>;
   }
 
   // 전체 최대 건수 (비율 바 기준)
@@ -91,7 +70,8 @@ export const CollectionLanes = memo(function CollectionLanes({
         {sources.map(([key, detail]) => {
           const help = SOURCE_HELP[key];
           const isRunning = detail.status === 'running';
-          const hasDetails = (detail.articleDetails?.length ?? 0) > 0 || (detail.videoDetails?.length ?? 0) > 0;
+          const hasDetails =
+            (detail.articleDetails?.length ?? 0) > 0 || (detail.videoDetails?.length ?? 0) > 0;
           const error = errors?.[key];
           const barPercent = Math.max((detail.count / maxCount) * 100, 3);
 
@@ -105,9 +85,13 @@ export const CollectionLanes = memo(function CollectionLanes({
             >
               <Collapsible>
                 {/* 메인 레인 */}
-                <div className={`rounded-md border p-2.5 space-y-1.5 ${
-                  detail.status === 'failed' ? 'border-red-500/30 bg-red-50/50 dark:bg-red-950/20' : ''
-                }`}>
+                <div
+                  className={`rounded-md border p-2.5 space-y-1.5 ${
+                    detail.status === 'failed'
+                      ? 'border-red-500/30 bg-red-50/50 dark:bg-red-950/20'
+                      : ''
+                  }`}
+                >
                   <div className="flex items-center gap-2">
                     {sourceIcon(detail.status)}
 
@@ -165,10 +149,7 @@ export const CollectionLanes = memo(function CollectionLanes({
                         <>
                           <span className="text-muted-foreground/40">·</span>
                           <span className="text-xs font-medium">
-                            <AnimatedNumber
-                              value={detail.comments}
-                              className="tabular-nums"
-                            />
+                            <AnimatedNumber value={detail.comments} className="tabular-nums" />
                             <span className="text-[10px] text-muted-foreground ml-0.5">댓글</span>
                           </span>
                         </>
@@ -193,7 +174,10 @@ export const CollectionLanes = memo(function CollectionLanes({
 
                   {/* 에러 메시지 */}
                   {detail.status === 'failed' && error && (
-                    <p className="text-[10px] text-red-600 dark:text-red-400 ml-6 truncate" title={error}>
+                    <p
+                      className="text-[10px] text-red-600 dark:text-red-400 ml-6 truncate"
+                      title={error}
+                    >
                       {error}
                     </p>
                   )}
@@ -223,12 +207,16 @@ export const CollectionLanes = memo(function CollectionLanes({
         return (
           <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1">
             <span>
-              {sources.filter(([, s]) => s.status === 'completed').length}/{sources.length} 소스 완료
+              {sources.filter(([, s]) => s.status === 'completed').length}/{sources.length} 소스
+              완료
             </span>
             <span className="font-mono">
               본문 <AnimatedNumber value={totalArts} className="font-mono font-medium" />건
               {totalCmts > 0 && (
-                <> · 댓글 <AnimatedNumber value={totalCmts} className="font-mono font-medium" />건</>
+                <>
+                  {' '}
+                  · 댓글 <AnimatedNumber value={totalCmts} className="font-mono font-medium" />건
+                </>
               )}
             </span>
           </div>

@@ -39,11 +39,15 @@ const mockInput: AnalysisInput = {
 
 const mockPriorResults: Record<string, unknown> = {
   'macro-view': { overallDirection: 'positive', summary: '전반적으로 긍정적' },
-  'segmentation': { platformSegments: [] },
+  segmentation: { platformSegments: [] },
   'sentiment-framing': { sentimentRatio: { positive: 0.6, negative: 0.3, neutral: 0.1 } },
   'message-impact': { successMessages: ['좋은 메시지'] },
   'risk-map': { topRisks: [], overallRiskLevel: 'medium', riskTrend: 'stable' },
-  'opportunity': { positiveAssets: [], untappedAreas: [], priorityOpportunity: { title: 'test', reason: 'test', actionPlan: 'test' } },
+  opportunity: {
+    positiveAssets: [],
+    untappedAreas: [],
+    priorityOpportunity: { title: 'test', reason: 'test', actionPlan: 'test' },
+  },
 };
 
 describe('Stage 2 분석 모듈', () => {
@@ -155,9 +159,7 @@ describe('Stage 2 Zod 스키마', () => {
           recommendation: '추천',
         },
       ],
-      untappedAreas: [
-        { area: '미활용 영역', potential: '잠재력', approach: '접근법' },
-      ],
+      untappedAreas: [{ area: '미활용 영역', potential: '잠재력', approach: '접근법' }],
       priorityOpportunity: {
         title: '최우선 기회',
         reason: '이유',

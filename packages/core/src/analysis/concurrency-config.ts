@@ -137,7 +137,8 @@ export async function upsertConcurrencyConfig(
       activePreset: merged.activePreset,
     });
   } else {
-    await db.update(concurrencySettings)
+    await db
+      .update(concurrencySettings)
       .set({
         providerConcurrency: merged.providerConcurrency,
         apiConcurrency: merged.apiConcurrency,
@@ -154,7 +155,7 @@ export async function upsertConcurrencyConfig(
 
 /** 프리셋 적용 */
 export async function applyConcurrencyPreset(presetId: string): Promise<ConcurrencyConfig> {
-  const preset = CONCURRENCY_PRESETS.find(p => p.id === presetId);
+  const preset = CONCURRENCY_PRESETS.find((p) => p.id === presetId);
   if (!preset) throw new Error(`프리셋을 찾을 수 없습니다: ${presetId}`);
 
   return upsertConcurrencyConfig({
