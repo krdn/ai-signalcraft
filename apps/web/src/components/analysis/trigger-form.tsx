@@ -5,7 +5,6 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Loader2, ChevronDown } from 'lucide-react';
 import { format, subDays, addDays, startOfWeek, endOfWeek, subWeeks } from 'date-fns';
-import { OPTIMIZATION_PRESETS, type OptimizationPreset } from '@ai-signalcraft/core';
 import { TriggerFormHelp } from './trigger-form-help';
 import { trpcClient } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
@@ -15,6 +14,34 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+
+type OptimizationPreset = 'none' | 'light' | 'standard' | 'aggressive';
+
+const OPTIMIZATION_PRESETS: Record<
+  OptimizationPreset,
+  { label: string; description: string; estimatedReduction: string }
+> = {
+  none: {
+    label: '없음',
+    description: '전처리 없이 전체 데이터를 분석합니다.',
+    estimatedReduction: '0%',
+  },
+  light: {
+    label: '경량',
+    description: '거의 동일한 중복 기사를 제거합니다.',
+    estimatedReduction: '~30%',
+  },
+  standard: {
+    label: '표준',
+    description: '유사 기사 중복 제거 + 분석용 댓글 상위 100건으로 압축합니다.',
+    estimatedReduction: '~60%',
+  },
+  aggressive: {
+    label: '강력',
+    description: '클러스터링으로 대표 기사만 분석, 댓글 상위 50건으로 압축합니다.',
+    estimatedReduction: '~80%',
+  },
+};
 
 const DATE_PRESETS = [
   { label: '최근 7일', getDates: () => ({ start: subDays(new Date(), 7), end: new Date() }) },
