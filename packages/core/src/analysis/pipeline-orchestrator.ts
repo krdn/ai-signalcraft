@@ -22,6 +22,7 @@ import {
 import { runModuleMapReduce } from './map-reduce';
 import { finalSummaryModule } from './modules';
 import { loadAnalysisInput } from './data-loader';
+import { preprocessAnalysisInput, type OptimizationPreset } from './preprocessing';
 import { persistAnalysisResult } from './persist-analysis';
 import { analyzeItems } from './item-analyzer';
 import type { AnalysisModule, AnalysisModuleResult, AnalysisInput } from './types';
@@ -182,7 +183,7 @@ export async function runAnalysisPipeline(
   cancelledByUser?: boolean;
   costLimitExceeded?: boolean;
 }> {
-  const input = await loadAnalysisInput(jobId);
+  let input = await loadAnalysisInput(jobId);
 
   // 체크포인트 복원: DB에서 이미 완료된 모듈 결과를 로드
   const loaded = await loadCompletedResults(jobId, options?.retryModules);
@@ -324,6 +325,40 @@ export async function runAnalysisPipeline(
   } else {
     await updateJobProgress(jobId, {
       'item-analysis': { status: 'skipped' },
+    }).catch(() => {});
+  }
+
+  // 토큰 최적화 전처리
+  const tokenOptimization = (jobRow?.options?.tokenOptimization ?? 'none') as OptimizationPreset;
+  if (tokenOptimization !== 'none') {
+    try {
+      await updateJobProgress(jobId, {
+        'token-optimization': { status: 'running', preset: tokenOptimization },
+      }).catch(() => {});
+      console.log(`[pipeline] 토큰 최적화 시작: preset=${tokenOptimization}, job=${jobId}`);
+
+      const preprocessed = await preprocessAnalysisInput(input, tokenOptimization, jobId);
+      input = preprocessed.input;
+
+      await updateJobProgress(jobId, {
+        'token-optimization': {
+          status: 'completed',
+          phase: 'preprocessing',
+          ...preprocessed.stats,
+        },
+      }).catch(() => {});
+      console.log(
+        `[pipeline] 토큰 최적화 완료: 기사 ${preprocessed.stats.originalArticles}→${preprocessed.stats.optimizedArticles}, 댓글 ${preprocessed.stats.originalComments}→${preprocessed.stats.optimizedComments} (${preprocessed.stats.reductionPercent}%↓)`,
+      );
+    } catch (error) {
+      console.error(`[pipeline] 토큰 최적화 실패 (원본 데이터로 계속 진행):`, error);
+      await updateJobProgress(jobId, {
+        'token-optimization': { status: 'failed', phase: 'error' },
+      }).catch(() => {});
+    }
+  } else {
+    await updateJobProgress(jobId, {
+      'token-optimization': { status: 'skipped' },
     }).catch(() => {});
   }
 
