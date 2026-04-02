@@ -12,6 +12,7 @@ import {
   Beaker,
   FileText,
   Ban,
+  Zap,
 } from 'lucide-react';
 import { PulseRing } from './pulse-ring';
 import { STAGE_HELP, PIPELINE_STEPS } from './constants';
@@ -29,6 +30,7 @@ interface StageFlowProps {
 const STAGE_ICONS: Record<string, typeof Download> = {
   collection: Download,
   normalization: Layers,
+  'token-optimization': Zap,
   'item-analysis': Heart,
   analysis: Beaker,
   report: FileText,

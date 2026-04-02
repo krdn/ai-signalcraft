@@ -271,6 +271,7 @@ export function estimateCostUsd(inputTokens: number, outputTokens: number, model
 export const PIPELINE_STEPS = [
   { key: 'collection', label: '수집' },
   { key: 'normalization', label: '정규화' },
+  { key: 'token-optimization', label: '토큰 최적화' },
   { key: 'item-analysis', label: '개별 감정' },
   { key: 'analysis', label: 'AI 분석' },
   { key: 'report', label: '리포트' },

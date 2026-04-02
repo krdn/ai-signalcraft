@@ -142,6 +142,22 @@ export async function getPipelineStatus(jobId: number) {
             ? ('cancelled' as const)
             : ('pending' as const),
     },
+    'token-optimization': {
+      status: collectionFailed
+        ? ('skipped' as const)
+        : (() => {
+            const tokenOptProgress = (job.progress as Record<string, any> | null)?.[
+              'token-optimization'
+            ] as { status: string } | undefined;
+            if (!tokenOptProgress || tokenOptProgress.status === 'skipped')
+              return 'skipped' as const;
+            if (tokenOptProgress.status === 'completed') return 'completed' as const;
+            if (tokenOptProgress.status === 'failed') return 'failed' as const;
+            if (tokenOptProgress.status === 'running') return 'running' as const;
+            if (isCancelled) return 'cancelled' as const;
+            return 'pending' as const;
+          })(),
+    },
     'item-analysis': {
       status: collectionFailed
         ? ('skipped' as const)
