@@ -39,7 +39,8 @@ export const collectionJobs = pgTable('collection_jobs', {
   costLimitUsd: real('cost_limit_usd'), // 비용 한도 (USD) — 초과 시 자동 중지
   skippedModules: jsonb('skipped_modules').$type<string[]>(), // 스킵할 분석 모듈 목록
   options: jsonb('options').$type<{
-    enableItemAnalysis?: boolean; // 개별 기사/댓글 감정 분석 활성화
+    enableItemAnalysis?: boolean;
+    tokenOptimization?: 'none' | 'light' | 'standard' | 'aggressive';
   }>(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),

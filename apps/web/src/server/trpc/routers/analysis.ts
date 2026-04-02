@@ -23,6 +23,7 @@ export const analysisRouter = router({
         options: z
           .object({
             enableItemAnalysis: z.boolean().optional(),
+            tokenOptimization: z.enum(['none', 'light', 'standard', 'aggressive']).optional(),
           })
           .optional(),
         limits: z
