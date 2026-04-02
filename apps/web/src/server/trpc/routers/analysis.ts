@@ -41,7 +41,7 @@ export const analysisRouter = router({
       // 취소 후 active 작업이 concurrency 슬롯을 점유하면 새 작업이 "수집 대기..." 상태로 멈춤
       try {
         const cleaned = await cleanupBeforeNewPipeline();
-        if (cleaned > 0) console.log(`[trigger] 이전 잔여 작업 ${cleaned}개 정리 완료`);
+        if (cleaned > 0) console.warn(`[trigger] 이전 잔여 작업 ${cleaned}개 정리 완료`);
       } catch {
         // 정리 실패해도 새 작업 실행은 진행
       }
