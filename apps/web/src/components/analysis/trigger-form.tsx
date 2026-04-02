@@ -5,6 +5,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Loader2, ChevronDown } from 'lucide-react';
 import { format, subDays, addDays, startOfWeek, endOfWeek, subWeeks } from 'date-fns';
+import { OPTIMIZATION_PRESETS, type OptimizationPreset } from '@ai-signalcraft/core';
 import { TriggerFormHelp } from './trigger-form-help';
 import { trpcClient } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
@@ -82,6 +83,7 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
   const [maxYoutubeVideos, setMaxYoutubeVideos] = useState(50);
   const [maxCommunityPosts, setMaxCommunityPosts] = useState(50);
   const [maxCommentsPerItem, setMaxCommentsPerItem] = useState(500);
+  const [optimizationPreset, setOptimizationPreset] = useState<OptimizationPreset>('none');
 
   // 클라이언트 마운트 후 실제 날짜 설정 (hydration mismatch 방지)
   useEffect(() => {
@@ -114,7 +116,7 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
       sources: SourceId[];
       startDate: string;
       endDate: string;
-      options?: { enableItemAnalysis?: boolean };
+      options?: { enableItemAnalysis?: boolean; tokenOptimization?: OptimizationPreset };
       limits?: {
         naverArticles: number;
         youtubeVideos: number;
@@ -154,7 +156,13 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
       sources,
       startDate: resolvedStart.toISOString(),
       endDate: resolvedEnd.toISOString(),
-      options: enableItemAnalysis ? { enableItemAnalysis: true } : undefined,
+      options:
+        enableItemAnalysis || optimizationPreset !== 'none'
+          ? {
+              ...(enableItemAnalysis && { enableItemAnalysis: true }),
+              ...(optimizationPreset !== 'none' && { tokenOptimization: optimizationPreset }),
+            }
+          : undefined,
       limits: {
         naverArticles: maxNaverArticles,
         youtubeVideos: maxYoutubeVideos,
@@ -348,7 +356,23 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
           {/* 수집 한도 설정 */}
           <Collapsible open={isLimitsOpen} onOpenChange={setIsLimitsOpen}>
             <CollapsibleTrigger className="w-full flex items-center justify-between rounded-lg border px-3 py-2 text-sm hover:bg-accent transition-colors cursor-pointer">
-              <span className="font-medium">수집 한도 설정</span>
+              <div className="flex items-center gap-2">
+                <span className="font-medium">수집 한도 & 토큰 최적화</span>
+                {optimizationPreset !== 'none' && (
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                      optimizationPreset === 'light'
+                        ? 'bg-green-500/15 text-green-500'
+                        : optimizationPreset === 'standard'
+                          ? 'bg-yellow-500/15 text-yellow-500'
+                          : 'bg-orange-500/15 text-orange-500'
+                    }`}
+                  >
+                    {OPTIMIZATION_PRESETS[optimizationPreset].label}{' '}
+                    {OPTIMIZATION_PRESETS[optimizationPreset].estimatedReduction}↓
+                  </span>
+                )}
+              </div>
               <ChevronDown
                 className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isLimitsOpen ? 'rotate-180' : ''}`}
               />
@@ -419,6 +443,74 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
                       disabled={triggerMutation.isPending}
                     />
                   </div>
+                </div>
+
+                {/* 구분선 */}
+                <div className="border-t my-1" />
+
+                {/* 토큰 최적화 프리셋 */}
+                <div className="space-y-2">
+                  <Label className="text-xs">토큰 최적화</Label>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {(
+                      Object.entries(OPTIMIZATION_PRESETS) as [
+                        OptimizationPreset,
+                        (typeof OPTIMIZATION_PRESETS)[OptimizationPreset],
+                      ][]
+                    ).map(([key, preset]) => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setOptimizationPreset(key)}
+                        disabled={triggerMutation.isPending}
+                        className={`rounded-md border p-2 text-center transition-colors ${
+                          optimizationPreset === key
+                            ? key === 'none'
+                              ? 'border-zinc-500 bg-zinc-500/10'
+                              : key === 'light'
+                                ? 'border-green-500 bg-green-500/10'
+                                : key === 'standard'
+                                  ? 'border-yellow-500 bg-yellow-500/10'
+                                  : 'border-orange-500 bg-orange-500/10'
+                            : 'border-border hover:bg-accent'
+                        }`}
+                      >
+                        <div
+                          className={`text-xs font-medium ${
+                            optimizationPreset === key
+                              ? key === 'none'
+                                ? 'text-zinc-400'
+                                : key === 'light'
+                                  ? 'text-green-500'
+                                  : key === 'standard'
+                                    ? 'text-yellow-500'
+                                    : 'text-orange-500'
+                              : 'text-muted-foreground'
+                          }`}
+                        >
+                          {preset.label}
+                        </div>
+                        {key !== 'none' && (
+                          <div className="text-[10px] text-muted-foreground mt-0.5">
+                            {preset.estimatedReduction}↓
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  {optimizationPreset !== 'none' && (
+                    <div
+                      className={`rounded-md p-2 text-xs border-l-2 ${
+                        optimizationPreset === 'light'
+                          ? 'border-l-green-500 bg-green-500/5 text-green-200'
+                          : optimizationPreset === 'standard'
+                            ? 'border-l-yellow-500 bg-yellow-500/5 text-yellow-200'
+                            : 'border-l-orange-500 bg-orange-500/5 text-orange-200'
+                      }`}
+                    >
+                      {OPTIMIZATION_PRESETS[optimizationPreset].description}
+                    </div>
+                  )}
                 </div>
               </div>
             </CollapsibleContent>
