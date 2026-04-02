@@ -2,12 +2,14 @@ import { generateText, generateObject } from 'ai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createOpenAI } from '@ai-sdk/openai';
+import { createGeminiProvider } from 'ai-sdk-provider-gemini-cli';
 import { z } from 'zod';
 
 export type AIProvider =
   | 'anthropic'
   | 'openai'
   | 'gemini'
+  | 'gemini-cli'
   | 'ollama'
   | 'deepseek'
   | 'xai'
@@ -58,6 +60,13 @@ export function getModel(provider: AIProvider, model?: string, baseUrl?: string,
       const client = createGoogleGenerativeAI({
         ...(apiKey ? { apiKey } : {}),
         ...(baseUrl ? { baseURL: baseUrl } : {}),
+      });
+      return client(modelName);
+    }
+    case 'gemini-cli': {
+      // Gemini CLI OAuth 인증 — API 키 불필요 (무료 쿼터 사용)
+      const client = createGeminiProvider({
+        authType: 'oauth-personal',
       });
       return client(modelName);
     }
@@ -121,11 +130,16 @@ export async function analyzeStructured<T>(
   const model = getModel(provider, options.model, options.baseUrl, options.apiKey);
   const abortSignal = options.abortSignal ?? AbortSignal.timeout(options.timeoutMs ?? 300_000);
 
+  // Custom/Ollama 등 OpenAI 호환 프로바이더는 tool use 기반 structured output이
+  // 불안정할 수 있으므로 JSON 모드 사용
+  const needsJsonMode = ['custom', 'ollama', 'openrouter'].includes(provider);
+
   const result = await generateObject({
     model,
     ...(options.systemPrompt ? { system: options.systemPrompt } : {}),
     prompt,
     schema,
+    ...(needsJsonMode ? { mode: 'json' as const } : {}),
     maxOutputTokens: options.maxOutputTokens ?? 4096,
     abortSignal,
   });

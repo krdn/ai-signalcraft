@@ -80,6 +80,47 @@ export const MODEL_SCENARIO_PRESETS: ModelScenarioPreset[] = [
       'win-simulation': { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
     },
   },
+  {
+    id: 'scenario-d',
+    name: 'D: Gemini CLI 무료',
+    description:
+      'Gemini CLI OAuth로 Stage 1~2 무료 처리, 핵심 전략만 Anthropic. API 비용 ~80% 절감.',
+    estimatedCost: '~$0.15/실행',
+    modules: {
+      'macro-view': { provider: 'gemini-cli', model: 'gemini-2.5-pro' },
+      segmentation: { provider: 'gemini-cli', model: 'gemini-2.5-flash' },
+      'sentiment-framing': { provider: 'gemini-cli', model: 'gemini-2.5-flash' },
+      'message-impact': { provider: 'gemini-cli', model: 'gemini-2.5-flash' },
+      'risk-map': { provider: 'gemini-cli', model: 'gemini-2.5-pro' },
+      opportunity: { provider: 'gemini-cli', model: 'gemini-2.5-pro' },
+      strategy: { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
+      'final-summary': { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
+      'approval-rating': { provider: 'gemini-cli', model: 'gemini-2.5-pro' },
+      'frame-war': { provider: 'gemini-cli', model: 'gemini-2.5-pro' },
+      'crisis-scenario': { provider: 'gemini-cli', model: 'gemini-2.5-flash' },
+      'win-simulation': { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
+    },
+  },
+  {
+    id: 'scenario-e',
+    name: 'E: 완전 무료 (Gemini CLI Only)',
+    description: 'Gemini CLI로 전체 모듈 처리. API 비용 $0. 일일 1,000건 쿼터 제한 주의.',
+    estimatedCost: '$0.00/실행',
+    modules: {
+      'macro-view': { provider: 'gemini-cli', model: 'gemini-2.5-pro' },
+      segmentation: { provider: 'gemini-cli', model: 'gemini-2.5-flash' },
+      'sentiment-framing': { provider: 'gemini-cli', model: 'gemini-2.5-flash' },
+      'message-impact': { provider: 'gemini-cli', model: 'gemini-2.5-flash' },
+      'risk-map': { provider: 'gemini-cli', model: 'gemini-2.5-pro' },
+      opportunity: { provider: 'gemini-cli', model: 'gemini-2.5-pro' },
+      strategy: { provider: 'gemini-cli', model: 'gemini-2.5-pro' },
+      'final-summary': { provider: 'gemini-cli', model: 'gemini-2.5-pro' },
+      'approval-rating': { provider: 'gemini-cli', model: 'gemini-2.5-pro' },
+      'frame-war': { provider: 'gemini-cli', model: 'gemini-2.5-pro' },
+      'crisis-scenario': { provider: 'gemini-cli', model: 'gemini-2.5-flash' },
+      'win-simulation': { provider: 'gemini-cli', model: 'gemini-2.5-pro' },
+    },
+  },
 ];
 
 /**
@@ -108,23 +149,36 @@ export async function applyModelScenario(
  */
 async function getProviderKeyInfo(
   providerType: string,
+  targetModel?: string,
 ): Promise<{ selectedModel: string | null; baseUrl: string | null; apiKey: string | null } | null> {
   const db = getDb();
-  const [row] = await db
+  const rows = await db
     .select({
       selectedModel: providerKeys.selectedModel,
       baseUrl: providerKeys.baseUrl,
       encryptedKey: providerKeys.encryptedKey,
+      availableModels: providerKeys.availableModels,
     })
     .from(providerKeys)
-    .where(and(eq(providerKeys.providerType, providerType), eq(providerKeys.isActive, true)))
-    .limit(1);
+    .where(and(eq(providerKeys.providerType, providerType), eq(providerKeys.isActive, true)));
 
-  if (!row) return null;
+  if (rows.length === 0) return null;
+
+  // 같은 providerType의 키가 여러 개일 때, targetModel을 제공할 수 있는 키를 우선 선택
+  let bestRow = rows[0];
+  if (targetModel && rows.length > 1) {
+    const match = rows.find((r) => {
+      if (r.selectedModel === targetModel) return true;
+      const models = r.availableModels as string[] | null;
+      return models?.includes(targetModel) ?? false;
+    });
+    if (match) bestRow = match;
+  }
+
   return {
-    selectedModel: row.selectedModel,
-    baseUrl: row.baseUrl,
-    apiKey: row.encryptedKey ? decrypt(row.encryptedKey) : null,
+    selectedModel: bestRow.selectedModel,
+    baseUrl: bestRow.baseUrl,
+    apiKey: bestRow.encryptedKey ? decrypt(bestRow.encryptedKey) : null,
   };
 }
 
@@ -147,7 +201,7 @@ export async function getModuleModelConfig(moduleName: string): Promise<ModuleMo
     .limit(1);
 
   if (dbSetting) {
-    const keyInfo = await getProviderKeyInfo(dbSetting.provider);
+    const keyInfo = await getProviderKeyInfo(dbSetting.provider, dbSetting.model);
     const config = {
       provider: dbSetting.provider as AIProvider,
       model: dbSetting.model,
