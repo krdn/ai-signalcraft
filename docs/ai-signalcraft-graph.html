@@ -1,0 +1,1611 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI SignalCraft — 아키텍처 시각화</title>
+<style>
+:root {
+  --bg: #0a0e1a;
+  --surface: #131829;
+  --surface2: #1c2340;
+  --surface3: #252d4a;
+  --border: #2a3358;
+  --border-hover: #4a5580;
+  --text: #e2e8f0;
+  --text-dim: #8892b0;
+  --text-muted: #5a6380;
+  --accent: #38bdf8;
+  --accent2: #818cf8;
+  --purple: #a78bfa;
+  --purple-bg: rgba(167,139,250,0.08);
+  --green: #4ade80;
+  --green-bg: rgba(74,222,128,0.08);
+  --yellow: #fbbf24;
+  --yellow-bg: rgba(251,191,36,0.08);
+  --orange: #fb923c;
+  --orange-bg: rgba(251,146,60,0.08);
+  --pink: #f472b6;
+  --pink-bg: rgba(244,114,182,0.08);
+  --red: #f87171;
+  --red-bg: rgba(248,113,113,0.08);
+  --cyan: #22d3ee;
+  --cyan-bg: rgba(34,211,238,0.08);
+  --blue: #60a5fa;
+  --blue-bg: rgba(96,165,250,0.08);
+  --code-bg: #161625;
+  --code-header: #1e1e35;
+  --code-border: #2a2a40;
+}
+[data-theme="light"] {
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --surface2: #f1f5f9;
+  --surface3: #e2e8f0;
+  --border: #cbd5e1;
+  --border-hover: #94a3b8;
+  --text: #1e293b;
+  --text-dim: #475569;
+  --text-muted: #94a3b8;
+  --accent: #0284c7;
+  --accent2: #6366f1;
+  --purple: #7c3aed;
+  --purple-bg: rgba(124,58,237,0.08);
+  --green: #16a34a;
+  --green-bg: rgba(22,163,74,0.08);
+  --yellow: #ca8a04;
+  --yellow-bg: rgba(202,138,4,0.08);
+  --orange: #ea580c;
+  --orange-bg: rgba(234,88,12,0.08);
+  --pink: #db2777;
+  --pink-bg: rgba(219,39,119,0.08);
+  --red: #dc2626;
+  --red-bg: rgba(220,38,38,0.08);
+  --cyan: #0891b2;
+  --cyan-bg: rgba(8,145,178,0.08);
+  --blue: #2563eb;
+  --blue-bg: rgba(37,99,235,0.08);
+  --code-bg: #f8fafc;
+  --code-header: #f1f5f9;
+  --code-border: #e2e8f0;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+code, .mono {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* Theme Toggle */
+.theme-toggle {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  transition: all 0.25s;
+}
+.theme-toggle:hover {
+  background: var(--surface3);
+  border-color: var(--border-hover);
+  transform: scale(1.1);
+}
+
+/* Header */
+.header {
+  text-align: center;
+  padding: 56px 24px 40px;
+  background: linear-gradient(180deg, var(--surface) 0%, var(--bg) 100%);
+  border-bottom: 1px solid var(--border);
+}
+.header h1 {
+  font-size: 2.4rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--accent), var(--orange));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 8px;
+}
+.header p { color: var(--text-dim); font-size: 1.05rem; }
+.header-meta {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+.badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.badge-blue { background: var(--blue-bg); color: var(--blue); border: 1px solid rgba(96,165,250,0.2); }
+.badge-green { background: var(--green-bg); color: var(--green); border: 1px solid rgba(74,222,128,0.2); }
+.badge-purple { background: var(--purple-bg); color: var(--purple); border: 1px solid rgba(167,139,250,0.2); }
+.badge-orange { background: var(--orange-bg); color: var(--orange); border: 1px solid rgba(251,146,60,0.2); }
+.badge-cyan { background: var(--cyan-bg); color: var(--cyan); border: 1px solid rgba(34,211,238,0.2); }
+.badge-yellow { background: var(--yellow-bg); color: var(--yellow); border: 1px solid rgba(251,191,36,0.2); }
+
+/* Nav */
+.nav {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px 24px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(12px);
+}
+.nav-btn {
+  padding: 8px 18px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  transition: all 0.25s;
+}
+.nav-btn:hover { background: var(--surface3); color: var(--text); border-color: var(--border-hover); }
+.nav-btn.active {
+  background: linear-gradient(135deg, var(--accent), var(--orange));
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 2px 12px rgba(56,189,248,0.25);
+}
+
+/* Sections */
+.section {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 48px 24px;
+  display: none;
+}
+.section.active { display: block; animation: fadeIn 0.4s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+.section-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--text);
+}
+.section-subtitle {
+  color: var(--text-dim);
+  font-size: 0.95rem;
+  margin-bottom: 32px;
+}
+
+/* Card */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  transition: border-color 0.2s, transform 0.15s;
+}
+.card:hover {
+  border-color: var(--border-hover);
+  transform: translateY(-2px);
+}
+.card-title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.card-desc {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+/* ──────────────────────────────────────────── */
+/* SECTION 1: OVERVIEW — 패키지 계층도 */
+/* ──────────────────────────────────────────── */
+.arch-tree {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.arch-layer {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  position: relative;
+}
+.arch-label {
+  width: 100px;
+  min-width: 100px;
+  display: flex;
+  align-items: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding-right: 12px;
+}
+.arch-packages {
+  display: flex;
+  gap: 12px;
+  flex: 1;
+  flex-wrap: wrap;
+}
+.arch-pkg {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 20px;
+  flex: 1;
+  min-width: 200px;
+  transition: all 0.25s;
+  cursor: default;
+  position: relative;
+  overflow: hidden;
+}
+.arch-pkg::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  border-radius: 12px 12px 0 0;
+}
+.arch-pkg.web::before { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+.arch-pkg.core::before { background: linear-gradient(90deg, var(--purple), var(--pink)); }
+.arch-pkg.collectors::before { background: linear-gradient(90deg, var(--green), var(--cyan)); }
+.arch-pkg.ai-gateway::before { background: linear-gradient(90deg, var(--orange), var(--yellow)); }
+.arch-pkg:hover { border-color: var(--border-hover); transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+.arch-pkg-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.arch-pkg-path {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+  margin-bottom: 10px;
+}
+.arch-pkg-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.arch-pkg-tag {
+  font-size: 0.68rem;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+.arrow-down {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 4px 0;
+  color: var(--text-muted);
+  font-size: 1.4rem;
+  gap: 4px;
+}
+.arrow-down span {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+}
+.dep-rule {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin-top: 24px;
+}
+.dep-rule-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+}
+.dep-flow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.dep-node {
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+}
+.dep-arrow { color: var(--text-muted); font-size: 1.1rem; }
+
+/* ──────────────────────────────────────────── */
+/* SECTION 2: PIPELINE — 플로우차트 */
+/* ──────────────────────────────────────────── */
+.pipeline-flow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  max-width: 700px;
+  margin: 0 auto;
+}
+.pf-node {
+  width: 100%;
+  border-radius: 12px;
+  padding: 18px 24px;
+  position: relative;
+  transition: all 0.25s;
+  cursor: default;
+}
+.pf-node:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+.pf-node-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.pf-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+.pf-title {
+  font-size: 1rem;
+  font-weight: 700;
+}
+.pf-subtitle {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+.pf-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.pf-tag {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+}
+.pf-connector {
+  width: 2px;
+  height: 28px;
+  background: linear-gradient(180deg, var(--border), transparent);
+  margin: 0 auto;
+  position: relative;
+}
+.pf-connector::after {
+  content: '↓';
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--text-muted);
+  font-size: 1rem;
+  background: var(--bg);
+  padding: 0 2px;
+}
+
+/* node colors */
+.pf-trigger { background: var(--surface); border: 1px solid var(--accent); }
+.pf-trigger .pf-icon { background: var(--blue-bg); color: var(--accent); }
+.pf-collect { background: var(--surface); border: 1px solid var(--green); }
+.pf-collect .pf-icon { background: var(--green-bg); color: var(--green); }
+.pf-normalize { background: var(--surface); border: 1px solid var(--cyan); }
+.pf-normalize .pf-icon { background: var(--cyan-bg); color: var(--cyan); }
+.pf-db { background: var(--surface); border: 1px solid var(--purple); }
+.pf-db .pf-icon { background: var(--purple-bg); color: var(--purple); }
+.pf-ai { background: var(--surface); border: 1px solid var(--orange); }
+.pf-ai .pf-icon { background: var(--orange-bg); color: var(--orange); }
+.pf-report { background: var(--surface); border: 1px solid var(--pink); }
+.pf-report .pf-icon { background: var(--pink-bg); color: var(--pink); }
+
+/* sources grid */
+.sources-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-top: 16px;
+}
+.source-chip {
+  padding: 8px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--green);
+  transition: all 0.2s;
+}
+.source-chip:hover { background: var(--surface3); border-color: var(--green); }
+
+/* workers grid */
+.workers-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 16px;
+}
+.worker-chip {
+  padding: 8px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  font-family: 'JetBrains Mono', monospace;
+}
+.worker-chip:hover { border-color: var(--border-hover); color: var(--text); }
+
+/* ──────────────────────────────────────────── */
+/* SECTION 3: AI MODULES */
+/* ──────────────────────────────────────────── */
+.stage-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+.stage-card {
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  transition: border-color 0.2s;
+}
+.stage-card:hover { border-color: var(--border-hover); }
+.stage-header {
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.stage-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+.stage-meta {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  font-weight: 600;
+}
+.stage-body { padding: 4px 0 8px; }
+.module-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+.module-row:last-child { border-bottom: none; }
+.module-row:hover { background: var(--surface2); }
+.module-num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.module-info { flex: 1; }
+.module-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+.module-desc {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+.module-file {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+  margin-top: 3px;
+}
+
+/* stage colors */
+.stage1 .stage-header { background: rgba(96,165,250,0.07); }
+.stage1 .stage-title { color: var(--blue); }
+.stage1 .module-num { background: var(--blue-bg); color: var(--blue); }
+.stage2 .stage-header { background: rgba(167,139,250,0.07); }
+.stage2 .stage-title { color: var(--purple); }
+.stage2 .module-num { background: var(--purple-bg); color: var(--purple); }
+.stage4-parallel .stage-header { background: rgba(251,146,60,0.07); }
+.stage4-parallel .stage-title { color: var(--orange); }
+.stage4-parallel .module-num { background: var(--orange-bg); color: var(--orange); }
+.stage4-seq .stage-header { background: rgba(244,114,182,0.07); }
+.stage4-seq .stage-title { color: var(--pink); }
+.stage4-seq .module-num { background: var(--pink-bg); color: var(--pink); }
+
+/* stage flow indicator */
+.stage-flow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 20px 0;
+  padding: 12px 18px;
+  background: var(--surface2);
+  border-radius: 10px;
+  flex-wrap: wrap;
+}
+.sf-item {
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 6px;
+}
+.sf-arrow { color: var(--text-muted); font-size: 1rem; }
+.sf-note { font-size: 0.72rem; color: var(--text-muted); margin-left: auto; }
+
+/* ──────────────────────────────────────────── */
+/* SECTION 4: COLLECTORS */
+/* ──────────────────────────────────────────── */
+.collector-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+}
+.collector-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.25s;
+}
+.collector-card:hover { border-color: var(--border-hover); transform: translateY(-2px); }
+.collector-head {
+  padding: 14px 16px 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.collector-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+.collector-name { font-size: 0.95rem; font-weight: 700; }
+.collector-type { font-size: 0.72rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
+.collector-body { padding: 0 16px 14px; }
+.collector-detail {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+.collector-method {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+/* collector hierarchy */
+.hierarchy {
+  margin-top: 32px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 24px;
+}
+.hierarchy-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 16px;
+}
+.tree-root {
+  font-size: 0.88rem;
+  font-weight: 700;
+  padding: 8px 12px;
+  background: var(--blue-bg);
+  color: var(--blue);
+  border-radius: 8px;
+  display: inline-block;
+  margin-bottom: 4px;
+}
+.tree-branch {
+  margin-left: 20px;
+  padding-left: 16px;
+  border-left: 2px solid var(--border);
+  margin-top: 4px;
+}
+.tree-node {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  font-size: 0.82rem;
+  color: var(--text-dim);
+}
+.tree-node::before {
+  content: '─';
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  margin-right: 2px;
+}
+.tree-leaf {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-left: 18px;
+  padding-left: 16px;
+  border-left: 2px dashed var(--border);
+}
+.tree-leaf::before {
+  content: '└';
+  color: var(--text-muted);
+  margin-right: 2px;
+}
+
+/* ──────────────────────────────────────────── */
+/* SECTION 5: TECH STACK — 비교 그리드 */
+/* ──────────────────────────────────────────── */
+.stack-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 32px;
+}
+.stack-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  transition: all 0.25s;
+  cursor: default;
+}
+.stack-card:hover { border-color: var(--border-hover); transform: translateY(-2px); }
+.stack-category {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+.stack-tech {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.stack-version {
+  font-size: 0.72rem;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+.stack-purpose {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+.compare-table {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+.compare-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+.compare-table th {
+  background: var(--surface2);
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.compare-table td {
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+  color: var(--text-dim);
+  vertical-align: top;
+}
+.compare-table tr:hover td { background: var(--surface2); }
+.compare-table td:first-child { font-weight: 700; color: var(--text); }
+.compare-table td:nth-child(2) { color: var(--green); font-weight: 600; }
+.compare-table td:nth-child(3) { color: var(--text-muted); }
+
+/* ──────────────────────────────────────────── */
+/* SECTION 6: DB SCHEMA */
+/* ──────────────────────────────────────────── */
+.schema-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+.schema-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.25s;
+}
+.schema-card:hover { border-color: var(--border-hover); transform: translateY(-2px); }
+.schema-head {
+  padding: 12px 16px 10px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.schema-name { font-size: 0.95rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+.schema-file { font-size: 0.7rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
+.schema-body { padding: 12px 16px; }
+.schema-tables { font-size: 0.8rem; color: var(--text-dim); }
+.schema-table-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px dashed var(--border);
+}
+.schema-table-row:last-child { border-bottom: none; }
+.schema-table-name { font-family: 'JetBrains Mono', monospace; color: var(--cyan); font-size: 0.78rem; font-weight: 600; }
+.schema-table-desc { font-size: 0.75rem; color: var(--text-dim); }
+.schema-infra {
+  margin-top: 24px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.infra-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  transition: all 0.25s;
+}
+.infra-card:hover { border-color: var(--border-hover); }
+.infra-title { font-size: 0.82rem; font-weight: 700; margin-bottom: 8px; }
+.infra-row { display: flex; justify-content: space-between; font-size: 0.75rem; padding: 3px 0; }
+.infra-key { color: var(--text-muted); }
+.infra-val { font-family: 'JetBrains Mono', monospace; color: var(--cyan); font-size: 0.72rem; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .header h1 { font-size: 1.8rem; }
+  .section { padding: 32px 16px; }
+  .stage-grid { grid-template-columns: 1fr; }
+  .sources-grid { grid-template-columns: repeat(3, 1fr); }
+  .workers-grid { grid-template-columns: repeat(2, 1fr); }
+  .arch-packages { flex-direction: column; }
+  .arch-label { display: none; }
+  .schema-infra { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<button class="theme-toggle" onclick="toggleTheme()" title="테마 전환">🌙</button>
+
+<div class="header">
+  <h1>AI SignalCraft</h1>
+  <p>공인 여론 자동 수집·AI 분석 파이프라인 + 웹 대시보드</p>
+  <div class="header-meta">
+    <span class="badge badge-blue">Next.js 15</span>
+    <span class="badge badge-purple">BullMQ 5</span>
+    <span class="badge badge-green">14개 AI 모듈</span>
+    <span class="badge badge-orange">5개 수집 소스</span>
+    <span class="badge badge-cyan">TypeScript 모노레포</span>
+    <span class="badge badge-yellow">pnpm workspaces</span>
+  </div>
+</div>
+
+<nav class="nav">
+  <button class="nav-btn active" onclick="showSection('overview')">📦 패키지 구조</button>
+  <button class="nav-btn" onclick="showSection('pipeline')">⚡ 데이터 파이프라인</button>
+  <button class="nav-btn" onclick="showSection('modules')">🧠 AI 분석 모듈</button>
+  <button class="nav-btn" onclick="showSection('collectors')">🕷️ 데이터 수집기</button>
+  <button class="nav-btn" onclick="showSection('stack')">🛠️ 기술 스택</button>
+  <button class="nav-btn" onclick="showSection('schema')">🗄️ DB 스키마</button>
+</nav>
+
+<!-- ═══════════════════════════════ SECTION 1: OVERVIEW ═══════════════════════════════ -->
+<section id="overview" class="section active">
+  <h2 class="section-title">패키지 의존성 구조</h2>
+  <p class="section-subtitle">pnpm 모노레포 — 단방향 의존성 규칙 (역방향 import 금지)</p>
+
+  <div class="arch-tree">
+    <div class="arch-layer">
+      <div class="arch-label">UI Layer</div>
+      <div class="arch-packages">
+        <div class="arch-pkg web">
+          <div class="arch-pkg-name">apps/web</div>
+          <div class="arch-pkg-path">@ai-signalcraft/web</div>
+          <div class="arch-pkg-tags">
+            <span class="arch-pkg-tag badge-blue">Next.js 15</span>
+            <span class="arch-pkg-tag badge-blue">App Router</span>
+            <span class="arch-pkg-tag badge-blue">tRPC 11</span>
+            <span class="arch-pkg-tag badge-blue">shadcn/ui</span>
+            <span class="arch-pkg-tag badge-blue">TanStack Query 5</span>
+            <span class="arch-pkg-tag badge-blue">NextAuth.js 5</span>
+            <span class="arch-pkg-tag badge-blue">Recharts</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down" style="padding-left: 110px;">
+      <span>↓ import (index.ts public API만 사용)</span>
+    </div>
+
+    <div class="arch-layer">
+      <div class="arch-label">Core Layer</div>
+      <div class="arch-packages">
+        <div class="arch-pkg core">
+          <div class="arch-pkg-name">packages/core</div>
+          <div class="arch-pkg-path">@ai-signalcraft/core</div>
+          <div class="arch-pkg-tags">
+            <span class="arch-pkg-tag badge-purple">BullMQ 5</span>
+            <span class="arch-pkg-tag badge-purple">Drizzle ORM</span>
+            <span class="arch-pkg-tag badge-purple">Zod 3</span>
+            <span class="arch-pkg-tag badge-purple">14 AI 모듈</span>
+            <span class="arch-pkg-tag badge-purple">리포트 생성</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down" style="padding-left: 110px;">
+      <span>↓ import (독립, 상호 참조 금지)</span>
+    </div>
+
+    <div class="arch-layer">
+      <div class="arch-label">Infra Layer</div>
+      <div class="arch-packages">
+        <div class="arch-pkg collectors">
+          <div class="arch-pkg-name">packages/collectors</div>
+          <div class="arch-pkg-path">@ai-signalcraft/collectors</div>
+          <div class="arch-pkg-tags">
+            <span class="arch-pkg-tag badge-green">Playwright 1.50</span>
+            <span class="arch-pkg-tag badge-green">Cheerio</span>
+            <span class="arch-pkg-tag badge-green">googleapis</span>
+            <span class="arch-pkg-tag badge-green">5개 어댑터</span>
+          </div>
+        </div>
+        <div class="arch-pkg ai-gateway">
+          <div class="arch-pkg-name">packages/ai-gateway</div>
+          <div class="arch-pkg-path">@ai-signalcraft/ai-gateway</div>
+          <div class="arch-pkg-tags">
+            <span class="arch-pkg-tag badge-orange">Vercel AI SDK v6</span>
+            <span class="arch-pkg-tag badge-orange">Claude (Anthropic)</span>
+            <span class="arch-pkg-tag badge-orange">GPT (OpenAI)</span>
+            <span class="arch-pkg-tag badge-orange">Gemini (Google)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dep-rule" style="margin-top: 28px;">
+    <div class="dep-rule-title">의존성 방향 규칙</div>
+    <div class="dep-flow">
+      <span class="dep-node badge-blue">web</span>
+      <span class="dep-arrow">→</span>
+      <span class="dep-node badge-purple">core</span>
+      <span class="dep-arrow">→</span>
+      <span class="dep-node badge-green">collectors</span>
+      <span class="dep-arrow">/</span>
+      <span class="dep-node badge-orange">ai-gateway</span>
+    </div>
+    <div style="margin-top: 10px; font-size: 0.78rem; color: var(--text-muted);">
+      ⚠️ packages 내부 경로 직접 import 금지 — <code>index.ts</code> public API만 사용
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════ SECTION 2: PIPELINE ═══════════════════════════════ -->
+<section id="pipeline" class="section">
+  <h2 class="section-title">데이터 파이프라인 흐름</h2>
+  <p class="section-subtitle">BullMQ 5 Flow 기반 — UI 수동 트리거 → 수집 → 분석 → 리포트</p>
+
+  <div style="display: grid; grid-template-columns: 1fr 340px; gap: 32px; align-items: start;">
+    <div class="pipeline-flow">
+      <div class="pf-node pf-trigger">
+        <div class="pf-node-header">
+          <div class="pf-icon">🖱️</div>
+          <div class="pf-title">UI 수동 트리거</div>
+        </div>
+        <div class="pf-subtitle">팀원이 대시보드에서 키워드/기간 설정 후 분석 시작</div>
+        <div class="pf-tags">
+          <span class="pf-tag badge-blue">apps/web</span>
+          <span class="pf-tag badge-blue">trigger-form.tsx</span>
+          <span class="pf-tag badge-blue">tRPC</span>
+        </div>
+      </div>
+
+      <div class="pf-connector"></div>
+
+      <div class="pf-node pf-collect">
+        <div class="pf-node-header">
+          <div class="pf-icon">🕷️</div>
+          <div class="pf-title">수집 단계</div>
+        </div>
+        <div class="pf-subtitle">5개 소스를 병렬로 수집 — Playwright(커뮤니티) + Cheerio(네이버) + Google API(유튜브)</div>
+        <div class="pf-tags">
+          <span class="pf-tag badge-green">collector-worker.ts</span>
+          <span class="pf-tag badge-green">병렬 실행</span>
+        </div>
+        <div class="sources-grid">
+          <div class="source-chip">네이버 뉴스</div>
+          <div class="source-chip">네이버 댓글</div>
+          <div class="source-chip">YouTube</div>
+          <div class="source-chip">커뮤니티</div>
+          <div class="source-chip">DCInside</div>
+        </div>
+      </div>
+
+      <div class="pf-connector"></div>
+
+      <div class="pf-node pf-normalize">
+        <div class="pf-node-header">
+          <div class="pf-icon">🔄</div>
+          <div class="pf-title">정규화</div>
+        </div>
+        <div class="pf-subtitle">소스별 이질적인 데이터를 공통 포맷으로 변환 · 중복 제거</div>
+        <div class="pf-tags">
+          <span class="pf-tag badge-cyan">pipeline/normalize.ts</span>
+          <span class="pf-tag badge-cyan">Zod 검증</span>
+        </div>
+      </div>
+
+      <div class="pf-connector"></div>
+
+      <div class="pf-node pf-db">
+        <div class="pf-node-header">
+          <div class="pf-icon">🗄️</div>
+          <div class="pf-title">DB 저장</div>
+        </div>
+        <div class="pf-subtitle">PostgreSQL collections 테이블에 원문 + 메타데이터 저장</div>
+        <div class="pf-tags">
+          <span class="pf-tag badge-purple">pipeline/persist.ts</span>
+          <span class="pf-tag badge-purple">Drizzle ORM</span>
+          <span class="pf-tag badge-purple">PostgreSQL 16</span>
+        </div>
+      </div>
+
+      <div class="pf-connector"></div>
+
+      <div class="pf-node pf-ai">
+        <div class="pf-node-header">
+          <div class="pf-icon">🧠</div>
+          <div class="pf-title">AI 분석</div>
+        </div>
+        <div class="pf-subtitle">14개 모듈 — Stage 1(병렬 4개) → Stage 2(순차 4개) → Stage 4(선택 6개)</div>
+        <div class="pf-tags">
+          <span class="pf-tag badge-orange">analysis-worker.ts</span>
+          <span class="pf-tag badge-orange">Vercel AI SDK v6</span>
+          <span class="pf-tag badge-orange">Claude / GPT / Gemini</span>
+          <span class="pf-tag badge-orange">map-reduce</span>
+        </div>
+      </div>
+
+      <div class="pf-connector"></div>
+
+      <div class="pf-node pf-report">
+        <div class="pf-node-header">
+          <div class="pf-icon">📄</div>
+          <div class="pf-title">리포트 생성</div>
+        </div>
+        <div class="pf-subtitle">분석 결과를 종합 리포트로 생성 — PDF 내보내기 지원</div>
+        <div class="pf-tags">
+          <span class="pf-tag badge-pink">report/generator.ts</span>
+          <span class="pf-tag badge-pink">pdf-exporter.ts</span>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card" style="margin-bottom: 16px;">
+        <div class="card-title" style="margin-bottom: 12px;">⚙️ BullMQ 워커</div>
+        <div class="workers-grid">
+          <div class="worker-chip">pipeline-worker</div>
+          <div class="worker-chip">collector-worker</div>
+          <div class="worker-chip">analysis-worker</div>
+          <div class="worker-chip">worker-process</div>
+          <div class="worker-chip">startup-cleanup</div>
+          <div class="worker-chip">flows.ts</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom: 16px;">
+        <div class="card-title" style="margin-bottom: 10px;">🏗️ 파이프라인 제어</div>
+        <div style="font-size: 0.78rem; color: var(--text-dim); line-height: 1.7;">
+          <div>• <code style="color: var(--cyan);">pipeline/control.ts</code> — 실행 제어</div>
+          <div>• <code style="color: var(--cyan);">pipeline/cleanup.ts</code> — 정리 작업</div>
+          <div>• <code style="color: var(--cyan);">stale-recovery.ts</code> — stale 복구</div>
+          <div>• <code style="color: var(--cyan);">retry-utils.ts</code> — AI 재시도</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="margin-bottom: 10px;">🔌 인프라</div>
+        <div style="font-size: 0.78rem; color: var(--text-dim); line-height: 1.8;">
+          <div>📦 <span style="color: var(--purple);">PostgreSQL 16</span></div>
+          <div style="margin-left: 12px; color: var(--text-muted);">192.168.0.5:5433</div>
+          <div>⚡ <span style="color: var(--red);">Redis 7</span></div>
+          <div style="margin-left: 12px; color: var(--text-muted);">prod: 6380 / dev: 6381</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════ SECTION 3: AI MODULES ═══════════════════════════════ -->
+<section id="modules" class="section">
+  <h2 class="section-title">AI 분석 모듈 (14개)</h2>
+  <p class="section-subtitle">Vercel AI SDK v6 — Claude / GPT / Gemini 멀티 프로바이더</p>
+
+  <div class="stage-flow">
+    <span class="sf-item badge-blue">Stage 1 (병렬 4개)</span>
+    <span class="sf-arrow">→</span>
+    <span class="sf-item badge-purple">Stage 2 (순차 4개)</span>
+    <span class="sf-arrow">→</span>
+    <span class="sf-item badge-orange">Stage 4 병렬 (2개)</span>
+    <span class="sf-arrow">→</span>
+    <span class="sf-item badge-pink">Stage 4 순차 (2개)</span>
+    <span class="sf-note">Stage 2+는 이전 결과 참조 (buildPromptWithContext)</span>
+  </div>
+
+  <div class="stage-grid">
+    <div class="stage-card stage1">
+      <div class="stage-header">
+        <span class="stage-title">Stage 1 — 병렬 실행</span>
+        <span class="stage-meta badge badge-blue">4개 동시</span>
+      </div>
+      <div class="stage-body">
+        <div class="module-row">
+          <div class="module-num">1</div>
+          <div class="module-info">
+            <div class="module-name">macroView</div>
+            <div class="module-desc">거시적 여론 흐름 — 전체적인 민심 동향 파악</div>
+            <div class="module-file">macro-view.ts</div>
+          </div>
+        </div>
+        <div class="module-row">
+          <div class="module-num">2</div>
+          <div class="module-info">
+            <div class="module-name">segmentation</div>
+            <div class="module-desc">지지층·반대층 세그먼트 분류 — 연령/성별/지역 분석</div>
+            <div class="module-file">segmentation.ts</div>
+          </div>
+        </div>
+        <div class="module-row">
+          <div class="module-num">3</div>
+          <div class="module-info">
+            <div class="module-name">sentimentFraming</div>
+            <div class="module-desc">감정 프레이밍 분석 — 긍/부정 감정의 서사 구조</div>
+            <div class="module-file">sentiment-framing.ts</div>
+          </div>
+        </div>
+        <div class="module-row">
+          <div class="module-num">4</div>
+          <div class="module-info">
+            <div class="module-name">messageImpact</div>
+            <div class="module-desc">메시지 파급력 평가 — 확산 잠재력 및 영향력 분석</div>
+            <div class="module-file">message-impact.ts</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage-card stage2">
+      <div class="stage-header">
+        <span class="stage-title">Stage 2 — 순차 실행</span>
+        <span class="stage-meta badge badge-purple">Stage 1 결과 참조</span>
+      </div>
+      <div class="stage-body">
+        <div class="module-row">
+          <div class="module-num">5</div>
+          <div class="module-info">
+            <div class="module-name">riskMap</div>
+            <div class="module-desc">위기·리스크 지도 — 잠재 위협 요소 매핑</div>
+            <div class="module-file">risk-map.ts</div>
+          </div>
+        </div>
+        <div class="module-row">
+          <div class="module-num">6</div>
+          <div class="module-info">
+            <div class="module-name">opportunity</div>
+            <div class="module-desc">기회 요소 발굴 — 긍정적 전환점 및 활용 포인트</div>
+            <div class="module-file">opportunity.ts</div>
+          </div>
+        </div>
+        <div class="module-row">
+          <div class="module-num">7</div>
+          <div class="module-info">
+            <div class="module-name">strategy</div>
+            <div class="module-desc">전략 제언 — 리스크·기회 기반 액션 플랜</div>
+            <div class="module-file">strategy.ts</div>
+          </div>
+        </div>
+        <div class="module-row">
+          <div class="module-num">8</div>
+          <div class="module-info">
+            <div class="module-name">finalSummary</div>
+            <div class="module-desc">종합 요약 — 전체 분석 결과 통합 정리</div>
+            <div class="module-file">final-summary.ts</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage-card stage4-parallel">
+      <div class="stage-header">
+        <span class="stage-title">Stage 4 — 고급 병렬</span>
+        <span class="stage-meta badge badge-orange">선택적 실행</span>
+      </div>
+      <div class="stage-body">
+        <div class="module-row">
+          <div class="module-num">9</div>
+          <div class="module-info">
+            <div class="module-name">approvalRating</div>
+            <div class="module-desc">지지율 추정 — 데이터 기반 지지율 수치 예측</div>
+            <div class="module-file">approval-rating.ts</div>
+          </div>
+        </div>
+        <div class="module-row">
+          <div class="module-num">10</div>
+          <div class="module-info">
+            <div class="module-name">frameWar</div>
+            <div class="module-desc">프레임 전쟁 분석 — 경쟁하는 내러티브 구조 분석</div>
+            <div class="module-file">frame-war.ts</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage-card stage4-seq">
+      <div class="stage-header">
+        <span class="stage-title">Stage 4 — 고급 순차</span>
+        <span class="stage-meta badge badge-pink">병렬 완료 후</span>
+      </div>
+      <div class="stage-body">
+        <div class="module-row">
+          <div class="module-num">11</div>
+          <div class="module-info">
+            <div class="module-name">crisisScenario</div>
+            <div class="module-desc">위기 시나리오 — 부정 여론 확산 시나리오 시뮬레이션</div>
+            <div class="module-file">crisis-scenario.ts</div>
+          </div>
+        </div>
+        <div class="module-row">
+          <div class="module-num">12</div>
+          <div class="module-info">
+            <div class="module-name">winSimulation</div>
+            <div class="module-desc">승리 시뮬레이션 — 목표 달성 가능 전략 경로 탐색</div>
+            <div class="module-file">win-simulation.ts</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top: 20px;">
+    <div class="card-title" style="margin-bottom: 12px;">모듈 공통 구조</div>
+    <div style="background: var(--code-bg); border: 1px solid var(--code-border); border-radius: 10px; overflow: hidden;">
+      <div style="padding: 10px 16px; background: var(--code-header); font-size: 0.75rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; border-bottom: 1px solid var(--code-border);">AnalysisModule&lt;T&gt; 패턴</div>
+      <div style="padding: 16px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; line-height: 1.8; overflow-x: auto;">
+        <span style="color: var(--purple);">export const</span> <span style="color: var(--accent);">myModule</span>: <span style="color: var(--green);">AnalysisModule</span>&lt;<span style="color: var(--yellow);">MyResult</span>&gt; = {<br>
+        &nbsp;&nbsp;<span style="color: var(--text-dim);">name:</span> <span style="color: var(--orange);">'myModule'</span>,<br>
+        &nbsp;&nbsp;<span style="color: var(--text-dim);">provider:</span> <span style="color: var(--orange);">'anthropic'</span>,&nbsp;&nbsp;&nbsp;<span style="color: var(--text-muted);">// MODULE_MODEL_MAP으로 관리</span><br>
+        &nbsp;&nbsp;<span style="color: var(--text-dim);">schema:</span> <span style="color: var(--yellow);">MyResultSchema</span>,&nbsp;&nbsp;<span style="color: var(--text-muted);">// Zod 스키마</span><br>
+        &nbsp;&nbsp;<span style="color: var(--blue);">buildSystemPrompt</span>(): <span style="color: var(--green);">string</span> { ... },<br>
+        &nbsp;&nbsp;<span style="color: var(--blue);">buildPrompt</span>(<span style="color: var(--text-dim);">data</span>): <span style="color: var(--green);">string</span> { ... },<br>
+        &nbsp;&nbsp;<span style="color: var(--blue);">buildPromptWithContext</span>?(<span style="color: var(--text-dim);">data, priorResults</span>): <span style="color: var(--green);">string</span> { ... }<br>
+        };
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════ SECTION 4: COLLECTORS ═══════════════════════════════ -->
+<section id="collectors" class="section">
+  <h2 class="section-title">데이터 수집기</h2>
+  <p class="section-subtitle">packages/collectors — Playwright + Cheerio + Google API, 5개 소스</p>
+
+  <div class="collector-grid">
+    <div class="collector-card">
+      <div class="collector-head">
+        <div class="collector-icon" style="background: var(--green-bg);">📰</div>
+        <div>
+          <div class="collector-name">네이버 뉴스</div>
+          <div class="collector-type">naver-news.ts</div>
+        </div>
+      </div>
+      <div class="collector-body">
+        <div class="collector-detail">키워드 기반 뉴스 기사 수집 — 제목, 본문, 날짜, 언론사 파싱</div>
+        <span class="collector-method badge-green" style="background: var(--green-bg); color: var(--green); border-radius: 6px; padding: 3px 10px; font-size: 0.7rem; font-weight: 700; margin-top: 8px; display: inline-flex;">Cheerio · naver-parser.ts</span>
+      </div>
+    </div>
+
+    <div class="collector-card">
+      <div class="collector-head">
+        <div class="collector-icon" style="background: var(--cyan-bg);">💬</div>
+        <div>
+          <div class="collector-name">네이버 댓글</div>
+          <div class="collector-type">naver-comments.ts</div>
+        </div>
+      </div>
+      <div class="collector-body">
+        <div class="collector-detail">뉴스 기사 댓글 수집 — 공감/비공감 수, 작성 날짜 포함</div>
+        <span class="collector-method" style="background: var(--cyan-bg); color: var(--cyan); border-radius: 6px; padding: 3px 10px; font-size: 0.7rem; font-weight: 700; margin-top: 8px; display: inline-flex;">Cheerio · naver-parser.ts</span>
+      </div>
+    </div>
+
+    <div class="collector-card">
+      <div class="collector-head">
+        <div class="collector-icon" style="background: var(--red-bg);">▶️</div>
+        <div>
+          <div class="collector-name">YouTube 영상</div>
+          <div class="collector-type">youtube-videos.ts</div>
+        </div>
+      </div>
+      <div class="collector-body">
+        <div class="collector-detail">YouTube Data API v3 — 키워드 검색, 조회수/좋아요 메타데이터</div>
+        <span class="collector-method" style="background: var(--red-bg); color: var(--red); border-radius: 6px; padding: 3px 10px; font-size: 0.7rem; font-weight: 700; margin-top: 8px; display: inline-flex;">googleapis v144</span>
+      </div>
+    </div>
+
+    <div class="collector-card">
+      <div class="collector-head">
+        <div class="collector-icon" style="background: var(--red-bg);">🗨️</div>
+        <div>
+          <div class="collector-name">YouTube 댓글</div>
+          <div class="collector-type">youtube-comments.ts</div>
+        </div>
+      </div>
+      <div class="collector-body">
+        <div class="collector-detail">영상 댓글 수집 — 좋아요 수, 작성자, 대댓글 포함</div>
+        <span class="collector-method" style="background: var(--red-bg); color: var(--red); border-radius: 6px; padding: 3px 10px; font-size: 0.7rem; font-weight: 700; margin-top: 8px; display: inline-flex;">googleapis v144</span>
+      </div>
+    </div>
+
+    <div class="collector-card">
+      <div class="collector-head">
+        <div class="collector-icon" style="background: var(--purple-bg);">🖥️</div>
+        <div>
+          <div class="collector-name">커뮤니티 (3개)</div>
+          <div class="collector-type">clien · dcinside · fmkorea</div>
+        </div>
+      </div>
+      <div class="collector-body">
+        <div class="collector-detail">클리앙, 디시인사이드, FM코리아 — 게시글 및 댓글 수집</div>
+        <span class="collector-method" style="background: var(--purple-bg); color: var(--purple); border-radius: 6px; padding: 3px 10px; font-size: 0.7rem; font-weight: 700; margin-top: 8px; display: inline-flex;">Playwright · CommunityBaseCollector</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="hierarchy">
+    <div class="hierarchy-title">수집기 클래스 계층 구조</div>
+    <div class="tree-root">Collector (인터페이스)</div>
+    <div class="tree-branch">
+      <div class="tree-node" style="color: var(--cyan);">BrowserCollector</div>
+      <div style="margin-left: 20px; padding-left: 16px; border-left: 2px dashed var(--border);">
+        <div class="tree-node" style="color: var(--text-muted); font-size: 0.75rem;">└ browser-collector.ts (Playwright 기반)</div>
+      </div>
+      <div class="tree-node" style="color: var(--purple);">CommunityBaseCollector</div>
+      <div style="margin-left: 20px; padding-left: 16px; border-left: 2px dashed var(--border);">
+        <div class="tree-node" style="color: var(--text-muted); font-size: 0.75rem;">├ ClienCollector (clien.ts)</div>
+        <div class="tree-node" style="color: var(--text-muted); font-size: 0.75rem;">├ DCInsideCollector (dcinside.ts)</div>
+        <div class="tree-node" style="color: var(--text-muted); font-size: 0.75rem;">└ FmKoreaCollector (fmkorea.ts)</div>
+      </div>
+      <div class="tree-node" style="color: var(--green);">NaverNewsCollector (naver-news.ts)</div>
+      <div class="tree-node" style="color: var(--green);">NaverCommentsCollector (naver-comments.ts)</div>
+      <div class="tree-node" style="color: var(--red);">YouTubeVideosCollector (youtube-videos.ts)</div>
+      <div class="tree-node" style="color: var(--red);">YouTubeCommentsCollector (youtube-comments.ts)</div>
+    </div>
+
+    <div style="margin-top: 16px; padding: 12px 16px; background: var(--surface2); border-radius: 8px; font-size: 0.78rem; color: var(--text-dim);">
+      💡 수집기 오류 시: CSS 셀렉터/URL 패턴 변경부터 확인 (<code style="color: var(--cyan);">utils/community-parser.ts</code>)
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════ SECTION 5: TECH STACK ═══════════════════════════════ -->
+<section id="stack" class="section">
+  <h2 class="section-title">기술 스택</h2>
+  <p class="section-subtitle">TypeScript 모노레포 — 단일 언어로 타입 공유 및 배포 단순화</p>
+
+  <div class="stack-grid">
+    <div class="stack-card" style="border-top: 3px solid var(--accent);">
+      <div class="stack-category" style="color: var(--accent);">Framework</div>
+      <div class="stack-tech">Next.js 15</div>
+      <div class="stack-version">App Router</div>
+      <div class="stack-purpose">풀스택 (대시보드 + API)</div>
+    </div>
+    <div class="stack-card" style="border-top: 3px solid var(--blue);">
+      <div class="stack-category" style="color: var(--blue);">Language</div>
+      <div class="stack-tech">TypeScript 5</div>
+      <div class="stack-version">strict mode</div>
+      <div class="stack-purpose">전 패키지 타입 공유</div>
+    </div>
+    <div class="stack-card" style="border-top: 3px solid var(--purple);">
+      <div class="stack-category" style="color: var(--purple);">Database</div>
+      <div class="stack-tech">PostgreSQL 16</div>
+      <div class="stack-version">JSONB + 관계형</div>
+      <div class="stack-purpose">분석 결과 + 수집 데이터</div>
+    </div>
+    <div class="stack-card" style="border-top: 3px solid var(--red);">
+      <div class="stack-category" style="color: var(--red);">Cache / Queue</div>
+      <div class="stack-tech">Redis 7</div>
+      <div class="stack-version">BullMQ 5 백엔드</div>
+      <div class="stack-purpose">파이프라인 큐 + 캐싱</div>
+    </div>
+    <div class="stack-card" style="border-top: 3px solid var(--orange);">
+      <div class="stack-category" style="color: var(--orange);">AI</div>
+      <div class="stack-tech">Vercel AI SDK v6</div>
+      <div class="stack-version">Claude / GPT / Gemini</div>
+      <div class="stack-purpose">다중 프로바이더 통합</div>
+    </div>
+    <div class="stack-card" style="border-top: 3px solid var(--cyan);">
+      <div class="stack-category" style="color: var(--cyan);">ORM</div>
+      <div class="stack-tech">Drizzle ORM</div>
+      <div class="stack-version">0.40.x</div>
+      <div class="stack-purpose">SQL-like 쿼리 빌더</div>
+    </div>
+    <div class="stack-card" style="border-top: 3px solid var(--yellow);">
+      <div class="stack-category" style="color: var(--yellow);">Schema</div>
+      <div class="stack-tech">Zod 3</div>
+      <div class="stack-version">AI 출력 검증</div>
+      <div class="stack-purpose">AI 응답 + API 입력 검증</div>
+    </div>
+    <div class="stack-card" style="border-top: 3px solid var(--green);">
+      <div class="stack-category" style="color: var(--green);">Scraping</div>
+      <div class="stack-tech">Playwright 1.50</div>
+      <div class="stack-version">+ Cheerio</div>
+      <div class="stack-purpose">한국 사이트 스크래핑</div>
+    </div>
+    <div class="stack-card" style="border-top: 3px solid var(--accent2);">
+      <div class="stack-category" style="color: var(--accent2);">API</div>
+      <div class="stack-tech">tRPC 11</div>
+      <div class="stack-version">TanStack Query 통합</div>
+      <div class="stack-purpose">타입 안전 API 레이어</div>
+    </div>
+    <div class="stack-card" style="border-top: 3px solid var(--pink);">
+      <div class="stack-category" style="color: var(--pink);">Auth</div>
+      <div class="stack-tech">NextAuth.js 5</div>
+      <div class="stack-version">Auth.js v5</div>
+      <div class="stack-purpose">소규모 팀 인증</div>
+    </div>
+  </div>
+
+  <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 12px; color: var(--text-dim);">선택 근거 비교표</h3>
+  <div class="compare-table">
+    <table>
+      <thead>
+        <tr>
+          <th>카테고리</th>
+          <th>선택</th>
+          <th>대안</th>
+          <th>선택 이유</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>ORM</td><td>Drizzle ORM</td><td>Prisma</td><td>복잡한 분석 쿼리에 SQL-like 빌더가 더 적합 · 경량</td></tr>
+        <tr><td>차트</td><td>Recharts (shadcn)</td><td>Nivo, Tremor</td><td>shadcn/ui 테마 통합 지원</td></tr>
+        <tr><td>API</td><td>tRPC 11</td><td>Server Actions only</td><td>TanStack Query 캐싱·갱신 통합 필요</td></tr>
+        <tr><td>스크래퍼</td><td>Playwright</td><td>Puppeteer</td><td>안정성, 한국 로케일, auto-wait</td></tr>
+        <tr><td>큐</td><td>BullMQ 5</td><td>Agenda.js</td><td>Flow 기능, Redis 인프라 활용</td></tr>
+        <tr><td>AI SDK</td><td>Vercel AI SDK v6</td><td>LangChain.js</td><td>단순 프롬프트 중심 — 과도한 추상화 불필요</td></tr>
+        <tr><td>DB</td><td>PostgreSQL 16</td><td>MongoDB</td><td>관계형 분석 결과 + JSONB로 비정형 처리</td></tr>
+        <tr><td>Auth</td><td>NextAuth.js 5</td><td>Lucia Auth</td><td>생태계 표준, 소규모 팀에 충분</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════ SECTION 6: DB SCHEMA ═══════════════════════════════ -->
+<section id="schema" class="section">
+  <h2 class="section-title">DB 스키마 & 인프라</h2>
+  <p class="section-subtitle">Drizzle ORM — PostgreSQL 16 · packages/core/src/db/schema/</p>
+
+  <div class="schema-grid">
+    <div class="schema-card">
+      <div class="schema-head">
+        <span class="schema-name" style="color: var(--green);">collections.ts</span>
+        <span class="schema-file">수집 데이터</span>
+      </div>
+      <div class="schema-body">
+        <div class="schema-tables">
+          <div class="schema-table-row">
+            <span class="schema-table-name">collections</span>
+            <span class="schema-table-desc">수집된 원문 데이터 (뉴스·댓글·유튜브·커뮤니티)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="schema-card">
+      <div class="schema-head">
+        <span class="schema-name" style="color: var(--orange);">analysis.ts</span>
+        <span class="schema-file">AI 분석 결과</span>
+      </div>
+      <div class="schema-body">
+        <div class="schema-tables">
+          <div class="schema-table-row">
+            <span class="schema-table-name">analyses</span>
+            <span class="schema-table-desc">분석 실행 메타데이터 (상태·타임스탬프)</span>
+          </div>
+          <div class="schema-table-row">
+            <span class="schema-table-name">analysis_results</span>
+            <span class="schema-table-desc">모듈별 결과 JSONB 저장</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="schema-card">
+      <div class="schema-head">
+        <span class="schema-name" style="color: var(--blue);">auth.ts</span>
+        <span class="schema-file">NextAuth.js 5</span>
+      </div>
+      <div class="schema-body">
+        <div class="schema-tables">
+          <div class="schema-table-row">
+            <span class="schema-table-name">users</span>
+            <span class="schema-table-desc">팀원 계정</span>
+          </div>
+          <div class="schema-table-row">
+            <span class="schema-table-name">sessions</span>
+            <span class="schema-table-desc">로그인 세션</span>
+          </div>
+          <div class="schema-table-row">
+            <span class="schema-table-name">accounts</span>
+            <span class="schema-table-desc">OAuth 연동 계정</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="schema-card">
+      <div class="schema-head">
+        <span class="schema-name" style="color: var(--purple);">settings.ts</span>
+        <span class="schema-file">팀 설정</span>
+      </div>
+      <div class="schema-body">
+        <div class="schema-tables">
+          <div class="schema-table-row">
+            <span class="schema-table-name">settings</span>
+            <span class="schema-table-desc">AI 모델 선택, API 키, 수집 한도 설정</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="schema-infra">
+    <div class="infra-card" style="border-left: 3px solid var(--purple);">
+      <div class="infra-title" style="color: var(--purple);">🗄️ PostgreSQL 16</div>
+      <div class="infra-row"><span class="infra-key">호스트</span><span class="infra-val">192.168.0.5</span></div>
+      <div class="infra-row"><span class="infra-key">포트</span><span class="infra-val">5433</span></div>
+      <div class="infra-row"><span class="infra-key">마이그레이션</span><span class="infra-val">pnpm db:push</span></div>
+      <div class="infra-row"><span class="infra-key">GUI</span><span class="infra-val">pnpm db:studio</span></div>
+    </div>
+    <div class="infra-card" style="border-left: 3px solid var(--red);">
+      <div class="infra-title" style="color: var(--red);">⚡ Redis 7</div>
+      <div class="infra-row"><span class="infra-key">호스트</span><span class="infra-val">192.168.0.5</span></div>
+      <div class="infra-row"><span class="infra-key">prod 포트</span><span class="infra-val">6380</span></div>
+      <div class="infra-row"><span class="infra-key">dev 포트</span><span class="infra-val">6381</span></div>
+      <div class="infra-row"><span class="infra-key">용도</span><span class="infra-val">BullMQ + 캐시</span></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top: 16px;">
+    <div class="card-title" style="margin-bottom: 12px;">🚀 배포 인프라</div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; font-size: 0.78rem; color: var(--text-dim);">
+      <div style="padding: 10px 14px; background: var(--surface2); border-radius: 8px;">
+        <div style="color: var(--blue); font-weight: 700; margin-bottom: 4px;">Docker Compose</div>
+        <div>docker/docker-compose.prod.yml</div>
+      </div>
+      <div style="padding: 10px 14px; background: var(--surface2); border-radius: 8px;">
+        <div style="color: var(--green); font-weight: 700; margin-bottom: 4px;">CI/CD</div>
+        <div>GitHub Actions (.github/workflows/)</div>
+      </div>
+      <div style="padding: 10px 14px; background: var(--surface2); border-radius: 8px;">
+        <div style="color: var(--orange); font-weight: 700; margin-bottom: 4px;">패키지 매니저</div>
+        <div>pnpm 9.x workspaces</div>
+      </div>
+      <div style="padding: 10px 14px; background: var(--surface2); border-radius: 8px;">
+        <div style="color: var(--purple); font-weight: 700; margin-bottom: 4px;">Node.js</div>
+        <div>v24.14.0 (min 24.x)</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  const idx = ['overview','pipeline','modules','collectors','stack','schema'].indexOf(id);
+  document.querySelectorAll('.nav-btn')[idx].classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function toggleTheme() {
+  const html = document.documentElement;
+  const btn = document.querySelector('.theme-toggle');
+  if (html.getAttribute('data-theme') === 'light') {
+    html.removeAttribute('data-theme');
+    btn.textContent = '🌙';
+    localStorage.setItem('theme', 'dark');
+  } else {
+    html.setAttribute('data-theme', 'light');
+    btn.textContent = '☀️';
+    localStorage.setItem('theme', 'light');
+  }
+}
+
+(function() {
+  const saved = localStorage.getItem('theme');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  if (saved === 'light' || (!saved && !prefersDark)) {
+    document.documentElement.setAttribute('data-theme', 'light');
+    const btn = document.querySelector('.theme-toggle');
+    if (btn) btn.textContent = '☀️';
+  }
+})();
+</script>
+</body>
+</html>
