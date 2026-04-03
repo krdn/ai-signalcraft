@@ -10,6 +10,9 @@ services:
       - "3300:3000"
     env_file:
       - ../.env.production
+    volumes:
+      # Gemini CLI OAuth 인증 — Playground(tRPC)에서 사용
+      - ${HOME}/.gemini:/root/.gemini:ro
     depends_on:
       postgres:
         condition: service_healthy
