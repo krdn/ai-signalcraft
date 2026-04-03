@@ -119,16 +119,16 @@ describe('getModel', () => {
     });
   });
 
-  it('anthropic 기본 모델은 claude-sonnet-4-20250514', async () => {
+  it('anthropic 기본 모델은 claude-sonnet-4-6', async () => {
     await getModel('anthropic');
     const clientFn = mockCreateAnthropic.mock.results[0].value;
-    expect(clientFn).toHaveBeenCalledWith('claude-sonnet-4-20250514');
+    expect(clientFn).toHaveBeenCalledWith('claude-sonnet-4-6');
   });
 
-  it('openai 기본 모델은 gpt-4o-mini', async () => {
+  it('openai 기본 모델은 gpt-4.1-nano', async () => {
     await getModel('openai');
     const clientFn = mockCreateOpenAI.mock.results[0].value;
-    expect(clientFn).toHaveBeenCalledWith('gpt-4o-mini');
+    expect(clientFn).toHaveBeenCalledWith('gpt-4.1-nano');
   });
 
   it('gemini 프로바이더에 createGoogleGenerativeAI 호출', async () => {

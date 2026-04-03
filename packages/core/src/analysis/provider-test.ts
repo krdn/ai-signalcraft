@@ -5,12 +5,32 @@ import { getDb } from '../db';
 import { providerKeys } from '../db/schema/settings';
 import { decrypt } from '../utils/crypto';
 
-// Anthropic 모델 목록 (주요 모델 하드코딩 + API 조회 병행)
+// Gemini CLI에서 사용 가능한 모델 목록 폴백 — 2026-04 기준
+// @google/gemini-cli-core의 VALID_GEMINI_MODELS + 최신 3.x 시리즈
+const GEMINI_CLI_MODELS_FALLBACK = [
+  // Gemini 3.1 시리즈 (2026-02~03 출시)
+  'gemini-3.1-pro-preview',
+  'gemini-3.1-flash-lite-preview',
+  'gemini-3.1-flash-live-preview',
+  // Gemini 3.0 시리즈
+  'gemini-3-pro-preview',
+  'gemini-3-flash-preview',
+  // Gemini 2.5 시리즈 (stable)
+  'gemini-2.5-pro',
+  'gemini-2.5-flash',
+  'gemini-2.5-flash-lite',
+  // Gemini 2.0 시리즈 (deprecated but still available)
+  'gemini-2.0-flash',
+  'gemini-2.0-flash-lite',
+];
+
+// Anthropic 모델 목록 (주요 모델 하드코딩 + API 조회 병행) — 2026-04 최신
 const ANTHROPIC_MODELS_FALLBACK = [
-  'claude-sonnet-4-5-20250514',
-  'claude-sonnet-4-20250514',
+  'claude-opus-4-6',
+  'claude-sonnet-4-6',
   'claude-haiku-4-5-20251001',
-  'claude-haiku-35-20241022',
+  'claude-sonnet-4-5-20250929',
+  'claude-sonnet-4-20250514',
   'claude-opus-4-20250514',
 ];
 
@@ -55,9 +75,30 @@ export async function testProviderConnection(
   try {
     switch (providerType) {
       case 'anthropic': {
-        // Anthropic /v1/models API로 모델 목록 조회 시도
+        const endpoint = baseUrl || 'https://api.anthropic.com';
+        // cli-proxy-api 등 OpenAI 호환 프록시: Bearer 토큰 + /v1/models (claude 모델만 필터)
+        if (baseUrl) {
+          try {
+            const res = await fetch(`${endpoint}/v1/models`, {
+              headers: { Authorization: `Bearer ${apiKey}` },
+              signal: AbortSignal.timeout(10000),
+            });
+            if (res.ok) {
+              const data = (await res.json()) as { data?: Array<{ id: string }> };
+              if (data.data && data.data.length > 0) {
+                const models = data.data
+                  .map((m) => m.id)
+                  .filter((id) => id.startsWith('claude'))
+                  .sort();
+                return { success: true, models };
+              }
+            }
+          } catch {
+            // 프록시 조회 실패 시 폴백
+          }
+        }
+        // 네이티브 Anthropic API
         try {
-          const endpoint = baseUrl || 'https://api.anthropic.com';
           const res = await fetch(`${endpoint}/v1/models?limit=100`, {
             headers: {
               'x-api-key': apiKey,
@@ -95,7 +136,28 @@ export async function testProviderConnection(
       }
 
       case 'gemini': {
-        // Google Generative AI: models 목록
+        // cli-proxy-api 등 OpenAI 호환 프록시: Bearer 토큰 + /v1/models (gemini 모델만 필터)
+        if (baseUrl) {
+          try {
+            const res = await fetch(`${baseUrl}/v1/models`, {
+              headers: { Authorization: `Bearer ${apiKey}` },
+              signal: AbortSignal.timeout(10000),
+            });
+            if (res.ok) {
+              const data = (await res.json()) as { data?: Array<{ id: string }> };
+              if (data.data && data.data.length > 0) {
+                const models = data.data
+                  .map((m) => m.id)
+                  .filter((id) => id.startsWith('gemini'))
+                  .sort();
+                return { success: true, models };
+              }
+            }
+          } catch {
+            // 프록시 조회 실패 시 네이티브 API로 폴백
+          }
+        }
+        // 네이티브 Google Generative AI API
         const res = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`,
         );
@@ -166,6 +228,58 @@ export async function testProviderConnection(
         return { success: false, models: [], error: 'Ollama 서버에 연결할 수 없습니다' };
       }
 
+      case 'claude-cli': {
+        // Claude CLI Proxy — cli-proxy-api를 통해 claude 모델만 필터링
+        if (!baseUrl)
+          return {
+            success: false,
+            models: [],
+            error: 'Base URL이 필요합니다 (cli-proxy-api 주소)',
+          };
+        try {
+          const res = await fetch(`${baseUrl}/v1/models`, {
+            headers: { Authorization: `Bearer ${apiKey}` },
+            signal: AbortSignal.timeout(10000),
+          });
+          if (!res.ok) throw new Error(`API 응답 오류: ${res.status} ${res.statusText}`);
+          const data = (await res.json()) as { data?: Array<{ id: string }> };
+          const models = (data.data ?? [])
+            .map((m) => m.id)
+            .filter((id) => id.startsWith('claude'))
+            .sort();
+          return { success: true, models };
+        } catch {
+          // 프록시 조회 실패 시 폴백
+          return { success: true, models: ANTHROPIC_MODELS_FALLBACK };
+        }
+      }
+
+      case 'gemini-cli': {
+        // Gemini CLI Proxy — cli-proxy-api를 통해 gemini 모델만 필터링
+        if (baseUrl) {
+          try {
+            const res = await fetch(`${baseUrl}/v1/models`, {
+              headers: { Authorization: `Bearer ${apiKey}` },
+              signal: AbortSignal.timeout(10000),
+            });
+            if (res.ok) {
+              const data = (await res.json()) as { data?: Array<{ id: string }> };
+              if (data.data && data.data.length > 0) {
+                const models = data.data
+                  .map((m) => m.id)
+                  .filter((id) => id.startsWith('gemini'))
+                  .sort();
+                if (models.length > 0) return { success: true, models };
+              }
+            }
+          } catch {
+            // 프록시 조회 실패 시 폴백
+          }
+        }
+        // 폴백: Gemini CLI OAuth로 사용 가능한 모델 목록
+        return { success: true, models: [...GEMINI_CLI_MODELS_FALLBACK] };
+      }
+
       default:
         return { success: false, models: [], error: `지원하지 않는 프로바이더: ${providerType}` };
     }
@@ -203,7 +317,7 @@ export async function chatWithProvider(
   try {
     switch (providerType) {
       case 'anthropic': {
-        const model = selectedModel || 'claude-sonnet-4-20250514';
+        const model = selectedModel || 'claude-sonnet-4-6';
         const endpoint = baseUrl || 'https://api.anthropic.com/v1';
         const res = await fetch(`${endpoint}/messages`, {
           method: 'POST',
@@ -297,9 +411,35 @@ export async function chatWithProvider(
         throw new Error('Ollama 서버에 연결할 수 없습니다. URL을 확인해주세요.');
       }
 
+      case 'claude-cli': {
+        // Claude CLI Proxy — OpenAI Chat Completions API (/v1/chat/completions)
+        // gateway.ts와 동일한 엔드포인트 사용 (cli-proxy-api는 /v1/messages 미지원)
+        const model = selectedModel || 'claude-sonnet-4-6';
+        const proxyBase = (baseUrl || 'http://localhost:8317').replace(/\/+$/, '');
+        const resolvedUrl = proxyBase.endsWith('/v1') ? proxyBase : `${proxyBase}/v1`;
+        const res = await fetch(`${resolvedUrl}/chat/completions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${apiKey || 'cli-proxy'}`,
+          },
+          body: JSON.stringify({
+            model,
+            messages: [{ role: 'user', content: prompt }],
+          }),
+          signal: AbortSignal.timeout(30000),
+        });
+        const data = (await res.json()) as {
+          choices?: Array<{ message: { content: string } }>;
+          error?: { message: string };
+        };
+        if (!res.ok) throw new Error(data.error?.message || `API 오류: ${res.status}`);
+        return { response: data.choices?.[0]?.message?.content || '', model };
+      }
+
       default: {
         // OpenAI 호환 (openai, deepseek, xai, openrouter, custom)
-        const model = selectedModel || 'gpt-4o-mini';
+        const model = selectedModel || 'gpt-4.1-nano';
         const endpoint = baseUrl || getDefaultBaseUrl(providerType);
         const res = await fetch(`${endpoint}/v1/chat/completions`, {
           method: 'POST',

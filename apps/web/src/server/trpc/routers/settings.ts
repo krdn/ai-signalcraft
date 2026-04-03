@@ -19,7 +19,11 @@ import {
   getCollectionLimits,
   updateCollectionLimits,
 } from '@ai-signalcraft/core';
+import { AI_PROVIDER_VALUES } from '@ai-signalcraft/ai-gateway/meta';
 import { protectedProcedure, router } from '../init';
+
+// AI 프로바이더 enum — 중앙 레지스트리에서 파생
+const aiProviderEnum = z.enum(AI_PROVIDER_VALUES);
 
 export const settingsRouter = router({
   // === 모듈별 AI 모델 설정 ===
@@ -34,16 +38,7 @@ export const settingsRouter = router({
     .input(
       z.object({
         moduleName: z.string().min(1),
-        provider: z.enum([
-          'anthropic',
-          'openai',
-          'gemini',
-          'ollama',
-          'deepseek',
-          'xai',
-          'openrouter',
-          'custom',
-        ]),
+        provider: aiProviderEnum,
         model: z.string().min(1),
       }),
     )
@@ -55,16 +50,7 @@ export const settingsRouter = router({
   bulkUpdate: protectedProcedure
     .input(
       z.object({
-        provider: z.enum([
-          'anthropic',
-          'openai',
-          'gemini',
-          'ollama',
-          'deepseek',
-          'xai',
-          'openrouter',
-          'custom',
-        ]),
+        provider: aiProviderEnum,
         model: z.string().min(1),
       }),
     )
@@ -169,16 +155,7 @@ export const settingsRouter = router({
       .input(
         z.object({
           name: z.string().min(1),
-          providerType: z.enum([
-            'openai',
-            'anthropic',
-            'gemini',
-            'ollama',
-            'deepseek',
-            'xai',
-            'openrouter',
-            'custom',
-          ]),
+          providerType: aiProviderEnum,
           providerName: z.string().min(1),
           key: z.string().optional(),
           baseUrl: z.string().url().optional().or(z.literal('')),

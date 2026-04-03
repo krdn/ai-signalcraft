@@ -13,6 +13,7 @@ import {
   Zap,
   ArrowRight,
 } from 'lucide-react';
+import { PROVIDER_REGISTRY, type AIProvider } from '@ai-signalcraft/ai-gateway/meta';
 import { trpcClient } from '@/lib/trpc';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -56,9 +57,9 @@ const MODULE_META: Record<string, ModuleMeta> = {
       '핵심 키워드 및 토픽 클러스터링',
     ],
     recommended: {
-      provider: 'openai',
-      model: 'gpt-4o-mini',
-      reason: '대량 텍스트 요약에 비용 효율적',
+      provider: 'gemini',
+      model: 'gemini-2.5-flash',
+      reason: '대량 텍스트 요약에 비용 효율적, Free Tier 가능',
     },
     costTip: '데이터 양이 많아 토큰 소비가 큽니다. 비용 절감이 중요하면 경량 모델을 추천합니다.',
   },
@@ -72,9 +73,9 @@ const MODULE_META: Record<string, ModuleMeta> = {
       '이탈 가능성이 높은 유동층 식별',
     ],
     recommended: {
-      provider: 'openai',
-      model: 'gpt-4o-mini',
-      reason: '패턴 분류 작업에 충분한 성능',
+      provider: 'gemini',
+      model: 'gemini-2.5-flash',
+      reason: '패턴 분류 작업에 충분한 성능, 비용 효율적',
     },
     costTip: '분류 작업은 비교적 단순하므로 경량 모델로도 정확도가 높습니다.',
   },
@@ -88,8 +89,8 @@ const MODULE_META: Record<string, ModuleMeta> = {
       '감정 유발 키워드 및 표현 패턴 추출',
     ],
     recommended: {
-      provider: 'openai',
-      model: 'gpt-4o-mini',
+      provider: 'gemini',
+      model: 'gemini-2.5-flash',
       reason: '감정 분류에 비용 대비 성능 우수',
     },
     costTip: '한국어 뉘앙스 파악이 중요한 경우 고급 모델이 더 정확합니다.',
@@ -103,7 +104,11 @@ const MODULE_META: Record<string, ModuleMeta> = {
       '반응 유형 분류 (공감/반발/무관심)',
       '메시지 효과의 지속 기간 예측',
     ],
-    recommended: { provider: 'openai', model: 'gpt-4o-mini', reason: '정량적 분석에 적합' },
+    recommended: {
+      provider: 'gemini',
+      model: 'gemini-2.5-flash',
+      reason: '정량적 분석에 적합, 비용 효율적',
+    },
     costTip: '시계열 비교가 포함되어 입력 토큰이 많을 수 있습니다.',
   },
   'risk-map': {
@@ -117,7 +122,7 @@ const MODULE_META: Record<string, ModuleMeta> = {
     ],
     recommended: {
       provider: 'anthropic',
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       reason: '복합적 위험 분석에 높은 추론 능력 필요',
     },
     costTip: '정확한 위험 평가가 중요하므로 고급 모델 사용을 권장합니다.',
@@ -133,7 +138,7 @@ const MODULE_META: Record<string, ModuleMeta> = {
     ],
     recommended: {
       provider: 'anthropic',
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       reason: '창의적 인사이트 도출에 강점',
     },
     costTip: '전략적 판단이 필요한 영역으로, 모델 품질이 결과에 직접 영향을 줍니다.',
@@ -149,7 +154,7 @@ const MODULE_META: Record<string, ModuleMeta> = {
     ],
     recommended: {
       provider: 'anthropic',
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       reason: '전략 수립에 깊은 추론 능력 필수',
     },
     costTip: '최종 의사결정에 활용되므로 가장 높은 품질의 모델을 추천합니다.',
@@ -165,7 +170,7 @@ const MODULE_META: Record<string, ModuleMeta> = {
     ],
     recommended: {
       provider: 'anthropic',
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       reason: '다중 분석 결과 종합에 뛰어난 정리 능력',
     },
     costTip: '입력이 다른 모듈 결과 전체이므로 토큰 소비가 클 수 있습니다.',
@@ -181,7 +186,7 @@ const MODULE_META: Record<string, ModuleMeta> = {
     ],
     recommended: {
       provider: 'anthropic',
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       reason: '긴 형식의 구조화된 문서 생성에 최적',
     },
     costTip: '출력 토큰이 매우 많습니다. 비용에 민감하면 요약 수준을 조절하세요.',
@@ -197,7 +202,7 @@ const MODULE_META: Record<string, ModuleMeta> = {
     ],
     recommended: {
       provider: 'anthropic',
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       reason: '수치 예측에 정밀한 추론 필요',
     },
     costTip: '정량적 예측의 정확도는 모델 성능에 크게 의존합니다.',
@@ -213,7 +218,7 @@ const MODULE_META: Record<string, ModuleMeta> = {
     ],
     recommended: {
       provider: 'anthropic',
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       reason: '미묘한 언어 전략 분석에 고급 모델 필수',
     },
     costTip: '담론 분석은 컨텍스트 이해가 핵심이므로 모델 품질이 중요합니다.',
@@ -229,7 +234,7 @@ const MODULE_META: Record<string, ModuleMeta> = {
     ],
     recommended: {
       provider: 'anthropic',
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       reason: '복합 시나리오 생성에 고급 추론 필요',
     },
     costTip: '여러 시나리오를 생성하므로 출력 토큰이 많습니다.',
@@ -245,24 +250,17 @@ const MODULE_META: Record<string, ModuleMeta> = {
     ],
     recommended: {
       provider: 'anthropic',
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       reason: '게임 이론 기반 전략 시뮬레이션에 최고 성능 필요',
     },
     costTip: '가장 복잡한 분석 모듈입니다. 최고 품질 모델 사용을 강력 권장합니다.',
   },
 };
 
-// 프로바이더 표시명 매핑
-const PROVIDER_LABELS: Record<string, string> = {
-  openai: 'OpenAI',
-  anthropic: 'Anthropic',
-  gemini: 'Gemini',
-  ollama: 'Ollama',
-  deepseek: 'DeepSeek',
-  xai: 'xAI',
-  openrouter: 'OpenRouter',
-  custom: 'Custom',
-};
+// 프로바이더 표시명 — 중앙 레지스트리에서 파생
+function getProviderLabel(provider: string): string {
+  return PROVIDER_REGISTRY[provider as AIProvider]?.displayName ?? provider;
+}
 
 type ModelSettingItem = {
   moduleName: string;
@@ -473,6 +471,16 @@ export function ModelSettings() {
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
             {scenarioPresets.map((preset) => {
               const isRecommended = preset.id === 'scenario-b';
+              // 프리셋이 사용하는 프로바이더 vs 등록된 프로바이더 비교
+              const requiredProviders = new Set(
+                Object.values(preset.modules).map((m) => m.provider),
+              );
+              const registeredProviders = new Set(
+                providerKeysList?.filter((k) => k.isActive).map((k) => k.providerType) ?? [],
+              );
+              const missingProviders = [...requiredProviders].filter(
+                (p) => !registeredProviders.has(p),
+              );
               return (
                 <div
                   key={preset.id}
@@ -494,6 +502,14 @@ export function ModelSettings() {
                   <p className="text-xs text-muted-foreground mb-2 leading-relaxed">
                     {preset.description}
                   </p>
+                  {missingProviders.length > 0 && (
+                    <div className="flex items-start gap-1.5 rounded-md border border-amber-500/20 bg-amber-500/5 p-2 mb-2">
+                      <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-amber-500" />
+                      <p className="text-[11px] text-amber-600 dark:text-amber-400">
+                        미등록: {missingProviders.map((p) => getProviderLabel(p)).join(', ')}
+                      </p>
+                    </div>
+                  )}
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-mono text-muted-foreground">
                       {preset.estimatedCost}
@@ -568,7 +584,7 @@ export function ModelSettings() {
               <SelectContent>
                 {availableProviders.map((provider) => (
                   <SelectItem key={provider} value={provider}>
-                    {PROVIDER_LABELS[provider] ?? provider}
+                    {getProviderLabel(provider)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -667,7 +683,7 @@ export function ModelSettings() {
                 <SelectContent>
                   {availableProviders.map((provider) => (
                     <SelectItem key={provider} value={provider}>
-                      {PROVIDER_LABELS[provider] ?? provider}
+                      {getProviderLabel(provider)}
                     </SelectItem>
                   ))}
                 </SelectContent>

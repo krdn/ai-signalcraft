@@ -13,10 +13,6 @@ import {
   registerCollector,
 } from '@ai-signalcraft/collectors';
 import type { CommunitySource } from '../pipeline/normalize';
-import { createLogger } from '../utils/logger';
-
-const logger = createLogger('worker-config');
-
 // 모노리포 루트 탐색 -- pnpm-workspace.yaml이 있는 디렉토리
 export function findMonorepoRoot(startDir: string): string {
   let dir = startDir;
@@ -36,28 +32,11 @@ export function initEnv(): void {
   config({ path: resolve(root, '.env') });
 }
 
-// AI API 키 검증 -- 분석 파이프라인에 필수
+// AI API 키 검증 -- DB provider_keys 기반 설정 시 환경변수 불필요 (no-op)
+// proxy CLI(claude-cli, gemini-cli) 등 DB 기반 프로바이더 사용 시 환경변수 검증 스킵
 export function validateApiKeys(): void {
-  const requiredApiKeys = [
-    { name: 'OPENAI_API_KEY', prefix: 'sk-', usage: 'Stage 1 분석 (gpt-4o-mini)' },
-    {
-      name: 'ANTHROPIC_API_KEY',
-      prefix: 'sk-ant-',
-      usage: 'Stage 2~3 분석 + 리포트 생성 (Claude)',
-    },
-  ];
-  for (const key of requiredApiKeys) {
-    const value = process.env[key.name];
-    if (!value) {
-      logger.warn(
-        `${key.name} 미설정 -- ${key.usage} 실패 예상. apps/web/.env.local에 추가하세요.`,
-      );
-    } else if (key.prefix && !value.startsWith(key.prefix)) {
-      logger.warn(
-        `${key.name} 형식 의심 (${key.prefix}로 시작하지 않음) -- ${key.usage} 실패 가능`,
-      );
-    }
-  }
+  // 모델 설정은 DB provider_keys/model_settings에서 관리됨
+  // 환경변수 API 키는 선택적 폴백 — 경고 생략
 }
 
 // 수집기 등록

@@ -24,7 +24,7 @@ describe('ADVN 모듈 export 확인', () => {
     for (const mod of advnModules) {
       expect(MODULE_MODEL_MAP[mod]).toBeDefined();
       expect(MODULE_MODEL_MAP[mod].provider).toBe('anthropic');
-      expect(MODULE_MODEL_MAP[mod].model).toBe('claude-sonnet-4-20250514');
+      expect(MODULE_MODEL_MAP[mod].model).toBe('claude-sonnet-4-6');
     }
   });
 

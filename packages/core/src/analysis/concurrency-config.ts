@@ -34,6 +34,9 @@ export const DEFAULT_PROVIDER_CONCURRENCY: Record<string, number> = {
   xai: 2,
   openrouter: 2,
   custom: 1,
+  // CLI 프록시 — rate limit이 타이트하므로 동시성 최소화
+  'gemini-cli': 1,
+  'claude-cli': 1,
 };
 
 const DEFAULT_CONFIG: ConcurrencyConfig = {
@@ -60,6 +63,8 @@ export const CONCURRENCY_PRESETS: ConcurrencyPreset[] = [
       xai: 1,
       openrouter: 1,
       custom: 1,
+      'gemini-cli': 1,
+      'claude-cli': 1,
     },
     apiConcurrency: 2,
     articleBatchSize: 5,
@@ -87,6 +92,8 @@ export const CONCURRENCY_PRESETS: ConcurrencyPreset[] = [
       xai: 3,
       openrouter: 4,
       custom: 2,
+      'gemini-cli': 2,
+      'claude-cli': 1,
     },
     apiConcurrency: 10,
     articleBatchSize: 20,

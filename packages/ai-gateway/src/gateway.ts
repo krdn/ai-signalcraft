@@ -5,17 +5,13 @@ import { createOpenAI } from '@ai-sdk/openai';
 // gemini-cli: 네이티브/WASM 의존성이 많아 동적 import (워커에서만 사용, 웹 빌드 제외)
 import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
+import {
+  needsTextFallback as checkNeedsTextFallback,
+  needsJsonMode as checkNeedsJsonMode,
+  type AIProvider,
+} from './provider-meta';
 
-export type AIProvider =
-  | 'anthropic'
-  | 'openai'
-  | 'gemini'
-  | 'gemini-cli'
-  | 'ollama'
-  | 'deepseek'
-  | 'xai'
-  | 'openrouter'
-  | 'custom';
+export type { AIProvider };
 
 export interface AIGatewayOptions {
   provider?: AIProvider;
@@ -31,8 +27,10 @@ export interface AIGatewayOptions {
 }
 
 const DEFAULT_MODELS: Partial<Record<AIProvider, string>> = {
-  anthropic: 'claude-sonnet-4-20250514',
-  openai: 'gpt-4o-mini',
+  anthropic: 'claude-sonnet-4-6',
+  openai: 'gpt-4.1-nano',
+  gemini: 'gemini-2.5-flash',
+  deepseek: 'deepseek-chat',
 };
 
 /** 프로바이더별 기본 Base URL */
@@ -50,7 +48,7 @@ export async function getModel(
   baseUrl?: string,
   apiKey?: string,
 ) {
-  const modelName = model ?? DEFAULT_MODELS[provider] ?? 'gpt-4o-mini';
+  const modelName = model ?? DEFAULT_MODELS[provider] ?? 'gpt-4.1-nano';
   console.log(
     `[ai-gateway] getModel: provider=${provider}, model=${modelName}, baseUrl=${baseUrl ?? 'none'}, hasApiKey=${!!apiKey}`,
   );
@@ -76,6 +74,17 @@ export async function getModel(
         authType: 'oauth-personal',
       });
       return client(modelName);
+    }
+    case 'claude-cli': {
+      // Claude CLI Proxy — OpenAI 호환 Chat Completions API 사용 (/v1/chat/completions)
+      // cli-proxy-api는 /v1/messages가 아닌 /v1/chat/completions 엔드포인트만 지원
+      const proxyBaseUrl = baseUrl ? baseUrl.replace(/\/+$/, '') : 'http://localhost:8317';
+      const resolvedUrl = proxyBaseUrl.endsWith('/v1') ? proxyBaseUrl : `${proxyBaseUrl}/v1`;
+      const client = createOpenAI({
+        baseURL: resolvedUrl,
+        apiKey: apiKey || 'cli-proxy',
+      });
+      return client.chat(modelName);
     }
     case 'ollama':
     case 'deepseek':
@@ -137,16 +146,14 @@ export async function analyzeStructured<T>(
   const model = await getModel(provider, options.model, options.baseUrl, options.apiKey);
   const abortSignal = options.abortSignal ?? AbortSignal.timeout(options.timeoutMs ?? 300_000);
 
-  // Custom/Ollama 프록시는 json_schema response_format을 지원하지 않는 경우가 많음
-  // → generateText + 프롬프트 기반 JSON 추출 + Zod 파싱으로 처리
-  const needsTextFallback = ['custom', 'ollama'].includes(provider);
-
-  if (needsTextFallback) {
+  // 구조화 출력 미지원 프로바이더(CLI 프록시/Custom/Ollama 등)는
+  // generateText + 프롬프트 기반 JSON 추출 + Zod 파싱으로 처리
+  if (checkNeedsTextFallback(provider)) {
     return analyzeStructuredViaText(prompt, schema, model, options, abortSignal);
   }
 
   // 네이티브 프로바이더 (anthropic, openai, gemini 등) — generateObject 사용
-  const needsJsonMode = ['openrouter'].includes(provider);
+  const needsJsonMode = checkNeedsJsonMode(provider);
 
   const result = await generateObject({
     model,
@@ -266,19 +273,35 @@ async function analyzeStructuredViaText<T>(
   const jsonInstruction = `${schemaBlock}\n\n반드시 위 JSON Schema 구조에 정확히 맞는 유효한 JSON으로만 응답하세요. 마크다운 코드블록, 설명 텍스트, 주석 없이 순수 JSON 객체만 출력하세요. 모든 필수 필드를 빠짐없이 포함하되, 각 텍스트 필드는 2~3문장 이내로 간결하게 작성하세요. JSON이 잘리지 않도록 전체 응답을 완결된 형태로 출력하세요.`;
   const systemWithJson = (options.systemPrompt ?? '') + jsonInstruction;
 
-  const result = await generateText({
-    model,
-    system: systemWithJson,
-    prompt,
-    maxOutputTokens: options.maxOutputTokens ?? 4096,
-    abortSignal,
-  });
+  let result;
+  try {
+    result = await generateText({
+      model,
+      system: systemWithJson,
+      prompt,
+      maxOutputTokens: options.maxOutputTokens ?? 4096,
+      abortSignal,
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error(`[ai-gateway] analyzeStructuredViaText: generateText 호출 실패 — ${msg}`);
+    throw e;
+  }
+
+  console.log(
+    `[ai-gateway] analyzeStructuredViaText: 응답 수신 (finishReason=${result.finishReason}, 텍스트 길이=${result.text.length})`,
+  );
 
   const jsonStr = extractJson(result.text);
   let parsed: unknown;
   try {
     parsed = JSON.parse(jsonStr);
   } catch (e) {
+    console.error(
+      `[ai-gateway] JSON 파싱 실패 — finishReason=${result.finishReason}, 텍스트 길이=${result.text.length}`,
+    );
+    console.error(`[ai-gateway] 추출된 JSON (처음 500자): ${jsonStr.substring(0, 500)}`);
+    console.error(`[ai-gateway] 원본 응답 (처음 500자): ${result.text.substring(0, 500)}`);
     throw new Error(
       `JSON 파싱 실패: ${e instanceof Error ? e.message : String(e)}\n응답 텍스트 (처음 500자): ${result.text.substring(0, 500)}`,
       { cause: e },
@@ -290,6 +313,10 @@ async function analyzeStructuredViaText<T>(
     const issues = validated.error.issues
       .map((i) => `${i.path.join('.')}: ${i.message}`)
       .join(', ');
+    console.error(`[ai-gateway] Zod 검증 실패 — ${issues}`);
+    console.error(
+      `[ai-gateway] 파싱된 JSON 키: ${typeof parsed === 'object' && parsed ? Object.keys(parsed).join(', ') : 'N/A'}`,
+    );
     throw new Error(`JSON 스키마 검증 실패: ${issues}`);
   }
 

@@ -2,25 +2,28 @@ import { z } from 'zod';
 
 // 개별 시나리오 공통 필드
 const scenarioBase = {
-  name: z.string(),
-  probability: z.number().describe('발생 확률 0~100'),
-  triggerConditions: z.array(z.string()),
-  expectedOutcome: z.string(),
-  responseStrategy: z.array(z.string()),
-  timeframe: z.string(),
+  name: z.string().catch(''),
+  probability: z.number().catch(0).describe('발생 확률 0~100'),
+  triggerConditions: z.array(z.string()).catch([]),
+  expectedOutcome: z.string().catch(''),
+  responseStrategy: z.array(z.string()).catch([]),
+  timeframe: z.string().catch(''),
 };
 
 // ADVN-03: 위기 대응 시나리오 스키마
 // 3개 시나리오: spread(확산/worst), control(통제/moderate), reverse(역전/best)
 const scenarioSchema = z.object({
-  type: z.enum(['spread', 'control', 'reverse']),
+  type: z.enum(['spread', 'control', 'reverse']).catch('control'),
   ...scenarioBase,
 });
 
 export const CrisisScenarioSchema = z.object({
-  scenarios: z.array(scenarioSchema).describe('정확히 3개 시나리오: spread, control, reverse'),
-  currentRiskLevel: z.enum(['critical', 'high', 'medium', 'low']),
-  recommendedAction: z.string(),
+  scenarios: z
+    .array(scenarioSchema)
+    .catch([])
+    .describe('정확히 3개 시나리오: spread, control, reverse'),
+  currentRiskLevel: z.enum(['critical', 'high', 'medium', 'low']).catch('medium'),
+  recommendedAction: z.string().catch(''),
 });
 
 export type CrisisScenarioResult = z.infer<typeof CrisisScenarioSchema>;

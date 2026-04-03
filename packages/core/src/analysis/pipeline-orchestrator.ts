@@ -275,6 +275,10 @@ export async function runAnalysisPipeline(
     if (failed.length > 0) {
       const failedNames = failed.map((f) => f.module).join(', ');
       console.log(`[pipeline] ${stageName} 실패 감지 — 파이프라인 중단: ${failedNames}`);
+      // 각 실패 모듈의 에러 메시지 상세 출력
+      for (const f of failed) {
+        console.error(`[pipeline] 실패 상세 — ${f.module}: ${f.errorMessage ?? '원인 불명'}`);
+      }
       appendJobEvent(
         input.jobId,
         'error',

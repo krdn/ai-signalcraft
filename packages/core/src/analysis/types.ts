@@ -12,7 +12,7 @@ export interface AnalysisModule<T = unknown> {
   readonly name: string; // 'macro-view', 'segmentation', etc.
   readonly displayName: string; // '전체 여론 구조 분석'
   readonly provider: AIProvider; // D-03: 모듈별 AI 모델 지정
-  readonly model: string; // 'gpt-4o-mini' or 'claude-sonnet-4-20250514'
+  readonly model: string; // 'gemini-2.5-flash', 'claude-sonnet-4-6' 등
   readonly schema: z.ZodType<T, z.ZodTypeDef, unknown>; // 모듈별 Zod 스키마 (Input은 unknown — transform/catch 허용)
 
   buildPrompt(data: AnalysisInput): string;
@@ -66,22 +66,24 @@ export interface AnalysisModuleResult<T = unknown> {
   errorMessage?: string;
 }
 
-// 모듈별 AI 모델 매핑 (D-03)
+// 모듈별 AI 모델 매핑 (D-03) — 2026-04 최신 모델 기준
 export const MODULE_MODEL_MAP: Record<string, { provider: AIProvider; model: string }> = {
-  'macro-view': { provider: 'openai', model: 'gpt-4o-mini' },
-  segmentation: { provider: 'openai', model: 'gpt-4o-mini' },
-  'sentiment-framing': { provider: 'openai', model: 'gpt-4o-mini' },
-  'message-impact': { provider: 'openai', model: 'gpt-4o-mini' },
-  'risk-map': { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
-  opportunity: { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
-  strategy: { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
-  'final-summary': { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
-  'integrated-report': { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
+  // Stage 1: 대량 텍스트 요약/분류 — 속도·비용 우선
+  'macro-view': { provider: 'gemini', model: 'gemini-2.5-flash' },
+  segmentation: { provider: 'gemini', model: 'gemini-2.5-flash' },
+  'sentiment-framing': { provider: 'gemini', model: 'gemini-2.5-flash' },
+  'message-impact': { provider: 'gemini', model: 'gemini-2.5-flash' },
+  // Stage 2: 복합 추론/전략 — 품질 우선
+  'risk-map': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
+  opportunity: { provider: 'anthropic', model: 'claude-sonnet-4-6' },
+  strategy: { provider: 'anthropic', model: 'claude-sonnet-4-6' },
+  'final-summary': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
+  'integrated-report': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
   // Stage 4: ADVN 고급 분석 모듈
-  'approval-rating': { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
-  'frame-war': { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
-  'crisis-scenario': { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
-  'win-simulation': { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
+  'approval-rating': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
+  'frame-war': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
+  'crisis-scenario': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
+  'win-simulation': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
 };
 
 // 모듈 이름 상수

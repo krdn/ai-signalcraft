@@ -5,28 +5,42 @@ import { z } from 'zod';
 export const ApprovalRatingSchema = z.object({
   estimatedRange: z
     .object({
-      min: z.number().describe('최소 지지율 0~100'),
-      max: z.number().describe('최대 지지율 0~100'),
+      min: z.number().catch(0).describe('최소 지지율 0~100'),
+      max: z.number().catch(0).describe('최대 지지율 0~100'),
     })
+    .catch({ min: 0, max: 0 })
     .describe('AI 추정 지지율 범위 (%)'),
-  confidence: z.enum(['high', 'medium', 'low']),
-  methodology: z.object({
-    sentimentRatio: z.object({
-      positive: z.number().catch(0),
-      neutral: z.number().catch(0),
-      negative: z.number().catch(0),
+  confidence: z.enum(['high', 'medium', 'low']).catch('low'),
+  methodology: z
+    .object({
+      sentimentRatio: z
+        .object({
+          positive: z.number().catch(0),
+          neutral: z.number().catch(0),
+          negative: z.number().catch(0),
+        })
+        .catch({ positive: 0, neutral: 0, negative: 0 }),
+      platformBiasCorrection: z
+        .array(
+          z.object({
+            platform: z.string().catch(''),
+            biasDirection: z.enum(['left', 'right', 'neutral']).catch('neutral'),
+            correctionFactor: z.number().catch(1),
+          }),
+        )
+        .catch([]),
+      spreadFactor: z.number().catch(1).describe('확산력 가중치'),
+    })
+    .catch({
+      sentimentRatio: { positive: 0, neutral: 0, negative: 0 },
+      platformBiasCorrection: [],
+      spreadFactor: 1,
     }),
-    platformBiasCorrection: z.array(
-      z.object({
-        platform: z.string(),
-        biasDirection: z.enum(['left', 'right', 'neutral']),
-        correctionFactor: z.number().catch(1),
-      }),
-    ),
-    spreadFactor: z.number().catch(1).describe('확산력 가중치'),
-  }),
-  disclaimer: z.string().describe('면책 문구 -- 반드시 포함'),
-  reasoning: z.string(),
+  disclaimer: z
+    .string()
+    .catch('AI 추정치로 실제 지지율과 차이가 있을 수 있습니다.')
+    .describe('면책 문구 -- 반드시 포함'),
+  reasoning: z.string().catch(''),
 });
 
 export type ApprovalRatingResult = z.infer<typeof ApprovalRatingSchema>;

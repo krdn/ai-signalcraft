@@ -65,32 +65,32 @@ export const MODULE_HELP: Record<
   'sentiment-framing': {
     description:
       '기사/댓글의 감정 톤(긍정/부정/중립)과 프레이밍 방식을 분석합니다. 미디어가 특정 인물을 어떤 프레임으로 보도하는지 파악합니다.',
-    provider: 'OpenAI',
-    model: 'gpt-4o-mini',
+    provider: 'Gemini',
+    model: 'gemini-2.5-flash',
     stage: 1,
     stageLabel: 'Stage 1 (병렬)',
   },
   'macro-view': {
     description:
       '여론의 전체적 흐름과 거시적 트렌드를 분석합니다. 시간에 따른 여론 변화, 주요 이슈의 등장과 소멸 패턴을 파악합니다.',
-    provider: 'OpenAI',
-    model: 'gpt-4o-mini',
+    provider: 'Gemini',
+    model: 'gemini-2.5-flash',
     stage: 1,
     stageLabel: 'Stage 1 (병렬)',
   },
   segmentation: {
     description:
       '여론 참여자를 그룹별로 분류합니다. 지지층, 반대층, 부동층 등의 세그먼트별 특성과 크기를 식별합니다.',
-    provider: 'OpenAI',
-    model: 'gpt-4o-mini',
+    provider: 'Gemini',
+    model: 'gemini-2.5-flash',
     stage: 1,
     stageLabel: 'Stage 1 (병렬)',
   },
   'message-impact': {
     description:
       '특정 발언이나 이벤트가 여론에 미친 영향력을 측정합니다. 바이럴 효과, 감정 전환점, 핵심 키워드를 추출합니다.',
-    provider: 'OpenAI',
-    model: 'gpt-4o-mini',
+    provider: 'Gemini',
+    model: 'gemini-2.5-flash',
     stage: 1,
     stageLabel: 'Stage 1 (병렬)',
   },
@@ -98,7 +98,7 @@ export const MODULE_HELP: Record<
     description:
       '잠재적 리스크 요인을 식별하고 영향도/발생 확률로 매핑합니다. Stage 1 결과를 기반으로 위협 요소를 종합 분석합니다.',
     provider: 'Anthropic',
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-6',
     stage: 2,
     stageLabel: 'Stage 2 (순차)',
   },
@@ -106,7 +106,7 @@ export const MODULE_HELP: Record<
     description:
       '여론 흐름에서 활용 가능한 기회를 발굴합니다. 긍정 여론 강화 포인트, 설득 가능 세그먼트, 전략적 타이밍을 제안합니다.',
     provider: 'Anthropic',
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-6',
     stage: 2,
     stageLabel: 'Stage 2 (순차)',
   },
@@ -114,7 +114,7 @@ export const MODULE_HELP: Record<
     description:
       '분석 결과를 종합하여 구체적인 대응 전략을 제안합니다. 메시지 방향, 매체 전략, 위기 대응 시나리오를 포함합니다.',
     provider: 'Anthropic',
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-6',
     stage: 2,
     stageLabel: 'Stage 2 (순차)',
   },
@@ -122,7 +122,7 @@ export const MODULE_HELP: Record<
     description:
       'Stage 1~2의 모든 분석 결과를 하나의 종합 요약으로 통합합니다. 핵심 발견, 주요 지표, 즉시 행동 사항을 정리합니다.',
     provider: 'Anthropic',
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-6',
     stage: 3,
     stageLabel: 'Stage 3 (종합)',
   },
@@ -130,7 +130,7 @@ export const MODULE_HELP: Record<
     description:
       '수집 데이터를 기반으로 지지율 추이를 추정합니다. 긍정/부정 비율 변화, 핵심 이슈별 지지율 영향을 분석합니다.',
     provider: 'Anthropic',
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-6',
     stage: 4,
     stageLabel: 'Stage 4 (고급)',
   },
@@ -138,7 +138,7 @@ export const MODULE_HELP: Record<
     description:
       '서로 다른 진영이 사용하는 프레이밍 전략을 비교 분석합니다. 프레임 충돌 지점, 지배적 프레임, 반격 프레임을 식별합니다.',
     provider: 'Anthropic',
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-6',
     stage: 4,
     stageLabel: 'Stage 4 (고급)',
   },
@@ -146,7 +146,7 @@ export const MODULE_HELP: Record<
     description:
       '리스크 분석과 지지율 데이터를 결합하여 위기 시나리오를 시뮬레이션합니다. 최악/최선/가능성 높은 시나리오별 대응책을 제시합니다.',
     provider: 'Anthropic',
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-6',
     stage: 4,
     stageLabel: 'Stage 4 (고급)',
   },
@@ -154,7 +154,7 @@ export const MODULE_HELP: Record<
     description:
       '모든 분석 데이터를 종합하여 승리(목표 달성) 전략을 시뮬레이션합니다. 최적 경로, 핵심 변수, 실행 타임라인을 도출합니다.',
     provider: 'Anthropic',
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-6',
     stage: 4,
     stageLabel: 'Stage 4 (고급)',
   },
@@ -249,14 +249,22 @@ export const SOURCE_HELP: Record<string, { label: string; description: string; m
 // --- AI 토큰 비용 상수 (USD per 1K tokens) ---
 
 export const TOKEN_COST_PER_1K: Record<string, { input: number; output: number }> = {
-  'gpt-4o-mini': { input: 0.00015, output: 0.0006 },
-  'claude-sonnet-4-20250514': { input: 0.003, output: 0.015 },
-  // Gemini 2.5 Flash Lite (<=128K context)
-  'gemini-2.5-flash-lite': { input: 0.000075, output: 0.0003 },
-  // Gemini 2.5 Flash
-  'gemini-2.5-flash': { input: 0.00015, output: 0.0006 },
-  // Gemini 2.0 Flash (레거시)
-  'gemini-2.0-flash': { input: 0.0001, output: 0.0004 },
+  // Anthropic — 2026-04 최신
+  'claude-opus-4-6': { input: 0.005, output: 0.025 },
+  'claude-sonnet-4-6': { input: 0.003, output: 0.015 },
+  'claude-haiku-4-5-20251001': { input: 0.001, output: 0.005 },
+  'claude-sonnet-4-20250514': { input: 0.003, output: 0.015 }, // 레거시
+  // OpenAI
+  'gpt-4.1-nano': { input: 0.00005, output: 0.0002 },
+  'gpt-4.1-mini': { input: 0.0004, output: 0.0016 },
+  'gpt-4o-mini': { input: 0.00015, output: 0.0006 }, // 레거시
+  // Google Gemini
+  'gemini-2.5-pro': { input: 0.00125, output: 0.01 },
+  'gemini-2.5-flash': { input: 0.0003, output: 0.0025 },
+  'gemini-2.5-flash-lite': { input: 0.0001, output: 0.0004 },
+  // DeepSeek
+  'deepseek-chat': { input: 0.00028, output: 0.00042 },
+  'deepseek-reasoner': { input: 0.00055, output: 0.00219 },
 };
 
 /** 토큰 사용량으로 추정 비용(USD) 계산 */

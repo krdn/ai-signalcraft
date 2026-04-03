@@ -272,8 +272,17 @@ export async function checkCostLimit(
     .where(eq(analysisResults.jobId, jobId));
 
   const TOKEN_COST_PER_1K: Record<string, { input: number; output: number }> = {
-    'gpt-4o-mini': { input: 0.00015, output: 0.0006 },
+    'claude-opus-4-6': { input: 0.005, output: 0.025 },
+    'claude-sonnet-4-6': { input: 0.003, output: 0.015 },
+    'claude-haiku-4-5-20251001': { input: 0.001, output: 0.005 },
     'claude-sonnet-4-20250514': { input: 0.003, output: 0.015 },
+    'gpt-4.1-nano': { input: 0.00005, output: 0.0002 },
+    'gpt-4o-mini': { input: 0.00015, output: 0.0006 },
+    'gemini-2.5-pro': { input: 0.00125, output: 0.01 },
+    'gemini-2.5-flash': { input: 0.0003, output: 0.0025 },
+    'gemini-2.5-flash-lite': { input: 0.0001, output: 0.0004 },
+    'deepseek-chat': { input: 0.00028, output: 0.00042 },
+    'deepseek-reasoner': { input: 0.00055, output: 0.00219 },
   };
 
   let totalCost = 0;

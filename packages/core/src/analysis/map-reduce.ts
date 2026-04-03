@@ -229,6 +229,7 @@ export async function runModuleMapReduce<T>(
 
     // === MAP 단계 (프로바이더별 동시성 제한 병렬 처리) ===
     const mapResults: { result: T; chunkIndex: number }[] = [];
+    const chunkErrors: string[] = [];
 
     const cc = await getConcurrencyConfig();
     const mapConcurrency = cc.providerConcurrency[config.provider] ?? 2;
@@ -304,7 +305,20 @@ export async function runModuleMapReduce<T>(
         } else {
           const errMsg =
             settled.reason instanceof Error ? settled.reason.message : String(settled.reason);
+          const errStack = settled.reason instanceof Error ? settled.reason.stack : undefined;
           console.error(`[map-reduce] ${module.name}[chunk]: 실패 — ${errMsg}`);
+          if (errStack) {
+            console.error(`[map-reduce] ${module.name}[chunk]: 스택:\n${errStack}`);
+          }
+          // cause 체인 추적
+          if (settled.reason instanceof Error && settled.reason.cause) {
+            const causeMsg =
+              settled.reason.cause instanceof Error
+                ? settled.reason.cause.message
+                : String(settled.reason.cause);
+            console.error(`[map-reduce] ${module.name}[chunk]: 원인(cause): ${causeMsg}`);
+          }
+          chunkErrors.push(errMsg);
           appendJobEvent(
             input.jobId,
             'warn',
@@ -314,9 +328,10 @@ export async function runModuleMapReduce<T>(
       }
     }
 
-    // 성공한 Map 결과가 없으면 실패
+    // 성공한 Map 결과가 없으면 실패 — 청크별 에러 메시지 포함
     if (mapResults.length === 0) {
-      throw new Error(`모든 청크 분석 실패 (${chunks.length}개)`);
+      const detail = chunkErrors.length > 0 ? ` | 청크 에러: ${chunkErrors.join(' / ')}` : '';
+      throw new Error(`모든 청크 분석 실패 (${chunks.length}개)${detail}`);
     }
 
     // Map 결과가 1개면 Reduce 없이 바로 반환
@@ -416,6 +431,18 @@ export async function runModuleMapReduce<T>(
     return moduleResult;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+
+    // 정밀 디버깅 로그
+    console.error(`[map-reduce] ${module.name}: Map-Reduce 분석 실패 (jobId=${input.jobId})`);
+    console.error(`[map-reduce] ${module.name}: 에러 메시지: ${errorMessage}`);
+    if (errorStack) {
+      console.error(`[map-reduce] ${module.name}: 스택 트레이스:\n${errorStack}`);
+    }
+    if (error instanceof Error && error.cause) {
+      const causeMsg = error.cause instanceof Error ? error.cause.message : String(error.cause);
+      console.error(`[map-reduce] ${module.name}: 원인(cause): ${causeMsg}`);
+    }
 
     await persistAnalysisResult({
       jobId: input.jobId,

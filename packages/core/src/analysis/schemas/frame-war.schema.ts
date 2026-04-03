@@ -6,34 +6,37 @@ export const FrameWarSchema = z.object({
   dominantFrames: z
     .array(
       z.object({
-        name: z.string(),
-        description: z.string(),
+        name: z.string().catch(''),
+        description: z.string().catch(''),
         strength: z.number().catch(0).describe('강도 0~100'),
-        supportingEvidence: z.array(z.string()),
+        supportingEvidence: z.array(z.string()).catch([]),
       }),
     )
+    .catch([])
     .describe('지배적 프레임 TOP 5 (최대 5개)'),
   threateningFrames: z
     .array(
       z.object({
-        name: z.string(),
-        description: z.string(),
-        threatLevel: z.enum(['critical', 'high', 'medium', 'low']),
-        counterStrategy: z.string(),
+        name: z.string().catch(''),
+        description: z.string().catch(''),
+        threatLevel: z.enum(['critical', 'high', 'medium', 'low']).catch('medium'),
+        counterStrategy: z.string().catch(''),
       }),
     )
+    .catch([])
     .describe('위협 프레임 (최대 5개)'),
   reversibleFrames: z
     .array(
       z.object({
-        name: z.string(),
-        currentPerception: z.string(),
-        potentialShift: z.string(),
-        requiredAction: z.string(),
+        name: z.string().catch(''),
+        currentPerception: z.string().catch(''),
+        potentialShift: z.string().catch(''),
+        requiredAction: z.string().catch(''),
       }),
     )
+    .catch([])
     .describe('반전 가능 프레임 (최대 3개)'),
-  battlefieldSummary: z.string(),
+  battlefieldSummary: z.string().catch(''),
 });
 
 export type FrameWarResult = z.infer<typeof FrameWarSchema>;

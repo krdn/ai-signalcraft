@@ -4,6 +4,11 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Loader2, Plus, MessageSquare, Send, PlusCircle } from 'lucide-react';
+import {
+  PROVIDER_REGISTRY,
+  getProvidersByAccess,
+  type AIProvider,
+} from '@ai-signalcraft/ai-gateway/meta';
 import { trpcClient } from '@/lib/trpc';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -19,17 +24,12 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-// 프로바이더 정의
-const PROVIDERS = [
-  { type: 'openai', name: 'OpenAI (ChatGPT)', color: 'bg-green-500' },
-  { type: 'anthropic', name: 'Anthropic (Claude)', color: 'bg-orange-500' },
-  { type: 'gemini', name: 'Google (Gemini)', color: 'bg-blue-500' },
-  { type: 'deepseek', name: 'DeepSeek', color: 'bg-purple-500' },
-  { type: 'ollama', name: 'Ollama (Local)', color: 'bg-gray-500' },
-  { type: 'xai', name: 'xAI (Grok)', color: 'bg-red-500' },
-  { type: 'openrouter', name: 'OpenRouter', color: 'bg-cyan-500' },
-  { type: 'custom', name: 'Custom (OpenAI Compatible)', color: 'bg-zinc-500' },
-] as const;
+// 프로바이더 그룹 (접근 방식별)
+const DIRECT_API_PROVIDERS = getProvidersByAccess('direct-api');
+const PROXY_LOCAL_PROVIDERS = [
+  ...getProvidersByAccess('proxy-cli'),
+  ...getProvidersByAccess('local'),
+];
 
 type ProviderKeyItem = {
   id: number;
@@ -47,28 +47,52 @@ type ProviderKeyItem = {
 
 // 프로바이더 타입별 색상 뱃지
 function ProviderBadge({ type }: { type: string }) {
-  const provider = PROVIDERS.find((p) => p.type === type);
+  const meta = PROVIDER_REGISTRY[type as AIProvider];
   return (
     <Badge variant="secondary" className="text-[10px]">
-      {provider?.name ?? type}
+      {meta?.displayName ?? type}
     </Badge>
   );
 }
 
-// 프로바이더 선택 그리드
+// 프로바이더 선택 그리드 (접근 방식별 그룹 분리)
 function ProviderGrid({ onSelect }: { onSelect: (type: string, name: string) => void }) {
   return (
-    <div className="grid grid-cols-2 gap-2">
-      {PROVIDERS.map((p) => (
-        <button
-          key={p.type}
-          onClick={() => onSelect(p.type, p.name)}
-          className="flex items-center gap-2 rounded-lg border p-3 text-left text-sm transition-colors hover:bg-muted/50"
-        >
-          <div className={`h-2.5 w-2.5 rounded-full ${p.color}`} />
-          <span className="font-medium">{p.name}</span>
-        </button>
-      ))}
+    <div className="space-y-3">
+      <div>
+        <p className="mb-1.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+          직접 API (API Key 필요)
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          {DIRECT_API_PROVIDERS.map((p) => (
+            <button
+              key={p.type}
+              onClick={() => onSelect(p.type, p.displayName)}
+              className="flex items-center gap-2 rounded-lg border p-3 text-left text-sm transition-colors hover:bg-muted/50"
+            >
+              <div className={`h-2.5 w-2.5 rounded-full ${p.color}`} />
+              <span className="font-medium">{p.displayName}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+      <div>
+        <p className="mb-1.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+          프록시 / 로컬
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          {PROXY_LOCAL_PROVIDERS.map((p) => (
+            <button
+              key={p.type}
+              onClick={() => onSelect(p.type, p.displayName)}
+              className="flex items-center gap-2 rounded-lg border border-dashed p-3 text-left text-sm transition-colors hover:bg-muted/50"
+            >
+              <div className={`h-2.5 w-2.5 rounded-full ${p.color}`} />
+              <span className="font-medium">{p.displayName}</span>
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
@@ -87,10 +111,11 @@ function AddKeyForm({
 }) {
   const [name, setName] = useState('');
   const [apiKey, setApiKey] = useState('');
-  const [baseUrl, setBaseUrl] = useState('');
+  const meta = PROVIDER_REGISTRY[providerType as AIProvider];
+  const [baseUrl, setBaseUrl] = useState(meta?.defaultBaseUrl ?? '');
 
-  const keyRequired = providerType !== 'ollama'; // Ollama만 키가 선택 사항
-  const needsUrl = ['ollama', 'custom', 'openrouter'].includes(providerType);
+  const keyRequired = meta?.requiresApiKey ?? true;
+  const needsUrl = meta?.requiresBaseUrl || meta?.defaultBaseUrl !== undefined;
 
   const addMutation = useMutation({
     mutationFn: (input: Parameters<typeof trpcClient.settings.providerKeys.add.mutate>[0]) =>
@@ -145,16 +170,24 @@ function AddKeyForm({
           onChange={(e) => setName(e.target.value)}
           autoComplete="off"
         />
-        <Input
-          type="password"
-          placeholder={keyRequired ? 'API 키' : 'API 키 (Open WebUI 사용 시 토큰 입력)'}
-          value={apiKey}
-          onChange={(e) => setApiKey(e.target.value)}
-          autoComplete="new-password"
-        />
+        {(keyRequired || meta?.accessMethod === 'local') && (
+          <Input
+            type="password"
+            placeholder={
+              keyRequired
+                ? 'API 키'
+                : meta?.accessMethod === 'proxy-cli'
+                  ? 'Bearer 토큰 (선택)'
+                  : 'API 키 (Open WebUI 사용 시 토큰 입력)'
+            }
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+            autoComplete="new-password"
+          />
+        )}
         {needsUrl && (
           <Input
-            placeholder={providerType === 'ollama' ? 'http://localhost:11434' : 'Base URL'}
+            placeholder={meta?.defaultBaseUrl ?? 'Base URL'}
             value={baseUrl}
             onChange={(e) => setBaseUrl(e.target.value)}
           />

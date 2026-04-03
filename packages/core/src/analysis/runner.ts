@@ -149,6 +149,19 @@ export async function runModule<T>(
     throw lastError;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+
+    // 정밀 디버깅 로그 — 실패 원인 추적
+    console.error(`[runner] ${module.name}: 분석 실패 (jobId=${input.jobId})`);
+    console.error(`[runner] ${module.name}: 에러 메시지: ${errorMessage}`);
+    if (errorStack) {
+      console.error(`[runner] ${module.name}: 스택 트레이스:\n${errorStack}`);
+    }
+    // cause 체인 추적 (예: JSON 파싱 → Zod 검증 등 중첩 에러)
+    if (error instanceof Error && error.cause) {
+      const causeMsg = error.cause instanceof Error ? error.cause.message : String(error.cause);
+      console.error(`[runner] ${module.name}: 원인(cause): ${causeMsg}`);
+    }
 
     // 실패도 DB에 기록
     await persistAnalysisResult({
