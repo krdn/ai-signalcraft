@@ -49,21 +49,21 @@ describe('getModel', () => {
     mockCreateGoogleGenerativeAI.mockReturnValue(vi.fn(() => 'gemini-model-instance'));
   });
 
-  it('anthropic 프로바이더에 createAnthropic 호출', () => {
-    const result = getModel('anthropic');
+  it('anthropic 프로바이더에 createAnthropic 호출', async () => {
+    const result = await getModel('anthropic');
     expect(mockCreateAnthropic).toHaveBeenCalledOnce();
     expect(result).toBe(mockAnthropicModel);
   });
 
-  it('openai 프로바이더에 createOpenAI 호출, client(modelName) 반환', () => {
-    const result = getModel('openai');
+  it('openai 프로바이더에 createOpenAI 호출, client(modelName) 반환', async () => {
+    const result = await getModel('openai');
     expect(mockCreateOpenAI).toHaveBeenCalledOnce();
     // openai는 client(modelName) 사용 (Responses API)
     expect(result).toBe(mockOpenAIModel);
   });
 
-  it('ollama 프로바이더에 createOpenAI({ baseURL: "http://localhost:11434/v1" }) + client.chat 호출', () => {
-    const result = getModel('ollama');
+  it('ollama 프로바이더에 createOpenAI({ baseURL: "http://localhost:11434/v1" }) + client.chat 호출', async () => {
+    const result = await getModel('ollama');
     expect(mockCreateOpenAI).toHaveBeenCalledWith({
       baseURL: 'http://localhost:11434/v1',
       apiKey: 'ollama',
@@ -71,74 +71,74 @@ describe('getModel', () => {
     expect(result).toBe(mockChatModel);
   });
 
-  it('deepseek 프로바이더에 기본 baseURL https://api.deepseek.com/v1 적용', () => {
-    getModel('deepseek');
+  it('deepseek 프로바이더에 기본 baseURL https://api.deepseek.com/v1 적용', async () => {
+    await getModel('deepseek');
     expect(mockCreateOpenAI).toHaveBeenCalledWith({
       baseURL: 'https://api.deepseek.com/v1',
       apiKey: 'ollama',
     });
   });
 
-  it('xai 프로바이더에 기본 baseURL https://api.x.ai/v1 적용', () => {
-    getModel('xai');
+  it('xai 프로바이더에 기본 baseURL https://api.x.ai/v1 적용', async () => {
+    await getModel('xai');
     expect(mockCreateOpenAI).toHaveBeenCalledWith({
       baseURL: 'https://api.x.ai/v1',
       apiKey: 'ollama',
     });
   });
 
-  it('openrouter 프로바이더에 기본 baseURL https://openrouter.ai/api/v1 적용', () => {
-    getModel('openrouter');
+  it('openrouter 프로바이더에 기본 baseURL https://openrouter.ai/api/v1 적용', async () => {
+    await getModel('openrouter');
     expect(mockCreateOpenAI).toHaveBeenCalledWith({
       baseURL: 'https://openrouter.ai/api/v1',
       apiKey: 'ollama',
     });
   });
 
-  it('custom 프로바이더에 trailing slash 제거 후 /v1 추가', () => {
-    getModel('custom', 'my-model', 'http://example.com');
+  it('custom 프로바이더에 trailing slash 제거 후 /v1 추가', async () => {
+    await getModel('custom', 'my-model', 'http://example.com');
     expect(mockCreateOpenAI).toHaveBeenCalledWith({
       baseURL: 'http://example.com/v1',
       apiKey: 'ollama',
     });
   });
 
-  it('baseUrl이 이미 /v1로 끝나면 추가하지 않음', () => {
-    getModel('custom', 'my-model', 'http://example.com/v1');
+  it('baseUrl이 이미 /v1로 끝나면 추가하지 않음', async () => {
+    await getModel('custom', 'my-model', 'http://example.com/v1');
     expect(mockCreateOpenAI).toHaveBeenCalledWith({
       baseURL: 'http://example.com/v1',
       apiKey: 'ollama',
     });
   });
 
-  it('baseUrl trailing slash만 제거', () => {
-    getModel('custom', 'my-model', 'http://example.com/v1/');
+  it('baseUrl trailing slash만 제거', async () => {
+    await getModel('custom', 'my-model', 'http://example.com/v1/');
     expect(mockCreateOpenAI).toHaveBeenCalledWith({
       baseURL: 'http://example.com/v1',
       apiKey: 'ollama',
     });
   });
 
-  it('anthropic 기본 모델은 claude-sonnet-4-20250514', () => {
-    getModel('anthropic');
+  it('anthropic 기본 모델은 claude-sonnet-4-20250514', async () => {
+    await getModel('anthropic');
     const clientFn = mockCreateAnthropic.mock.results[0].value;
     expect(clientFn).toHaveBeenCalledWith('claude-sonnet-4-20250514');
   });
 
-  it('openai 기본 모델은 gpt-4o-mini', () => {
-    getModel('openai');
+  it('openai 기본 모델은 gpt-4o-mini', async () => {
+    await getModel('openai');
     const clientFn = mockCreateOpenAI.mock.results[0].value;
     expect(clientFn).toHaveBeenCalledWith('gpt-4o-mini');
   });
 
-  it('gemini 프로바이더에 createGoogleGenerativeAI 호출', () => {
-    const result = getModel('gemini');
+  it('gemini 프로바이더에 createGoogleGenerativeAI 호출', async () => {
+    const result = await getModel('gemini');
     expect(mockCreateGoogleGenerativeAI).toHaveBeenCalledOnce();
     expect(result).toBe('gemini-model-instance');
   });
 
-  it('apiKey가 전달되면 anthropic 클라이언트에 포함', () => {
-    getModel('anthropic', undefined, undefined, 'test-key');
+  it('apiKey가 전달되면 anthropic 클라이언트에 포함', async () => {
+    await getModel('anthropic', undefined, undefined, 'test-key');
     expect(mockCreateAnthropic).toHaveBeenCalledWith(
       expect.objectContaining({ apiKey: 'test-key' }),
     );
