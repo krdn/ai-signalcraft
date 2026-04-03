@@ -12,18 +12,18 @@ export const ApprovalRatingSchema = z.object({
   confidence: z.enum(['high', 'medium', 'low']),
   methodology: z.object({
     sentimentRatio: z.object({
-      positive: z.number(),
-      neutral: z.number(),
-      negative: z.number(),
+      positive: z.number().catch(0),
+      neutral: z.number().catch(0),
+      negative: z.number().catch(0),
     }),
     platformBiasCorrection: z.array(
       z.object({
         platform: z.string(),
         biasDirection: z.enum(['left', 'right', 'neutral']),
-        correctionFactor: z.number(),
+        correctionFactor: z.number().catch(1),
       }),
     ),
-    spreadFactor: z.number().describe('확산력 가중치'),
+    spreadFactor: z.number().catch(1).describe('확산력 가중치'),
   }),
   disclaimer: z.string().describe('면책 문구 -- 반드시 포함'),
   reasoning: z.string(),

@@ -13,7 +13,7 @@ export const SentimentFramingSchema = z.object({
     .array(
       z.object({
         keyword: z.string(),
-        count: z.number(),
+        count: z.number().catch(0),
         sentiment: z.enum(['positive', 'negative', 'neutral']),
       }),
     )
@@ -23,7 +23,7 @@ export const SentimentFramingSchema = z.object({
       z.object({
         keyword: z.string(),
         relatedTo: z.array(z.string()).describe('연관 키워드 목록'),
-        coOccurrenceScore: z.number().describe('0~1 동시출현 빈도'),
+        coOccurrenceScore: z.number().catch(0).describe('0~1 동시출현 빈도'),
         context: z.string().describe('연관 맥락 설명'),
       }),
     )
@@ -33,7 +33,7 @@ export const SentimentFramingSchema = z.object({
       z.object({
         frame: z.string(),
         description: z.string(),
-        strength: z.number().describe('1~10'),
+        strength: z.number().catch(0).describe('1~10'),
       }),
     )
     .describe('긍정 프레임 TOP5 (최대 5개)'),
@@ -42,7 +42,7 @@ export const SentimentFramingSchema = z.object({
       z.object({
         frame: z.string(),
         description: z.string(),
-        strength: z.number().describe('1~10'),
+        strength: z.number().catch(0).describe('1~10'),
       }),
     )
     .describe('부정 프레임 TOP5 (최대 5개)'),

@@ -9,7 +9,7 @@ export const MacroViewSchema = z.object({
       z.object({
         date: z.string(),
         event: z.string(),
-        impact: z.enum(['positive', 'negative', 'neutral']),
+        impact: z.enum(['positive', 'negative', 'neutral', 'mixed']),
         description: z.string(),
       }),
     )
@@ -28,11 +28,11 @@ export const MacroViewSchema = z.object({
     .array(
       z.object({
         date: z.string(),
-        count: z.number(),
+        count: z.number().catch(0),
         sentimentRatio: z.object({
-          positive: z.number(),
-          negative: z.number(),
-          neutral: z.number(),
+          positive: z.number().catch(0),
+          negative: z.number().catch(0),
+          neutral: z.number().catch(0),
         }),
       }),
     )

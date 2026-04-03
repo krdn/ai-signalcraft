@@ -130,7 +130,7 @@ export async function analyzeText(prompt: string, options: AIGatewayOptions = {}
 // 파싱 실패 시 즉시 에러 전파 (재시도/폴백 없음 — 비용 낭비 방지)
 export async function analyzeStructured<T>(
   prompt: string,
-  schema: z.ZodType<T>,
+  schema: z.ZodType<T, z.ZodTypeDef, unknown>,
   options: AIGatewayOptions = {},
 ) {
   const provider = options.provider ?? 'anthropic';
@@ -164,21 +164,94 @@ export async function analyzeStructured<T>(
   };
 }
 
-// LLM 응답 텍스트에서 JSON을 추출 (마크다운 코드블록 처리 포함)
+// LLM 응답 텍스트에서 JSON을 추출 (마크다운 코드블록 처리 + 잘린 JSON 복구)
 function extractJson(text: string): string {
+  let json: string;
   // ```json ... ``` 코드블록 추출
   const codeBlockMatch = text.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
-  if (codeBlockMatch) return codeBlockMatch[1].trim();
-  // { ... } 또는 [ ... ] 최외곽 추출
-  const jsonMatch = text.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
-  if (jsonMatch) return jsonMatch[1].trim();
-  return text.trim();
+  if (codeBlockMatch) {
+    json = codeBlockMatch[1].trim();
+  } else {
+    // { ... } 또는 [ ... ] 최외곽 추출
+    const jsonMatch = text.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
+    json = jsonMatch ? jsonMatch[1].trim() : text.trim();
+  }
+
+  // 잘린 JSON 복구 시도 (토큰 초과로 중간에 끊긴 경우)
+  try {
+    JSON.parse(json);
+    return json; // 이미 유효한 JSON
+  } catch {
+    return repairTruncatedJson(json);
+  }
+}
+
+// 토큰 초과로 잘린 JSON을 복구 — 열린 괄호/따옴표를 닫아줌
+function repairTruncatedJson(json: string): string {
+  // 마지막 불완전한 속성/원소를 잘라내고 괄호를 닫음
+  // 1) 마지막 완전한 원소 이후를 찾아서 자르기
+  let trimmed = json;
+
+  // 열린 문자열 닫기 (홀수 개의 이스케이프되지 않은 따옴표)
+  const quoteCount = (trimmed.match(/(?<!\\)"/g) || []).length;
+  if (quoteCount % 2 !== 0) {
+    // 마지막 불완전한 문자열 값의 시작 따옴표 이전까지 자르기
+    const lastQuote = trimmed.lastIndexOf('"');
+    const beforeLastQuote = trimmed.lastIndexOf('"', lastQuote - 1);
+    if (beforeLastQuote > 0) {
+      // 마지막 완전한 키-값 쌍 이후의 쉼표까지 포함하여 자르기
+      trimmed = trimmed.substring(0, beforeLastQuote);
+    }
+  }
+
+  // 마지막 불완전한 원소 제거 (쉼표 뒤 불완전한 객체)
+  // 마지막 완전한 }  또는 ] 이후의 쓰레기 제거
+  const lastCloseBrace = Math.max(trimmed.lastIndexOf('}'), trimmed.lastIndexOf(']'));
+  if (lastCloseBrace > 0) {
+    const afterClose = trimmed.substring(lastCloseBrace + 1).trim();
+    if (afterClose.startsWith(',')) {
+      trimmed = trimmed.substring(0, lastCloseBrace + 1);
+    }
+  }
+
+  // 트레일링 쉼표 제거
+  trimmed = trimmed.replace(/,\s*$/, '');
+
+  // 열린 괄호를 역순으로 닫기
+  const stack: string[] = [];
+  let inString = false;
+  let escape = false;
+  for (const ch of trimmed) {
+    if (escape) {
+      escape = false;
+      continue;
+    }
+    if (ch === '\\' && inString) {
+      escape = true;
+      continue;
+    }
+    if (ch === '"') {
+      inString = !inString;
+      continue;
+    }
+    if (inString) continue;
+    if (ch === '{' || ch === '[') stack.push(ch);
+    if (ch === '}' || ch === ']') stack.pop();
+  }
+
+  // 스택에 남은 열린 괄호를 역순으로 닫기
+  while (stack.length > 0) {
+    const open = stack.pop();
+    trimmed += open === '{' ? '}' : ']';
+  }
+
+  return trimmed;
 }
 
 // generateText + Zod 파싱으로 structured output 대체
 async function analyzeStructuredViaText<T>(
   prompt: string,
-  schema: z.ZodType<T>,
+  schema: z.ZodType<T, z.ZodTypeDef, unknown>,
   model: Awaited<ReturnType<typeof getModel>>,
   options: AIGatewayOptions,
   abortSignal: AbortSignal,
@@ -190,7 +263,7 @@ async function analyzeStructuredViaText<T>(
   } catch {
     /* 변환 실패 시 스키마 힌트 없이 진행 */
   }
-  const jsonInstruction = `${schemaBlock}\n\n반드시 위 JSON Schema 구조에 정확히 맞는 유효한 JSON으로만 응답하세요. 마크다운 코드블록, 설명 텍스트, 주석 없이 순수 JSON 객체만 출력하세요. 모든 필수 필드를 빠짐없이 포함하세요.`;
+  const jsonInstruction = `${schemaBlock}\n\n반드시 위 JSON Schema 구조에 정확히 맞는 유효한 JSON으로만 응답하세요. 마크다운 코드블록, 설명 텍스트, 주석 없이 순수 JSON 객체만 출력하세요. 모든 필수 필드를 빠짐없이 포함하되, 각 텍스트 필드는 2~3문장 이내로 간결하게 작성하세요. JSON이 잘리지 않도록 전체 응답을 완결된 형태로 출력하세요.`;
   const systemWithJson = (options.systemPrompt ?? '') + jsonInstruction;
 
   const result = await generateText({

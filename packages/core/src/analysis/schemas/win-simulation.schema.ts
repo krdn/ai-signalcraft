@@ -27,7 +27,7 @@ export const WinSimulationSchema = z.object({
     .array(
       z.object({
         strategy: z.string(),
-        expectedImpact: z.string(),
+        expectedImpact: z.string().catch(''),
         priority: z.number(),
       }),
     )

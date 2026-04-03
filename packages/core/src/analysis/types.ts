@@ -13,7 +13,7 @@ export interface AnalysisModule<T = unknown> {
   readonly displayName: string; // '전체 여론 구조 분석'
   readonly provider: AIProvider; // D-03: 모듈별 AI 모델 지정
   readonly model: string; // 'gpt-4o-mini' or 'claude-sonnet-4-20250514'
-  readonly schema: z.ZodType<T>; // 모듈별 Zod 스키마
+  readonly schema: z.ZodType<T, z.ZodTypeDef, unknown>; // 모듈별 Zod 스키마 (Input은 unknown — transform/catch 허용)
 
   buildPrompt(data: AnalysisInput): string;
   buildSystemPrompt(): string;

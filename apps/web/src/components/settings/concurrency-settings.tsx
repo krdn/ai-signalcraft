@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { Loader2, Shield, Zap, Rocket, Info } from 'lucide-react';
 import { trpcClient } from '@/lib/trpc';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
@@ -178,9 +179,18 @@ export function ConcurrencySettings() {
                     <span className="text-xs font-medium">
                       {PROVIDER_LABELS[provider] ?? provider}
                     </span>
-                    <span className="text-xs tabular-nums text-muted-foreground w-6 text-right">
-                      {value}
-                    </span>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={10}
+                      value={value}
+                      disabled={isPending}
+                      className="h-6 w-12 text-xs tabular-nums text-right px-1 py-0"
+                      onChange={(e) => {
+                        const v = Math.min(10, Math.max(1, Number(e.target.value) || 1));
+                        handleProviderConcurrencyChange(provider, v);
+                      }}
+                    />
                   </div>
                   <Slider
                     value={[value]}

@@ -8,7 +8,7 @@ export const FrameWarSchema = z.object({
       z.object({
         name: z.string(),
         description: z.string(),
-        strength: z.number().describe('강도 0~100'),
+        strength: z.number().catch(0).describe('강도 0~100'),
         supportingEvidence: z.array(z.string()),
       }),
     )

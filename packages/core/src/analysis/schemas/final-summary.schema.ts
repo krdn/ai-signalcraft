@@ -11,7 +11,7 @@ export const FinalSummarySchema = z.object({
   criticalActions: z
     .array(
       z.object({
-        priority: z.number(),
+        priority: z.number().catch(0),
         action: z.string(),
         expectedImpact: z.string(),
         timeline: z.string(),

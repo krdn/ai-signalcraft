@@ -300,35 +300,14 @@ export async function runAnalysisPipeline(
     };
   }
 
-  // Stage 0: 개별 기사/댓글 감정 분석 (Stage 1과 병렬 실행)
+  // jobRow 조회 (tokenOptimization, enableItemAnalysis 옵션 확인용)
   const [jobRow] = await getDb()
     .select({ options: collectionJobs.options })
     .from(collectionJobs)
     .where(eq(collectionJobs.id, jobId))
     .limit(1);
 
-  // Stage 0 프로미스 생성 (await 하지 않고 Stage 1과 병렬 실행)
-  let itemAnalysisPromise: Promise<void> = Promise.resolve();
-  if (jobRow?.options?.enableItemAnalysis) {
-    itemAnalysisPromise = (async () => {
-      try {
-        console.log(`[runner] 개별 항목 분석 시작: job=${jobId}`);
-        await analyzeItems(jobId);
-        console.log(`[runner] 개별 항목 분석 완료: job=${jobId}`);
-      } catch (error) {
-        console.error(`[runner] 개별 항목 분석 실패 (집계 분석은 계속 진행):`, error);
-        await updateJobProgress(jobId, {
-          'item-analysis': { status: 'failed', phase: 'error' },
-        }).catch(() => {});
-      }
-    })();
-  } else {
-    await updateJobProgress(jobId, {
-      'item-analysis': { status: 'skipped' },
-    }).catch(() => {});
-  }
-
-  // 토큰 최적화 전처리
+  // 토큰 최적화 전처리 (완료 후 AI 분석 실행 — input 데이터 교체가 발생하므로 순차 필수)
   const tokenOptimization = (jobRow?.options?.tokenOptimization ?? 'none') as OptimizationPreset;
   if (tokenOptimization !== 'none') {
     try {
@@ -362,6 +341,28 @@ export async function runAnalysisPipeline(
     }).catch(() => {});
   }
 
+  // Stage 0: 개별 기사/댓글 감정 분석 (토큰 최적화 완료 후 Stage 1과 병렬 실행)
+  // - 토큰 최적화로 교체된 input 기준으로 분석 실행
+  let itemAnalysisPromise: Promise<void> = Promise.resolve();
+  if (jobRow?.options?.enableItemAnalysis) {
+    itemAnalysisPromise = (async () => {
+      try {
+        console.log(`[runner] 개별 항목 분석 시작: job=${jobId}`);
+        await analyzeItems(jobId);
+        console.log(`[runner] 개별 항목 분석 완료: job=${jobId}`);
+      } catch (error) {
+        console.error(`[runner] 개별 항목 분석 실패 (집계 분석은 계속 진행):`, error);
+        await updateJobProgress(jobId, {
+          'item-analysis': { status: 'failed', phase: 'error' },
+        }).catch(() => {});
+      }
+    })();
+  } else {
+    await updateJobProgress(jobId, {
+      'item-analysis': { status: 'skipped' },
+    }).catch(() => {});
+  }
+
   // Stage 1: 병렬 실행 (모듈 1~4, 독립) — Stage 0과 동시 진행
   console.log(
     `[pipeline] Stage 1 시작: 기본 분석 (${STAGE1_MODULES.map((m) => m.name).join(', ')})`,
@@ -383,7 +384,7 @@ export async function runAnalysisPipeline(
     );
   }
 
-  // Stage 0과 Stage 1을 동시 실행 (Stage 0은 AI 분석 입력에 영향 없음)
+  // Stage 0과 Stage 1을 동시 실행 (둘 다 토큰 최적화 완료된 input 기준)
   const [, stage1Results] = await Promise.all([
     itemAnalysisPromise,
     runWithProviderGrouping(stage1Active, (m) => runModuleMapReduce(m, input), providerConcurrency),

@@ -10,7 +10,7 @@ export const MessageImpactSchema = z.object({
       z.object({
         content: z.string().describe('실제 발언 또는 기사 제목 인용'),
         source: z.string().describe('출처 플랫폼명'),
-        impactScore: z.number().describe('영향력 점수 1~10 정수'),
+        impactScore: z.number().catch(0).describe('영향력 점수 1~10 정수'),
         reason: z.string().describe('긍정 반응 유발 이유'),
         spreadType: z.string().describe('확산 유형'),
       }),
@@ -21,7 +21,7 @@ export const MessageImpactSchema = z.object({
       z.object({
         content: z.string().describe('실제 발언 또는 기사 제목 인용'),
         source: z.string().describe('출처 플랫폼명'),
-        negativeScore: z.number().describe('부정 점수 1~10 정수'),
+        negativeScore: z.number().catch(0).describe('부정 점수 1~10 정수'),
         reason: z.string().describe('부정 반응 유발 이유'),
         damageType: z.string().describe('피해 유형'),
       }),

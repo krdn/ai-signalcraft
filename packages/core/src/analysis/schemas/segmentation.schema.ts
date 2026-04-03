@@ -8,7 +8,7 @@ export const SegmentationSchema = z.object({
         platform: z.string(),
         sentiment: z.enum(['positive', 'negative', 'mixed']),
         keyTopics: z.array(z.string()),
-        volume: z.number(),
+        volume: z.number().catch(0),
         characteristics: z.string(),
       }),
     )

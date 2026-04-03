@@ -5,11 +5,11 @@ export const RiskMapSchema = z.object({
   topRisks: z
     .array(
       z.object({
-        rank: z.number(),
+        rank: z.number().catch(0),
         title: z.string(),
         description: z.string(),
         impactLevel: z.enum(['critical', 'high', 'medium', 'low']),
-        spreadProbability: z.number().describe('0~1 확산 가능성'),
+        spreadProbability: z.number().catch(0).describe('0~1 확산 가능성'),
         currentStatus: z.string(),
         triggerConditions: z.array(z.string()),
       }),
