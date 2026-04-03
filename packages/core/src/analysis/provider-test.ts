@@ -437,6 +437,19 @@ export async function chatWithProvider(
         return { response: data.choices?.[0]?.message?.content || '', model };
       }
 
+      case 'gemini-cli': {
+        // Gemini CLI — AI SDK 경유 (OAuth 인증, Chat Completions API 없음)
+        // gateway.ts의 getModel → generateText와 동일한 경로 사용
+        const { analyzeText } = await import('@ai-signalcraft/ai-gateway');
+        const model = selectedModel || 'gemini-2.5-flash';
+        const result = await analyzeText(prompt, {
+          provider: 'gemini-cli',
+          model,
+          timeoutMs: 30000,
+        });
+        return { response: result.text, model };
+      }
+
       default: {
         // OpenAI 호환 (openai, deepseek, xai, openrouter, custom)
         const model = selectedModel || 'gpt-4.1-nano';

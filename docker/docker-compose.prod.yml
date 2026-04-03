@@ -32,6 +32,9 @@ services:
     restart: unless-stopped
     env_file:
       - ../.env.production
+    volumes:
+      # Gemini CLI OAuth 인증 — 호스트 ~/.gemini를 컨테이너에 바인드 마운트
+      - ${HOME}/.gemini:/root/.gemini:ro
     depends_on:
       postgres:
         condition: service_healthy
