@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 import {
   ArrowRight,
   BarChart3,
@@ -72,6 +73,13 @@ const USE_CASES = [
     description: '네이버·유튜브·커뮤니티 전체를 통합 분석하여 경영진 보고서를 자동 생성합니다.',
     highlight: '보고서 작성 3일 → 자동 생성',
   },
+  {
+    icon: Sparkles,
+    title: '연예인 / 기획사',
+    description:
+      '아티스트·배우의 온라인 반응을 실시간 추적하고, 팬덤 동향과 리스크를 분석하여 매니지먼트 전략을 지원합니다.',
+    highlight: '팬덤 여론 분석 자동화',
+  },
 ];
 
 const PRICING = [
@@ -136,15 +144,18 @@ const COMPARISONS = [
 ];
 
 export function LandingContent() {
+  const { data: session } = useSession();
+  const isLoggedIn = !!session?.user;
+
   return (
     <div className="min-h-screen bg-background">
       {/* Nav */}
       <nav className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-lg">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
-          <div className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2">
             <Sparkles className="size-5 text-primary" />
             <span className="text-lg font-bold">AI SignalCraft</span>
-          </div>
+          </Link>
           <div className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
             <a href="#features" className="hover:text-foreground">
               기능
@@ -157,12 +168,24 @@ export function LandingContent() {
             </a>
           </div>
           <div className="flex items-center gap-2">
-            <Link href="/login" className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }))}>
-              로그인
-            </Link>
-            <a href="#pricing" className={cn(buttonVariants({ size: 'sm' }))}>
-              무료 체험
-            </a>
+            {isLoggedIn ? (
+              <Link href="/dashboard" className={cn(buttonVariants({ size: 'sm' }))}>
+                대시보드
+                <ArrowRight className="ml-1 size-3.5" />
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }))}
+                >
+                  로그인
+                </Link>
+                <a href="#pricing" className={cn(buttonVariants({ size: 'sm' }))}>
+                  무료 체험
+                </a>
+              </>
+            )}
           </div>
         </div>
       </nav>
@@ -387,7 +410,7 @@ export function LandingContent() {
           <div className="mb-12 text-center">
             <h2 className="mb-4 text-3xl font-bold md:text-4xl">누가 사용하나요?</h2>
           </div>
-          <div className="grid gap-6 md:grid-cols-3">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             {USE_CASES.map((uc) => (
               <Card key={uc.title}>
                 <CardHeader>

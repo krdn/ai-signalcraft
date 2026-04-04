@@ -1,12 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { signOut, useSession } from 'next-auth/react';
 import {
   Activity,
   Brain,
   Database,
   FileText,
+  Globe,
   History,
   LayoutDashboard,
   LogOut,
@@ -124,10 +126,10 @@ export function TopNav({ activeTab, onTabChange }: TopNavProps) {
       </Sheet>
 
       {/* 로고 */}
-      <div className="flex items-center gap-1.5 shrink-0">
+      <Link href="/" className="flex items-center gap-1.5 shrink-0">
         <Activity className="h-5 w-5 text-primary" />
         <span className="text-lg font-semibold text-primary">SignalCraft</span>
-      </div>
+      </Link>
 
       {/* 탭 네비게이션 -- 데스크톱만 표시 */}
       <div className="hidden md:flex items-center justify-center flex-1 gap-1">
@@ -208,6 +210,12 @@ export function TopNav({ activeTab, onTabChange }: TopNavProps) {
             <p className="text-xs text-muted-foreground">{session?.user?.email}</p>
           </div>
           <DropdownMenuSeparator />
+          <DropdownMenuItem className="p-0">
+            <Link href="/" className="flex w-full items-center gap-2 px-1.5 py-1">
+              <Globe className="h-4 w-4" />
+              <span>홈페이지</span>
+            </Link>
+          </DropdownMenuItem>
           <Dialog>
             <DialogTrigger
               nativeButton={false}
