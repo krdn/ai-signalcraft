@@ -430,3 +430,6 @@ FodyWeavers.xsd
 *.msm
 *.msp
 .superpowers/
+
+# Local scripts
+claude-proxy.sh
