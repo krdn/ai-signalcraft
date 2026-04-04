@@ -1,0 +1,23 @@
+- generic [active] [ref=e1]:
+  - main [ref=e468]:
+    - generic [ref=e469]:
+      - generic [ref=e470]:
+        - heading "AI SignalCraft" [level=1] [ref=e471]
+        - paragraph [ref=e472]: 여론 분석 대시보드에 로그인
+      - generic [ref=e473]:
+        - generic [ref=e474]:
+          - generic [ref=e475]:
+            - generic [ref=e476]: 이메일
+            - textbox "이메일" [ref=e477]
+          - generic [ref=e478]:
+            - generic [ref=e479]: 비밀번호
+            - textbox "비밀번호" [ref=e480]
+          - button "이메일로 로그인" [ref=e481]
+        - generic [ref=e482]:
+          - separator [ref=e483]
+          - generic [ref=e484]: 또는
+        - button "Google로 로그인" [ref=e485]
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e463] [cursor=pointer]:
+    - img [ref=e464]
+  - alert [ref=e467]: 로그인 - AI SignalCraft

@@ -2,7 +2,7 @@ import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import Google from 'next-auth/providers/google';
 import { DrizzleAdapter } from '@auth/drizzle-adapter';
-import { db, users } from '@ai-signalcraft/core';
+import { db, users, accounts, sessions, verificationTokens } from '@ai-signalcraft/core';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { authConfig } from './auth.config';
@@ -45,7 +45,12 @@ const providers = [
 // DB 의존 프로바이더로 오버라이드 (미들웨어용 auth.config.ts의 프로바이더 대체)
 const nextAuth = NextAuth({
   ...authConfig,
-  adapter: DrizzleAdapter(db),
+  adapter: DrizzleAdapter(db, {
+    usersTable: users,
+    accountsTable: accounts,
+    sessionsTable: sessions,
+    verificationTokensTable: verificationTokens,
+  }),
   providers,
 });
 

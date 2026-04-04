@@ -243,12 +243,15 @@ export function TopNav({ activeTab, onTabChange }: TopNavProps) {
             />
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem
-            className="flex items-center gap-2 cursor-pointer text-destructive"
-            onSelect={() => signOut()}
-          >
-            <LogOut className="h-4 w-4" />
-            <span>로그아웃</span>
+          <DropdownMenuItem className="p-0">
+            <button
+              type="button"
+              className="flex w-full items-center gap-2 px-1.5 py-1 cursor-pointer text-destructive"
+              onClick={() => signOut({ callbackUrl: '/login' })}
+            >
+              <LogOut className="h-4 w-4" />
+              <span>로그아웃</span>
+            </button>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
