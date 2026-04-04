@@ -38,6 +38,8 @@ services:
     volumes:
       # Gemini CLI OAuth 인증 — 호스트 ~/.gemini를 컨테이너에 바인드 마운트
       - ${HOME}/.gemini:/root/.gemini:ro
+      # HuggingFace/Xenova 모델 캐시 영속화 — 컨테이너 재시작 시 재다운로드 방지
+      - ais-prod-model-cache:/root/.cache/xenova
     depends_on:
       postgres:
         condition: service_healthy
@@ -91,6 +93,7 @@ services:
 volumes:
   ais-prod-pgdata:
   ais-prod-redis:
+  ais-prod-model-cache:
 
 networks:
   ais-prod-network:

@@ -216,6 +216,7 @@ export async function runAnalysisPipeline(
     const failedModules = Object.values(allResults)
       .filter((r) => r.status === 'failed')
       .map((r) => r.module);
+    await updateJobProgress(input.jobId, { report: { status: 'running' } });
     const report = await generateIntegratedReport({
       jobId: input.jobId,
       keyword: input.keyword,
@@ -224,6 +225,7 @@ export async function runAnalysisPipeline(
       completedModules,
       failedModules,
     });
+    await updateJobProgress(input.jobId, { report: { status: 'completed' } });
     return { results: allResults, completedModules, failedModules, report };
   }
 
@@ -575,6 +577,8 @@ export async function runAnalysisPipeline(
   console.log(
     `[pipeline] 리포트 생성 시작: 완료 ${getCompletedModules().length}개, 실패 ${getFailedModules().length}개 모듈`,
   );
+  // 리포트 생성 상태를 progress에 기록 (프론트엔드에서 running 상태 표시용)
+  await updateJobProgress(input.jobId, { report: { status: 'running' } });
   try {
     report = await generateIntegratedReport({
       jobId: input.jobId,
@@ -584,8 +588,11 @@ export async function runAnalysisPipeline(
       completedModules: getCompletedModules(),
       failedModules: getFailedModules(),
     });
+    // 리포트 생성 성공 시 progress 업데이트
+    await updateJobProgress(input.jobId, { report: { status: 'completed' } });
   } catch (reportError) {
     console.error('리포트 생성 실패 (부분 결과로 계속 진행):', reportError);
+    await updateJobProgress(input.jobId, { report: { status: 'failed' } });
     const fallbackMarkdown = `# ${input.keyword} 분석 리포트\n\n> 리포트 자동 생성에 실패했습니다. 개별 모듈 분석 결과를 확인하세요.\n\n## 완료된 모듈\n${getCompletedModules()
       .map((m) => `- ${m}`)
       .join('\n')}\n\n## 실패한 모듈\n${getFailedModules()
@@ -649,6 +656,7 @@ async function buildResult(
   let report: { markdownContent: string; oneLiner: string; totalTokens: number };
 
   if (completedModules.length > 0) {
+    await updateJobProgress(input.jobId, { report: { status: 'running' } });
     try {
       report = await generateIntegratedReport({
         jobId: input.jobId,
@@ -658,7 +666,9 @@ async function buildResult(
         completedModules,
         failedModules,
       });
+      await updateJobProgress(input.jobId, { report: { status: 'completed' } });
     } catch {
+      await updateJobProgress(input.jobId, { report: { status: 'failed' } });
       const fallbackMd = `# ${input.keyword} 분석 리포트 (부분)\n\n> ${reason}\n\n완료된 모듈: ${completedModules.join(', ') || '없음'}`;
       report = { markdownContent: fallbackMd, oneLiner: reason, totalTokens: 0 };
       try {

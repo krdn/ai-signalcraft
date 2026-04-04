@@ -191,12 +191,20 @@ export async function getPipelineStatus(jobId: number) {
           ? ('completed' as const)
           : isCancelled
             ? ('cancelled' as const)
-            : analysisDone
-              ? // 분석 완료 + 리포트 없음: job이 이미 완료(completed/partial_failure)면 리포트 생성 실패
-                collectionDone && job.status !== 'running'
-                ? ('failed' as const)
-                : ('running' as const)
-              : ('pending' as const),
+            : (() => {
+                // progress에 report 상태가 기록되어 있으면 우선 사용
+                const reportProgress = (job.progress as Record<string, any> | null)?.report as
+                  | { status?: string }
+                  | undefined;
+                if (reportProgress?.status === 'running') return 'running' as const;
+                if (reportProgress?.status === 'failed') return 'failed' as const;
+                // progress에 없으면 기존 로직: 분석 완료 + job 종료 상태 → failed
+                return analysisDone
+                  ? collectionDone && job.status !== 'running'
+                    ? ('failed' as const)
+                    : ('running' as const)
+                  : ('pending' as const);
+              })(),
     },
   };
 
@@ -205,7 +213,7 @@ export async function getPipelineStatus(jobId: number) {
   const progress = job.progress as Record<string, any> | null;
   if (progress) {
     for (const [key, val] of Object.entries(progress)) {
-      if (key === '_events') continue; // appendJobEvent로 기록된 이벤트 배열은 건너뜀
+      if (key === '_events' || key === 'report') continue; // 내부 상태 필드 건너뜀
       const label = SOURCE_LABELS[key] ?? key;
       const articles = val.articles ?? 0;
       const videos = val.videos ?? 0;

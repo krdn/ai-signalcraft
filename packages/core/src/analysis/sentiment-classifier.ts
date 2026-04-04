@@ -21,7 +21,7 @@ export async function initClassifier(): Promise<void> {
     console.log('[sentiment-classifier] 경량 모델 로딩 시작...');
     const transformers = await import('@xenova/transformers');
     // 캐시 경로를 홈 디렉토리 고정 — 워커 cwd와 무관하게 동일 캐시 사용
-    transformers.env.cacheDir = `${process.env.HOME ?? '/home/gon'}/.cache/xenova`;
+    transformers.env.cacheDir = `${process.env.HOME ?? '/root'}/.cache/xenova`;
     classifier = await transformers.pipeline('sentiment-analysis', MODEL_ID, {
       quantized: true, // INT8 양자화 — 메모리 절약
     });

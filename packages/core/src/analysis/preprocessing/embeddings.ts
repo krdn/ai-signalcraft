@@ -3,8 +3,13 @@ let pipelineInstance: any = null;
 async function getEmbeddingPipeline() {
   if (pipelineInstance) return pipelineInstance;
 
-  const { pipeline } = await import('@xenova/transformers');
-  pipelineInstance = await pipeline('feature-extraction', 'Xenova/multilingual-e5-small');
+  const transformers = await import('@xenova/transformers');
+  // 캐시 경로를 고정하여 Docker 볼륨 마운트와 일치시킴
+  transformers.env.cacheDir = `${process.env.HOME ?? '/root'}/.cache/xenova`;
+  pipelineInstance = await transformers.pipeline(
+    'feature-extraction',
+    'Xenova/multilingual-e5-small',
+  );
   return pipelineInstance;
 }
 
