@@ -9,8 +9,8 @@ vi.mock('next-auth/react', () => ({
   useSession: () => ({ data: null, status: 'unauthenticated' }),
 }));
 
-// next-themes mock
-vi.mock('next-themes', () => ({
+// theme mock
+vi.mock('@/lib/theme', () => ({
   ThemeProvider: ({ children }: { children: React.ReactNode }) => children,
   useTheme: () => ({ theme: 'dark', setTheme: vi.fn() }),
 }));

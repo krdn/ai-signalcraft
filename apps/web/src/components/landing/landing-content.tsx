@@ -17,7 +17,7 @@ import {
   Zap,
   CheckCircle2,
 } from 'lucide-react';
-import { buttonVariants, Button } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
@@ -444,13 +444,18 @@ export function LandingContent() {
                       </li>
                     ))}
                   </ul>
-                  <Button
-                    className="w-full"
-                    variant={plan.popular ? 'default' : 'outline'}
-                    size="lg"
+                  <Link
+                    href={plan.cta === '상담 신청' ? 'mailto:krdn.net@gmail.com' : '/login'}
+                    className={cn(
+                      buttonVariants({
+                        variant: plan.popular ? 'default' : 'outline',
+                        size: 'lg',
+                      }),
+                      'w-full',
+                    )}
                   >
                     {plan.cta}
-                  </Button>
+                  </Link>
                 </CardContent>
               </Card>
             ))}
@@ -504,7 +509,7 @@ export function LandingContent() {
               <ArrowRight className="size-4" />
             </a>
             <a
-              href="mailto:contact@signalcraft.ai"
+              href="mailto:krdn.net@gmail.com"
               className={cn(buttonVariants({ variant: 'outline', size: 'lg' }))}
             >
               영업팀 상담

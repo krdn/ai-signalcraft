@@ -30,14 +30,16 @@ export const authConfig: NextAuthConfig = {
       const isLoggedIn = !!session?.user;
       const isLoginPage = nextUrl.pathname.startsWith('/login');
       const isPublicPage =
-        nextUrl.pathname.startsWith('/landing') || nextUrl.pathname.startsWith('/invite');
+        nextUrl.pathname === '/' ||
+        nextUrl.pathname.startsWith('/landing') ||
+        nextUrl.pathname.startsWith('/invite');
 
       // 공개 페이지는 인증 없이 접근 허용
       if (isPublicPage) return true;
 
       if (isLoginPage) {
-        // 이미 로그인된 사용자가 /login 접근 시 메인으로 리다이렉트
-        if (isLoggedIn) return Response.redirect(new URL('/', nextUrl));
+        // 이미 로그인된 사용자가 /login 접근 시 대시보드로 리다이렉트
+        if (isLoggedIn) return Response.redirect(new URL('/dashboard', nextUrl));
         return true;
       }
 

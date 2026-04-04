@@ -85,7 +85,7 @@ export default function InviteAcceptPage() {
               <p className="text-center">
                 <strong>{teamName}</strong> 팀에 합류했습니다!
               </p>
-              <Button onClick={() => router.push('/')} className="w-full">
+              <Button onClick={() => router.push('/dashboard')} className="w-full">
                 대시보드로 이동
               </Button>
             </>
@@ -107,7 +107,11 @@ export default function InviteAcceptPage() {
             <>
               <AlertTriangle className="h-12 w-12 text-yellow-500" />
               <p className="text-center text-muted-foreground">이미 수락된 초대입니다.</p>
-              <Button variant="outline" onClick={() => router.push('/')} className="w-full">
+              <Button
+                variant="outline"
+                onClick={() => router.push('/dashboard')}
+                className="w-full"
+              >
                 대시보드로 이동
               </Button>
             </>

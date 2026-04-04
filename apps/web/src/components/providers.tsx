@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { SessionProvider } from 'next-auth/react';
-import { ThemeProvider } from 'next-themes';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ThemeProvider } from '@/lib/theme';
 import { Toaster } from '@/components/ui/sonner';
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -20,7 +20,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <SessionProvider>
-      <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+      <ThemeProvider defaultTheme="light">
         <QueryClientProvider client={queryClient}>
           {children}
           <Toaster />

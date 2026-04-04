@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useTheme } from 'next-themes';
 import { signOut, useSession } from 'next-auth/react';
 import {
   Activity,
@@ -19,6 +18,7 @@ import {
   Users,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { useTheme } from '@/lib/theme';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   DropdownMenu,
