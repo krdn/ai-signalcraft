@@ -23,7 +23,7 @@ import { runModuleMapReduce } from './map-reduce';
 import { finalSummaryModule } from './modules';
 import { loadAnalysisInput } from './data-loader';
 import { preprocessAnalysisInput, type OptimizationPreset } from './preprocessing';
-import { persistAnalysisResult } from './persist-analysis';
+import { persistAnalysisResult, persistAnalysisReport } from './persist-analysis';
 import { analyzeItems } from './item-analyzer';
 import type { AnalysisModule, AnalysisModuleResult, AnalysisInput } from './types';
 import { getModuleModelConfig } from './model-config';
@@ -586,15 +586,39 @@ export async function runAnalysisPipeline(
     });
   } catch (reportError) {
     console.error('리포트 생성 실패 (부분 결과로 계속 진행):', reportError);
+    const fallbackMarkdown = `# ${input.keyword} 분석 리포트\n\n> 리포트 자동 생성에 실패했습니다. 개별 모듈 분석 결과를 확인하세요.\n\n## 완료된 모듈\n${getCompletedModules()
+      .map((m) => `- ${m}`)
+      .join('\n')}\n\n## 실패한 모듈\n${getFailedModules()
+      .map((m) => `- ${m}`)
+      .join('\n')}`;
+    const fallbackOneLiner = '리포트 생성 실패 -- 개별 모듈 결과 참조';
     report = {
-      markdownContent: `# ${input.keyword} 분석 리포트\n\n> 리포트 자동 생성에 실패했습니다. 개별 모듈 분석 결과를 확인하세요.\n\n## 완료된 모듈\n${getCompletedModules()
-        .map((m) => `- ${m}`)
-        .join('\n')}\n\n## 실패한 모듈\n${getFailedModules()
-        .map((m) => `- ${m}`)
-        .join('\n')}`,
-      oneLiner: '리포트 생성 실패 -- 개별 모듈 결과 참조',
+      markdownContent: fallbackMarkdown,
+      oneLiner: fallbackOneLiner,
       totalTokens: 0,
     };
+    // fallback 리포트를 DB에 저장하여 프론트엔드에서 상태를 올바르게 표시
+    try {
+      await persistAnalysisReport({
+        jobId: input.jobId,
+        title: `${input.keyword} 종합 분석 리포트`,
+        markdownContent: fallbackMarkdown,
+        oneLiner: fallbackOneLiner,
+        metadata: {
+          keyword: input.keyword,
+          dateRange: {
+            start: input.dateRange.start.toISOString(),
+            end: input.dateRange.end.toISOString(),
+          },
+          modulesCompleted: getCompletedModules(),
+          modulesFailed: getFailedModules(),
+          totalTokens: 0,
+          generatedAt: new Date().toISOString(),
+        },
+      });
+    } catch (persistError) {
+      console.error('fallback 리포트 DB 저장 실패:', persistError);
+    }
   }
 
   return {
@@ -635,18 +659,54 @@ async function buildResult(
         failedModules,
       });
     } catch {
-      report = {
-        markdownContent: `# ${input.keyword} 분석 리포트 (부분)\n\n> ${reason}\n\n완료된 모듈: ${completedModules.join(', ') || '없음'}`,
-        oneLiner: reason,
-        totalTokens: 0,
-      };
+      const fallbackMd = `# ${input.keyword} 분석 리포트 (부분)\n\n> ${reason}\n\n완료된 모듈: ${completedModules.join(', ') || '없음'}`;
+      report = { markdownContent: fallbackMd, oneLiner: reason, totalTokens: 0 };
+      try {
+        await persistAnalysisReport({
+          jobId: input.jobId,
+          title: `${input.keyword} 종합 분석 리포트`,
+          markdownContent: fallbackMd,
+          oneLiner: reason,
+          metadata: {
+            keyword: input.keyword,
+            dateRange: {
+              start: input.dateRange.start.toISOString(),
+              end: input.dateRange.end.toISOString(),
+            },
+            modulesCompleted: completedModules,
+            modulesFailed: failedModules,
+            totalTokens: 0,
+            generatedAt: new Date().toISOString(),
+          },
+        });
+      } catch (e) {
+        console.error('fallback 리포트 DB 저장 실패:', e);
+      }
     }
   } else {
-    report = {
-      markdownContent: `# ${input.keyword} 분석 리포트\n\n> ${reason}\n\n완료된 모듈이 없습니다.`,
-      oneLiner: reason,
-      totalTokens: 0,
-    };
+    const noModuleMd = `# ${input.keyword} 분석 리포트\n\n> ${reason}\n\n완료된 모듈이 없습니다.`;
+    report = { markdownContent: noModuleMd, oneLiner: reason, totalTokens: 0 };
+    try {
+      await persistAnalysisReport({
+        jobId: input.jobId,
+        title: `${input.keyword} 종합 분석 리포트`,
+        markdownContent: noModuleMd,
+        oneLiner: reason,
+        metadata: {
+          keyword: input.keyword,
+          dateRange: {
+            start: input.dateRange.start.toISOString(),
+            end: input.dateRange.end.toISOString(),
+          },
+          modulesCompleted: [],
+          modulesFailed: failedModules,
+          totalTokens: 0,
+          generatedAt: new Date().toISOString(),
+        },
+      });
+    } catch (e) {
+      console.error('fallback 리포트 DB 저장 실패:', e);
+    }
   }
 
   return {

@@ -192,7 +192,10 @@ export async function getPipelineStatus(jobId: number) {
           : isCancelled
             ? ('cancelled' as const)
             : analysisDone
-              ? ('running' as const)
+              ? // 분석 완료 + 리포트 없음: job이 이미 완료(completed/partial_failure)면 리포트 생성 실패
+                collectionDone && job.status !== 'running'
+                ? ('failed' as const)
+                : ('running' as const)
               : ('pending' as const),
     },
   };
