@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
-import { Loader2, ChevronDown } from 'lucide-react';
+import { Loader2, ChevronDown, Lock } from 'lucide-react';
 import { format, subDays, addDays, startOfWeek, endOfWeek, subWeeks } from 'date-fns';
 import { TriggerFormHelp } from './trigger-form-help';
 import { trpcClient } from '@/lib/trpc';
@@ -93,6 +94,19 @@ interface TriggerFormProps {
 const STABLE_INIT_DATE = new Date(0);
 
 export function TriggerForm({ onJobStarted }: TriggerFormProps) {
+  const { data: session } = useSession();
+  const userRole = (session?.user as Record<string, unknown> | undefined)?.role as
+    | string
+    | undefined;
+  const isDemo = userRole === 'demo';
+
+  // 데모 쿼터 조회
+  const { data: demoQuota } = useQuery({
+    queryKey: ['demoAuth', 'quota'],
+    queryFn: () => trpcClient.demoAuth.getQuota.query(),
+    enabled: isDemo,
+  });
+
   const [keyword, setKeyword] = useState('');
   const [sources, setSources] = useState<SourceId[]>([...ALL_SOURCES]);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
@@ -205,6 +219,45 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
         <CardTitle className="text-lg font-semibold">분석 실행</CardTitle>
       </CardHeader>
       <CardContent>
+        {/* 데모 사용자 쿼터 정보 */}
+        {isDemo && demoQuota && (
+          <div className="mb-4 rounded-lg bg-primary/5 border border-primary/20 p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-primary">무료 체험 중</span>
+              <span className="text-xs text-muted-foreground">
+                {demoQuota.isExpired ? '만료됨' : `${demoQuota.daysLeft}일 남음`}
+              </span>
+            </div>
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="rounded-md bg-background p-2">
+                <div className="text-lg font-bold text-primary">{demoQuota.todayRemaining}</div>
+                <div className="text-[10px] text-muted-foreground">오늘 남은 횟수</div>
+              </div>
+              <div className="rounded-md bg-background p-2">
+                <div className="text-lg font-bold">{demoQuota.dailyLimit}</div>
+                <div className="text-[10px] text-muted-foreground">일일 한도</div>
+              </div>
+              <div className="rounded-md bg-background p-2">
+                <div className="text-lg font-bold">
+                  {demoQuota.daysLeft}
+                  <span className="text-xs font-normal">일</span>
+                </div>
+                <div className="text-[10px] text-muted-foreground">잔여 기간</div>
+              </div>
+            </div>
+            {(demoQuota.todayRemaining <= 0 || demoQuota.isExpired) && (
+              <p className="text-xs text-destructive">
+                {demoQuota.isExpired
+                  ? '체험 기간이 만료되었습니다.'
+                  : '오늘 분석 횟수를 모두 사용했습니다. 내일 다시 이용 가능합니다.'}
+              </p>
+            )}
+            <p className="text-[10px] text-muted-foreground">
+              누적 {demoQuota.totalUsed}회 사용 · 핵심 분석 모듈 3개 · 수집 한도 축소 적용
+            </p>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* 키워드 입력 */}
           <div className="space-y-2">
@@ -255,7 +308,17 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
           </div>
 
           {/* 기간 선택 */}
-          <Tabs value={dateMode} onValueChange={(v) => setDateMode(v as 'period' | 'event')}>
+          {isDemo && (
+            <div className="rounded-lg border border-dashed border-muted-foreground/30 p-3 text-sm text-muted-foreground flex items-center gap-2">
+              <Lock className="h-4 w-4 shrink-0" />
+              기간: 최근 7일 고정 (데모 체험)
+            </div>
+          )}
+          <Tabs
+            value={dateMode}
+            onValueChange={(v) => !isDemo && setDateMode(v as 'period' | 'event')}
+            className={isDemo ? 'hidden' : ''}
+          >
             <TabsList className="w-full">
               <TabsTrigger value="period" className="flex-1">
                 기간 선택
@@ -360,8 +423,8 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
             </TabsContent>
           </Tabs>
 
-          {/* 분석 옵션 */}
-          <div className="space-y-2">
+          {/* 분석 옵션 — 데모 사용자는 숨김 */}
+          <div className={`space-y-2 ${isDemo ? 'hidden' : ''}`}>
             <Label>분석 옵션</Label>
             <label className="flex items-start gap-2 cursor-pointer rounded-lg border p-3 hover:bg-accent/50 transition-colors">
               <Checkbox
@@ -380,8 +443,18 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
             </label>
           </div>
 
-          {/* 수집 한도 설정 */}
-          <Collapsible open={isLimitsOpen} onOpenChange={setIsLimitsOpen}>
+          {/* 수집 한도 설정 — 데모 사용자는 변경 불가 */}
+          {isDemo && (
+            <div className="rounded-lg border border-dashed border-muted-foreground/30 p-3 text-sm text-muted-foreground flex items-center gap-2">
+              <Lock className="h-4 w-4 shrink-0" />
+              수집 한도 & 토큰 최적화: 데모 기본값 적용 (변경 불가)
+            </div>
+          )}
+          <Collapsible
+            open={isLimitsOpen}
+            onOpenChange={setIsLimitsOpen}
+            className={isDemo ? 'hidden' : ''}
+          >
             <CollapsibleTrigger className="w-full flex items-center justify-between rounded-lg border px-3 py-2 text-sm hover:bg-accent transition-colors cursor-pointer">
               <div className="flex items-center gap-2">
                 <span className="font-medium">수집 한도 & 토큰 최적화</span>

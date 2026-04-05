@@ -11,7 +11,7 @@ import {
 import { eq, and } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { getPipelineStatus } from '../../pipeline-status';
-import { protectedProcedure, router } from '../init';
+import { protectedProcedure, systemAdminProcedure, router } from '../init';
 
 export const pipelineRouter = router({
   // 파이프라인 상태 조회 — 공유 함수 위임 (팀 소속 확인만 여기서 수행)
@@ -74,8 +74,8 @@ export const pipelineRouter = router({
       return setSkippedModules(input.jobId, input.modules);
     }),
 
-  // Worker/큐 상태 조회 — 디버깅/모니터링용
-  queueStatus: protectedProcedure.query(async () => {
+  // Worker/큐 상태 조회 — 시스템 관리자 전용
+  queueStatus: systemAdminProcedure.query(async () => {
     return getQueueStatus();
   }),
 

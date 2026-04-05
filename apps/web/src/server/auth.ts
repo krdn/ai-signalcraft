@@ -22,6 +22,8 @@ const providers = [
         .where(eq(users.email, credentials.email as string))
         .limit(1);
       if (!user[0]?.hashedPassword) return null;
+      // 비활성화된 계정은 로그인 거부
+      if (user[0].isActive === false) return null;
       const valid = await bcrypt.compare(credentials.password as string, user[0].hashedPassword);
       if (!valid) return null;
       return {

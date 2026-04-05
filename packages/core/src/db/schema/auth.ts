@@ -1,4 +1,12 @@
-import { pgTable, text, timestamp, integer, uniqueIndex } from 'drizzle-orm/pg-core';
+import {
+  pgTable,
+  text,
+  timestamp,
+  integer,
+  uniqueIndex,
+  boolean,
+  jsonb,
+} from 'drizzle-orm/pg-core';
 
 // NextAuth AdapterAccountType 인라인 정의 (core 패키지에 next-auth 의존성 추가 방지)
 type AdapterAccountType = 'oauth' | 'oidc' | 'email' | 'webauthn';
@@ -13,9 +21,10 @@ export const users = pgTable('users', {
   emailVerified: timestamp('email_verified', { mode: 'date' }),
   image: text('image'),
   hashedPassword: text('hashed_password'), // Credentials 전용
-  role: text('role', { enum: ['admin', 'member'] })
+  role: text('role', { enum: ['admin', 'leader', 'sales', 'partner', 'member', 'demo'] })
     .notNull()
     .default('member'),
+  isActive: boolean('is_active').notNull().default(true),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
@@ -99,5 +108,27 @@ export const invitations = pgTable('invitations', {
     .default('member'),
   expiresAt: timestamp('expires_at').notNull(),
   acceptedAt: timestamp('accepted_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// 데모 사용자 쿼터 관리
+export const demoQuotas = pgTable('demo_quotas', {
+  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+  userId: text('user_id')
+    .references(() => users.id, { onDelete: 'cascade' })
+    .notNull()
+    .unique(),
+  dailyLimit: integer('daily_limit').notNull().default(5), // 1일 최대 분석 횟수
+  todayUsed: integer('today_used').notNull().default(0), // 오늘 사용한 횟수
+  todayDate: text('today_date'), // 오늘 날짜 (YYYY-MM-DD) — 날짜 바뀌면 todayUsed 리셋
+  totalUsed: integer('total_used').notNull().default(0), // 누적 사용 횟수
+  allowedModules: jsonb('allowed_modules').$type<string[]>(),
+  maxCollectionLimits: jsonb('max_collection_limits').$type<{
+    naverArticles: number;
+    youtubeVideos: number;
+    communityPosts: number;
+    commentsPerItem: number;
+  }>(),
+  expiresAt: timestamp('expires_at').notNull(), // 가입 후 7일
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });

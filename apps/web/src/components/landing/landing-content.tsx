@@ -1210,9 +1210,9 @@ export function LandingContent() {
                 >
                   로그인
                 </Link>
-                <a href="#pricing" className={cn(buttonVariants({ size: 'sm' }))}>
+                <Link href="/demo" className={cn(buttonVariants({ size: 'sm' }))}>
                   무료 체험
-                </a>
+                </Link>
               </>
             )}
           </div>
@@ -1237,10 +1237,10 @@ export function LandingContent() {
             가능한 리포트를 생성합니다.
           </p>
           <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-            <a href="#pricing" className={cn(buttonVariants({ size: 'lg' }), 'gap-1.5')}>
+            <Link href="/demo" className={cn(buttonVariants({ size: 'lg' }), 'gap-1.5')}>
               7일 무료 체험 시작
               <ArrowRight className="size-4" />
-            </a>
+            </Link>
             <a href="#features" className={cn(buttonVariants({ variant: 'outline', size: 'lg' }))}>
               기능 살펴보기
             </a>
@@ -1564,7 +1564,7 @@ export function LandingContent() {
                     ))}
                   </ul>
                   <Link
-                    href={plan.cta === '상담 신청' ? 'mailto:krdn.net@gmail.com' : '/login'}
+                    href={plan.cta === '상담 신청' ? 'mailto:krdn.net@gmail.com' : '/demo'}
                     className={cn(
                       buttonVariants({
                         variant: plan.popular ? 'default' : 'outline',
@@ -1623,10 +1623,10 @@ export function LandingContent() {
             7일 무료 체험으로 시작하세요. 카드 등록 없이, 5분 안에 첫 분석을 실행할 수 있습니다.
           </p>
           <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-            <a href="#pricing" className={cn(buttonVariants({ size: 'lg' }), 'gap-1.5')}>
+            <Link href="/demo" className={cn(buttonVariants({ size: 'lg' }), 'gap-1.5')}>
               무료 체험 시작
               <ArrowRight className="size-4" />
-            </a>
+            </Link>
             <a
               href="mailto:krdn.net@gmail.com"
               className={cn(buttonVariants({ variant: 'outline', size: 'lg' }))}

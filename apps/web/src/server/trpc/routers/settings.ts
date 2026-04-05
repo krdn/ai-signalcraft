@@ -20,7 +20,7 @@ import {
   updateCollectionLimits,
 } from '@ai-signalcraft/core';
 import { AI_PROVIDER_VALUES } from '@ai-signalcraft/ai-gateway/meta';
-import { protectedProcedure, router } from '../init';
+import { protectedProcedure, systemAdminProcedure, router } from '../init';
 
 // AI 프로바이더 enum — 중앙 레지스트리에서 파생
 const aiProviderEnum = z.enum(AI_PROVIDER_VALUES);
@@ -33,8 +33,8 @@ export const settingsRouter = router({
     return getAllModelSettings();
   }),
 
-  // 모듈의 AI 모델 설정 변경
-  update: protectedProcedure
+  // 모듈의 AI 모델 설정 변경 (시스템 관리자 전용)
+  update: systemAdminProcedure
     .input(
       z.object({
         moduleName: z.string().min(1),
@@ -46,8 +46,8 @@ export const settingsRouter = router({
       return upsertModelSetting(input.moduleName, input.provider, input.model);
     }),
 
-  // 전체 모듈의 AI 모델을 일괄 변경
-  bulkUpdate: protectedProcedure
+  // 전체 모듈의 AI 모델을 일괄 변경 (시스템 관리자 전용)
+  bulkUpdate: systemAdminProcedure
     .input(
       z.object({
         provider: aiProviderEnum,
@@ -62,8 +62,8 @@ export const settingsRouter = router({
       return { updated: results.length };
     }),
 
-  // 모듈의 AI 모델 설정을 기본값으로 복원 (DB 레코드 삭제)
-  resetToDefault: protectedProcedure
+  // 모듈의 AI 모델 설정을 기본값으로 복원 (시스템 관리자 전용)
+  resetToDefault: systemAdminProcedure
     .input(z.object({ moduleName: z.string().min(1) }))
     .mutation(async ({ ctx, input }) => {
       await ctx.db.delete(modelSettings).where(eq(modelSettings.moduleName, input.moduleName));
@@ -78,8 +78,8 @@ export const settingsRouter = router({
       return MODEL_SCENARIO_PRESETS;
     }),
 
-    // 프리셋 적용 (모듈별로 다른 모델을 일괄 변경)
-    applyPreset: protectedProcedure
+    // 프리셋 적용 (시스템 관리자 전용)
+    applyPreset: systemAdminProcedure
       .input(z.object({ presetId: z.string().min(1) }))
       .mutation(async ({ input }) => {
         return applyModelScenario(input.presetId);
@@ -99,15 +99,15 @@ export const settingsRouter = router({
       return CONCURRENCY_PRESETS;
     }),
 
-    // 프리셋 적용
-    applyPreset: protectedProcedure
+    // 프리셋 적용 (시스템 관리자 전용)
+    applyPreset: systemAdminProcedure
       .input(z.object({ presetId: z.string().min(1) }))
       .mutation(async ({ input }) => {
         return applyConcurrencyPreset(input.presetId);
       }),
 
-    // 개별 값 커스텀 수정
-    update: protectedProcedure
+    // 개별 값 커스텀 수정 (시스템 관리자 전용)
+    update: systemAdminProcedure
       .input(
         z.object({
           providerConcurrency: z.record(z.string(), z.number().min(1).max(20)).optional(),
@@ -128,7 +128,7 @@ export const settingsRouter = router({
       return getCollectionLimits();
     }),
 
-    update: protectedProcedure
+    update: systemAdminProcedure
       .input(
         z.object({
           naverArticles: z.number().min(10).max(5000).optional(),
@@ -150,8 +150,8 @@ export const settingsRouter = router({
       return getAllProviderKeys();
     }),
 
-    // 프로바이더 키 추가
-    add: protectedProcedure
+    // 프로바이더 키 추가 (시스템 관리자 전용)
+    add: systemAdminProcedure
       .input(
         z.object({
           name: z.string().min(1),
@@ -171,8 +171,8 @@ export const settingsRouter = router({
         });
       }),
 
-    // 프로바이더 키 수정
-    update: protectedProcedure
+    // 프로바이더 키 수정 (시스템 관리자 전용)
+    update: systemAdminProcedure
       .input(
         z.object({
           id: z.number(),
@@ -187,14 +187,14 @@ export const settingsRouter = router({
         return updateProviderKey(id, data);
       }),
 
-    // 프로바이더 키 삭제
-    delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+    // 프로바이더 키 삭제 (시스템 관리자 전용)
+    delete: systemAdminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
       await deleteProviderKey(input.id);
       return { success: true };
     }),
 
-    // 연결 테스트 + 모델 목록 조회 (성공 시 availableModels를 DB에 저장)
-    test: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+    // 연결 테스트 + 모델 목록 조회 (시스템 관리자 전용)
+    test: systemAdminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
       const result = await testProviderConnection(input.id);
       if (result.success && result.models.length > 0) {
         await updateProviderKey(input.id, { availableModels: result.models });
@@ -202,8 +202,8 @@ export const settingsRouter = router({
       return result;
     }),
 
-    // LLM 채팅 테스트 (Playground)
-    chat: protectedProcedure
+    // LLM 채팅 테스트 (시스템 관리자 전용)
+    chat: systemAdminProcedure
       .input(z.object({ id: z.number(), prompt: z.string().min(1).max(4000) }))
       .mutation(async ({ input }) => {
         return chatWithProvider(input.id, input.prompt);

@@ -13,6 +13,8 @@ import { DashboardView } from '@/components/dashboard/dashboard-view';
 import { CollectedDataView } from '@/components/dashboard/collected-data-view';
 import { AdvancedView } from '@/components/advanced/advanced-view';
 import { Button } from '@/components/ui/button';
+import { DemoQuotaBanner } from '@/components/demo/demo-quota-banner';
+import { UpgradeModal } from '@/components/demo/upgrade-modal';
 
 // 분석 실행 탭 -- 트리거 폼 + 파이프라인 모니터 + 최근 작업
 function AnalysisTab({
@@ -170,6 +172,10 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-background">
       <TopNav activeTab={activeTab} onTabChange={setActiveTab} />
+      <div className="pt-14 px-4 md:px-8">
+        <DemoQuotaBanner />
+      </div>
+      <UpgradeModal />
       <TabLayout
         activeTab={activeTab}
         panels={[

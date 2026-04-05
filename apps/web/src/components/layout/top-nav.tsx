@@ -12,6 +12,7 @@ import {
   History,
   LayoutDashboard,
   LogOut,
+  Shield,
   Menu,
   Moon,
   Play,
@@ -73,6 +74,9 @@ export function TopNav({ activeTab, onTabChange }: TopNavProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const userInitial = session?.user?.name?.[0] ?? session?.user?.email?.[0] ?? '?';
+  const userRole = (session?.user as Record<string, unknown> | undefined)?.role as
+    | string
+    | undefined;
   const isDark = theme === 'dark';
 
   const handleMobileTabChange = (index: number) => {
@@ -161,41 +165,43 @@ export function TopNav({ activeTab, onTabChange }: TopNavProps) {
         <span className="text-sm font-medium text-foreground">{TABS[activeTab].label}</span>
       </div>
 
-      {/* AI 모델 설정 */}
-      <Dialog>
-        <DialogTrigger
-          render={
-            <button className="shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:text-foreground hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary">
-              <Settings className="h-4 w-4" />
-            </button>
-          }
-        />
-        <DialogContent className="sm:max-w-xl max-h-[85vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle>AI 설정</DialogTitle>
-          </DialogHeader>
-          <Tabs defaultValue="provider-keys" className="flex flex-col min-h-0 flex-1">
-            <TabsList className="w-full shrink-0">
-              <TabsTrigger value="provider-keys">API 키 관리</TabsTrigger>
-              <TabsTrigger value="model-settings">모듈별 모델</TabsTrigger>
-              <TabsTrigger value="concurrency">병렬처리</TabsTrigger>
-              <TabsTrigger value="collection-limits">수집 한도</TabsTrigger>
-            </TabsList>
-            <TabsContent value="provider-keys" className="mt-4 overflow-y-auto min-h-0">
-              <ProviderKeys />
-            </TabsContent>
-            <TabsContent value="model-settings" className="mt-4 overflow-y-auto min-h-0">
-              <ModelSettings />
-            </TabsContent>
-            <TabsContent value="concurrency" className="mt-4 overflow-y-auto min-h-0">
-              <ConcurrencySettings />
-            </TabsContent>
-            <TabsContent value="collection-limits" className="mt-4 overflow-y-auto min-h-0">
-              <CollectionLimitsSettings />
-            </TabsContent>
-          </Tabs>
-        </DialogContent>
-      </Dialog>
+      {/* AI 모델 설정 — admin만 표시 */}
+      {userRole === 'admin' && (
+        <Dialog>
+          <DialogTrigger
+            render={
+              <button className="shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:text-foreground hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary">
+                <Settings className="h-4 w-4" />
+              </button>
+            }
+          />
+          <DialogContent className="sm:max-w-xl max-h-[85vh] flex flex-col">
+            <DialogHeader>
+              <DialogTitle>AI 설정</DialogTitle>
+            </DialogHeader>
+            <Tabs defaultValue="provider-keys" className="flex flex-col min-h-0 flex-1">
+              <TabsList className="w-full shrink-0">
+                <TabsTrigger value="provider-keys">API 키 관리</TabsTrigger>
+                <TabsTrigger value="model-settings">모듈별 모델</TabsTrigger>
+                <TabsTrigger value="concurrency">병렬처리</TabsTrigger>
+                <TabsTrigger value="collection-limits">수집 한도</TabsTrigger>
+              </TabsList>
+              <TabsContent value="provider-keys" className="mt-4 overflow-y-auto min-h-0">
+                <ProviderKeys />
+              </TabsContent>
+              <TabsContent value="model-settings" className="mt-4 overflow-y-auto min-h-0">
+                <ModelSettings />
+              </TabsContent>
+              <TabsContent value="concurrency" className="mt-4 overflow-y-auto min-h-0">
+                <ConcurrencySettings />
+              </TabsContent>
+              <TabsContent value="collection-limits" className="mt-4 overflow-y-auto min-h-0">
+                <CollectionLimitsSettings />
+              </TabsContent>
+            </Tabs>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* 사용자 메뉴 */}
       <DropdownMenu>
@@ -216,6 +222,14 @@ export function TopNav({ activeTab, onTabChange }: TopNavProps) {
               <span>홈페이지</span>
             </Link>
           </DropdownMenuItem>
+          {(session?.user as Record<string, unknown> | undefined)?.role === 'admin' && (
+            <DropdownMenuItem className="p-0">
+              <Link href="/admin" className="flex w-full items-center gap-2 px-1.5 py-1">
+                <Shield className="h-4 w-4" />
+                <span>관리자</span>
+              </Link>
+            </DropdownMenuItem>
+          )}
           <Dialog>
             <DialogTrigger
               nativeButton={false}

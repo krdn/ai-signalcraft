@@ -32,7 +32,10 @@ export const authConfig: NextAuthConfig = {
       const isPublicPage =
         nextUrl.pathname === '/' ||
         nextUrl.pathname.startsWith('/landing') ||
-        nextUrl.pathname.startsWith('/invite');
+        nextUrl.pathname.startsWith('/invite') ||
+        nextUrl.pathname.startsWith('/demo') ||
+        nextUrl.pathname.startsWith('/signup');
+      const isAdminPage = nextUrl.pathname.startsWith('/admin');
 
       // 공개 페이지는 인증 없이 접근 허용
       if (isPublicPage) return true;
@@ -40,6 +43,14 @@ export const authConfig: NextAuthConfig = {
       if (isLoginPage) {
         // 이미 로그인된 사용자가 /login 접근 시 대시보드로 리다이렉트
         if (isLoggedIn) return Response.redirect(new URL('/dashboard', nextUrl));
+        return true;
+      }
+
+      // 어드민 페이지: 로그인 + role='admin' 필수
+      if (isAdminPage) {
+        if (!isLoggedIn) return false;
+        const role = (session?.user as Record<string, unknown> | undefined)?.role;
+        if (role !== 'admin') return Response.redirect(new URL('/dashboard', nextUrl));
         return true;
       }
 

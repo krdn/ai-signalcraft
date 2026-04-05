@@ -34,7 +34,19 @@ export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
   });
 });
 
-// 관리자 전용 프로시저 -- 팀 Admin만 허용
+// 시스템 관리자 전용 프로시저 -- users.role === 'admin'
+export const systemAdminProcedure = t.procedure.use(async ({ ctx, next }) => {
+  if (!ctx.session?.user) throw new TRPCError({ code: 'UNAUTHORIZED' });
+  const userRole = (ctx.session.user as Record<string, unknown>).role;
+  if (userRole !== 'admin') {
+    throw new TRPCError({ code: 'FORBIDDEN', message: '시스템 관리자 권한이 필요합니다' });
+  }
+  return next({
+    ctx: { ...ctx, session: ctx.session, isSystemAdmin: true as const },
+  });
+});
+
+// 팀 관리자 전용 프로시저 -- 팀 Admin만 허용
 export const adminProcedure = t.procedure.use(async ({ ctx, next }) => {
   if (!ctx.session?.user) throw new TRPCError({ code: 'UNAUTHORIZED' });
 
