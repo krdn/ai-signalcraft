@@ -10,12 +10,14 @@ import {
   CheckCircle2,
   Clock,
   Globe,
+  Handshake,
   Sparkles,
   Zap,
 } from 'lucide-react';
 import { ACTIVE_SOURCES, UPCOMING_SOURCE_GROUPS } from './data/sources';
 import { MODULES } from './data/modules';
 import { PRICING, COMPARISONS } from './data/pricing';
+import { PARTNER_PROGRAMS, PARTNER_BENEFITS, PARTNER_PROCESS } from './data/partner-program';
 import { USE_CASE_CATEGORIES, USE_CASE_DETAILS } from './data/use-cases';
 import { UseCaseDetailModal } from './use-case-detail-modal';
 import { cn } from '@/lib/utils';
@@ -47,6 +49,9 @@ export function LandingContent() {
             </a>
             <a href="#pricing" className="hover:text-foreground">
               가격
+            </a>
+            <a href="#partner" className="hover:text-foreground">
+              파트너
             </a>
           </div>
           <div className="flex items-center gap-2">
@@ -444,6 +449,109 @@ export function LandingContent() {
         </div>
       </section>
 
+      {/* Partner Program */}
+      <section id="partner" className="border-t bg-muted/20 py-20 md:py-28">
+        <div className="mx-auto max-w-6xl px-4">
+          <div className="mb-16 text-center">
+            <Badge variant="outline" className="mb-4 gap-1.5">
+              <Handshake className="size-3.5" />
+              파트너 프로그램
+            </Badge>
+            <h2 className="mb-4 text-3xl font-bold md:text-4xl">
+              함께 성장하는 비즈니스 파트너를 찾습니다
+            </h2>
+            <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
+              개인 사업자로 AI SignalCraft를 영업하고, 성과에 따른 수수료를 받으세요. 초기 비용 없이
+              바로 시작할 수 있습니다.
+            </p>
+          </div>
+
+          {/* 2가지 프로그램 비교 */}
+          <div className="mb-12 grid gap-6 md:grid-cols-2">
+            {PARTNER_PROGRAMS.map((program) => (
+              <Card
+                key={program.type}
+                className={cn(
+                  'relative flex flex-col',
+                  program.highlight && 'border-primary/30 ring-1 ring-primary/20',
+                )}
+              >
+                {program.highlight && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <Badge className="bg-primary text-primary-foreground">추천</Badge>
+                  </div>
+                )}
+                <CardHeader>
+                  <CardDescription>{program.subtitle}</CardDescription>
+                  <CardTitle className="text-2xl">{program.name}</CardTitle>
+                  <div className="mt-2">
+                    <span className="text-3xl font-bold text-primary">
+                      {program.commissionRange}
+                    </span>
+                    <span className="ml-2 text-sm text-muted-foreground">
+                      {program.commissionBasis}
+                    </span>
+                  </div>
+                </CardHeader>
+                <CardContent className="flex flex-1 flex-col">
+                  <p className="mb-4 text-sm text-muted-foreground">{program.description}</p>
+                  <ul className="mb-6 flex-1 space-y-2">
+                    {program.features.map((f) => (
+                      <li key={f} className="flex items-start gap-2 text-sm">
+                        <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-primary" />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="rounded-lg bg-muted/50 p-3">
+                    <div className="text-xs font-medium text-muted-foreground">추천 대상</div>
+                    <div className="mt-1 text-sm">{program.targetAudience}</div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* 혜택 */}
+          <div className="mb-12 grid grid-cols-2 gap-4 md:grid-cols-4">
+            {PARTNER_BENEFITS.map((b) => (
+              <div key={b.label} className="rounded-lg border bg-card p-4 text-center">
+                <div className="text-2xl font-bold text-primary">{b.value}</div>
+                <div className="mt-1 text-sm font-medium">{b.label}</div>
+                <div className="mt-0.5 text-xs text-muted-foreground">{b.description}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* 진행 프로세스 */}
+          <div className="mb-12">
+            <h3 className="mb-6 text-center text-lg font-semibold">파트너 등록 프로세스</h3>
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+              {PARTNER_PROCESS.map((p) => (
+                <div key={p.step} className="flex items-start gap-3">
+                  <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+                    {p.step}
+                  </div>
+                  <div>
+                    <div className="font-medium">{p.title}</div>
+                    <div className="text-sm text-muted-foreground">{p.description}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* CTA */}
+          <div className="text-center">
+            <Link href="/partner/apply" className={cn(buttonVariants({ size: 'lg' }), 'gap-1.5')}>
+              <Handshake className="size-4" />
+              파트너 신청하기
+            </Link>
+            <p className="mt-3 text-sm text-muted-foreground">문의: krdn.net@gmail.com</p>
+          </div>
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="py-20 md:py-28">
         <div className="mx-auto max-w-4xl px-4 text-center">
@@ -458,12 +566,13 @@ export function LandingContent() {
               무료 체험 시작
               <ArrowRight className="size-4" />
             </Link>
-            <a
-              href="mailto:krdn.net@gmail.com"
-              className={cn(buttonVariants({ variant: 'outline', size: 'lg' }))}
+            <Link
+              href="/partner/apply"
+              className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'gap-1.5')}
             >
-              영업팀 상담
-            </a>
+              <Handshake className="size-4" />
+              파트너 신청
+            </Link>
           </div>
         </div>
       </section>

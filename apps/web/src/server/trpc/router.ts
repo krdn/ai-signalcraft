@@ -8,6 +8,7 @@ import { collectedDataRouter } from './routers/collected-data';
 import { settingsRouter } from './routers/settings';
 import { adminRouter } from './routers/admin';
 import { demoAuthRouter } from './routers/demo-auth';
+import { partnerRouter } from './routers/partner';
 
 export const appRouter = router({
   analysis: analysisRouter,
@@ -19,5 +20,6 @@ export const appRouter = router({
   settings: settingsRouter,
   admin: adminRouter,
   demoAuth: demoAuthRouter,
+  partner: partnerRouter,
 });
 export type AppRouter = typeof appRouter;

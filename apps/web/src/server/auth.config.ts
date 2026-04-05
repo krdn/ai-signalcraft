@@ -35,8 +35,11 @@ export const authConfig: NextAuthConfig = {
         nextUrl.pathname.startsWith('/invite') ||
         nextUrl.pathname.startsWith('/demo') ||
         nextUrl.pathname.startsWith('/signup') ||
-        nextUrl.pathname.startsWith('/verify-email');
+        nextUrl.pathname.startsWith('/verify-email') ||
+        nextUrl.pathname.startsWith('/partner/apply');
       const isAdminPage = nextUrl.pathname.startsWith('/admin');
+      const isPartnerPage =
+        nextUrl.pathname.startsWith('/partner') && !nextUrl.pathname.startsWith('/partner/apply');
 
       // 공개 페이지는 인증 없이 접근 허용
       if (isPublicPage) return true;
@@ -52,6 +55,15 @@ export const authConfig: NextAuthConfig = {
         if (!isLoggedIn) return false;
         const role = session?.user?.role;
         if (role !== 'admin') return Response.redirect(new URL('/dashboard', nextUrl));
+        return true;
+      }
+
+      // 파트너 페이지: 로그인 + partner/sales/admin 역할 필수
+      if (isPartnerPage) {
+        if (!isLoggedIn) return false;
+        const role = session?.user?.role;
+        if (!['partner', 'sales', 'admin'].includes(role ?? ''))
+          return Response.redirect(new URL('/dashboard', nextUrl));
         return true;
       }
 

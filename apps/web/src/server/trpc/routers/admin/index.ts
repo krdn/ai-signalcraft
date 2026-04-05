@@ -5,6 +5,7 @@ import { jobsRouter } from './jobs';
 import { usageRouter } from './usage';
 import { overviewRouter } from './overview';
 import { demoRouter } from './demo';
+import { adminPartnersRouter } from './partners';
 
 export const adminRouter = router({
   users: usersRouter,
@@ -13,4 +14,5 @@ export const adminRouter = router({
   usage: usageRouter,
   overview: overviewRouter,
   demo: demoRouter,
+  partners: adminPartnersRouter,
 });
