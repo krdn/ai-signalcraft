@@ -36,7 +36,8 @@ export const authConfig: NextAuthConfig = {
         nextUrl.pathname.startsWith('/demo') ||
         nextUrl.pathname.startsWith('/signup') ||
         nextUrl.pathname.startsWith('/verify-email') ||
-        nextUrl.pathname.startsWith('/partner/apply');
+        nextUrl.pathname.startsWith('/partner/apply') ||
+        nextUrl.pathname.startsWith('/hardware');
       const isAdminPage = nextUrl.pathname.startsWith('/admin');
       const isPartnerPage =
         nextUrl.pathname.startsWith('/partner') && !nextUrl.pathname.startsWith('/partner/apply');

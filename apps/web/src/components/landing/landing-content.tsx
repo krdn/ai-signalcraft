@@ -543,10 +543,18 @@ export function LandingContent() {
 
           {/* CTA */}
           <div className="text-center">
-            <Link href="/partner/apply" className={cn(buttonVariants({ size: 'lg' }), 'gap-1.5')}>
-              <Handshake className="size-4" />
-              파트너 신청하기
-            </Link>
+            <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+              <Link href="/partner/apply" className={cn(buttonVariants({ size: 'lg' }), 'gap-1.5')}>
+                <Handshake className="size-4" />
+                파트너 신청하기
+              </Link>
+              <Link
+                href="/hardware"
+                className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'gap-1.5')}
+              >
+                온프레미스 장비 보기
+              </Link>
+            </div>
             <p className="mt-3 text-sm text-muted-foreground">문의: krdn.net@gmail.com</p>
           </div>
         </div>
