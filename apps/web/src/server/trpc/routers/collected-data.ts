@@ -28,7 +28,14 @@ export const collectedDataRouter = router({
       const [job] = await ctx.db
         .select()
         .from(collectionJobs)
-        .where(buildJobCondition(input.jobId, ctx.teamId));
+        .where(
+          buildJobCondition({
+            jobId: input.jobId,
+            teamId: ctx.teamId,
+            userId: ctx.userId,
+            filterMode: ctx.defaultFilterMode,
+          }),
+        );
       if (!job) throw new TRPCError({ code: 'NOT_FOUND' });
 
       const offset = (input.page - 1) * input.perPage;
@@ -98,7 +105,14 @@ export const collectedDataRouter = router({
       const [job] = await ctx.db
         .select()
         .from(collectionJobs)
-        .where(buildJobCondition(input.jobId, ctx.teamId));
+        .where(
+          buildJobCondition({
+            jobId: input.jobId,
+            teamId: ctx.teamId,
+            userId: ctx.userId,
+            filterMode: ctx.defaultFilterMode,
+          }),
+        );
       if (!job) throw new TRPCError({ code: 'NOT_FOUND' });
 
       const offset = (input.page - 1) * input.perPage;
@@ -169,7 +183,14 @@ export const collectedDataRouter = router({
       const [job] = await ctx.db
         .select()
         .from(collectionJobs)
-        .where(buildJobCondition(input.jobId, ctx.teamId));
+        .where(
+          buildJobCondition({
+            jobId: input.jobId,
+            teamId: ctx.teamId,
+            userId: ctx.userId,
+            filterMode: ctx.defaultFilterMode,
+          }),
+        );
       if (!job) throw new TRPCError({ code: 'NOT_FOUND' });
 
       const offset = (input.page - 1) * input.perPage;
@@ -225,7 +246,14 @@ export const collectedDataRouter = router({
       const [job] = await ctx.db
         .select()
         .from(collectionJobs)
-        .where(buildJobCondition(input.jobId, ctx.teamId));
+        .where(
+          buildJobCondition({
+            jobId: input.jobId,
+            teamId: ctx.teamId,
+            userId: ctx.userId,
+            filterMode: ctx.defaultFilterMode,
+          }),
+        );
       if (!job) throw new TRPCError({ code: 'NOT_FOUND' });
 
       const [articleCount, videoCount, commentCount, articleSourceBreakdown, videoSourceBreakdown] =

@@ -8,43 +8,48 @@ import {
   real,
   index,
 } from 'drizzle-orm/pg-core';
-import { teams } from './auth';
+import { teams, users } from './auth';
 
 // 수집 작업 (D-06: 소스별 상세 추적)
-export const collectionJobs = pgTable('collection_jobs', {
-  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  teamId: integer('team_id').references(() => teams.id),
-  keyword: text('keyword').notNull(),
-  startDate: timestamp('start_date').notNull(),
-  endDate: timestamp('end_date').notNull(),
-  status: text('status', {
-    enum: ['pending', 'running', 'completed', 'partial_failure', 'failed', 'cancelled', 'paused'],
-  })
-    .notNull()
-    .default('pending'),
-  progress:
-    jsonb('progress').$type<
-      Record<
-        string,
-        { status: string; posts?: number; articles?: number; videos?: number; comments: number }
-      >
-    >(),
-  limits: jsonb('limits').$type<{
-    naverArticles: number;
-    youtubeVideos: number;
-    communityPosts?: number;
-    commentsPerItem: number;
-  }>(),
-  errorDetails: jsonb('error_details').$type<Record<string, string>>(),
-  costLimitUsd: real('cost_limit_usd'), // 비용 한도 (USD) — 초과 시 자동 중지
-  skippedModules: jsonb('skipped_modules').$type<string[]>(), // 스킵할 분석 모듈 목록
-  options: jsonb('options').$type<{
-    enableItemAnalysis?: boolean;
-    tokenOptimization?: 'none' | 'light' | 'standard' | 'aggressive';
-  }>(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+export const collectionJobs = pgTable(
+  'collection_jobs',
+  {
+    id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+    teamId: integer('team_id').references(() => teams.id),
+    userId: text('user_id').references(() => users.id, { onDelete: 'set null' }),
+    keyword: text('keyword').notNull(),
+    startDate: timestamp('start_date').notNull(),
+    endDate: timestamp('end_date').notNull(),
+    status: text('status', {
+      enum: ['pending', 'running', 'completed', 'partial_failure', 'failed', 'cancelled', 'paused'],
+    })
+      .notNull()
+      .default('pending'),
+    progress:
+      jsonb('progress').$type<
+        Record<
+          string,
+          { status: string; posts?: number; articles?: number; videos?: number; comments: number }
+        >
+      >(),
+    limits: jsonb('limits').$type<{
+      naverArticles: number;
+      youtubeVideos: number;
+      communityPosts?: number;
+      commentsPerItem: number;
+    }>(),
+    errorDetails: jsonb('error_details').$type<Record<string, string>>(),
+    costLimitUsd: real('cost_limit_usd'), // 비용 한도 (USD) — 초과 시 자동 중지
+    skippedModules: jsonb('skipped_modules').$type<string[]>(), // 스킵할 분석 모듈 목록
+    options: jsonb('options').$type<{
+      enableItemAnalysis?: boolean;
+      tokenOptimization?: 'none' | 'light' | 'standard' | 'aggressive';
+    }>(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => [index('collection_jobs_user_id_idx').on(table.userId)],
+);
 
 // 뉴스 기사 (D-07: URL 기반 중복 제거)
 export const articles = pgTable(

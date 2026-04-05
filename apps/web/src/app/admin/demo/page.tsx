@@ -1,10 +1,22 @@
 'use client';
 
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { Pencil } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   Table,
   TableBody,
@@ -16,8 +28,18 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { trpcClient } from '@/lib/trpc';
 
+interface EditTarget {
+  userId: string;
+  userName: string | null;
+  dailyLimit: number;
+  expiresAt: string; // ISO string
+}
+
 export default function AdminDemoPage() {
   const queryClient = useQueryClient();
+  const [editTarget, setEditTarget] = useState<EditTarget | null>(null);
+  const [editDailyLimit, setEditDailyLimit] = useState('');
+  const [editExtendDays, setEditExtendDays] = useState('');
 
   const { data: demoUsers, isLoading } = useQuery({
     queryKey: ['admin', 'demo', 'list'],
@@ -29,12 +51,13 @@ export default function AdminDemoPage() {
     queryFn: () => trpcClient.admin.demo.conversionRate.query(),
   });
 
-  const extendQuota = useMutation({
-    mutationFn: (userId: string) =>
-      trpcClient.admin.demo.updateQuota.mutate({ userId, extendDays: 7 }),
+  const updateQuota = useMutation({
+    mutationFn: (input: { userId: string; dailyLimit?: number; extendDays?: number }) =>
+      trpcClient.admin.demo.updateQuota.mutate(input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'demo'] });
-      toast.success('쿼터가 연장되었습니다');
+      toast.success('쿼터가 변경되었습니다');
+      setEditTarget(null);
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -47,6 +70,41 @@ export default function AdminDemoPage() {
     },
     onError: (err: Error) => toast.error(err.message),
   });
+
+  const openEditDialog = (demo: {
+    userId: string;
+    userName: string | null;
+    dailyLimit: number;
+    expiresAt: Date | string;
+  }) => {
+    setEditDailyLimit(String(demo.dailyLimit));
+    setEditExtendDays('');
+    setEditTarget({
+      userId: demo.userId,
+      userName: demo.userName,
+      dailyLimit: demo.dailyLimit,
+      expiresAt: typeof demo.expiresAt === 'string' ? demo.expiresAt : demo.expiresAt.toISOString(),
+    });
+  };
+
+  const handleEditSubmit = () => {
+    if (!editTarget) return;
+    const dailyLimit = editDailyLimit ? Number(editDailyLimit) : undefined;
+    const extendDays = editExtendDays ? Number(editExtendDays) : undefined;
+    if (dailyLimit !== undefined && (dailyLimit < 1 || dailyLimit > 50)) {
+      toast.error('일일 한도는 1~50 사이여야 합니다');
+      return;
+    }
+    if (extendDays !== undefined && (extendDays < 1 || extendDays > 90)) {
+      toast.error('연장 일수는 1~90 사이여야 합니다');
+      return;
+    }
+    if (dailyLimit === undefined && extendDays === undefined) {
+      toast.error('변경할 항목을 입력해 주세요');
+      return;
+    }
+    updateQuota.mutate({ userId: editTarget.userId, dailyLimit, extendDays });
+  };
 
   const cleanupExpired = useMutation({
     mutationFn: () => trpcClient.admin.demo.cleanupExpired.mutate(),
@@ -167,9 +225,10 @@ export default function AdminDemoPage() {
                             variant="ghost"
                             size="sm"
                             className="text-xs"
-                            onClick={() => extendQuota.mutate(demo.userId)}
+                            onClick={() => openEditDialog(demo)}
                           >
-                            연장
+                            <Pencil className="h-3 w-3 mr-1" />
+                            편집
                           </Button>
                           <Button
                             variant="ghost"
@@ -191,6 +250,65 @@ export default function AdminDemoPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* 쿼터 편집 다이얼로그 */}
+      <Dialog open={editTarget !== null} onOpenChange={(open) => !open && setEditTarget(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>데모 쿼터 편집</DialogTitle>
+            <DialogDescription>
+              {editTarget?.userName ?? '사용자'}의 일일 한도와 사용 기간을 변경합니다.
+              {editTarget && (
+                <span className="block mt-1 text-xs">
+                  현재 만료일:{' '}
+                  {new Date(editTarget.expiresAt).toLocaleDateString('ko-KR', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="edit-daily-limit">일일 한도 (1~50회)</Label>
+              <Input
+                id="edit-daily-limit"
+                type="number"
+                min={1}
+                max={50}
+                placeholder={String(editTarget?.dailyLimit ?? 5)}
+                value={editDailyLimit}
+                onChange={(e) => setEditDailyLimit(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-extend-days">기간 연장 (1~90일)</Label>
+              <Input
+                id="edit-extend-days"
+                type="number"
+                min={1}
+                max={90}
+                placeholder="연장할 일수 입력"
+                value={editExtendDays}
+                onChange={(e) => setEditExtendDays(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                현재 만료일 또는 오늘 중 더 늦은 날짜 기준으로 연장됩니다.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditTarget(null)}>
+              취소
+            </Button>
+            <Button onClick={handleEditSubmit} disabled={updateQuota.isPending}>
+              {updateQuota.isPending ? '저장 중...' : '저장'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

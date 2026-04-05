@@ -1,10 +1,12 @@
 'use client';
 
+import { useSession } from 'next-auth/react';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { CalendarRange, Clock, FileText, MessageSquare } from 'lucide-react';
 import { SourceBadges, extractSources, summarizeCounts, formatDuration } from './source-icons';
 import { trpcClient } from '@/lib/trpc';
+import type { FilterMode } from '@/components/filter-mode-toggle';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -34,9 +36,13 @@ interface RecentJobsProps {
 }
 
 export function RecentJobs({ onSelectJob }: RecentJobsProps) {
+  const { data: session } = useSession();
+  const role = session?.user?.role as string | undefined;
+  const filterMode: FilterMode = role === 'admin' || role === 'leader' ? 'team' : 'mine';
+
   const { data, isLoading } = useQuery({
-    queryKey: ['history', 'list', { page: 1, perPage: 5 }],
-    queryFn: () => trpcClient.history.list.query({ page: 1, perPage: 5 }),
+    queryKey: ['history', 'list', { page: 1, perPage: 5, filterMode }],
+    queryFn: () => trpcClient.history.list.query({ page: 1, perPage: 5, filterMode }),
   });
 
   if (isLoading) {

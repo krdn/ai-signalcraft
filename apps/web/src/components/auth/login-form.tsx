@@ -32,6 +32,11 @@ export function LoginForm() {
       });
 
       if (result?.error) {
+        if (result.code === 'EMAIL_NOT_VERIFIED') {
+          // 미인증 → 이메일 확인 안내 페이지로 이동 (재발송 가능)
+          router.push(`/verify-email?email=${encodeURIComponent(email)}`);
+          return;
+        }
         setError('로그인에 실패했습니다. 이메일과 비밀번호를 확인해 주세요.');
       } else {
         router.push(callbackUrl);

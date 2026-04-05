@@ -1,0 +1,53 @@
+- generic [ref=e1]:
+  - generic [active]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - navigation [ref=e7]:
+            - button "previous" [disabled] [ref=e8]:
+              - img "previous" [ref=e9]
+            - generic [ref=e11]:
+              - generic [ref=e12]: 1/
+              - text: "1"
+            - button "next" [disabled] [ref=e13]:
+              - img "next" [ref=e14]
+          - img
+        - generic [ref=e16]:
+          - link "Next.js 16.2.1 (stale) Turbopack" [ref=e17] [cursor=pointer]:
+            - /url: https://nextjs.org/docs/messages/version-staleness
+            - img [ref=e18]
+            - generic "There is a newer version (16.2.2) available, upgrade recommended!" [ref=e20]: Next.js 16.2.1 (stale)
+            - generic [ref=e21]: Turbopack
+          - img
+      - dialog "Runtime Error" [ref=e23]:
+        - generic [ref=e27]:
+          - generic [ref=e28]:
+            - generic [ref=e30]: Runtime Error
+            - generic [ref=e31]:
+              - button "Copy Error Info" [ref=e32] [cursor=pointer]:
+                - img [ref=e33]
+              - button "No related documentation found" [disabled] [ref=e35]:
+                - img [ref=e36]
+              - button "Attach Node.js inspector" [ref=e38] [cursor=pointer]:
+                - img [ref=e39]
+          - generic [ref=e48]: Module [project]/node_modules/.pnpm/next-themes@0.4.6_react-dom@19.2.4_react@19.2.4__react@19.2.4/node_modules/next-themes/dist/index.mjs [app-client] (ecmascript) was instantiated because it was required from module [project]/apps/web/src/components/ui/sonner.tsx [app-client] (ecmascript), but the module factory is not available. This is often caused by a stale browser cache, misconfigured Cache-Control headers, or a service worker serving outdated responses. To fix this, make sure your Cache-Control headers allow revalidation of chunks and review your service worker configuration. As an immediate workaround, try hard-reloading the page, clearing the browser cache, or unregistering any service workers.
+        - generic [ref=e49]: "1"
+        - generic [ref=e50]: "2"
+    - generic [ref=e55] [cursor=pointer]:
+      - button "Open Next.js Dev Tools" [ref=e56]:
+        - img [ref=e57]
+      - generic [ref=e60]:
+        - button "Open issues overlay" [ref=e61]:
+          - generic [ref=e62]:
+            - generic [ref=e63]: "0"
+            - generic [ref=e64]: "1"
+          - generic [ref=e65]: Issue
+        - button "Collapse issues badge" [ref=e66]:
+          - img [ref=e67]
+  - generic [ref=e70]:
+    - img [ref=e71]
+    - heading "This page couldn’t load" [level=1] [ref=e73]
+    - paragraph [ref=e74]: Reload to try again, or go back.
+    - generic [ref=e75]:
+      - button "Reload" [ref=e77] [cursor=pointer]
+      - button "Back" [ref=e78] [cursor=pointer]

@@ -10,6 +10,7 @@ import {
   cleanupBeforeNewPipeline,
 } from '@ai-signalcraft/core';
 import { protectedProcedure, router } from '../init';
+import { buildJobCondition } from '../shared/query-helpers';
 import { applyDemoGuard } from '../shared/demo-guard';
 
 export const analysisRouter = router({
@@ -75,6 +76,7 @@ export const analysisRouter = router({
           endDate: new Date(input.endDate),
           status: 'pending',
           teamId: ctx.teamId ?? null,
+          userId: ctx.userId,
           options: effectiveOptions,
           limits: effectiveLimits,
           skippedModules,
@@ -207,19 +209,29 @@ export const analysisRouter = router({
       return { jobId: input.jobId };
     }),
 
-  // 분석 결과 조회 -- 특정 작업의 모듈별 분석 결과 (팀 소속 확인)
+  // 분석 결과 조회 -- 특정 작업의 모듈별 분석 결과 (팀/사용자 기반 접근 제어)
   getResults: protectedProcedure
-    .input(z.object({ jobId: z.number() }))
+    .input(
+      z.object({
+        jobId: z.number(),
+        filterMode: z.enum(['mine', 'team']).optional(),
+      }),
+    )
     .query(async ({ input, ctx }) => {
-      // 팀 소속 확인: 해당 작업이 내 팀의 것인지 검증
-      if (ctx.teamId) {
-        const [job] = await ctx.db
-          .select({ teamId: collectionJobs.teamId })
-          .from(collectionJobs)
-          .where(and(eq(collectionJobs.id, input.jobId), eq(collectionJobs.teamId, ctx.teamId)))
-          .limit(1);
-        if (!job) return [];
-      }
+      const filterMode = input.filterMode ?? ctx.defaultFilterMode;
+      const [job] = await ctx.db
+        .select({ id: collectionJobs.id })
+        .from(collectionJobs)
+        .where(
+          buildJobCondition({
+            jobId: input.jobId,
+            teamId: ctx.teamId,
+            userId: ctx.userId,
+            filterMode,
+          }),
+        )
+        .limit(1);
+      if (!job) return [];
 
       const results = await ctx.db
         .select()
@@ -228,19 +240,29 @@ export const analysisRouter = router({
       return results;
     }),
 
-  // 리포트 조회 -- 특정 작업의 종합 리포트 (팀 소속 확인)
+  // 리포트 조회 -- 특정 작업의 종합 리포트 (팀/사용자 기반 접근 제어)
   getReport: protectedProcedure
-    .input(z.object({ jobId: z.number() }))
+    .input(
+      z.object({
+        jobId: z.number(),
+        filterMode: z.enum(['mine', 'team']).optional(),
+      }),
+    )
     .query(async ({ input, ctx }) => {
-      // 팀 소속 확인
-      if (ctx.teamId) {
-        const [job] = await ctx.db
-          .select({ teamId: collectionJobs.teamId })
-          .from(collectionJobs)
-          .where(and(eq(collectionJobs.id, input.jobId), eq(collectionJobs.teamId, ctx.teamId)))
-          .limit(1);
-        if (!job) return null;
-      }
+      const filterMode = input.filterMode ?? ctx.defaultFilterMode;
+      const [job] = await ctx.db
+        .select({ id: collectionJobs.id })
+        .from(collectionJobs)
+        .where(
+          buildJobCondition({
+            jobId: input.jobId,
+            teamId: ctx.teamId,
+            userId: ctx.userId,
+            filterMode,
+          }),
+        )
+        .limit(1);
+      if (!job) return null;
 
       const [report] = await ctx.db
         .select()

@@ -13,23 +13,35 @@ const t = initTRPC.context<Awaited<ReturnType<typeof createTRPCContext>>>().crea
 export const router = t.router;
 export const publicProcedure = t.procedure;
 
-// 인증된 사용자 + 팀 정보 주입
+// 역할 기반 기본 필터 모드 결정
+export type FilterMode = 'mine' | 'team';
+
+function getDefaultFilterMode(role?: string): FilterMode {
+  return role === 'admin' || role === 'leader' ? 'team' : 'mine';
+}
+
+// 인증된 사용자 + 팀 정보 + 사용자 필터 모드 주입
 export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
   if (!ctx.session?.user) throw new TRPCError({ code: 'UNAUTHORIZED' });
+
+  const userId = ctx.session.user.id!;
+  const userRole = ctx.session.user.role as string | undefined;
 
   // 사용자의 팀 멤버십 조회
   const [membership] = await ctx.db
     .select()
     .from(teamMembers)
-    .where(eq(teamMembers.userId, ctx.session.user.id!))
+    .where(eq(teamMembers.userId, userId))
     .limit(1);
 
   return next({
     ctx: {
       ...ctx,
       session: ctx.session,
+      userId,
       teamId: membership?.teamId ?? null,
       teamRole: membership?.role ?? null,
+      defaultFilterMode: getDefaultFilterMode(userRole),
     },
   });
 });
@@ -50,10 +62,13 @@ export const systemAdminProcedure = t.procedure.use(async ({ ctx, next }) => {
 export const adminProcedure = t.procedure.use(async ({ ctx, next }) => {
   if (!ctx.session?.user) throw new TRPCError({ code: 'UNAUTHORIZED' });
 
+  const userId = ctx.session.user.id!;
+  const userRole = ctx.session.user.role as string | undefined;
+
   const [membership] = await ctx.db
     .select()
     .from(teamMembers)
-    .where(and(eq(teamMembers.userId, ctx.session.user.id!)))
+    .where(and(eq(teamMembers.userId, userId)))
     .limit(1);
 
   if (!membership || membership.role !== 'admin') {
@@ -64,8 +79,10 @@ export const adminProcedure = t.procedure.use(async ({ ctx, next }) => {
     ctx: {
       ...ctx,
       session: ctx.session,
+      userId,
       teamId: membership.teamId,
       teamRole: membership.role as 'admin',
+      defaultFilterMode: getDefaultFilterMode(userRole),
     },
   });
 });

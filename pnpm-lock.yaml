@@ -44,9 +44,6 @@ importers:
 
   apps/web:
     dependencies:
-      '@ai-signalcraft/ai-gateway':
-        specifier: workspace:*
-        version: link:../../packages/ai-gateway
       '@ai-signalcraft/core':
         specifier: workspace:*
         version: link:../../packages/core

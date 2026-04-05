@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Search } from 'lucide-react';
+import { Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -15,6 +15,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import {
   Table,
   TableBody,
@@ -49,6 +59,11 @@ export default function AdminUsersPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [deleteTarget, setDeleteTarget] = useState<{
+    id: string;
+    name: string | null;
+    email: string;
+  } | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin', 'users', page, search, roleFilter],
@@ -81,6 +96,19 @@ export default function AdminUsersPage() {
       toast.success('상태가 변경되었습니다');
     },
     onError: (err: Error) => toast.error(err.message),
+  });
+
+  const deleteUser = useMutation({
+    mutationFn: (userId: string) => trpcClient.admin.users.deleteUser.mutate({ userId }),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+      toast.success(`${result.deletedEmail} 계정이 삭제되었습니다`);
+      setDeleteTarget(null);
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+      setDeleteTarget(null);
+    },
   });
 
   const totalPages = data ? Math.ceil(data.total / data.pageSize) : 0;
@@ -188,19 +216,31 @@ export default function AdminUsersPage() {
                         {new Date(user.createdAt).toLocaleDateString('ko-KR')}
                       </TableCell>
                       <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-xs"
-                          onClick={() =>
-                            toggleActive.mutate({
-                              userId: user.id,
-                              isActive: !user.isActive,
-                            })
-                          }
-                        >
-                          {user.isActive ? '비활성화' : '활성화'}
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-xs"
+                            onClick={() =>
+                              toggleActive.mutate({
+                                userId: user.id,
+                                isActive: !user.isActive,
+                              })
+                            }
+                          >
+                            {user.isActive ? '비활성화' : '활성화'}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-xs text-muted-foreground hover:text-destructive"
+                            onClick={() =>
+                              setDeleteTarget({ id: user.id, name: user.name, email: user.email })
+                            }
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -235,6 +275,35 @@ export default function AdminUsersPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* 삭제 확인 다이얼로그 */}
+      <AlertDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>사용자 삭제</AlertDialogTitle>
+            <AlertDialogDescription>
+              <strong>{deleteTarget?.name ?? deleteTarget?.email}</strong> 계정을 삭제합니다. 관련된
+              세션, 팀 멤버십, 데모 쿼터가 삭제되며, 분석 작업 기록은 보존됩니다. 이 작업은 되돌릴
+              수 없습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              disabled={deleteUser.isPending}
+              onClick={() => deleteTarget && deleteUser.mutate(deleteTarget.id)}
+            >
+              {deleteUser.isPending ? '삭제 중...' : '삭제'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

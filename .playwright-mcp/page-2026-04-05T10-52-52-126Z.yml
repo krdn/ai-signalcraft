@@ -1,0 +1,10 @@
+- generic [active] [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e7] [cursor=pointer]:
+    - img [ref=e8]
+  - generic [ref=e12]:
+    - img [ref=e13]
+    - heading "This page couldn’t load" [level=1] [ref=e15]
+    - paragraph [ref=e16]: Reload to try again, or go back.
+    - generic [ref=e17]:
+      - button "Reload" [ref=e19] [cursor=pointer]
+      - button "Back" [ref=e20] [cursor=pointer]

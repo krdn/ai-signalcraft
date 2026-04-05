@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import {
   collectionJobs,
+  users,
   deleteJob,
   deleteJobs,
   cleanupOldJobs,
@@ -10,26 +11,53 @@ import {
 import { desc, sql, eq } from 'drizzle-orm';
 import { protectedProcedure, adminProcedure, router } from '../init';
 import { verifyJobOwnership } from '../shared/verify-job-ownership';
+import { buildJobListCondition } from '../shared/query-helpers';
 
 export const historyRouter = router({
-  // 히스토리 목록 조회 -- 과거 분석 작업 페이지네이션 (팀 필터링)
+  // 히스토리 목록 조회 -- 역할 기반 필터링 (admin/leader: 팀 전체, member: 내 것만)
   list: protectedProcedure
     .input(
       z.object({
         page: z.number().min(1).default(1),
         perPage: z.number().min(1).max(50).default(20),
+        filterMode: z.enum(['mine', 'team']).optional(),
       }),
     )
     .query(async ({ input, ctx }) => {
       const offset = (input.page - 1) * input.perPage;
+      const filterMode = input.filterMode ?? ctx.defaultFilterMode;
 
-      // 팀 소속인 경우 해당 팀의 작업만 필터
-      const teamFilter = ctx.teamId ? eq(collectionJobs.teamId, ctx.teamId) : undefined;
+      const filter = buildJobListCondition({
+        teamId: ctx.teamId,
+        userId: ctx.userId,
+        filterMode,
+      });
 
-      const baseQuery = ctx.db.select().from(collectionJobs);
-      const jobs = teamFilter
+      const baseQuery = ctx.db
+        .select({
+          id: collectionJobs.id,
+          teamId: collectionJobs.teamId,
+          userId: collectionJobs.userId,
+          keyword: collectionJobs.keyword,
+          startDate: collectionJobs.startDate,
+          endDate: collectionJobs.endDate,
+          status: collectionJobs.status,
+          progress: collectionJobs.progress,
+          limits: collectionJobs.limits,
+          errorDetails: collectionJobs.errorDetails,
+          costLimitUsd: collectionJobs.costLimitUsd,
+          skippedModules: collectionJobs.skippedModules,
+          options: collectionJobs.options,
+          createdAt: collectionJobs.createdAt,
+          updatedAt: collectionJobs.updatedAt,
+          userName: users.name,
+        })
+        .from(collectionJobs)
+        .leftJoin(users, eq(collectionJobs.userId, users.id));
+
+      const jobs = filter
         ? await baseQuery
-            .where(teamFilter)
+            .where(filter)
             .orderBy(desc(collectionJobs.createdAt))
             .limit(input.perPage)
             .offset(offset)
@@ -39,7 +67,7 @@ export const historyRouter = router({
             .offset(offset);
 
       const countQuery = ctx.db.select({ count: sql<number>`count(*)::int` }).from(collectionJobs);
-      const [{ count }] = teamFilter ? await countQuery.where(teamFilter) : await countQuery;
+      const [{ count }] = filter ? await countQuery.where(filter) : await countQuery;
 
       return {
         items: jobs,
@@ -53,7 +81,7 @@ export const historyRouter = router({
   delete: protectedProcedure
     .input(z.object({ jobId: z.number() }))
     .mutation(async ({ input, ctx }) => {
-      await verifyJobOwnership(ctx, input.jobId);
+      await verifyJobOwnership(ctx, input.jobId, ctx.defaultFilterMode);
       return deleteJob(input.jobId);
     }),
 
@@ -61,9 +89,8 @@ export const historyRouter = router({
   bulkDelete: protectedProcedure
     .input(z.object({ jobIds: z.array(z.number()).min(1).max(100) }))
     .mutation(async ({ input, ctx }) => {
-      // 모든 job이 해당 팀 소유인지 확인
       for (const jobId of input.jobIds) {
-        await verifyJobOwnership(ctx, jobId);
+        await verifyJobOwnership(ctx, jobId, ctx.defaultFilterMode);
       }
       return deleteJobs(input.jobIds);
     }),

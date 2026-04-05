@@ -34,7 +34,8 @@ export const authConfig: NextAuthConfig = {
         nextUrl.pathname.startsWith('/landing') ||
         nextUrl.pathname.startsWith('/invite') ||
         nextUrl.pathname.startsWith('/demo') ||
-        nextUrl.pathname.startsWith('/signup');
+        nextUrl.pathname.startsWith('/signup') ||
+        nextUrl.pathname.startsWith('/verify-email');
       const isAdminPage = nextUrl.pathname.startsWith('/admin');
 
       // 공개 페이지는 인증 없이 접근 허용

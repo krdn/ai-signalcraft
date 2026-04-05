@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useSession } from 'next-auth/react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import {
@@ -15,6 +16,7 @@ import {
 import { toast } from 'sonner';
 import { SourceBadges, extractSources, summarizeCounts, formatDuration } from './source-icons';
 import { trpcClient } from '@/lib/trpc';
+import { FilterModeToggle, type FilterMode } from '@/components/filter-mode-toggle';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -59,7 +61,12 @@ interface HistoryTableProps {
 }
 
 export function HistoryTable({ onViewResult }: HistoryTableProps) {
+  const { data: session } = useSession();
+  const role = session?.user?.role as string | undefined;
+  const defaultMode: FilterMode = role === 'admin' || role === 'leader' ? 'team' : 'mine';
+
   const [page, setPage] = useState(1);
+  const [filterMode, setFilterMode] = useState<FilterMode>(defaultMode);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [singleDeleteTarget, setSingleDeleteTarget] = useState<{
@@ -69,8 +76,8 @@ export function HistoryTable({ onViewResult }: HistoryTableProps) {
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
-    queryKey: ['history', 'list', { page, perPage: PER_PAGE }],
-    queryFn: () => trpcClient.history.list.query({ page, perPage: PER_PAGE }),
+    queryKey: ['history', 'list', { page, perPage: PER_PAGE, filterMode }],
+    queryFn: () => trpcClient.history.list.query({ page, perPage: PER_PAGE, filterMode }),
   });
 
   const totalPages = data ? Math.ceil(data.total / PER_PAGE) : 0;
@@ -165,39 +172,49 @@ export function HistoryTable({ onViewResult }: HistoryTableProps) {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg font-semibold">분석 히스토리</CardTitle>
-          {deletableSelected.length > 0 && (
-            <>
-              <Button
-                variant="destructive"
-                size="sm"
-                disabled={bulkDeleteMutation.isPending}
-                onClick={() => setBulkDeleteOpen(true)}
-              >
-                <Trash2 className="h-4 w-4 mr-1" />
-                {deletableSelected.length}개 삭제
-              </Button>
-              <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>분석 작업 삭제</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      선택한 {deletableSelected.length}개 작업을 삭제합니다. 관련된 수집 데이터,
-                      분석 결과, 리포트가 모두 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>취소</AlertDialogCancel>
-                    <AlertDialogAction
-                      variant="destructive"
-                      onClick={() => bulkDeleteMutation.mutate(deletableSelected)}
-                    >
-                      삭제
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </>
-          )}
+          <div className="flex items-center gap-2">
+            <FilterModeToggle
+              value={filterMode}
+              onChange={(mode) => {
+                setFilterMode(mode);
+                setPage(1);
+                setSelectedIds(new Set());
+              }}
+            />
+            {deletableSelected.length > 0 && (
+              <>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  disabled={bulkDeleteMutation.isPending}
+                  onClick={() => setBulkDeleteOpen(true)}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  {deletableSelected.length}개 삭제
+                </Button>
+                <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>분석 작업 삭제</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        선택한 {deletableSelected.length}개 작업을 삭제합니다. 관련된 수집 데이터,
+                        분석 결과, 리포트가 모두 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>취소</AlertDialogCancel>
+                      <AlertDialogAction
+                        variant="destructive"
+                        onClick={() => bulkDeleteMutation.mutate(deletableSelected)}
+                      >
+                        삭제
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
@@ -216,6 +233,7 @@ export function HistoryTable({ onViewResult }: HistoryTableProps) {
                 <TableHead>소스</TableHead>
                 <TableHead>수집</TableHead>
                 <TableHead>상태</TableHead>
+                {filterMode === 'team' && <TableHead>실행자</TableHead>}
                 <TableHead className="text-right">작업</TableHead>
               </TableRow>
             </TableHeader>
@@ -276,6 +294,11 @@ export function HistoryTable({ onViewResult }: HistoryTableProps) {
                     <TableCell>
                       <Badge variant={badgeInfo.variant}>{badgeInfo.label}</Badge>
                     </TableCell>
+                    {filterMode === 'team' && (
+                      <TableCell className="text-xs text-muted-foreground">
+                        {(job as any).userName ?? '-'}
+                      </TableCell>
+                    )}
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
                         <Button variant="ghost" size="sm" onClick={() => onViewResult?.(job.id)}>
