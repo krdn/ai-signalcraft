@@ -110,12 +110,12 @@ const nextAuth = NextAuth({
       }
       return true;
     },
-    async jwt({ token, user, trigger, account }) {
+    async jwt({ token, user }) {
       if (user) {
         token.role = user.role;
       }
-      // Google OAuth 로그인 또는 세션 갱신 시 DB에서 최신 role 반영
-      if (token.sub && (account?.provider === 'google' || trigger === 'update')) {
+      // 매 토큰 갱신 시 DB에서 최신 role 반영 (DB 변경 즉시 반영)
+      if (token.sub) {
         const [dbUser] = await db
           .select({ role: users.role })
           .from(users)
