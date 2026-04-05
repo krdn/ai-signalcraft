@@ -39,11 +39,25 @@ export default function DemoSignupPage() {
     }
 
     try {
-      // 1. 데모 계정 생성 + 인증 이메일 발송
-      const result = await trpcClient.demoAuth.signup.mutate({ email, name, password });
+      // 1. 데모 계정 생성
+      await trpcClient.demoAuth.signup.mutate({ email, name, password });
 
-      // 2. 이메일 확인 안내 페이지로 이동
-      router.push(`/verify-email?email=${encodeURIComponent(result.email)}`);
+      // 2. 바로 로그인
+      const loginResult = await signIn('credentials', {
+        email,
+        password,
+        redirect: false,
+      });
+
+      if (loginResult?.error) {
+        setError(
+          '가입은 완료되었지만 자동 로그인에 실패했습니다. 로그인 페이지에서 시도해 주세요.',
+        );
+        return;
+      }
+
+      router.push('/dashboard');
+      router.refresh();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : '데모 가입에 실패했습니다';
       setError(message);

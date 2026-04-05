@@ -49,7 +49,7 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
   const [helpTab, setHelpTab] = useState('quickstart');
   const [startDate, setStartDate] = useState<Date>(STABLE_INIT_DATE);
   const [endDate, setEndDate] = useState<Date>(STABLE_INIT_DATE);
-  const [enableItemAnalysis, setEnableItemAnalysis] = useState(false);
+  const [enableItemAnalysis, setEnableItemAnalysis] = useState(isDemo);
   const [dateMode, setDateMode] = useState<'period' | 'event'>('period');
   const [eventName, setEventName] = useState('');
   const [eventDate, setEventDate] = useState<Date>(STABLE_INIT_DATE);
@@ -359,21 +359,29 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
             </TabsContent>
           </Tabs>
 
-          {/* 분석 옵션 — 데모 사용자는 숨김 */}
-          <div className={`space-y-2 ${isDemo ? 'hidden' : ''}`}>
+          {/* 분석 옵션 */}
+          <div className="space-y-2">
             <Label>분석 옵션</Label>
-            <label className="flex items-start gap-2 cursor-pointer rounded-lg border p-3 hover:bg-accent/50 transition-colors">
+            <label
+              suppressHydrationWarning
+              className={`flex items-start gap-2 rounded-lg border p-3 transition-colors ${isDemo ? 'opacity-70' : 'cursor-pointer hover:bg-accent/50'}`}
+            >
               <Checkbox
                 checked={enableItemAnalysis}
                 onCheckedChange={(checked) => setEnableItemAnalysis(!!checked)}
-                disabled={triggerMutation.isPending}
+                disabled={isDemo || triggerMutation.isPending}
                 className="mt-0.5"
               />
-              <div className="space-y-1">
-                <span className="text-sm font-medium">개별 기사/댓글 감정 분석</span>
-                <p className="text-xs text-muted-foreground">
-                  각 기사와 댓글에 대해 긍정/부정/중립 감정을 개별 판정합니다. 추가 API 비용이
-                  발생합니다.
+              <div className="space-y-1" suppressHydrationWarning>
+                <span className="text-sm font-medium" suppressHydrationWarning>
+                  개별 기사/댓글 감정 분석
+                  {isDemo && (
+                    <span className="ml-2 text-xs text-primary font-normal">(데모 기본 포함)</span>
+                  )}
+                </span>
+                <p className="text-xs text-muted-foreground" suppressHydrationWarning>
+                  각 기사와 댓글에 대해 긍정/부정/중립 감정을 개별 판정합니다.
+                  {!isDemo && ' 추가 API 비용이 발생합니다.'}
                 </p>
               </div>
             </label>

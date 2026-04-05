@@ -16,6 +16,9 @@ function buildVerificationUrl(token: string): string {
   return `${baseUrl}/verify-email?token=${token}`;
 }
 
+// NOTE: generateVerificationToken, buildVerificationUrl, sendVerificationEmail은
+// resendCode, verifyEmail 프로시저에서 여전히 사용됨
+
 export const demoAuthRouter = router({
   // 데모 가입 (이메일+이름+비밀번호)
   signup: publicProcedure
@@ -50,7 +53,7 @@ export const demoAuthRouter = router({
       // 사용자가 입력한 비밀번호로 해시 생성
       const hashedPassword = await bcrypt.hash(input.password, 10);
 
-      // 사용자 생성
+      // 사용자 생성 (이메일 인증 없이 바로 활성화)
       const [user] = await ctx.db
         .insert(users)
         .values({
@@ -58,6 +61,7 @@ export const demoAuthRouter = router({
           name: input.name,
           role: 'demo',
           hashedPassword,
+          emailVerified: new Date(),
         })
         .returning();
 
@@ -72,27 +76,10 @@ export const demoAuthRouter = router({
         expiresAt: new Date(Date.now() + DEMO_DEFAULTS.expiryDays * 24 * 60 * 60 * 1000),
       });
 
-      // 인증 토큰 생성 및 링크 발송
-      const token = generateVerificationToken();
-      await ctx.db.insert(verificationTokens).values({
-        identifier: user.email,
-        token,
-        expires: new Date(Date.now() + 10 * 60 * 1000), // 10분
-      });
-
-      const verificationUrl = buildVerificationUrl(token);
-      try {
-        await sendVerificationEmail({ to: user.email, verificationUrl });
-      } catch (err) {
-        // 이메일 발송 실패해도 가입은 진행 — 재발송으로 복구 가능
-        console.error('[Demo Signup] 인증 이메일 발송 실패:', err);
-        console.log(`[Demo Signup] 인증 링크 (${user.email}): ${verificationUrl}`);
-      }
-
       return {
         email: user.email,
         userId: user.id,
-        requiresVerification: true,
+        requiresVerification: false,
       };
     }),
 

@@ -1,4 +1,4 @@
-import NextAuth, { CredentialsSignin } from 'next-auth';
+import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import Google from 'next-auth/providers/google';
 import { DrizzleAdapter } from '@auth/drizzle-adapter';
@@ -15,10 +15,6 @@ import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
 import { authConfig } from './auth.config';
 import { DEMO_DEFAULTS } from './trpc/shared/demo-config';
-
-class EmailNotVerifiedError extends CredentialsSignin {
-  code = 'EMAIL_NOT_VERIFIED';
-}
 
 // Google OAuth는 환경변수가 설정된 경우에만 활성화
 const providers = [
@@ -39,10 +35,6 @@ const providers = [
       if (user[0].isActive === false) return null;
       const valid = await bcrypt.compare(credentials.password as string, user[0].hashedPassword);
       if (!valid) return null;
-      // 이메일 인증 확인
-      if (!user[0].emailVerified) {
-        throw new EmailNotVerifiedError();
-      }
       return {
         id: user[0].id,
         email: user[0].email,
@@ -122,18 +114,8 @@ const nextAuth = NextAuth({
       if (user) {
         token.role = user.role;
       }
-      // Google OAuth 신규 가입: events.createUser에서 role 변경 후 토큰에 반영
-      // (createUser가 jwt 전에 실행되므로 DB에서 최신 role 조회)
-      if (account?.provider === 'google' && token.sub) {
-        const [dbUser] = await db
-          .select({ role: users.role })
-          .from(users)
-          .where(eq(users.id, token.sub))
-          .limit(1);
-        if (dbUser) token.role = dbUser.role;
-      }
-      // 세션 갱신 요청 시 DB에서 최신 role 반영
-      if (trigger === 'update' && token.sub) {
+      // Google OAuth 로그인 또는 세션 갱신 시 DB에서 최신 role 반영
+      if (token.sub && (account?.provider === 'google' || trigger === 'update')) {
         const [dbUser] = await db
           .select({ role: users.role })
           .from(users)
