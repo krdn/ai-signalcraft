@@ -25,8 +25,6 @@ const PRODUCTS = [
     name: 'ASUS Ascent GX10 크로스젠',
     subtitle: '128GB, M.2 1TB',
     manufacturer: 'ASUS',
-    price: '550만원',
-    priceNote: '최저가 기준',
     recommended: true,
     recommendLabel: '가성비 추천',
     description:
@@ -49,8 +47,6 @@ const PRODUCTS = [
     name: 'DELL Pro Max GB10',
     subtitle: '128GB, M.2 2TB',
     manufacturer: 'DELL',
-    price: '941만원',
-    priceNote: '최저가 기준',
     recommended: false,
     recommendLabel: '고성능 추천',
     description:
@@ -94,13 +90,12 @@ const WHY_ON_PREMISE = [
 ];
 
 const COMPARISON = [
-  { feature: '초기 비용', saas: '0원', onPremise: '550~941만원' },
   { feature: '월 운영 비용', saas: '49~249만원/월', onPremise: '전기세만 (약 3~5만원)' },
-  { feature: '1년 총비용', saas: '588~2,988만원', onPremise: '550~941만원' },
-  { feature: '2년 총비용', saas: '1,176~5,976만원', onPremise: '550~941만원' },
   { feature: '분석 횟수', saas: '플랜별 제한', onPremise: '무제한' },
   { feature: '데이터 위치', saas: '클라우드', onPremise: '사내 서버' },
   { feature: '커스터마이징', saas: '제한적', onPremise: '완전 자유' },
+  { feature: '설치/관리', saas: '불필요', onPremise: '파트너 지원' },
+  { feature: '보안 통제', saas: '서비스 정책 따름', onPremise: '완전 자체 관리' },
 ];
 
 export default function HardwarePage() {
@@ -183,33 +178,26 @@ export default function HardwarePage() {
               <Card
                 key={product.id}
                 className={cn(
-                  'relative flex flex-col',
+                  'flex flex-col',
                   product.recommended && 'border-primary/30 ring-1 ring-primary/20',
                 )}
               >
-                {product.recommended && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <Badge className="bg-primary text-primary-foreground">
-                      {product.recommendLabel}
-                    </Badge>
-                  </div>
-                )}
-                {!product.recommended && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <Badge variant="secondary">{product.recommendLabel}</Badge>
-                  </div>
-                )}
-
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div>
+                      <div className="mb-2">
+                        <Badge
+                          variant={product.recommended ? 'default' : 'secondary'}
+                          className={
+                            product.recommended ? 'bg-primary text-primary-foreground' : ''
+                          }
+                        >
+                          {product.recommendLabel}
+                        </Badge>
+                      </div>
                       <CardDescription>{product.manufacturer}</CardDescription>
                       <CardTitle className="text-xl">{product.name}</CardTitle>
                       <p className="mt-1 text-sm text-muted-foreground">{product.subtitle}</p>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-primary">{product.price}</div>
-                      <div className="text-xs text-muted-foreground">{product.priceNote}</div>
                     </div>
                   </div>
                 </CardHeader>
@@ -273,7 +261,7 @@ export default function HardwarePage() {
         <div className="mx-auto max-w-4xl px-4">
           <h2 className="mb-4 text-center text-2xl font-bold md:text-3xl">SaaS vs 온프레미스</h2>
           <p className="mb-8 text-center text-muted-foreground">
-            Professional 플랜(129만원/월) 기준 비교
+            클라우드 SaaS와 온프레미스 방식의 차이점
           </p>
 
           <Card>
