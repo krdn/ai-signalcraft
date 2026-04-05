@@ -11,9 +11,7 @@ import { trpcClient } from '@/lib/trpc';
 
 export function UpgradeModal() {
   const { data: session } = useSession();
-  const userRole = (session?.user as Record<string, unknown> | undefined)?.role as
-    | string
-    | undefined;
+  const userRole = session?.user?.role;
 
   const { data: quota } = useQuery({
     queryKey: ['demoAuth', 'quota'],

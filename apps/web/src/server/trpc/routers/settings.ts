@@ -19,7 +19,7 @@ import {
   getCollectionLimits,
   updateCollectionLimits,
 } from '@ai-signalcraft/core';
-import { AI_PROVIDER_VALUES } from '@ai-signalcraft/ai-gateway/meta';
+import { AI_PROVIDER_VALUES } from '@ai-signalcraft/core/ai-meta';
 import { protectedProcedure, systemAdminProcedure, router } from '../init';
 
 // AI 프로바이더 enum — 중앙 레지스트리에서 파생

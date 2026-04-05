@@ -49,7 +49,7 @@ export const authConfig: NextAuthConfig = {
       // 어드민 페이지: 로그인 + role='admin' 필수
       if (isAdminPage) {
         if (!isLoggedIn) return false;
-        const role = (session?.user as Record<string, unknown> | undefined)?.role;
+        const role = session?.user?.role;
         if (role !== 'admin') return Response.redirect(new URL('/dashboard', nextUrl));
         return true;
       }
@@ -59,14 +59,14 @@ export const authConfig: NextAuthConfig = {
     },
     async jwt({ token, user }) {
       if (user) {
-        token.role = (user as Record<string, unknown>).role;
+        token.role = user.role;
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.sub!;
-        (session.user as unknown as Record<string, unknown>).role = token.role;
+        session.user.role = token.role;
       }
       return session;
     },

@@ -37,7 +37,7 @@ export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
 // 시스템 관리자 전용 프로시저 -- users.role === 'admin'
 export const systemAdminProcedure = t.procedure.use(async ({ ctx, next }) => {
   if (!ctx.session?.user) throw new TRPCError({ code: 'UNAUTHORIZED' });
-  const userRole = (ctx.session.user as Record<string, unknown>).role;
+  const userRole = ctx.session.user.role;
   if (userRole !== 'admin') {
     throw new TRPCError({ code: 'FORBIDDEN', message: '시스템 관리자 권한이 필요합니다' });
   }

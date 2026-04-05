@@ -74,9 +74,7 @@ export function TopNav({ activeTab, onTabChange }: TopNavProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const userInitial = session?.user?.name?.[0] ?? session?.user?.email?.[0] ?? '?';
-  const userRole = (session?.user as Record<string, unknown> | undefined)?.role as
-    | string
-    | undefined;
+  const userRole = session?.user?.role;
   const isDark = theme === 'dark';
 
   const handleMobileTabChange = (index: number) => {
@@ -222,7 +220,7 @@ export function TopNav({ activeTab, onTabChange }: TopNavProps) {
               <span>홈페이지</span>
             </Link>
           </DropdownMenuItem>
-          {(session?.user as Record<string, unknown> | undefined)?.role === 'admin' && (
+          {session?.user?.role === 'admin' && (
             <DropdownMenuItem className="p-0">
               <Link href="/admin" className="flex w-full items-center gap-2 px-1.5 py-1">
                 <Shield className="h-4 w-4" />

@@ -11,6 +11,7 @@ import {
 import { eq, and, desc, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { protectedProcedure, router } from '../init';
+import { buildJobCondition } from '../shared/query-helpers';
 
 export const collectedDataRouter = router({
   // 수집된 기사 목록 조회 (조인 테이블 경유)
@@ -24,10 +25,10 @@ export const collectedDataRouter = router({
     )
     .query(async ({ input, ctx }) => {
       // 팀 소속 확인
-      const jobConditions = ctx.teamId
-        ? and(eq(collectionJobs.id, input.jobId), eq(collectionJobs.teamId, ctx.teamId))
-        : eq(collectionJobs.id, input.jobId);
-      const [job] = await ctx.db.select().from(collectionJobs).where(jobConditions);
+      const [job] = await ctx.db
+        .select()
+        .from(collectionJobs)
+        .where(buildJobCondition(input.jobId, ctx.teamId));
       if (!job) throw new TRPCError({ code: 'NOT_FOUND' });
 
       const offset = (input.page - 1) * input.perPage;
@@ -94,10 +95,10 @@ export const collectedDataRouter = router({
       }),
     )
     .query(async ({ input, ctx }) => {
-      const jobConditions = ctx.teamId
-        ? and(eq(collectionJobs.id, input.jobId), eq(collectionJobs.teamId, ctx.teamId))
-        : eq(collectionJobs.id, input.jobId);
-      const [job] = await ctx.db.select().from(collectionJobs).where(jobConditions);
+      const [job] = await ctx.db
+        .select()
+        .from(collectionJobs)
+        .where(buildJobCondition(input.jobId, ctx.teamId));
       if (!job) throw new TRPCError({ code: 'NOT_FOUND' });
 
       const offset = (input.page - 1) * input.perPage;
@@ -165,10 +166,10 @@ export const collectedDataRouter = router({
     )
     .query(async ({ input, ctx }) => {
       // 팀 소속 확인
-      const jobConditions = ctx.teamId
-        ? and(eq(collectionJobs.id, input.jobId), eq(collectionJobs.teamId, ctx.teamId))
-        : eq(collectionJobs.id, input.jobId);
-      const [job] = await ctx.db.select().from(collectionJobs).where(jobConditions);
+      const [job] = await ctx.db
+        .select()
+        .from(collectionJobs)
+        .where(buildJobCondition(input.jobId, ctx.teamId));
       if (!job) throw new TRPCError({ code: 'NOT_FOUND' });
 
       const offset = (input.page - 1) * input.perPage;
@@ -221,10 +222,10 @@ export const collectedDataRouter = router({
   getSummary: protectedProcedure
     .input(z.object({ jobId: z.number() }))
     .query(async ({ input, ctx }) => {
-      const jobConditions = ctx.teamId
-        ? and(eq(collectionJobs.id, input.jobId), eq(collectionJobs.teamId, ctx.teamId))
-        : eq(collectionJobs.id, input.jobId);
-      const [job] = await ctx.db.select().from(collectionJobs).where(jobConditions);
+      const [job] = await ctx.db
+        .select()
+        .from(collectionJobs)
+        .where(buildJobCondition(input.jobId, ctx.teamId));
       if (!job) throw new TRPCError({ code: 'NOT_FOUND' });
 
       const [articleCount, videoCount, commentCount, articleSourceBreakdown, videoSourceBreakdown] =

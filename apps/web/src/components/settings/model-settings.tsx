@@ -13,7 +13,7 @@ import {
   Zap,
   ArrowRight,
 } from 'lucide-react';
-import { PROVIDER_REGISTRY, type AIProvider } from '@ai-signalcraft/ai-gateway/meta';
+import { PROVIDER_REGISTRY, type AIProvider } from '@ai-signalcraft/core/ai-meta';
 import { trpcClient } from '@/lib/trpc';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

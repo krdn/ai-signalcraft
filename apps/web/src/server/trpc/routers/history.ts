@@ -7,9 +7,9 @@ import {
   cleanupOrphanedData,
   getDataStats,
 } from '@ai-signalcraft/core';
-import { desc, sql, eq, and } from 'drizzle-orm';
-import { TRPCError } from '@trpc/server';
+import { desc, sql, eq } from 'drizzle-orm';
 import { protectedProcedure, adminProcedure, router } from '../init';
+import { verifyJobOwnership } from '../shared/verify-job-ownership';
 
 export const historyRouter = router({
   // 히스토리 목록 조회 -- 과거 분석 작업 페이지네이션 (팀 필터링)
@@ -89,14 +89,3 @@ export const historyRouter = router({
     return getDataStats();
   }),
 });
-
-// 작업 소유권 확인 헬퍼
-async function verifyJobOwnership(ctx: { teamId?: number | null; db: any }, jobId: number) {
-  if (ctx.teamId) {
-    const [job] = await ctx.db
-      .select({ id: collectionJobs.id })
-      .from(collectionJobs)
-      .where(and(eq(collectionJobs.id, jobId), eq(collectionJobs.teamId, ctx.teamId)));
-    if (!job) throw new TRPCError({ code: 'NOT_FOUND', message: '작업을 찾을 수 없습니다' });
-  }
-}

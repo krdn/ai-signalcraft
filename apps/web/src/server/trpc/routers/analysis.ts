@@ -5,23 +5,12 @@ import {
   collectionJobs,
   analysisResults,
   analysisReports,
-  demoQuotas,
   triggerCollection,
   triggerAnalysisResume,
   cleanupBeforeNewPipeline,
 } from '@ai-signalcraft/core';
 import { protectedProcedure, router } from '../init';
-
-// 데모 사용자 허용 모듈 (Stage 1 — 3개만)
-const DEMO_ALLOWED_MODULES = ['macroView', 'segmentation', 'sentimentFraming'];
-
-// 데모 수집 한도
-const DEMO_COLLECTION_LIMITS = {
-  naverArticles: 30,
-  youtubeVideos: 5,
-  communityPosts: 10,
-  commentsPerItem: 30,
-};
+import { applyDemoGuard } from '../shared/demo-guard';
 
 export const analysisRouter = router({
   // 분석 트리거 -- 키워드/소스/기간으로 수집+분석 파이프라인 시작
@@ -49,97 +38,24 @@ export const analysisRouter = router({
       }),
     )
     .mutation(async ({ input, ctx }) => {
-      const userRole = (ctx.session.user as Record<string, unknown>).role as string;
+      const userRole = ctx.session.user.role;
       let effectiveLimits = input.limits ?? null;
       let effectiveOptions = input.options ?? null;
       let skippedModules: string[] | null = null;
       let costLimitUsd: number | null = null;
 
-      // ── 데모 사용자 쿼터 체크 + 비용 최소화 ──
+      // 데모 사용자 쿼터 체크 + 제한 적용
       if (userRole === 'demo') {
-        const userId = ctx.session.user!.id!;
-        const [quota] = await ctx.db
-          .select()
-          .from(demoQuotas)
-          .where(eq(demoQuotas.userId, userId))
-          .limit(1);
-
-        if (!quota) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: '데모 쿼터 정보가 없습니다' });
-        }
-        if (quota.expiresAt < new Date()) {
-          throw new TRPCError({
-            code: 'FORBIDDEN',
-            message: '데모 체험 기간이 만료되었습니다. 정식 가입 후 이용해 주세요.',
-          });
-        }
-
-        // 일일 횟수 체크 — 날짜가 바뀌면 todayUsed 리셋
-        const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-        const todayUsed = quota.todayDate === today ? quota.todayUsed : 0;
-        if (todayUsed >= quota.dailyLimit) {
-          throw new TRPCError({
-            code: 'FORBIDDEN',
-            message: `오늘 분석 횟수(${quota.dailyLimit}회)를 모두 사용했습니다. 내일 다시 시도하거나 정식 가입 후 이용해 주세요.`,
-          });
-        }
-
-        // 수집 한도 클램핑 (데모 한도 초과 방지)
-        const demoLimits =
-          (quota.maxCollectionLimits as typeof DEMO_COLLECTION_LIMITS) ?? DEMO_COLLECTION_LIMITS;
-        effectiveLimits = {
-          naverArticles: Math.min(
-            effectiveLimits?.naverArticles ?? demoLimits.naverArticles,
-            demoLimits.naverArticles,
-          ),
-          youtubeVideos: Math.min(
-            effectiveLimits?.youtubeVideos ?? demoLimits.youtubeVideos,
-            demoLimits.youtubeVideos,
-          ),
-          communityPosts: Math.min(
-            effectiveLimits?.communityPosts ?? demoLimits.communityPosts,
-            demoLimits.communityPosts,
-          ),
-          commentsPerItem: Math.min(
-            effectiveLimits?.commentsPerItem ?? demoLimits.commentsPerItem,
-            demoLimits.commentsPerItem,
-          ),
-        };
-
-        // 토큰 최적화 강제
-        effectiveOptions = { ...effectiveOptions, tokenOptimization: 'aggressive' as const };
-
-        // 허용 모듈 외 스킵
-        const allowed = (quota.allowedModules as string[]) ?? DEMO_ALLOWED_MODULES;
-        // 전체 모듈에서 allowed를 제외한 나머지를 skip 처리 (runner가 skippedModules를 참조)
-        const ALL_MODULES = [
-          'macroView',
-          'segmentation',
-          'sentimentFraming',
-          'messageImpact',
-          'riskMap',
-          'opportunity',
-          'strategy',
-          'finalSummary',
-          'approvalRating',
-          'frameWar',
-          'crisisScenario',
-          'winSimulation',
-        ];
-        skippedModules = ALL_MODULES.filter((m) => !allowed.includes(m));
-
-        // 비용 하드캡
-        costLimitUsd = 0.5;
-
-        // 쿼터 사용 카운트 증가
-        await ctx.db
-          .update(demoQuotas)
-          .set({
-            todayUsed: todayUsed + 1,
-            todayDate: today,
-            totalUsed: quota.totalUsed + 1,
-          })
-          .where(eq(demoQuotas.userId, userId));
+        const guard = await applyDemoGuard(
+          ctx.db,
+          ctx.session.user!.id!,
+          effectiveLimits,
+          effectiveOptions,
+        );
+        effectiveLimits = guard.effectiveLimits;
+        effectiveOptions = guard.effectiveOptions;
+        skippedModules = guard.skippedModules;
+        costLimitUsd = guard.costLimitUsd;
       }
 
       // 0. 이전 취소/실패 작업의 Redis 잔여물 정리

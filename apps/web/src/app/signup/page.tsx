@@ -19,9 +19,7 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const userRole = (session?.user as Record<string, unknown> | undefined)?.role as
-    | string
-    | undefined;
+  const userRole = session?.user?.role;
   const isDemo = userRole === 'demo';
 
   const handleSubmit = async (e: React.FormEvent) => {

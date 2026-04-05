@@ -4,19 +4,7 @@ import { users, demoQuotas } from '@ai-signalcraft/core';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { publicProcedure, protectedProcedure, router } from '../init';
-
-// 데모 기본 설정
-const DEMO_DEFAULTS = {
-  dailyLimit: 5, // 1일 5회
-  allowedModules: ['macroView', 'segmentation', 'sentimentFraming'],
-  maxCollectionLimits: {
-    naverArticles: 30,
-    youtubeVideos: 5,
-    communityPosts: 10,
-    commentsPerItem: 30,
-  },
-  expiryDays: 7,
-};
+import { DEMO_DEFAULTS } from '../shared/demo-config';
 
 export const demoAuthRouter = router({
   // 데모 가입 (비밀번호 없이 이메일+이름만)
@@ -91,7 +79,7 @@ export const demoAuthRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const userId = ctx.session.user!.id!;
-      const userRole = (ctx.session.user as Record<string, unknown>).role as string;
+      const userRole = ctx.session.user.role;
 
       if (userRole !== 'demo') {
         throw new TRPCError({
@@ -116,7 +104,7 @@ export const demoAuthRouter = router({
 
   // 현재 데모 쿼터 조회 (데모 사용자용)
   getQuota: protectedProcedure.query(async ({ ctx }) => {
-    const userRole = (ctx.session.user as Record<string, unknown>).role as string;
+    const userRole = ctx.session.user.role;
     if (userRole !== 'demo') return null;
 
     const [quota] = await ctx.db

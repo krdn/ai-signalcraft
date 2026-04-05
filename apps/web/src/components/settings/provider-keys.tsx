@@ -8,7 +8,7 @@ import {
   PROVIDER_REGISTRY,
   getProvidersByAccess,
   type AIProvider,
-} from '@ai-signalcraft/ai-gateway/meta';
+} from '@ai-signalcraft/core/ai-meta';
 import { trpcClient } from '@/lib/trpc';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

@@ -9,7 +9,6 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@ai-signalcraft/ai-gateway": "workspace:*",
     "@ai-signalcraft/core": "workspace:*",
     "@auth/core": "^0.34.3",
     "@auth/drizzle-adapter": "^1.11.1",
