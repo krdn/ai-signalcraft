@@ -40,7 +40,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </Link>
         <div className="flex-1" />
         <Link
-          href="/dashboard"
+          href="/"
           className="text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           대시보드로 돌아가기

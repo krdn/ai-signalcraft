@@ -9,6 +9,7 @@ import { settingsRouter } from './routers/settings';
 import { adminRouter } from './routers/admin';
 import { demoAuthRouter } from './routers/demo-auth';
 import { partnerRouter } from './routers/partner';
+import { salesRouter } from './routers/sales';
 
 export const appRouter = router({
   analysis: analysisRouter,
@@ -21,5 +22,6 @@ export const appRouter = router({
   admin: adminRouter,
   demoAuth: demoAuthRouter,
   partner: partnerRouter,
+  sales: salesRouter,
 });
 export type AppRouter = typeof appRouter;

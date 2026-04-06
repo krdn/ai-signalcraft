@@ -37,8 +37,10 @@ export const authConfig: NextAuthConfig = {
         nextUrl.pathname.startsWith('/signup') ||
         nextUrl.pathname.startsWith('/verify-email') ||
         nextUrl.pathname.startsWith('/partner/apply') ||
-        nextUrl.pathname.startsWith('/hardware');
+        nextUrl.pathname.startsWith('/hardware') ||
+        nextUrl.pathname.startsWith('/shared');
       const isAdminPage = nextUrl.pathname.startsWith('/admin');
+      const isSalesPage = nextUrl.pathname.startsWith('/sales');
       const isPartnerPage =
         nextUrl.pathname.startsWith('/partner') && !nextUrl.pathname.startsWith('/partner/apply');
 
@@ -56,6 +58,15 @@ export const authConfig: NextAuthConfig = {
         if (!isLoggedIn) return false;
         const role = session?.user?.role;
         if (role !== 'admin') return Response.redirect(new URL('/dashboard', nextUrl));
+        return true;
+      }
+
+      // 세일즈 페이지: 로그인 + admin/sales 역할 필수
+      if (isSalesPage) {
+        if (!isLoggedIn) return false;
+        const role = session?.user?.role;
+        if (!['admin', 'sales'].includes(role ?? ''))
+          return Response.redirect(new URL('/dashboard', nextUrl));
         return true;
       }
 

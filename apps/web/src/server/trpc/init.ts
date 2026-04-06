@@ -58,6 +58,18 @@ export const systemAdminProcedure = t.procedure.use(async ({ ctx, next }) => {
   });
 });
 
+// 영업 전용 프로시저 -- admin + sales 역할만 허용
+export const salesProcedure = t.procedure.use(async ({ ctx, next }) => {
+  if (!ctx.session?.user) throw new TRPCError({ code: 'UNAUTHORIZED' });
+  const role = ctx.session.user.role as string | undefined;
+  if (!role || !['admin', 'sales'].includes(role)) {
+    throw new TRPCError({ code: 'FORBIDDEN', message: '영업 권한이 필요합니다' });
+  }
+  return next({
+    ctx: { ...ctx, session: ctx.session, userId: ctx.session.user.id!, userRole: role },
+  });
+});
+
 // 팀 관리자 전용 프로시저 -- 팀 Admin만 허용
 export const adminProcedure = t.procedure.use(async ({ ctx, next }) => {
   if (!ctx.session?.user) throw new TRPCError({ code: 'UNAUTHORIZED' });

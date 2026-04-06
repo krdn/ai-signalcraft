@@ -9,6 +9,7 @@ import {
   Database,
   FileText,
   Globe,
+  Handshake,
   History,
   LayoutDashboard,
   LogOut,
@@ -18,6 +19,7 @@ import {
   Play,
   Settings,
   Sun,
+  TrendingUp,
   Users,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -225,6 +227,22 @@ export function TopNav({ activeTab, onTabChange }: TopNavProps) {
               <Link href="/admin" className="flex w-full items-center gap-2 px-1.5 py-1">
                 <Shield className="h-4 w-4" />
                 <span>관리자</span>
+              </Link>
+            </DropdownMenuItem>
+          )}
+          {['admin', 'sales'].includes(session?.user?.role ?? '') && (
+            <DropdownMenuItem className="p-0">
+              <Link href="/sales" className="flex w-full items-center gap-2 px-1.5 py-1">
+                <TrendingUp className="h-4 w-4" />
+                <span>영업관리</span>
+              </Link>
+            </DropdownMenuItem>
+          )}
+          {['admin', 'sales', 'partner'].includes(session?.user?.role ?? '') && (
+            <DropdownMenuItem className="p-0">
+              <Link href="/partner" className="flex w-full items-center gap-2 px-1.5 py-1">
+                <Handshake className="h-4 w-4" />
+                <span>파트너</span>
               </Link>
             </DropdownMenuItem>
           )}
