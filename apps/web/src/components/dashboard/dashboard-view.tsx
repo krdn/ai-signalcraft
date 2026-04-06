@@ -20,6 +20,10 @@ import { trpcClient } from '@/lib/trpc';
 
 interface DashboardViewProps {
   jobId: number | null;
+  /** 공개 페이지에서 사용할 대체 데이터 페칭 함수 */
+  fetchFn?: (jobId: number) => Promise<Array<{ module: string; status: string; result: unknown }>>;
+  /** 읽기 전용 모드 (비교 기능 숨김) */
+  readOnly?: boolean;
 }
 
 // 모듈별 결과를 파싱하는 유틸
@@ -31,8 +35,11 @@ function parseModuleResult(
   return found?.result as Record<string, unknown> | undefined;
 }
 
-export function DashboardView({ jobId }: DashboardViewProps) {
+export function DashboardView({ jobId, fetchFn, readOnly }: DashboardViewProps) {
   const [compareJobId, setCompareJobId] = useState<number | null>(null);
+
+  const defaultFetch = (id: number) => trpcClient.analysis.getResults.query({ jobId: id });
+  const queryFn = fetchFn ?? defaultFetch;
 
   const {
     data: results,
@@ -40,9 +47,10 @@ export function DashboardView({ jobId }: DashboardViewProps) {
     isError,
     refetch,
   } = useQuery({
-    queryKey: ['analysis', 'getResults', jobId],
-    queryFn: () => trpcClient.analysis.getResults.query({ jobId: jobId! }),
+    queryKey: fetchFn ? ['showcase', 'getResults', jobId] : ['analysis', 'getResults', jobId],
+    queryFn: () => queryFn(jobId!),
     enabled: !!jobId,
+    staleTime: fetchFn ? Infinity : undefined,
   });
 
   // jobId 없음 -- 빈 상태
@@ -247,15 +255,17 @@ export function DashboardView({ jobId }: DashboardViewProps) {
 
   return (
     <div className="space-y-6">
-      {/* 비교 분석 셀렉터 */}
-      <CompareSelector
-        currentJobId={jobId}
-        compareJobId={compareJobId}
-        onSelect={setCompareJobId}
-      />
-
-      {/* 비교 모드일 때 CompareView 표시 */}
-      {compareJobId && <CompareView baseJobId={jobId} compareJobId={compareJobId} />}
+      {/* 비교 분석 셀렉터 (읽기 전용 모드에서는 숨김) */}
+      {!readOnly && (
+        <>
+          <CompareSelector
+            currentJobId={jobId}
+            compareJobId={compareJobId}
+            onSelect={setCompareJobId}
+          />
+          {compareJobId && <CompareView baseJobId={jobId} compareJobId={compareJobId} />}
+        </>
+      )}
 
       {/* KPI 카드 — 핵심 지표 한눈에 */}
       <KpiCards

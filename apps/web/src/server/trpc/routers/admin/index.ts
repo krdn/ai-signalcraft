@@ -6,6 +6,7 @@ import { usageRouter } from './usage';
 import { overviewRouter } from './overview';
 import { demoRouter } from './demo';
 import { adminPartnersRouter } from './partners';
+import { adminShowcaseRouter } from './showcase';
 
 export const adminRouter = router({
   users: usersRouter,
@@ -15,4 +16,5 @@ export const adminRouter = router({
   overview: overviewRouter,
   demo: demoRouter,
   partners: adminPartnersRouter,
+  showcase: adminShowcaseRouter,
 });

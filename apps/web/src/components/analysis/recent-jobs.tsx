@@ -1,9 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { CalendarRange, Clock, FileText, MessageSquare } from 'lucide-react';
+import { CalendarRange, Clock, FileText, MessageSquare, Star } from 'lucide-react';
 import { SourceBadges, extractSources, summarizeCounts, formatDuration } from './source-icons';
 import { trpcClient } from '@/lib/trpc';
 import type { FilterMode } from '@/components/filter-mode-toggle';
@@ -17,8 +18,16 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 const STATUS_BADGE: Record<
   string,
@@ -38,12 +47,32 @@ interface RecentJobsProps {
 export function RecentJobs({ onSelectJob }: RecentJobsProps) {
   const { data: session } = useSession();
   const role = session?.user?.role as string | undefined;
+  const isDemo = role === 'demo';
   const filterMode: FilterMode = role === 'admin' || role === 'leader' ? 'team' : 'mine';
+
+  const [showcaseJobId, setShowcaseJobId] = useState<number | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['history', 'list', { page: 1, perPage: 5, filterMode }],
     queryFn: () => trpcClient.history.list.query({ page: 1, perPage: 5, filterMode }),
   });
+
+  // 데모 사용자: 쇼케이스 항목도 조회
+  const { data: showcaseItems } = useQuery({
+    queryKey: ['showcase', 'list'],
+    queryFn: () => trpcClient.showcase.list.query(),
+    enabled: isDemo,
+  });
+
+  // 데모 사용자: 쇼케이스 상세 리포트 (모달용)
+  const { data: showcaseReport, isLoading: reportLoading } = useQuery({
+    queryKey: ['showcase', 'getReport', showcaseJobId],
+    queryFn: () => trpcClient.showcase.getReport.query({ jobId: showcaseJobId! }),
+    enabled: showcaseJobId !== null,
+  });
+
+  const userJobCount = data?.items.length ?? 0;
+  const showShowcase = isDemo && userJobCount < 3 && showcaseItems && showcaseItems.length > 0;
 
   if (isLoading) {
     return (
@@ -62,7 +91,7 @@ export function RecentJobs({ onSelectJob }: RecentJobsProps) {
     );
   }
 
-  if (!data?.items.length) {
+  if (!data?.items.length && !showShowcase) {
     return (
       <Card className="mx-auto max-w-xl mt-4">
         <CardHeader>
@@ -96,7 +125,8 @@ export function RecentJobs({ onSelectJob }: RecentJobsProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.items.map((job) => {
+              {/* 사용자 자신의 분석 */}
+              {data?.items.map((job) => {
                 const badgeInfo = STATUS_BADGE[job.status ?? 'pending'] ?? STATUS_BADGE.pending;
                 const sources = extractSources(job.progress);
                 const counts = summarizeCounts(job.progress);
@@ -151,10 +181,94 @@ export function RecentJobs({ onSelectJob }: RecentJobsProps) {
                   </TableRow>
                 );
               })}
+
+              {/* 데모 사용자: 쇼케이스 샘플 */}
+              {showShowcase && (
+                <>
+                  {userJobCount > 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5}>
+                        <div className="flex items-center gap-2 py-1 text-xs text-muted-foreground">
+                          <Star className="h-3 w-3 text-primary" />
+                          <span>샘플 분석 결과</span>
+                          <div className="flex-1 border-t border-border/50" />
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {showcaseItems.map((item) => (
+                    <TableRow
+                      key={`showcase-${item.jobId}`}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => setShowcaseJobId(item.jobId)}
+                    >
+                      <TableCell className="font-mono text-xs whitespace-nowrap">
+                        <div>
+                          {format(new Date(item.startDate), 'MM.dd')}~
+                          {format(new Date(item.endDate), 'MM.dd')}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-medium">{item.keyword}</span>
+                          <Badge variant="outline" className="text-[10px] px-1 py-0">
+                            샘플
+                          </Badge>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">-</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">-</TableCell>
+                      <TableCell>
+                        <Badge variant="default">완료</Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </>
+              )}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
+
+      {/* 쇼케이스 상세 모달 */}
+      <Dialog open={showcaseJobId !== null} onOpenChange={() => setShowcaseJobId(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          {reportLoading ? (
+            <div className="space-y-4 py-6">
+              <Skeleton className="h-6 w-3/4" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-32 w-full" />
+            </div>
+          ) : showcaseReport ? (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-xl">{showcaseReport.title}</DialogTitle>
+                {showcaseReport.oneLiner && (
+                  <DialogDescription className="text-base">
+                    {showcaseReport.oneLiner}
+                  </DialogDescription>
+                )}
+              </DialogHeader>
+              <div className="whitespace-pre-wrap text-sm text-muted-foreground leading-relaxed mt-4">
+                {showcaseReport.markdownContent?.slice(0, 800)}
+                {(showcaseReport.markdownContent?.length ?? 0) > 800 && '...'}
+              </div>
+              <div className="mt-6 pt-4 border-t text-center">
+                <p className="text-sm text-muted-foreground mb-3">
+                  직접 키워드를 입력하여 분석을 실행해 보세요
+                </p>
+                <Button size="sm" variant="outline" onClick={() => setShowcaseJobId(null)}>
+                  닫기
+                </Button>
+              </div>
+            </>
+          ) : (
+            <div className="py-8 text-center text-muted-foreground">
+              리포트를 불러올 수 없습니다
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </TooltipProvider>
   );
 }

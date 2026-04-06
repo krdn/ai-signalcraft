@@ -21,6 +21,7 @@ import { MODULES } from './data/modules';
 import { PRICING, COMPARISONS } from './data/pricing';
 import { USE_CASE_CATEGORIES, USE_CASE_DETAILS } from './data/use-cases';
 import { UseCaseDetailModal } from './use-case-detail-modal';
+import { ShowcaseSection } from './showcase-section';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -43,6 +44,9 @@ export function LandingContent() {
             <span className="text-lg font-bold">AI SignalCraft</span>
           </Link>
           <div className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
+            <a href="#showcase" className="hover:text-foreground">
+              샘플 분석
+            </a>
             <a href="#features" className="hover:text-foreground">
               기능
             </a>
@@ -134,6 +138,9 @@ export function LandingContent() {
           </div>
         </div>
       </section>
+
+      {/* Showcase */}
+      <ShowcaseSection />
 
       {/* Problem → Solution */}
       <section className="py-20 md:py-28">

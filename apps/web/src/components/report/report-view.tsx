@@ -12,6 +12,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 interface ReportViewProps {
   jobId: number | null;
+  /** 공개 페이지에서 사용할 대체 데이터 페칭 함수 */
+  fetchFn?: (jobId: number) => Promise<{
+    title: string;
+    oneLiner: string | null;
+    markdownContent: string;
+    metadata: unknown;
+  } | null>;
 }
 
 /**
@@ -38,13 +45,17 @@ function parseSections(markdown: string): Section[] {
  * - SectionNav + ReportViewer 레이아웃
  * - PDF 내보내기 버튼
  */
-export function ReportView({ jobId }: ReportViewProps) {
+export function ReportView({ jobId, fetchFn }: ReportViewProps) {
   const [activeSection, setActiveSection] = useState('');
 
+  const defaultFetch = (id: number) => trpcClient.report.getByJobId.query({ jobId: id });
+  const queryFnToUse = fetchFn ?? defaultFetch;
+
   const { data: report, isLoading } = useQuery({
-    queryKey: ['report', 'getByJobId', jobId],
-    queryFn: () => trpcClient.report.getByJobId.query({ jobId: jobId! }),
+    queryKey: fetchFn ? ['showcase', 'getReport', jobId] : ['report', 'getByJobId', jobId],
+    queryFn: () => queryFnToUse(jobId!),
     enabled: jobId !== null,
+    staleTime: fetchFn ? Infinity : undefined,
   });
 
   const sections = useMemo(() => {

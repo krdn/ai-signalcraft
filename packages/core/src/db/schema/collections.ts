@@ -7,6 +7,7 @@ import {
   uniqueIndex,
   real,
   index,
+  boolean,
 } from 'drizzle-orm/pg-core';
 import { teams, users } from './auth';
 
@@ -45,10 +46,15 @@ export const collectionJobs = pgTable(
       enableItemAnalysis?: boolean;
       tokenOptimization?: 'none' | 'light' | 'standard' | 'aggressive';
     }>(),
+    isFeatured: boolean('is_featured').notNull().default(false), // 쇼케이스 지정 여부
+    featuredAt: timestamp('featured_at'), // 쇼케이스 선택 시점 (정렬용)
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },
-  (table) => [index('collection_jobs_user_id_idx').on(table.userId)],
+  (table) => [
+    index('collection_jobs_user_id_idx').on(table.userId),
+    index('collection_jobs_featured_idx').on(table.isFeatured),
+  ],
 );
 
 // 뉴스 기사 (D-07: URL 기반 중복 제거)

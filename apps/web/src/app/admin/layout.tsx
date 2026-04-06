@@ -10,6 +10,7 @@ import {
   Home,
   Monitor,
   Sparkles,
+  Star,
   Users,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -22,6 +23,7 @@ const NAV_ITEMS = [
   { href: '/admin/system', label: '시스템', icon: Monitor },
   { href: '/admin/partners', label: '파트너 관리', icon: Handshake },
   { href: '/admin/demo', label: '데모 관리', icon: Sparkles },
+  { href: '/admin/showcase', label: '쇼케이스', icon: Star },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
