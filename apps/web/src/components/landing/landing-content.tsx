@@ -10,6 +10,8 @@ import {
   CheckCircle2,
   Clock,
   Globe,
+  ExternalLink,
+  HelpCircle,
   Handshake,
   Sparkles,
   Zap,
@@ -22,6 +24,7 @@ import { UseCaseDetailModal } from './use-case-detail-modal';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { buttonVariants } from '@/components/ui/button';
 
 export function LandingContent() {
@@ -201,14 +204,73 @@ export function LandingContent() {
             </div>
             <div className="grid grid-cols-3 gap-4 md:grid-cols-6">
               {ACTIVE_SOURCES.map((source) => (
-                <a key={source.name} href={source.url} target="_blank" rel="noopener noreferrer">
-                  <Card className="text-center ring-1 ring-primary/20 transition-colors hover:bg-primary/5">
-                    <CardContent className="flex flex-col items-center gap-2 pt-2">
-                      <source.icon className="size-8 text-primary" />
-                      <span className="text-sm font-medium">{source.name}</span>
-                    </CardContent>
-                  </Card>
-                </a>
+                <Popover key={source.name}>
+                  <PopoverTrigger className="w-full text-left cursor-pointer">
+                    <Card className="text-center ring-1 ring-primary/20 transition-colors hover:bg-primary/5">
+                      <CardContent className="flex flex-col items-center gap-2 pt-2">
+                        <source.icon className="size-8 text-primary" />
+                        <span className="text-sm font-medium">{source.name}</span>
+                      </CardContent>
+                    </Card>
+                  </PopoverTrigger>
+                  <PopoverContent side="bottom" sideOffset={8} className="w-80 p-0">
+                    <div className="p-3 pb-2 border-b">
+                      <div className="flex items-center gap-2">
+                        <source.icon className="size-4 text-primary shrink-0" />
+                        <h4 className="font-semibold text-sm">{source.name}</h4>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+                        {source.help}
+                      </p>
+                    </div>
+                    <div className="p-3 pt-2 space-y-2.5">
+                      <div>
+                        <p className="text-[11px] font-medium text-muted-foreground mb-1">
+                          수집 항목
+                        </p>
+                        <ul className="space-y-0.5">
+                          {source.collects.map((item) => (
+                            <li key={item} className="text-xs text-muted-foreground flex gap-1.5">
+                              <span className="shrink-0 mt-0.5 text-primary/60">•</span>
+                              <span>{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                          <p className="text-[11px] font-medium text-muted-foreground mb-0.5">
+                            수집 방법
+                          </p>
+                          <p className="text-muted-foreground">{source.method}</p>
+                        </div>
+                        <div>
+                          <p className="text-[11px] font-medium text-muted-foreground mb-0.5">
+                            수집 한도
+                          </p>
+                          <p className="text-muted-foreground">{source.limit}</p>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-[11px] font-medium text-muted-foreground mb-0.5">
+                          분석 활용
+                        </p>
+                        <p className="text-xs text-muted-foreground">{source.strength}</p>
+                      </div>
+                      <div className="pt-1.5 border-t">
+                        <a
+                          href={source.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                        >
+                          {source.url.replace('https://', '')}
+                          <ExternalLink className="size-3" />
+                        </a>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
               ))}
             </div>
           </div>
@@ -230,16 +292,42 @@ export function LandingContent() {
                   <h4 className="mb-3 text-sm font-medium text-muted-foreground">{group.label}</h4>
                   <div className="flex flex-wrap gap-2">
                     {group.sources.map((source) => (
-                      <a
-                        key={source.name}
-                        href={source.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1.5 rounded-full border bg-background px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-primary/30 hover:text-foreground"
-                      >
-                        <source.icon className="size-3.5" />
-                        <span>{source.name}</span>
-                      </a>
+                      <Popover key={source.name}>
+                        <PopoverTrigger className="flex items-center gap-1.5 rounded-full border bg-background px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-primary/30 hover:text-foreground cursor-pointer">
+                          <source.icon className="size-3.5" />
+                          <span>{source.name}</span>
+                        </PopoverTrigger>
+                        <PopoverContent side="bottom" sideOffset={8} className="w-72 p-0">
+                          <div className="p-3 pb-2 border-b">
+                            <div className="flex items-center gap-2">
+                              <source.icon className="size-3.5 text-muted-foreground shrink-0" />
+                              <h4 className="font-semibold text-sm">{source.name}</h4>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+                              {source.help}
+                            </p>
+                          </div>
+                          <div className="p-3 pt-2 space-y-2">
+                            <div>
+                              <p className="text-[11px] font-medium text-muted-foreground mb-0.5">
+                                활용 목표
+                              </p>
+                              <p className="text-xs text-muted-foreground">{source.goal}</p>
+                            </div>
+                            <div className="pt-1.5 border-t">
+                              <a
+                                href={source.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                              >
+                                {source.url.replace('https://', '').replace('https://www.', '')}
+                                <ExternalLink className="size-3" />
+                              </a>
+                            </div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
                     ))}
                   </div>
                 </div>
@@ -270,9 +358,49 @@ export function LandingContent() {
                 <CardContent>
                   <ul className="space-y-2">
                     {group.items.map((item) => (
-                      <li key={item} className="flex items-center gap-2 text-sm">
-                        <Brain className="size-4 text-primary" />
-                        {item}
+                      <li key={item.name} className="flex items-center gap-2 text-sm">
+                        <Brain className="size-4 shrink-0 text-primary" />
+                        <span className="flex-1">{item.name}</span>
+                        <Popover>
+                          <PopoverTrigger
+                            className="text-muted-foreground/50 hover:text-primary transition-colors cursor-help shrink-0"
+                            aria-label={`${item.name} 도움말`}
+                          >
+                            <HelpCircle className="size-4" />
+                          </PopoverTrigger>
+                          <PopoverContent side="top" sideOffset={8} className="w-80 p-0">
+                            <div className="p-3 pb-2 border-b">
+                              <h4 className="font-semibold text-sm">{item.name}</h4>
+                              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                                {item.help}
+                              </p>
+                            </div>
+                            <div className="p-3 pt-2 space-y-2">
+                              <div>
+                                <p className="text-[11px] font-medium text-muted-foreground mb-1">
+                                  분석 내용
+                                </p>
+                                <ul className="space-y-1">
+                                  {item.details.map((detail) => (
+                                    <li
+                                      key={detail}
+                                      className="text-xs text-muted-foreground flex gap-1.5"
+                                    >
+                                      <span className="shrink-0 mt-0.5 text-primary/60">•</span>
+                                      <span>{detail}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                              <div className="pt-1.5 border-t">
+                                <p className="text-[11px] font-medium text-muted-foreground mb-0.5">
+                                  출력 결과
+                                </p>
+                                <p className="text-xs text-muted-foreground">{item.output}</p>
+                              </div>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
                       </li>
                     ))}
                   </ul>
@@ -288,24 +416,126 @@ export function LandingContent() {
         <div className="mx-auto max-w-6xl px-4">
           <div className="mb-12 text-center">
             <h2 className="mb-4 text-3xl font-bold md:text-4xl">클릭 한 번, 전략 리포트까지</h2>
+            <p className="text-muted-foreground">
+              각 단계를 클릭하면 상세 워크플로우를 확인할 수 있습니다.
+            </p>
           </div>
           <div className="mx-auto grid max-w-4xl grid-cols-2 gap-6 md:grid-cols-4">
-            {[
-              { icon: Globe, step: '1', title: '키워드 입력', desc: '분석 대상과 기간 설정' },
-              { icon: Zap, step: '2', title: '자동 수집', desc: '6개 소스 병렬 크롤링' },
-              { icon: Brain, step: '3', title: 'AI 분석', desc: '14개 모듈 단계별 실행' },
-              { icon: BarChart3, step: '4', title: '전략 리포트', desc: '실행 가능한 인사이트' },
-            ].map((item) => (
-              <div key={item.step} className="flex flex-col items-center text-center">
-                <div className="mb-3 flex size-12 items-center justify-center rounded-full bg-primary/10">
-                  <item.icon className="size-6 text-primary" />
-                </div>
-                <Badge variant="outline" className="mb-2">
-                  Step {item.step}
-                </Badge>
-                <h3 className="mb-1 font-semibold">{item.title}</h3>
-                <p className="text-sm text-muted-foreground">{item.desc}</p>
-              </div>
+            {(
+              [
+                {
+                  icon: Globe,
+                  step: '1',
+                  title: '키워드 입력',
+                  desc: '분석 대상과 기간 설정',
+                  help: '분석하려는 인물, 정책, 이슈 등의 키워드와 수집 기간을 지정합니다.',
+                  details: [
+                    '분석 키워드 입력 (인물명, 정책명, 이슈 등)',
+                    '수집 기간 설정 (최근 1일~30일)',
+                    '분석 소스 선택 (전체 또는 개별 소스)',
+                    '분석 모듈 선택 (기본 8개 또는 전체 14개)',
+                  ],
+                  example: '예) "의료 개혁" 키워드 → 최근 7일 → 전체 소스 → 기본 분석',
+                },
+                {
+                  icon: Zap,
+                  step: '2',
+                  title: '자동 수집',
+                  desc: '6개 소스 병렬 크롤링',
+                  help: '키워드와 기간에 맞춰 6개 소스에서 관련 데이터를 동시에 크롤링합니다.',
+                  details: [
+                    '6개 소스에 병렬로 크롤링 요청 발송',
+                    '뉴스 기사, 댓글, 커뮤니티 게시글, 영상 자막 수집',
+                    '수집 데이터 정규화 (중복 제거, 포맷 통일)',
+                    '소스별 수집 현황 실시간 모니터링',
+                  ],
+                  example: '평균 수집량: 키워드당 300~1,000건 / 소요 시간: 3~10분',
+                },
+                {
+                  icon: Brain,
+                  step: '3',
+                  title: 'AI 분석',
+                  desc: '14개 모듈 단계별 실행',
+                  help: '수집된 데이터를 4단계에 걸쳐 14개 AI 모듈이 순차·병렬로 분석합니다.',
+                  details: [
+                    'Stage 1: 거시 여론·세분화·감정·메시지 영향력 (병렬)',
+                    'Stage 2: 리스크맵 → 기회 → 전략 → 종합 요약 (순차)',
+                    'Stage 3: 종합 리포트 자동 생성',
+                    'Stage 4: 지지율·프레임전쟁·위기시나리오·승리시뮬레이션 (고급)',
+                  ],
+                  example: 'Claude, GPT, Gemini 등 최적 AI 모델을 모듈별로 자동 배정',
+                },
+                {
+                  icon: BarChart3,
+                  step: '4',
+                  title: '전략 리포트',
+                  desc: '실행 가능한 인사이트',
+                  help: '분석 결과를 종합하여 즉시 활용 가능한 전략 리포트를 자동 생성합니다. 단순 데이터 나열이 아닌, 의사결정에 필요한 핵심 인사이트와 구체적 실행 방안을 포함합니다.',
+                  details: [
+                    '핵심 여론 흐름 요약 — 주요 이슈별 감정 분포와 변화 추이',
+                    '리스크 지도 — 잠재적 위험 요인과 심각도·확산 가능성 평가',
+                    '기회 분석 — 긍정 여론 확대 또는 반전 가능한 포인트',
+                    '맞춤형 전략 제안 — 타겟 그룹별 메시지 전략과 채널 전략',
+                    '위기 시나리오 — 최악·기본·최선 시나리오별 대응 방안',
+                    '지지율 추정 및 트렌드 — 여론 데이터 기반 지지율 추이',
+                  ],
+                  example: '리포트 형태: 웹 대시보드 + PDF 다운로드 / 팀 공유 링크 지원',
+                },
+              ] as const
+            ).map((item) => (
+              <Popover key={item.step}>
+                <PopoverTrigger className="flex flex-col items-center text-center cursor-pointer group">
+                  <div className="mb-3 flex size-12 items-center justify-center rounded-full bg-primary/10 transition-colors group-hover:bg-primary/20">
+                    <item.icon className="size-6 text-primary" />
+                  </div>
+                  <Badge variant="outline" className="mb-2">
+                    Step {item.step}
+                  </Badge>
+                  <h3 className="mb-1 font-semibold">{item.title}</h3>
+                  <p className="text-sm text-muted-foreground">{item.desc}</p>
+                  <span className="mt-1.5 text-xs text-muted-foreground/50 opacity-0 transition-opacity group-hover:opacity-100">
+                    클릭하여 자세히 보기
+                  </span>
+                </PopoverTrigger>
+                <PopoverContent
+                  side="bottom"
+                  sideOffset={8}
+                  className={cn('p-0', item.step === '4' ? 'w-96' : 'w-80')}
+                >
+                  <div className="p-3 pb-2 border-b">
+                    <div className="flex items-center gap-2">
+                      <item.icon className="size-4 text-primary shrink-0" />
+                      <h4 className="font-semibold text-sm">
+                        Step {item.step}. {item.title}
+                      </h4>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+                      {item.help}
+                    </p>
+                  </div>
+                  <div className="p-3 pt-2 space-y-2.5">
+                    <div>
+                      <p className="text-[11px] font-medium text-muted-foreground mb-1">
+                        {item.step === '4' ? '리포트 포함 내용' : '상세 워크플로우'}
+                      </p>
+                      <ul className="space-y-1">
+                        {item.details.map((detail) => (
+                          <li key={detail} className="text-xs text-muted-foreground flex gap-1.5">
+                            <span className="shrink-0 mt-0.5 text-primary/60">•</span>
+                            <span>{detail}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className="pt-1.5 border-t">
+                      <p className="text-[11px] font-medium text-muted-foreground mb-0.5">
+                        {item.step === '4' ? '출력 형태' : '참고'}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{item.example}</p>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
             ))}
           </div>
         </div>
