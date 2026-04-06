@@ -15,6 +15,11 @@ import { AdvancedView } from '@/components/advanced/advanced-view';
 import { Button } from '@/components/ui/button';
 import { DemoQuotaBanner } from '@/components/demo/demo-quota-banner';
 import { UpgradeModal } from '@/components/demo/upgrade-modal';
+import { trpcClient } from '@/lib/trpc';
+
+// 쇼케이스용 데이터 페칭 함수
+const showcaseFetchResults = (jobId: number) => trpcClient.showcase.getResults.query({ jobId });
+const showcaseFetchReport = (jobId: number) => trpcClient.showcase.getReport.query({ jobId });
 
 // 분석 실행 탭 -- 트리거 폼 + 파이프라인 모니터 + 최근 작업
 function AnalysisTab({
@@ -22,12 +27,14 @@ function AnalysisTab({
   onJobStarted,
   onComplete,
   onSelectJob,
+  onSelectShowcase,
   onNewAnalysis,
 }: {
   activeJobId: number | null;
   onJobStarted: (jobId: number) => void;
   onComplete: () => void;
   onSelectJob: (jobId: number) => void;
+  onSelectShowcase: (jobId: number) => void;
   onNewAnalysis: () => void;
 }) {
   return (
@@ -51,7 +58,7 @@ function AnalysisTab({
           // 재시도 시 현재 jobId로 모니터링 유지
         }}
       />
-      <RecentJobs onSelectJob={onSelectJob} />
+      <RecentJobs onSelectJob={onSelectJob} onSelectShowcase={onSelectShowcase} />
     </div>
   );
 }
@@ -87,13 +94,19 @@ function ResultTabWrapper({
 function DashboardTab({
   jobId,
   onGoToAnalysis,
+  isShowcase,
 }: {
   jobId: number | null;
   onGoToAnalysis: () => void;
+  isShowcase?: boolean;
 }) {
   return (
     <ResultTabWrapper jobId={jobId} onGoToAnalysis={onGoToAnalysis}>
-      <DashboardView jobId={jobId} />
+      <DashboardView
+        jobId={jobId}
+        fetchFn={isShowcase ? showcaseFetchResults : undefined}
+        readOnly={isShowcase}
+      />
     </ResultTabWrapper>
   );
 }
@@ -102,13 +115,15 @@ function DashboardTab({
 function ReportTab({
   jobId,
   onGoToAnalysis,
+  isShowcase,
 }: {
   jobId: number | null;
   onGoToAnalysis: () => void;
+  isShowcase?: boolean;
 }) {
   return (
     <ResultTabWrapper jobId={jobId} onGoToAnalysis={onGoToAnalysis}>
-      <ReportView jobId={jobId} />
+      <ReportView jobId={jobId} fetchFn={isShowcase ? showcaseFetchReport : undefined} />
     </ResultTabWrapper>
   );
 }
@@ -137,13 +152,15 @@ function CollectedDataTab({
 function AdvancedTab({
   jobId,
   onGoToAnalysis,
+  isShowcase,
 }: {
   jobId: number | null;
   onGoToAnalysis: () => void;
+  isShowcase?: boolean;
 }) {
   return (
     <ResultTabWrapper jobId={jobId} onGoToAnalysis={onGoToAnalysis}>
-      <AdvancedView jobId={jobId} />
+      <AdvancedView jobId={jobId} fetchFn={isShowcase ? showcaseFetchResults : undefined} />
     </ResultTabWrapper>
   );
 }
@@ -151,6 +168,7 @@ function AdvancedTab({
 export default function Home() {
   const [activeTab, setActiveTab] = useState(0);
   const [activeJobId, setActiveJobId] = useState<number | null>(null);
+  const [isShowcase, setIsShowcase] = useState(false);
 
   // 분석 완료 시 -- 탭 전환 없이 파이프라인 상태 화면 유지 (사용자가 직접 탭 이동)
   const handleComplete = useCallback(() => {
@@ -160,12 +178,21 @@ export default function Home() {
   // 작업 선택 시 결과 대시보드 탭으로 전환 + jobId 설정
   const handleSelectJob = useCallback((jobId: number) => {
     setActiveJobId(jobId);
-    setActiveTab(0);
+    setIsShowcase(false);
+    setActiveTab(1);
+  }, []);
+
+  // 쇼케이스 항목 선택 시
+  const handleSelectShowcase = useCallback((jobId: number) => {
+    setActiveJobId(jobId);
+    setIsShowcase(true);
+    setActiveTab(1);
   }, []);
 
   // 분석 실행 탭으로 돌아가기 (jobId 리셋하여 PipelineMonitor 비활성화)
   const handleGoToAnalysis = useCallback(() => {
     setActiveJobId(null);
+    setIsShowcase(false);
     setActiveTab(0);
   }, []);
 
@@ -185,17 +212,33 @@ export default function Home() {
             onJobStarted={setActiveJobId}
             onComplete={handleComplete}
             onSelectJob={handleSelectJob}
+            onSelectShowcase={handleSelectShowcase}
             onNewAnalysis={handleGoToAnalysis}
           />,
-          <DashboardTab key="dashboard" jobId={activeJobId} onGoToAnalysis={handleGoToAnalysis} />,
+          <DashboardTab
+            key="dashboard"
+            jobId={activeJobId}
+            onGoToAnalysis={handleGoToAnalysis}
+            isShowcase={isShowcase}
+          />,
           <CollectedDataTab
             key="collected"
             jobId={activeJobId}
             onGoToAnalysis={handleGoToAnalysis}
           />,
-          <ReportTab key="report" jobId={activeJobId} onGoToAnalysis={handleGoToAnalysis} />,
+          <ReportTab
+            key="report"
+            jobId={activeJobId}
+            onGoToAnalysis={handleGoToAnalysis}
+            isShowcase={isShowcase}
+          />,
           <HistoryTabPanel key="history" onViewResult={handleSelectJob} />,
-          <AdvancedTab key="advanced" jobId={activeJobId} onGoToAnalysis={handleGoToAnalysis} />,
+          <AdvancedTab
+            key="advanced"
+            jobId={activeJobId}
+            onGoToAnalysis={handleGoToAnalysis}
+            isShowcase={isShowcase}
+          />,
         ]}
       />
     </main>

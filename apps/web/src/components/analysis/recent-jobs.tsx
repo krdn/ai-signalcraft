@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
@@ -18,16 +17,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 
 const STATUS_BADGE: Record<
   string,
@@ -42,15 +33,14 @@ const STATUS_BADGE: Record<
 
 interface RecentJobsProps {
   onSelectJob?: (jobId: number) => void;
+  onSelectShowcase?: (jobId: number) => void;
 }
 
-export function RecentJobs({ onSelectJob }: RecentJobsProps) {
+export function RecentJobs({ onSelectJob, onSelectShowcase }: RecentJobsProps) {
   const { data: session } = useSession();
   const role = session?.user?.role as string | undefined;
   const isDemo = role === 'demo';
   const filterMode: FilterMode = role === 'admin' || role === 'leader' ? 'team' : 'mine';
-
-  const [showcaseJobId, setShowcaseJobId] = useState<number | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['history', 'list', { page: 1, perPage: 5, filterMode }],
@@ -62,13 +52,6 @@ export function RecentJobs({ onSelectJob }: RecentJobsProps) {
     queryKey: ['showcase', 'list'],
     queryFn: () => trpcClient.showcase.list.query(),
     enabled: isDemo,
-  });
-
-  // 데모 사용자: 쇼케이스 상세 리포트 (모달용)
-  const { data: showcaseReport, isLoading: reportLoading } = useQuery({
-    queryKey: ['showcase', 'getReport', showcaseJobId],
-    queryFn: () => trpcClient.showcase.getReport.query({ jobId: showcaseJobId! }),
-    enabled: showcaseJobId !== null,
   });
 
   const userJobCount = data?.items.length ?? 0;
@@ -200,7 +183,7 @@ export function RecentJobs({ onSelectJob }: RecentJobsProps) {
                     <TableRow
                       key={`showcase-${item.jobId}`}
                       className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => setShowcaseJobId(item.jobId)}
+                      onClick={() => onSelectShowcase?.(item.jobId)}
                     >
                       <TableCell className="font-mono text-xs whitespace-nowrap">
                         <div>
@@ -229,46 +212,6 @@ export function RecentJobs({ onSelectJob }: RecentJobsProps) {
           </Table>
         </CardContent>
       </Card>
-
-      {/* 쇼케이스 상세 모달 */}
-      <Dialog open={showcaseJobId !== null} onOpenChange={() => setShowcaseJobId(null)}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          {reportLoading ? (
-            <div className="space-y-4 py-6">
-              <Skeleton className="h-6 w-3/4" />
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-32 w-full" />
-            </div>
-          ) : showcaseReport ? (
-            <>
-              <DialogHeader>
-                <DialogTitle className="text-xl">{showcaseReport.title}</DialogTitle>
-                {showcaseReport.oneLiner && (
-                  <DialogDescription className="text-base">
-                    {showcaseReport.oneLiner}
-                  </DialogDescription>
-                )}
-              </DialogHeader>
-              <div className="whitespace-pre-wrap text-sm text-muted-foreground leading-relaxed mt-4">
-                {showcaseReport.markdownContent?.slice(0, 800)}
-                {(showcaseReport.markdownContent?.length ?? 0) > 800 && '...'}
-              </div>
-              <div className="mt-6 pt-4 border-t text-center">
-                <p className="text-sm text-muted-foreground mb-3">
-                  직접 키워드를 입력하여 분석을 실행해 보세요
-                </p>
-                <Button size="sm" variant="outline" onClick={() => setShowcaseJobId(null)}>
-                  닫기
-                </Button>
-              </div>
-            </>
-          ) : (
-            <div className="py-8 text-center text-muted-foreground">
-              리포트를 불러올 수 없습니다
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </TooltipProvider>
   );
 }
