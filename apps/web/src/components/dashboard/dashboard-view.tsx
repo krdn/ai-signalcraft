@@ -21,7 +21,7 @@ import { trpcClient } from '@/lib/trpc';
 interface DashboardViewProps {
   jobId: number | null;
   /** 공개 페이지에서 사용할 대체 데이터 페칭 함수 */
-  fetchFn?: (jobId: number) => Promise<Array<{ module: string; status: string; result: unknown }>>;
+  fetchFn?: (jobId: number) => Promise<Array<{ module: string; status: string; result?: unknown }>>;
   /** 읽기 전용 모드 (비교 기능 숨김) */
   readOnly?: boolean;
 }

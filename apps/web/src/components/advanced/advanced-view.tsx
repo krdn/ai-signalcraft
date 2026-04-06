@@ -15,7 +15,7 @@ import { trpcClient } from '@/lib/trpc';
 interface AdvancedViewProps {
   jobId: number | null;
   /** 공개 페이지에서 사용할 대체 데이터 페칭 함수 */
-  fetchFn?: (jobId: number) => Promise<Array<{ module: string; status: string; result: unknown }>>;
+  fetchFn?: (jobId: number) => Promise<Array<{ module: string; status: string; result?: unknown }>>;
 }
 
 // ADVN 모듈 이름 목록
