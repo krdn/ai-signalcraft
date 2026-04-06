@@ -128,7 +128,7 @@ export function ReportView({ jobId, fetchFn }: ReportViewProps) {
               {report.oneLiner}
             </p>
           )}
-          {report.metadata &&
+          {report.metadata != null &&
             (() => {
               const meta = report.metadata as {
                 generatedAt?: string;
