@@ -1,14 +1,15 @@
 import { FlowProducer } from 'bullmq';
 import type { CollectionTrigger } from '../types';
 import type { ResumeOptions } from '../analysis/pipeline-orchestrator';
-import { getRedisConnection } from './connection';
+import { getBullMQOptions } from './connection';
 
 // FlowProducer를 lazy 초기화 -- import 시 Redis 연결 시도 방지
 let flowProducer: FlowProducer | null = null;
 
 function getFlowProducer() {
   if (!flowProducer) {
-    flowProducer = new FlowProducer({ connection: getRedisConnection() });
+    // prefix 주입으로 개발/운영 네임스페이스 분리
+    flowProducer = new FlowProducer(getBullMQOptions());
   }
   return flowProducer;
 }

@@ -32,6 +32,20 @@ Playwright · Cheerio · Recharts · TanStack Query 5 · NextAuth.js 5 · Vitest
 - **수집기 추가**: `packages/collectors/src/adapters/` — `Collector` 인터페이스 구현
 - **스크래퍼 오류**: CSS 셀렉터/URL 패턴 변경부터 확인
 
+## Environment Separation (개발/운영 공유 인프라)
+
+개발과 운영이 **같은 ais-prod-postgres(5438) / ais-prod-redis(6385)**를 공유하되 분리됨:
+
+| 구분                           | DB                                           | Redis                      | BullMQ prefix    |
+| ------------------------------ | -------------------------------------------- | -------------------------- | ---------------- |
+| **운영** (`ais-prod-web:3300`) | `postgres:5432/ai_signalcraft` (Docker 내부) | `redis:6379` (Docker 내부) | `bull` (기본값)  |
+| **개발** (`localhost:3000`)    | `192.168.0.5:5438/ai_signalcraft` (외부)     | `192.168.0.5:6385` (외부)  | `ais-dev` (자동) |
+
+- `getBullPrefix()`: `NODE_ENV=production` → `bull`, 그 외 → `ais-dev` (자동 강제)
+- 같은 Redis를 써도 큐가 완전히 분리되어 개발/운영 작업이 섞이지 않음
+- 모든 `Queue`/`Worker`/`FlowProducer` 생성 시 `getBullMQOptions()` 사용 필수
+- DB는 공유하므로 **개발에서 파괴적 SQL 주의** (DROP/TRUNCATE 등)
+
 ## Commands
 
 ```bash

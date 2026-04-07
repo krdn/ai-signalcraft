@@ -5,7 +5,7 @@ import { runAnalysisPipeline } from '../analysis/runner';
 import { createLogger } from '../utils/logger';
 import { getDb } from '../db';
 import { collectionJobs } from '../db/schema/collections';
-import { getRedisConnection } from './connection';
+import { getBullMQOptions } from './connection';
 
 const logger = createLogger('analysis-worker');
 
@@ -87,7 +87,7 @@ export function createAnalysisWorker(): Worker {
       }
     },
     {
-      connection: getRedisConnection(),
+      ...getBullMQOptions(),
       // AI 분석은 수분~수십분 소요 — 기본 30초 lockDuration은 stall 발생
       lockDuration: 600_000, // 10분
       stalledInterval: 300_000, // 5분마다 stall check

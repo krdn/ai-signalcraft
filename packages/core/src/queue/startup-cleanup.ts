@@ -7,15 +7,15 @@ import { Queue } from 'bullmq';
 import { eq } from 'drizzle-orm';
 import { getDb } from '../db';
 import { collectionJobs } from '../db/schema/collections';
-import { getRedisConnection } from './connection';
+import { getBullMQOptions } from './connection';
 
 export async function cleanupOrphanedRedisJobs(): Promise<number> {
   const db = getDb();
-  const conn = getRedisConnection();
+  const bullOpts = getBullMQOptions();
   let cleaned = 0;
 
   for (const queueName of ['collectors', 'pipeline', 'analysis']) {
-    const queue = new Queue(queueName, { connection: conn });
+    const queue = new Queue(queueName, bullOpts);
 
     try {
       // waiting/delayed 상태의 고아 작업 제거 (안전)

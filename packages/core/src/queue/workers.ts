@@ -1,11 +1,12 @@
 import { Worker, Job } from 'bullmq';
-import { getRedisConnection } from './connection';
+import { getBullMQOptions } from './connection';
 
 // Worker 프로세스 -- Next.js와 별도 프로세스로 실행 (RESEARCH Pitfall 4 참고)
-// getRedisConnection()으로 lazy 평가 -- dotenv 로드 후 실제 env를 읽음
+// getBullMQOptions()으로 lazy 평가 -- dotenv 로드 후 실제 env를 읽음
+// prefix 주입으로 개발/운영 네임스페이스 분리 (BULL_PREFIX 환경변수)
 export function createCollectorWorker(processJob: (job: Job) => Promise<any>) {
   return new Worker('collectors', processJob, {
-    connection: getRedisConnection(),
+    ...getBullMQOptions(),
     concurrency: 2,
     limiter: {
       max: 8,
@@ -16,7 +17,7 @@ export function createCollectorWorker(processJob: (job: Job) => Promise<any>) {
 
 export function createPipelineWorker(processJob: (job: Job) => Promise<any>) {
   return new Worker('pipeline', processJob, {
-    connection: getRedisConnection(),
+    ...getBullMQOptions(),
     concurrency: 3, // normalize-naver, normalize-youtube, normalize-community를 병렬 처리
   });
 }

@@ -7,6 +7,7 @@ import { createCollectorWorker, createPipelineWorker } from './workers';
 import { createCollectorHandler } from './collector-worker';
 import { createPipelineHandler } from './pipeline-worker';
 import { createAnalysisWorker } from './analysis-worker';
+import { getBullPrefix } from './connection';
 
 // 1. 환경 설정
 initEnv();
@@ -32,10 +33,13 @@ const collectorWorker = createCollectorWorker(createCollectorHandler());
 const pipelineWorker = createPipelineWorker(createPipelineHandler());
 const analysisWorker = createAnalysisWorker();
 
-console.log('Workers started. Waiting for jobs...');
-console.log('  - Collector worker (collectors queue)');
-console.log('  - Pipeline worker (pipeline queue)');
-console.log('  - Analysis worker (analysis queue)');
+// 현재 BullMQ prefix 표시 — 개발/운영 구분 명시
+const prefix = getBullPrefix();
+const envLabel = process.env.NODE_ENV === 'production' ? '운영' : '개발';
+console.log(`Workers started [${envLabel} / BullMQ prefix='${prefix}']. Waiting for jobs...`);
+console.log(`  - Collector worker (${prefix}:collectors queue)`);
+console.log(`  - Pipeline worker (${prefix}:pipeline queue)`);
+console.log(`  - Analysis worker (${prefix}:analysis queue)`);
 
 // 3. Graceful shutdown
 process.on('SIGTERM', async () => {

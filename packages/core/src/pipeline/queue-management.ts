@@ -3,7 +3,7 @@ import { Queue } from 'bullmq';
 import { eq } from 'drizzle-orm';
 import { getDb } from '../db';
 import { collectionJobs } from '../db/schema/collections';
-import { getRedisConnection } from '../queue/connection';
+import { getBullMQOptions } from '../queue/connection';
 
 let _collectors: Queue | null = null;
 let _pipeline: Queue | null = null;
@@ -15,8 +15,8 @@ const DEFAULT_JOB_OPTIONS = {
 };
 
 export function getQueue(name: string): Queue {
-  const conn = getRedisConnection();
-  const opts = { connection: conn, defaultJobOptions: DEFAULT_JOB_OPTIONS };
+  // prefix 주입으로 개발/운영 네임스페이스 분리 (BULL_PREFIX 환경변수)
+  const opts = { ...getBullMQOptions(), defaultJobOptions: DEFAULT_JOB_OPTIONS };
   if (name === 'collectors') return (_collectors ??= new Queue('collectors', opts));
   if (name === 'pipeline') return (_pipeline ??= new Queue('pipeline', opts));
   return (_analysis ??= new Queue('analysis', opts));
