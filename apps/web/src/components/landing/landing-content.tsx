@@ -56,7 +56,7 @@ export function LandingContent() {
             <a href="#pricing" className="hover:text-foreground">
               가격
             </a>
-            <Link href="/partner-program" className="hover:text-foreground">
+            <Link href="/programs" className="hover:text-foreground">
               파트너
             </Link>
           </div>
@@ -699,7 +699,7 @@ export function LandingContent() {
             초기 비용 0원, 최대 50% 수수료. AI SignalCraft를 영업하고 성과에 따른 수수료를 받으세요.
           </p>
           <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-            <Link href="/partner-program" className={cn(buttonVariants({ size: 'lg' }), 'gap-1.5')}>
+            <Link href="/programs" className={cn(buttonVariants({ size: 'lg' }), 'gap-1.5')}>
               <Handshake className="size-4" />
               파트너 프로그램 자세히 보기
             </Link>

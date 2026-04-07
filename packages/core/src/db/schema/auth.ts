@@ -21,11 +21,25 @@ export const users = pgTable('users', {
   emailVerified: timestamp('email_verified', { mode: 'date' }),
   image: text('image'),
   hashedPassword: text('hashed_password'), // Credentials 전용
+
+  // --- 레거시 role (마이그레이션 중 유지, Phase 6에서 제거 예정) ---
   role: text('role', { enum: ['admin', 'leader', 'sales', 'partner', 'member', 'demo'] })
     .notNull()
     .default('member'),
+
+  // --- 신규 2축 권한 체계 ---
+  /** 시스템 전역 권한 — 'super_admin' | 'staff' | 'external' */
+  systemRole: text('system_role', { enum: ['super_admin', 'staff', 'external'] })
+    .notNull()
+    .default('external'),
+  /** 체험 사용자 플래그 (기존 role='demo' 대체) */
+  isTrial: boolean('is_trial').notNull().default(false),
+  /** 체험 만료일 */
+  trialExpiresAt: timestamp('trial_expires_at'),
+
   isActive: boolean('is_active').notNull().default(true),
   createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
 export const accounts = pgTable(

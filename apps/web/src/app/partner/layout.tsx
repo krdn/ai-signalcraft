@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 
 const NAV_ITEMS = [
   { href: '/partner', label: '개요', icon: Home },
-  { href: '/partner/clients', label: '고객 관리', icon: Users },
+  { href: '/partner/customers', label: '고객사 관리', icon: Users },
   { href: '/partner/commissions', label: '수수료', icon: BarChart3 },
   { href: '/partner/contract', label: '계약 정보', icon: FileText },
 ];

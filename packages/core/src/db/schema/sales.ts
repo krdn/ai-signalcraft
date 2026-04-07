@@ -49,6 +49,8 @@ export const leads = pgTable('leads', {
   // 전환 추적
   demoAccountId: text('demo_account_id').references(() => users.id, { onDelete: 'set null' }),
   convertedUserId: text('converted_user_id').references(() => users.id, { onDelete: 'set null' }),
+  /** 전환된 고객사 (stage='closed_won' 시 자동 생성) — customers.id */
+  convertedCustomerId: text('converted_customer_id'),
 
   lostReason: text('lost_reason'),
   notes: text('notes'),
