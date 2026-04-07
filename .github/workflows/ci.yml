@@ -14,6 +14,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Force HTTPS for GitHub git deps
+        run: |
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
+          git config --global url."https://github.com/".insteadOf "ssh://git@github.com/"
+
       - uses: pnpm/action-setup@v4
         with:
           version: 9
@@ -41,6 +46,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Force HTTPS for GitHub git deps
+        run: |
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
+          git config --global url."https://github.com/".insteadOf "ssh://git@github.com/"
+
       - uses: pnpm/action-setup@v4
         with:
           version: 9
@@ -52,5 +62,5 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - name: Run Tests (ai-gateway)
-        run: pnpm --filter @ai-signalcraft/ai-gateway test
+      - name: Run Core Tests
+        run: pnpm --filter @ai-signalcraft/core test

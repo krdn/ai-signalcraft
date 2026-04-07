@@ -9,7 +9,7 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@krdn/ai-analysis-kit": "github:krdn/ai-analysis-kit#v2.0.1",
+    "@krdn/ai-analysis-kit": "git+https://github.com/krdn/ai-analysis-kit.git#v2.0.1",
     "@ai-signalcraft/collectors": "workspace:*",
     "@ai-signalcraft/core": "workspace:*",
     "@auth/core": "^0.34.3",
