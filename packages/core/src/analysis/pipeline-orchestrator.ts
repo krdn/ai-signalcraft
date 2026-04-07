@@ -1,6 +1,5 @@
 // 분석 파이프라인 오케스트레이션 -- Stage 0~4 전체 관리
 import { eq } from 'drizzle-orm';
-import { finalSummaryModule } from '@krdn/ai-analysis-kit/modules';
 import {
   isPipelineCancelled,
   waitIfPaused,
@@ -11,6 +10,7 @@ import { appendJobEvent, updateJobProgress } from '../pipeline/persist';
 import { getDb } from '../db';
 import { collectionJobs } from '../db/schema/collections';
 import { analysisResults as analysisResultsTable } from '../db/schema/analysis';
+import { finalSummaryModule } from './modules';
 import {
   runModule,
   STAGE1_MODULES,

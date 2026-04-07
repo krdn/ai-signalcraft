@@ -1,9 +1,9 @@
 export * from './types';
 export * from './data-loader';
 export * from './persist-analysis';
-// 모듈/스키마는 @krdn/ai-analysis-kit에서 단일 정의 후 re-export
-export * from '@krdn/ai-analysis-kit/modules';
-export * from '@krdn/ai-analysis-kit/schemas';
+// 12개 분석 모듈 및 Zod 스키마 (도메인 자산 — 본 프로젝트 내 정의)
+export * from './modules';
+export * from './schemas';
 export * from './runner';
 export * from './pipeline-orchestrator';
 export * from './item-analyzer';
