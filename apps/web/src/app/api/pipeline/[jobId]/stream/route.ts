@@ -2,6 +2,15 @@ import { getPipelineStatus } from '@/server/pipeline-status';
 
 export const dynamic = 'force-dynamic';
 
+/** JSONB 필드의 키 순서를 정렬하여 결정적 해시 생성 */
+function stableStringify(obj: unknown): string {
+  return JSON.stringify(obj, (_, value) =>
+    value && typeof value === 'object' && !Array.isArray(value)
+      ? Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b)))
+      : value,
+  );
+}
+
 export async function GET(req: Request, { params }: { params: Promise<{ jobId: string }> }) {
   const { jobId: jobIdStr } = await params;
   const jobId = parseInt(jobIdStr, 10);
@@ -35,7 +44,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ jobId: s
           return;
         }
         lastHash =
-          JSON.stringify(initial.progress) + initial.status + initial.analysisModuleCount.completed;
+          stableStringify(initial.progress) +
+          initial.status +
+          initial.analysisModuleCount.completed;
         send(initial);
       } catch {
         controller.close();
@@ -61,7 +72,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ jobId: s
           }
 
           const hash =
-            JSON.stringify(status.progress) + status.status + status.analysisModuleCount.completed;
+            stableStringify(status.progress) + status.status + status.analysisModuleCount.completed;
 
           if (hash !== lastHash) {
             lastHash = hash;

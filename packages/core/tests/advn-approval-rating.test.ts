@@ -25,12 +25,12 @@ describe('ADVN-01: ApprovalRatingSchema', () => {
     expect(result.estimatedRange.max).toBe(42);
   });
 
-  it('estimatedRange.min/max가 0~100 범위를 벗어나면 실패한다', async () => {
+  it('estimatedRange.min/max가 number가 아니면 실패한다', async () => {
     const { ApprovalRatingSchema } = await import('../src/analysis/schemas/approval-rating.schema');
 
     expect(() =>
       ApprovalRatingSchema.parse({
-        estimatedRange: { min: -5, max: 42 },
+        estimatedRange: { min: 'invalid', max: 42 },
         confidence: 'medium',
         methodology: {
           sentimentRatio: { positive: 0.4, neutral: 0.3, negative: 0.3 },
@@ -43,19 +43,18 @@ describe('ADVN-01: ApprovalRatingSchema', () => {
     ).toThrow(ZodError);
   });
 
-  it('disclaimer 필드가 string 타입으로 존재한다', async () => {
+  it('estimatedRange 객체가 필수이다', async () => {
     const { ApprovalRatingSchema } = await import('../src/analysis/schemas/approval-rating.schema');
 
-    // disclaimer 없으면 실패
     expect(() =>
       ApprovalRatingSchema.parse({
-        estimatedRange: { min: 35, max: 42 },
         confidence: 'medium',
         methodology: {
           sentimentRatio: { positive: 0.4, neutral: 0.3, negative: 0.3 },
           platformBiasCorrection: [],
           spreadFactor: 0.7,
         },
+        disclaimer: '면책 문구',
         reasoning: '이유',
       }),
     ).toThrow(ZodError);

@@ -39,18 +39,17 @@ describe('ADVN-02: FrameWarSchema', () => {
     expect(result.reversibleFrames).toHaveLength(1);
   });
 
-  it('잘못된 입력에 ZodError를 throw한다', async () => {
+  it('battlefieldSummary가 빈 문자열이면 실패한다', async () => {
     const { FrameWarSchema } = await import('../src/analysis/schemas/frame-war.schema');
 
-    // strength가 0~100 범위 밖
     expect(() =>
       FrameWarSchema.parse({
         dominantFrames: [
-          { name: 'test', description: 'test', strength: 150, supportingEvidence: [] },
+          { name: 'test', description: 'test', strength: 75, supportingEvidence: [] },
         ],
         threateningFrames: [],
         reversibleFrames: [],
-        battlefieldSummary: 'test',
+        battlefieldSummary: '',
       }),
     ).toThrow(ZodError);
   });

@@ -1,13 +1,23 @@
 // Map-Reduce 분석 파이프라인
 // 대량 데이터(59K+ 토큰)를 청크로 분할하여 개별 분석(Map) 후 종합(Reduce)
 // Context Rot 방지 + Rate Limit 완화 + 정확도 향상
-import { analyzeStructured, type AIGatewayOptions } from '@ai-signalcraft/ai-gateway';
+import {
+  analyzeStructured,
+  normalizeUsage,
+  type AIGatewayOptions,
+} from '@ai-signalcraft/ai-gateway';
 import { appendJobEvent } from '../pipeline/persist';
 import { isPipelineCancelled } from '../pipeline/control';
 import { persistAnalysisResult } from './persist-analysis';
 import { getModuleModelConfig } from './model-config';
 import { runModule } from './runner';
-import { isRateLimitError, parseRetryAfter, sleep, MAX_RATE_LIMIT_RETRIES } from './retry-utils';
+import {
+  isRateLimitError,
+  isServerOverloadError,
+  parseRetryAfter,
+  sleep,
+  MAX_RATE_LIMIT_RETRIES,
+} from './retry-utils';
 import { getConcurrencyConfig } from './concurrency-config';
 import type { AnalysisModule, AnalysisInput, AnalysisModuleResult } from './types';
 
@@ -131,6 +141,15 @@ async function callWithRetry<T>(fn: () => Promise<T>, label: string, jobId?: num
         console.log(`[map-reduce] ${msg}`);
         if (jobId) appendJobEvent(jobId, 'warn', msg).catch(() => {});
         await sleep(backoffMs);
+        continue;
+      }
+      // 서버 과부하 재시도 (타임아웃과 동일 정책)
+      if (isServerOverloadError(error) && timeoutAttempts < MAX_TIMEOUT_RETRIES) {
+        timeoutAttempts++;
+        const msg = `${label}: 서버 과부하, 15초 후 재시도 (${timeoutAttempts}/${MAX_TIMEOUT_RETRIES})`;
+        console.log(`[map-reduce] ${msg}`);
+        if (jobId) appendJobEvent(jobId, 'warn', msg).catch(() => {});
+        await sleep(15_000);
         continue;
       }
       // 타임아웃 재시도 (1회만 — 일시적 서버 지연일 수 있음)
@@ -296,11 +315,10 @@ export async function runModuleMapReduce<T>(
       for (const settled of batchResults) {
         if (settled.status === 'fulfilled') {
           const { result, chunkIndex, usage } = settled.value;
-          totalUsage.inputTokens +=
-            (usage as any)?.promptTokens ?? (usage as any)?.inputTokens ?? 0;
-          totalUsage.outputTokens +=
-            (usage as any)?.completionTokens ?? (usage as any)?.outputTokens ?? 0;
-          totalUsage.totalTokens += (usage as any)?.totalTokens ?? 0;
+          const norm = normalizeUsage(usage as Record<string, unknown>);
+          totalUsage.inputTokens += norm.inputTokens;
+          totalUsage.outputTokens += norm.outputTokens;
+          totalUsage.totalTokens += norm.totalTokens;
           mapResults.push({ result, chunkIndex });
         } else {
           const errMsg =
@@ -402,13 +420,10 @@ export async function runModuleMapReduce<T>(
       clearInterval(reduceCancelPoller);
     }
 
-    totalUsage.inputTokens +=
-      (reduceResult.usage as any)?.promptTokens ?? (reduceResult.usage as any)?.inputTokens ?? 0;
-    totalUsage.outputTokens +=
-      (reduceResult.usage as any)?.completionTokens ??
-      (reduceResult.usage as any)?.outputTokens ??
-      0;
-    totalUsage.totalTokens += (reduceResult.usage as any)?.totalTokens ?? 0;
+    const reduceNorm = normalizeUsage(reduceResult.usage as Record<string, unknown>);
+    totalUsage.inputTokens += reduceNorm.inputTokens;
+    totalUsage.outputTokens += reduceNorm.outputTokens;
+    totalUsage.totalTokens += reduceNorm.totalTokens;
 
     const moduleResult: AnalysisModuleResult<T> = {
       module: module.name,

@@ -66,7 +66,7 @@ describe('Stage 1 분석 모듈', () => {
     });
 
     it('provider가 openai이다', () => {
-      expect(macroViewModule.provider).toBe('openai');
+      expect(macroViewModule.provider).toBe('gemini');
     });
 
     it('schema가 z.ZodType이다', () => {
@@ -92,7 +92,7 @@ describe('Stage 1 분석 모듈', () => {
     });
 
     it('provider가 openai이다', () => {
-      expect(segmentationModule.provider).toBe('openai');
+      expect(segmentationModule.provider).toBe('gemini');
     });
 
     it('buildPrompt(mockInput)이 keyword를 포함한 문자열을 반환한다', () => {
@@ -114,7 +114,7 @@ describe('Stage 1 분석 모듈', () => {
     });
 
     it('provider가 openai이다', () => {
-      expect(sentimentFramingModule.provider).toBe('openai');
+      expect(sentimentFramingModule.provider).toBe('gemini');
     });
 
     it('buildPrompt(mockInput)이 keyword를 포함한 문자열을 반환한다', () => {
@@ -136,7 +136,7 @@ describe('Stage 1 분석 모듈', () => {
     });
 
     it('provider가 openai이다', () => {
-      expect(messageImpactModule.provider).toBe('openai');
+      expect(messageImpactModule.provider).toBe('gemini');
     });
 
     it('buildPrompt(mockInput)이 keyword를 포함한 문자열을 반환한다', () => {

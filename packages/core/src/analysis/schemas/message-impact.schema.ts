@@ -15,7 +15,7 @@ export const MessageImpactSchema = z.object({
         spreadType: z.string().catch(''),
       }),
     )
-    .catch([])
+    .default([])
     .describe('긍정 반응을 유발한 성공 메시지 목록 (최소 1개)'),
   failureMessages: z
     .array(
@@ -27,7 +27,7 @@ export const MessageImpactSchema = z.object({
         damageType: z.string().catch(''),
       }),
     )
-    .catch([])
+    .default([])
     .describe('부정 반응을 유발한 실패 메시지 목록 (최소 1개)'),
   highSpreadContentTypes: z
     .array(
@@ -37,7 +37,7 @@ export const MessageImpactSchema = z.object({
         exampleCount: z.number().catch(0).describe('사례 수 (0 이상 정수)'),
       }),
     )
-    .catch([])
+    .default([])
     .describe('확산력 높은 콘텐츠 유형 목록 (최소 1개)'),
 });
 

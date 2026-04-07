@@ -12,7 +12,7 @@ export const OpportunitySchema = z.object({
         recommendation: z.string().catch(''),
       }),
     )
-    .catch([])
+    .default([])
     .describe('확장 가능한 긍정 요소'),
   untappedAreas: z
     .array(
@@ -22,7 +22,7 @@ export const OpportunitySchema = z.object({
         approach: z.string().catch(''),
       }),
     )
-    .catch([])
+    .default([])
     .describe('미활용 영역'),
   priorityOpportunity: z
     .object({

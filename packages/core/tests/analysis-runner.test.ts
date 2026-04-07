@@ -12,6 +12,13 @@ vi.mock('@ai-signalcraft/ai-gateway', () => ({
     usage: { promptTokens: 500, completionTokens: 1000, totalTokens: 1500 },
     finishReason: 'stop',
   }),
+  normalizeUsage: (usage: Record<string, unknown> | undefined | null) => {
+    if (!usage) return { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
+    const inputTokens = (usage.promptTokens as number) || (usage.inputTokens as number) || 0;
+    const outputTokens = (usage.completionTokens as number) || (usage.outputTokens as number) || 0;
+    const totalTokens = (usage.totalTokens as number) || inputTokens + outputTokens;
+    return { inputTokens, outputTokens, totalTokens };
+  },
 }));
 
 vi.mock('../src/analysis/data-loader', () => ({
@@ -28,6 +35,46 @@ vi.mock('../src/analysis/data-loader', () => ({
 vi.mock('../src/analysis/persist-analysis', () => ({
   persistAnalysisResult: vi.fn().mockResolvedValue({ id: 1 }),
   persistAnalysisReport: vi.fn().mockResolvedValue({ id: 1 }),
+}));
+
+vi.mock('../src/analysis/model-config', () => ({
+  getModuleModelConfig: vi.fn().mockResolvedValue({
+    provider: 'gemini',
+    model: 'gemini-2.5-flash',
+    baseUrl: undefined,
+    apiKey: undefined,
+  }),
+}));
+
+vi.mock('../src/pipeline/control', () => ({
+  isPipelineCancelled: vi.fn().mockResolvedValue(false),
+  waitIfPaused: vi.fn().mockResolvedValue(true),
+  checkCostLimit: vi.fn().mockResolvedValue({ exceeded: false, currentCost: 0, limit: 100 }),
+  getSkippedModules: vi.fn().mockResolvedValue([]),
+}));
+
+vi.mock('../src/pipeline/persist', () => ({
+  appendJobEvent: vi.fn().mockResolvedValue(undefined),
+  updateJobProgress: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('../src/analysis/concurrency-config', () => ({
+  getConcurrencyConfig: vi.fn().mockResolvedValue({
+    providerConcurrency: { gemini: 2, anthropic: 2, openai: 2 },
+  }),
+}));
+
+vi.mock('../src/db', () => ({
+  getDb: vi.fn().mockReturnValue({
+    select: vi.fn().mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          limit: vi.fn().mockResolvedValue([{ options: {} }]),
+        }),
+        then: vi.fn(),
+      }),
+    }),
+  }),
 }));
 
 describe('analysis/runner', () => {
@@ -68,7 +115,15 @@ describe('analysis/runner', () => {
     const mockInput = {
       jobId: 1,
       keyword: '테스트',
-      articles: [],
+      articles: [
+        {
+          title: '테스트 기사',
+          content: '내용',
+          publisher: '테스트',
+          publishedAt: new Date(),
+          source: 'naver-news',
+        },
+      ],
       videos: [],
       comments: [],
       dateRange: { start: new Date('2026-03-01'), end: new Date('2026-03-20') },
@@ -89,7 +144,15 @@ describe('analysis/runner', () => {
     const mockInput = {
       jobId: 1,
       keyword: '테스트',
-      articles: [],
+      articles: [
+        {
+          title: '테스트 기사',
+          content: '내용',
+          publisher: '테스트',
+          publishedAt: new Date(),
+          source: 'naver-news',
+        },
+      ],
       videos: [],
       comments: [],
       dateRange: { start: new Date('2026-03-01'), end: new Date('2026-03-20') },
@@ -100,27 +163,34 @@ describe('analysis/runner', () => {
     expect(result.errorMessage).toBe('API 호출 실패');
   });
 
-  it('runAnalysisPipeline이 모든 모듈 결과를 반환한다', async () => {
-    const { runAnalysisPipeline } = await import('../src/analysis/runner');
-    const result = await runAnalysisPipeline(1);
+  // 통합 테스트 — pipeline-orchestrator가 다수의 DB 쿼리를 수행하므로 DB 연결 필요
+  it.skipIf(!process.env.DATABASE_URL)(
+    'runAnalysisPipeline이 모든 모듈 결과를 반환한다',
+    async () => {
+      const { runAnalysisPipeline } = await import('../src/analysis/runner');
+      const result = await runAnalysisPipeline(1);
 
-    expect(result.results).toBeDefined();
-    expect(result.completedModules).toBeDefined();
-    expect(result.failedModules).toBeDefined();
-    // 8개 모듈 모두 실행됨 (Stage1: 4 + Stage2: 3 + Final: 1)
-    expect(Object.keys(result.results)).toHaveLength(8);
-  });
+      expect(result.results).toBeDefined();
+      expect(result.completedModules).toBeDefined();
+      expect(result.failedModules).toBeDefined();
+      // 8개 모듈 모두 실행됨 (Stage1: 4 + Stage2: 3 + Final: 1)
+      expect(Object.keys(result.results)).toHaveLength(8);
+    },
+  );
 
-  it('runAnalysisPipeline이 report 필드를 포함한 결과를 반환한다', async () => {
-    const { runAnalysisPipeline } = await import('../src/analysis/runner');
-    const result = await runAnalysisPipeline(1);
+  it.skipIf(!process.env.DATABASE_URL)(
+    'runAnalysisPipeline이 report 필드를 포함한 결과를 반환한다',
+    async () => {
+      const { runAnalysisPipeline } = await import('../src/analysis/runner');
+      const result = await runAnalysisPipeline(1);
 
-    // 리포트 필드 검증
-    expect(result.report).toBeDefined();
-    expect(result.report.markdownContent).toBeDefined();
-    expect(typeof result.report.markdownContent).toBe('string');
-    expect(typeof result.report.oneLiner).toBe('string');
-    expect(typeof result.report.totalTokens).toBe('number');
-    expect(result.report.totalTokens).toBeGreaterThan(0);
-  });
+      // 리포트 필드 검증
+      expect(result.report).toBeDefined();
+      expect(result.report.markdownContent).toBeDefined();
+      expect(typeof result.report.markdownContent).toBe('string');
+      expect(typeof result.report.oneLiner).toBe('string');
+      expect(typeof result.report.totalTokens).toBe('number');
+      expect(result.report.totalTokens).toBeGreaterThan(0);
+    },
+  );
 });

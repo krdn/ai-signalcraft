@@ -5,12 +5,11 @@ import { z } from 'zod';
 export const ApprovalRatingSchema = z.object({
   estimatedRange: z
     .object({
-      min: z.number().catch(0).describe('최소 지지율 0~100'),
-      max: z.number().catch(0).describe('최대 지지율 0~100'),
+      min: z.number().describe('최소 지지율 0~100'),
+      max: z.number().describe('최대 지지율 0~100'),
     })
-    .catch({ min: 0, max: 0 })
     .describe('AI 추정 지지율 범위 (%)'),
-  confidence: z.enum(['high', 'medium', 'low']).catch('low'),
+  confidence: z.enum(['high', 'medium', 'low']).describe('신뢰도'),
   methodology: z
     .object({
       sentimentRatio: z
@@ -28,7 +27,7 @@ export const ApprovalRatingSchema = z.object({
             correctionFactor: z.number().catch(1),
           }),
         )
-        .catch([]),
+        .default([]),
       spreadFactor: z.number().catch(1).describe('확산력 가중치'),
     })
     .catch({

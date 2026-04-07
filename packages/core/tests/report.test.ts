@@ -40,82 +40,89 @@ describe('report/generator', () => {
     expect(typeof mod.generateIntegratedReport).toBe('function');
   });
 
-  it('generateIntegratedReport가 jobId, keyword, results 파라미터를 받는다', async () => {
-    const { generateIntegratedReport } = await import('../src/report/generator');
+  // 통합 테스트 — generateIntegratedReport가 ���부에서 model-config를 통해 DB 조회 수행
+  it.skipIf(!process.env.DATABASE_URL)(
+    'generateIntegratedReport가 jobId, keyword, results 파라미터를 받는다',
+    async () => {
+      const { generateIntegratedReport } = await import('../src/report/generator');
 
-    const result = await generateIntegratedReport({
-      jobId: 1,
-      keyword: '테스트',
-      dateRange: { start: new Date('2026-03-01'), end: new Date('2026-03-20') },
-      results: {
-        'macro-view': {
-          module: 'macro-view',
-          status: 'completed',
-          result: { overview: '테스트 결과' },
-          usage: {
-            inputTokens: 100,
-            outputTokens: 50,
-            totalTokens: 150,
-            provider: 'openai',
-            model: 'gpt-4o-mini',
+      const result = await generateIntegratedReport({
+        jobId: 1,
+        keyword: '테스트',
+        dateRange: { start: new Date('2026-03-01'), end: new Date('2026-03-20') },
+        results: {
+          'macro-view': {
+            module: 'macro-view',
+            status: 'completed',
+            result: { overview: '테스트 결과' },
+            usage: {
+              inputTokens: 100,
+              outputTokens: 50,
+              totalTokens: 150,
+              provider: 'openai',
+              model: 'gpt-4o-mini',
+            },
+          },
+          'final-summary': {
+            module: 'final-summary',
+            status: 'completed',
+            result: { oneLiner: '테스트 한 줄 요약' },
+            usage: {
+              inputTokens: 100,
+              outputTokens: 50,
+              totalTokens: 150,
+              provider: 'anthropic',
+              model: 'claude-sonnet-4-20250514',
+            },
           },
         },
-        'final-summary': {
-          module: 'final-summary',
-          status: 'completed',
-          result: { oneLiner: '테스트 한 줄 요약' },
-          usage: {
-            inputTokens: 100,
-            outputTokens: 50,
-            totalTokens: 150,
-            provider: 'anthropic',
-            model: 'claude-sonnet-4-20250514',
+        completedModules: ['macro-view', 'final-summary'],
+        failedModules: [],
+      });
+
+      expect(result.markdownContent).toBeDefined();
+      expect(typeof result.markdownContent).toBe('string');
+      expect(result.oneLiner).toBe('테스트 한 줄 요약');
+      expect(result.totalTokens).toBeGreaterThan(0);
+    },
+  );
+
+  it.skipIf(!process.env.DATABASE_URL)(
+    '부분 실패 시 가용한 모듈 결과만으로 리포트가 생성된다',
+    async () => {
+      const { generateIntegratedReport } = await import('../src/report/generator');
+
+      const result = await generateIntegratedReport({
+        jobId: 2,
+        keyword: '부분실패',
+        dateRange: { start: new Date('2026-03-01'), end: new Date('2026-03-20') },
+        results: {
+          'macro-view': {
+            module: 'macro-view',
+            status: 'completed',
+            result: { overview: '테스트' },
+            usage: {
+              inputTokens: 100,
+              outputTokens: 50,
+              totalTokens: 150,
+              provider: 'openai',
+              model: 'gpt-4o-mini',
+            },
+          },
+          segmentation: {
+            module: 'segmentation',
+            status: 'failed',
+            errorMessage: 'API 실패',
           },
         },
-      },
-      completedModules: ['macro-view', 'final-summary'],
-      failedModules: [],
-    });
+        completedModules: ['macro-view'],
+        failedModules: ['segmentation'],
+      });
 
-    expect(result.markdownContent).toBeDefined();
-    expect(typeof result.markdownContent).toBe('string');
-    expect(result.oneLiner).toBe('테스트 한 줄 요약');
-    expect(result.totalTokens).toBeGreaterThan(0);
-  });
-
-  it('부분 실패 시 가용한 모듈 결과만으로 리포트가 생성된다', async () => {
-    const { generateIntegratedReport } = await import('../src/report/generator');
-
-    const result = await generateIntegratedReport({
-      jobId: 2,
-      keyword: '부분실패',
-      dateRange: { start: new Date('2026-03-01'), end: new Date('2026-03-20') },
-      results: {
-        'macro-view': {
-          module: 'macro-view',
-          status: 'completed',
-          result: { overview: '테스트' },
-          usage: {
-            inputTokens: 100,
-            outputTokens: 50,
-            totalTokens: 150,
-            provider: 'openai',
-            model: 'gpt-4o-mini',
-          },
-        },
-        segmentation: {
-          module: 'segmentation',
-          status: 'failed',
-          errorMessage: 'API 실패',
-        },
-      },
-      completedModules: ['macro-view'],
-      failedModules: ['segmentation'],
-    });
-
-    // 리포트가 생성됨
-    expect(result.markdownContent).toBeDefined();
-  });
+      // 리포트가 생성됨
+      expect(result.markdownContent).toBeDefined();
+    },
+  );
 });
 
 describe('report/pdf-exporter', () => {

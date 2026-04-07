@@ -1,25 +1,22 @@
 // Rate limit 재시도 유틸리티 (runner.ts, map-reduce.ts 공용)
 
-/** Rate limit 또는 서버 일시 장애 에러 감지 (재시도 가능한 에러) */
+/** Rate limit 에러 감지 (재시도 가능한 에러) */
 export function isRateLimitError(error: unknown): boolean {
   const msg = error instanceof Error ? error.message : String(error);
   return (
-    msg.includes('Rate limit') ||
-    msg.includes('rate limit') ||
-    msg.includes('429') ||
-    msg.includes('TPM') ||
-    msg.includes('RPM') ||
-    msg.includes('Quota exceeded') ||
-    msg.includes('quota') ||
-    msg.includes('RESOURCE_EXHAUSTED') ||
-    msg.includes('Please retry in') ||
-    // Gemini 서버 일시 용량 부족 (무료 쿼터 서버 과부하)
+    /rate\s*limit|429|quota\s*exceeded|RESOURCE_EXHAUSTED|[TR]PM/i.test(msg) ||
+    // Gemini 서버 용량 부족 (구체적 문구만 매칭)
     msg.includes('No capacity available') ||
-    msg.includes('capacity') ||
-    // 일반적인 서버 과부하/일시 장애
-    msg.includes('503') ||
-    msg.includes('overloaded') ||
-    msg.includes('temporarily unavailable')
+    // 프로바이더가 명시한 재시도 안내
+    /please\s+retry\s+in|try\s+again\s+in/i.test(msg)
+  );
+}
+
+/** 서버 일시 장애 감지 (rate limit과 분리 — 별도 재시도 정책 적용) */
+export function isServerOverloadError(error: unknown): boolean {
+  const msg = error instanceof Error ? error.message : String(error);
+  return (
+    msg.includes('503') || msg.includes('overloaded') || msg.includes('temporarily unavailable')
   );
 }
 

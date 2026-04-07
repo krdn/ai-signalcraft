@@ -162,24 +162,41 @@ export async function runAnalysisPipeline(
     return allResults[moduleName]?.status === 'completed';
   }
 
+  /** 실패 감지 — 전체 실패 시에만 중단, 부분 실패는 경고 후 계속 */
   function checkFailAndAbort(stageName: string): boolean {
-    const failed = Object.values(allResults).filter(
+    const stageModules = Object.values(allResults);
+    const failed = stageModules.filter(
       (r) => r.status === 'failed' && r.errorMessage !== '사용자에 의해 스킵됨',
     );
-    if (failed.length > 0) {
-      const failedNames = failed.map((f) => f.module).join(', ');
-      console.log(`[pipeline] ${stageName} 실패 감지 — 파이프라인 중단: ${failedNames}`);
-      for (const f of failed) {
-        console.error(`[pipeline] 실패 상세 — ${f.module}: ${f.errorMessage ?? '원인 불명'}`);
-      }
+    if (failed.length === 0) return false;
+
+    const completed = stageModules.filter((r) => r.status === 'completed');
+    const failedNames = failed.map((f) => f.module).join(', ');
+
+    // 성공한 모듈이 1개라도 있으면 계속 진행 (부분 실패 허용)
+    if (completed.length > 0) {
+      console.warn(
+        `[pipeline] ${stageName} 부분 실패 — 실패: ${failedNames}, 성공 ${completed.length}개로 계속 진행`,
+      );
       appendJobEvent(
         input.jobId,
-        'error',
-        `${stageName}에서 실패 발생 (${failedNames}), 파이프라인 중단`,
+        'warn',
+        `${stageName}에서 부분 실패 (${failedNames}), 성공한 결과로 계속 진행`,
       ).catch(() => {});
-      return true;
+      return false;
     }
-    return false;
+
+    // 전부 실패 시에만 중단
+    console.error(`[pipeline] ${stageName} 전체 실패 — 파이프라인 중단: ${failedNames}`);
+    for (const f of failed) {
+      console.error(`[pipeline] 실패 상세 — ${f.module}: ${f.errorMessage ?? '원인 불명'}`);
+    }
+    appendJobEvent(
+      input.jobId,
+      'error',
+      `${stageName}에서 전체 실패 (${failedNames}), 파이프라인 중단`,
+    ).catch(() => {});
+    return true;
   }
 
   async function markSkipped(moduleName: string) {

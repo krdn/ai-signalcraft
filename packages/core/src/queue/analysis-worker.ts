@@ -22,11 +22,15 @@ export function createAnalysisWorker(): Worker {
         );
 
         // 장시간 분석 중 lock 만료 방지 — 2분마다 lock 갱신
+        let lockLost = false;
         const lockExtender = setInterval(async () => {
           try {
             await job.extendLock(job.token!, 600_000);
-          } catch {
-            // lock 갱신 실패해도 작업은 계속 진행
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            logger.warn(`lock 갱신 실패 (job=${dbJobId}): ${msg}`);
+            // lock 연속 실패 시 중복 실행 방지를 위해 플래그 설정
+            lockLost = true;
           }
         }, 120_000);
 
@@ -35,6 +39,22 @@ export function createAnalysisWorker(): Worker {
           result = await runAnalysisPipeline(dbJobId, resumeOptions);
         } finally {
           clearInterval(lockExtender);
+        }
+
+        // lock 손실 감지 — 다른 워커가 동일 작업을 이미 처리 중일 수 있음
+        if (lockLost) {
+          logger.warn(`lock 손실 감지 (job=${dbJobId}) — 결과 저장 전 작업 상태 확인`);
+          const db = getDb();
+          const [currentJob] = await db
+            .select({ status: collectionJobs.status })
+            .from(collectionJobs)
+            .where(eq(collectionJobs.id, dbJobId));
+          if (currentJob?.status === 'completed' || currentJob?.status === 'cancelled') {
+            logger.warn(
+              `작업이 이미 ${currentJob.status} 상태 (job=${dbJobId}) — 중복 저장 건너뜀`,
+            );
+            return result;
+          }
         }
 
         await job.updateProgress({
