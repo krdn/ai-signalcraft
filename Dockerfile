@@ -1,6 +1,8 @@
 # Multi-stage Dockerfile for AI SignalCraft
 # Stage 1: 의존성 설치
 FROM node:24-slim AS deps
+RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 RUN corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
@@ -11,6 +13,8 @@ RUN pnpm install --frozen-lockfile
 
 # Stage 2: 빌드
 FROM node:24-slim AS builder
+RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 RUN corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
