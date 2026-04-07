@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
-import { clusterArticles } from '../clusterer';
-import type { AnalysisInput } from '../../types';
+import { clusterArticles } from '../src/preprocessing/clusterer';
+import type { AnalysisInput } from '../src/types';
 
-vi.mock('../embeddings', () => ({
+vi.mock('../src/preprocessing/embeddings', () => ({
   embedTexts: vi.fn(async (texts: string[]) =>
     texts.map((t) => {
       if (t.includes('클러스터1')) return [1, 0, 0];

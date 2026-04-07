@@ -53,19 +53,19 @@ const mockPriorResults: Record<string, unknown> = {
 describe('Stage 2 분석 모듈', () => {
   describe('riskMapModule', () => {
     it('name이 "risk-map"이고 provider가 "anthropic"이다', async () => {
-      const { riskMapModule } = await import('../src/analysis/modules/risk-map');
+      const { riskMapModule } = await import('@ai-signalcraft/insight-engine');
       expect(riskMapModule.name).toBe('risk-map');
       expect(riskMapModule.provider).toBe('anthropic');
     });
 
     it('buildPromptWithContext 메서드가 존재한다', async () => {
-      const { riskMapModule } = await import('../src/analysis/modules/risk-map');
+      const { riskMapModule } = await import('@ai-signalcraft/insight-engine');
       expect(riskMapModule.buildPromptWithContext).toBeDefined();
       expect(typeof riskMapModule.buildPromptWithContext).toBe('function');
     });
 
     it('buildPromptWithContext가 priorResults 내용을 포함한 문자열을 반환한다', async () => {
-      const { riskMapModule } = await import('../src/analysis/modules/risk-map');
+      const { riskMapModule } = await import('@ai-signalcraft/insight-engine');
       const prompt = riskMapModule.buildPromptWithContext!(mockInput, mockPriorResults);
       expect(typeof prompt).toBe('string');
       expect(prompt.length).toBeGreaterThan(0);
@@ -76,13 +76,13 @@ describe('Stage 2 분석 모듈', () => {
 
   describe('opportunityModule', () => {
     it('name이 "opportunity"이고 provider가 "anthropic"이다', async () => {
-      const { opportunityModule } = await import('../src/analysis/modules/opportunity');
+      const { opportunityModule } = await import('@ai-signalcraft/insight-engine');
       expect(opportunityModule.name).toBe('opportunity');
       expect(opportunityModule.provider).toBe('anthropic');
     });
 
     it('buildPromptWithContext 메서드가 존재한다', async () => {
-      const { opportunityModule } = await import('../src/analysis/modules/opportunity');
+      const { opportunityModule } = await import('@ai-signalcraft/insight-engine');
       expect(opportunityModule.buildPromptWithContext).toBeDefined();
       expect(typeof opportunityModule.buildPromptWithContext).toBe('function');
     });
@@ -90,19 +90,19 @@ describe('Stage 2 분석 모듈', () => {
 
   describe('strategyModule', () => {
     it('name이 "strategy"이고 provider가 "anthropic"이다', async () => {
-      const { strategyModule } = await import('../src/analysis/modules/strategy');
+      const { strategyModule } = await import('@ai-signalcraft/insight-engine');
       expect(strategyModule.name).toBe('strategy');
       expect(strategyModule.provider).toBe('anthropic');
     });
 
     it('buildPromptWithContext 메서드가 존재한다', async () => {
-      const { strategyModule } = await import('../src/analysis/modules/strategy');
+      const { strategyModule } = await import('@ai-signalcraft/insight-engine');
       expect(strategyModule.buildPromptWithContext).toBeDefined();
       expect(typeof strategyModule.buildPromptWithContext).toBe('function');
     });
 
     it('buildPromptWithContext가 risk-map, opportunity 결과를 참조한다', async () => {
-      const { strategyModule } = await import('../src/analysis/modules/strategy');
+      const { strategyModule } = await import('@ai-signalcraft/insight-engine');
       const prompt = strategyModule.buildPromptWithContext!(mockInput, mockPriorResults);
       expect(prompt).toContain('risk-map');
       expect(prompt).toContain('opportunity');
@@ -111,13 +111,13 @@ describe('Stage 2 분석 모듈', () => {
 
   describe('finalSummaryModule', () => {
     it('name이 "final-summary"이고 provider가 "anthropic"이다', async () => {
-      const { finalSummaryModule } = await import('../src/analysis/modules/final-summary');
+      const { finalSummaryModule } = await import('@ai-signalcraft/insight-engine');
       expect(finalSummaryModule.name).toBe('final-summary');
       expect(finalSummaryModule.provider).toBe('anthropic');
     });
 
     it('buildPromptWithContext 메서드가 존재한다', async () => {
-      const { finalSummaryModule } = await import('../src/analysis/modules/final-summary');
+      const { finalSummaryModule } = await import('@ai-signalcraft/insight-engine');
       expect(finalSummaryModule.buildPromptWithContext).toBeDefined();
       expect(typeof finalSummaryModule.buildPromptWithContext).toBe('function');
     });
@@ -126,7 +126,7 @@ describe('Stage 2 분석 모듈', () => {
 
 describe('Stage 2 Zod 스키마', () => {
   it('RiskMapSchema.parse(validData)가 성공한다', async () => {
-    const { RiskMapSchema } = await import('../src/analysis/schemas/risk-map.schema');
+    const { RiskMapSchema } = await import('@ai-signalcraft/insight-engine/schemas');
     const validData = {
       topRisks: [
         {
@@ -148,7 +148,7 @@ describe('Stage 2 Zod 스키마', () => {
   });
 
   it('OpportunitySchema.parse(validData)가 성공한다', async () => {
-    const { OpportunitySchema } = await import('../src/analysis/schemas/opportunity.schema');
+    const { OpportunitySchema } = await import('@ai-signalcraft/insight-engine/schemas');
     const validData = {
       positiveAssets: [
         {
@@ -171,7 +171,7 @@ describe('Stage 2 Zod 스키마', () => {
   });
 
   it('StrategySchema.parse(validData)가 성공한다', async () => {
-    const { StrategySchema } = await import('../src/analysis/schemas/strategy.schema');
+    const { StrategySchema } = await import('@ai-signalcraft/insight-engine/schemas');
     const validData = {
       targetStrategy: {
         primaryTarget: '주요 타겟',
@@ -199,7 +199,7 @@ describe('Stage 2 Zod 스키마', () => {
   });
 
   it('FinalSummarySchema에 oneLiner 필드가 존재한다', async () => {
-    const { FinalSummarySchema } = await import('../src/analysis/schemas/final-summary.schema');
+    const { FinalSummarySchema } = await import('@ai-signalcraft/insight-engine/schemas');
     const validData = {
       oneLiner: '한 줄 요약',
       currentState: {

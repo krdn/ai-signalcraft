@@ -3,7 +3,7 @@ import { ZodError } from 'zod';
 
 describe('ADVN-03: CrisisScenarioSchema', () => {
   it('유효한 데이터를 파싱할 수 있다 (3개 시나리오: spread/control/reverse)', async () => {
-    const { CrisisScenarioSchema } = await import('../src/analysis/schemas/crisis-scenario.schema');
+    const { CrisisScenarioSchema } = await import('@ai-signalcraft/insight-engine/schemas');
 
     const validData = {
       scenarios: [
@@ -47,7 +47,7 @@ describe('ADVN-03: CrisisScenarioSchema', () => {
   });
 
   it('currentRiskLevel이 유효하지 않은 enum이면 실패한다', async () => {
-    const { CrisisScenarioSchema } = await import('../src/analysis/schemas/crisis-scenario.schema');
+    const { CrisisScenarioSchema } = await import('@ai-signalcraft/insight-engine/schemas');
 
     expect(() =>
       CrisisScenarioSchema.parse({

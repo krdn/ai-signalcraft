@@ -1,5 +1,5 @@
 {
-  "name": "@ai-signalcraft/ai-gateway",
+  "name": "@ai-signalcraft/insight-gateway",
   "version": "0.1.0",
   "private": true,
   "main": "src/index.ts",
@@ -10,8 +10,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "vitest run",
-    "prepare": "husky"
+    "test": "vitest run"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "latest",

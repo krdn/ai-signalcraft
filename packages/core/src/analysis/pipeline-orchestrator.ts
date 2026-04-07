@@ -1,5 +1,10 @@
 // 분석 파이프라인 오케스트레이션 -- Stage 0~4 전체 관리
 import { eq } from 'drizzle-orm';
+import { finalSummaryModule } from '@ai-signalcraft/insight-engine';
+import {
+  preprocessAnalysisInput,
+  type OptimizationPreset,
+} from '@ai-signalcraft/insight-engine/preprocessing';
 import {
   isPipelineCancelled,
   waitIfPaused,
@@ -18,9 +23,7 @@ import {
   STAGE4_SEQUENTIAL,
 } from './runner';
 import { runModuleMapReduce } from './map-reduce';
-import { finalSummaryModule } from './modules';
 import { loadAnalysisInput } from './data-loader';
-import { preprocessAnalysisInput, type OptimizationPreset } from './preprocessing';
 import { persistAnalysisResult } from './persist-analysis';
 import { analyzeItems } from './item-analyzer';
 import type { AnalysisModuleResult } from './types';

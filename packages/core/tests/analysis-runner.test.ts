@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // 모듈 mock 설정 -- runner가 의존하는 외부 모듈들
-vi.mock('@ai-signalcraft/ai-gateway', () => ({
+vi.mock('@ai-signalcraft/insight-gateway', () => ({
   analyzeStructured: vi.fn().mockResolvedValue({
     object: { mockResult: true },
     usage: { promptTokens: 100, completionTokens: 50, totalTokens: 150 },
@@ -111,7 +111,7 @@ describe('analysis/runner', () => {
 
   it('runModule이 성공 시 completed 상태와 usage를 반환한다', async () => {
     const { runModule } = await import('../src/analysis/runner');
-    const { macroViewModule } = await import('../src/analysis/modules/macro-view');
+    const { macroViewModule } = await import('@ai-signalcraft/insight-engine');
     const mockInput = {
       jobId: 1,
       keyword: '테스트',
@@ -136,11 +136,11 @@ describe('analysis/runner', () => {
   });
 
   it('runModule이 실패 시 failed 상태와 errorMessage를 반환한다', async () => {
-    const { analyzeStructured } = await import('@ai-signalcraft/ai-gateway');
+    const { analyzeStructured } = await import('@ai-signalcraft/insight-gateway');
     (analyzeStructured as any).mockRejectedValueOnce(new Error('API 호출 실패'));
 
     const { runModule } = await import('../src/analysis/runner');
-    const { macroViewModule } = await import('../src/analysis/modules/macro-view');
+    const { macroViewModule } = await import('@ai-signalcraft/insight-engine');
     const mockInput = {
       jobId: 1,
       keyword: '테스트',

@@ -16,7 +16,8 @@
     "worker": "tsx watch src/queue/worker-process.ts"
   },
   "dependencies": {
-    "@ai-signalcraft/ai-gateway": "workspace:*",
+    "@ai-signalcraft/insight-gateway": "workspace:*",
+    "@ai-signalcraft/insight-engine": "workspace:*",
     "@ai-signalcraft/collectors": "workspace:*",
     "bullmq": "^5.0.0",
     "dotenv": "^16.4.0",

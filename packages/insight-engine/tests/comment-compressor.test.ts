@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { compressComments } from '../comment-compressor';
-import type { AnalysisInput } from '../../types';
+import { compressComments } from '../src/preprocessing/comment-compressor';
+import type { AnalysisInput } from '../src/types';
 
 function makeComments(count: number): AnalysisInput['comments'] {
   return Array.from({ length: count }, (_, i) => ({

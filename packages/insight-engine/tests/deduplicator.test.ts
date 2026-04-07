@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
-import { deduplicateArticles } from '../deduplicator';
-import type { AnalysisInput } from '../../types';
+import { deduplicateArticles } from '../src/preprocessing/deduplicator';
+import type { AnalysisInput } from '../src/types';
 
-vi.mock('../embeddings', () => ({
+vi.mock('../src/preprocessing/embeddings', () => ({
   embedTexts: vi.fn(async (texts: string[]) =>
     texts.map((t) => {
       if (t.includes('이슈A')) return [1, 0, 0];

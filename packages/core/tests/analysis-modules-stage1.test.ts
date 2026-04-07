@@ -1,15 +1,17 @@
 import { describe, it, expect } from 'vitest';
 import { z } from 'zod';
-import { macroViewModule } from '../src/analysis/modules/macro-view';
-import { segmentationModule } from '../src/analysis/modules/segmentation';
-import { sentimentFramingModule } from '../src/analysis/modules/sentiment-framing';
-import { messageImpactModule } from '../src/analysis/modules/message-impact';
+import {
+  macroViewModule,
+  segmentationModule,
+  sentimentFramingModule,
+  messageImpactModule,
+} from '@ai-signalcraft/insight-engine';
 import {
   MacroViewSchema,
   SegmentationSchema,
   SentimentFramingSchema,
   MessageImpactSchema,
-} from '../src/analysis/schemas';
+} from '@ai-signalcraft/insight-engine/schemas';
 import type { AnalysisInput } from '../src/analysis/types';
 
 // 테스트용 mock 입력 데이터

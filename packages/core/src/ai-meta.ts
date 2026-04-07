@@ -7,4 +7,4 @@ export {
   type AIProvider,
   type AccessMethod,
   type ProviderMeta,
-} from '@ai-signalcraft/ai-gateway/meta';
+} from '@ai-signalcraft/insight-gateway/meta';

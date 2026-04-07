@@ -3,7 +3,7 @@ import { ZodError } from 'zod';
 
 describe('ADVN-01: ApprovalRatingSchema', () => {
   it('유효한 데이터를 파싱할 수 있다', async () => {
-    const { ApprovalRatingSchema } = await import('../src/analysis/schemas/approval-rating.schema');
+    const { ApprovalRatingSchema } = await import('@ai-signalcraft/insight-engine/schemas');
 
     const validData = {
       estimatedRange: { min: 35, max: 42 },
@@ -26,7 +26,7 @@ describe('ADVN-01: ApprovalRatingSchema', () => {
   });
 
   it('estimatedRange.min/max가 number가 아니면 실패한다', async () => {
-    const { ApprovalRatingSchema } = await import('../src/analysis/schemas/approval-rating.schema');
+    const { ApprovalRatingSchema } = await import('@ai-signalcraft/insight-engine/schemas');
 
     expect(() =>
       ApprovalRatingSchema.parse({
@@ -44,7 +44,7 @@ describe('ADVN-01: ApprovalRatingSchema', () => {
   });
 
   it('estimatedRange 객체가 필수이다', async () => {
-    const { ApprovalRatingSchema } = await import('../src/analysis/schemas/approval-rating.schema');
+    const { ApprovalRatingSchema } = await import('@ai-signalcraft/insight-engine/schemas');
 
     expect(() =>
       ApprovalRatingSchema.parse({
@@ -61,7 +61,7 @@ describe('ADVN-01: ApprovalRatingSchema', () => {
   });
 
   it('confidence 필드가 high|medium|low enum이다', async () => {
-    const { ApprovalRatingSchema } = await import('../src/analysis/schemas/approval-rating.schema');
+    const { ApprovalRatingSchema } = await import('@ai-signalcraft/insight-engine/schemas');
 
     expect(() =>
       ApprovalRatingSchema.parse({

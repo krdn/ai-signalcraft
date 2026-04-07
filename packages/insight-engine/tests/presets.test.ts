@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { OPTIMIZATION_PRESETS, type OptimizationPreset } from '../presets';
+import { OPTIMIZATION_PRESETS, type OptimizationPreset } from '../src/preprocessing/presets';
 
 describe('OPTIMIZATION_PRESETS', () => {
   it('4개 프리셋이 정의되어 있어야 한다', () => {

@@ -5,7 +5,7 @@ import {
   analyzeStructured,
   normalizeUsage,
   type AIGatewayOptions,
-} from '@ai-signalcraft/ai-gateway';
+} from '@ai-signalcraft/insight-gateway';
 import { appendJobEvent } from '../pipeline/persist';
 import { isPipelineCancelled } from '../pipeline/control';
 import { persistAnalysisResult } from './persist-analysis';

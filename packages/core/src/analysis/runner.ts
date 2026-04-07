@@ -4,9 +4,7 @@ import {
   analyzeStructured,
   normalizeUsage,
   type AIGatewayOptions,
-} from '@ai-signalcraft/ai-gateway';
-import { isPipelineCancelled } from '../pipeline/control';
-import { appendJobEvent } from '../pipeline/persist';
+} from '@ai-signalcraft/insight-gateway';
 import {
   macroViewModule,
   segmentationModule,
@@ -19,7 +17,9 @@ import {
   frameWarModule,
   crisisScenarioModule,
   winSimulationModule,
-} from './modules';
+} from '@ai-signalcraft/insight-engine';
+import { isPipelineCancelled } from '../pipeline/control';
+import { appendJobEvent } from '../pipeline/persist';
 import { persistAnalysisResult } from './persist-analysis';
 import { getModuleModelConfig } from './model-config';
 import {
