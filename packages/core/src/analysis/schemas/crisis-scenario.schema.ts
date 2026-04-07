@@ -4,9 +4,9 @@ import { z } from 'zod';
 const scenarioBase = {
   name: z.string().catch(''),
   probability: z.number().catch(0).describe('발생 확률 0~100'),
-  triggerConditions: z.array(z.string()).catch([]),
+  triggerConditions: z.array(z.string()).default([]),
   expectedOutcome: z.string().catch(''),
-  responseStrategy: z.array(z.string()).catch([]),
+  responseStrategy: z.array(z.string()).default([]),
   timeframe: z.string().catch(''),
 };
 
@@ -20,9 +20,9 @@ const scenarioSchema = z.object({
 export const CrisisScenarioSchema = z.object({
   scenarios: z
     .array(scenarioSchema)
-    .catch([])
+    .default([])
     .describe('정확히 3개 시나리오: spread, control, reverse'),
-  currentRiskLevel: z.enum(['critical', 'high', 'medium', 'low']).catch('medium'),
+  currentRiskLevel: z.enum(['critical', 'high', 'medium', 'low']).describe('현재 위기 수준'),
   recommendedAction: z.string().catch(''),
 });
 

@@ -1,6 +1,10 @@
 // 분석 모듈 단일 실행 러너 + Stage 상수 정의
 // 오케스트레이션 로직은 pipeline-orchestrator.ts로 분리 (D-03)
-import { analyzeStructured, type AIGatewayOptions } from '@ai-signalcraft/ai-gateway';
+import {
+  analyzeStructured,
+  normalizeUsage,
+  type AIGatewayOptions,
+} from '@ai-signalcraft/ai-gateway';
 import { isPipelineCancelled } from '../pipeline/control';
 import { appendJobEvent } from '../pipeline/persist';
 import {
@@ -18,7 +22,13 @@ import {
 } from './modules';
 import { persistAnalysisResult } from './persist-analysis';
 import { getModuleModelConfig } from './model-config';
-import { isRateLimitError, parseRetryAfter, sleep, MAX_RATE_LIMIT_RETRIES } from './retry-utils';
+import {
+  isRateLimitError,
+  isServerOverloadError,
+  parseRetryAfter,
+  sleep,
+  MAX_RATE_LIMIT_RETRIES,
+} from './retry-utils';
 import type { AnalysisModule, AnalysisInput, AnalysisModuleResult } from './types';
 
 // Stage 1: 병렬 실행 (독립 모듈)
@@ -110,11 +120,7 @@ export async function runModule<T>(
           status: 'completed',
           result: result.object,
           usage: {
-            inputTokens:
-              (result.usage as any)?.promptTokens ?? (result.usage as any)?.inputTokens ?? 0,
-            outputTokens:
-              (result.usage as any)?.completionTokens ?? (result.usage as any)?.outputTokens ?? 0,
-            totalTokens: (result.usage as any)?.totalTokens ?? 0,
+            ...normalizeUsage(result.usage as Record<string, unknown>),
             provider: config.provider,
             model: config.model,
           },
@@ -139,6 +145,14 @@ export async function runModule<T>(
           console.log(`[runner] ${msg}`);
           appendJobEvent(input.jobId, 'warn', msg).catch(() => {});
           await sleep(backoffMs);
+          continue;
+        }
+        // 서버 과부하 — 1회 재시도
+        if (isServerOverloadError(error) && attempt < 1) {
+          const msg = `${module.name}: 서버 과부하, 15초 후 재시도`;
+          console.log(`[runner] ${msg}`);
+          appendJobEvent(input.jobId, 'warn', msg).catch(() => {});
+          await sleep(15_000);
           continue;
         }
         // 파싱 실패 등 기타 에러 — 즉시 전파 (재시도해도 해결 안 됨, 비용만 낭비)

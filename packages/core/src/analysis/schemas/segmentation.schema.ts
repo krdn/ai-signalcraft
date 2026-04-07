@@ -7,12 +7,12 @@ export const SegmentationSchema = z.object({
       z.object({
         platform: z.string().catch(''),
         sentiment: z.enum(['positive', 'negative', 'mixed']).catch('mixed'),
-        keyTopics: z.array(z.string()).catch([]),
+        keyTopics: z.array(z.string()).default([]),
         volume: z.number().catch(0),
         characteristics: z.string().catch(''),
       }),
     )
-    .catch([])
+    .default([])
     .describe('플랫폼별 반응 세분화'),
   audienceGroups: z
     .array(
@@ -24,7 +24,7 @@ export const SegmentationSchema = z.object({
         influence: z.enum(['high', 'medium', 'low']).catch('medium'),
       }),
     )
-    .catch([])
+    .default([])
     .describe('집단별 반응 (Core/Opposition/Swing)'),
   highInfluenceGroup: z
     .object({

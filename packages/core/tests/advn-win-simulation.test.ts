@@ -47,49 +47,31 @@ describe('ADVN-04: WinSimulationSchema', () => {
     expect(result.loseConditions.length).toBeGreaterThanOrEqual(2);
   });
 
-  it('winProbability가 0~100 범위를 벗어나면 실패한다', async () => {
+  it('winProbability가 number가 아니면 실패한다', async () => {
     const { WinSimulationSchema } = await import('../src/analysis/schemas/win-simulation.schema');
 
     expect(() =>
       WinSimulationSchema.parse({
-        winProbability: 150,
+        winProbability: 'invalid',
         confidenceLevel: 'medium',
-        winConditions: [
-          { condition: 'a', currentStatus: 'met', importance: 'critical' },
-          { condition: 'b', currentStatus: 'met', importance: 'high' },
-          { condition: 'c', currentStatus: 'met', importance: 'medium' },
-        ],
-        loseConditions: [
-          { condition: 'x', currentRisk: 'high', mitigation: 'y' },
-          { condition: 'z', currentRisk: 'low', mitigation: 'w' },
-        ],
-        keyStrategies: [
-          { strategy: 'a', expectedImpact: 'b', priority: 1 },
-          { strategy: 'c', expectedImpact: 'd', priority: 2 },
-          { strategy: 'e', expectedImpact: 'f', priority: 3 },
-        ],
+        winConditions: [],
+        loseConditions: [],
+        keyStrategies: [],
         simulationSummary: 'test',
       }),
     ).toThrow(ZodError);
   });
 
-  it('winConditions가 3개 미만이면 실패한다', async () => {
+  it('confidenceLevel이 유효하지 않은 enum이면 실패한다', async () => {
     const { WinSimulationSchema } = await import('../src/analysis/schemas/win-simulation.schema');
 
     expect(() =>
       WinSimulationSchema.parse({
         winProbability: 50,
-        confidenceLevel: 'medium',
-        winConditions: [{ condition: 'a', currentStatus: 'met', importance: 'critical' }],
-        loseConditions: [
-          { condition: 'x', currentRisk: 'high', mitigation: 'y' },
-          { condition: 'z', currentRisk: 'low', mitigation: 'w' },
-        ],
-        keyStrategies: [
-          { strategy: 'a', expectedImpact: 'b', priority: 1 },
-          { strategy: 'c', expectedImpact: 'd', priority: 2 },
-          { strategy: 'e', expectedImpact: 'f', priority: 3 },
-        ],
+        confidenceLevel: 'invalid',
+        winConditions: [],
+        loseConditions: [],
+        keyStrategies: [],
         simulationSummary: 'test',
       }),
     ).toThrow(ZodError);

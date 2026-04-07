@@ -1,5 +1,12 @@
 // @ai-signalcraft/ai-gateway - AI 분석 게이트웨이 패키지
-export { analyzeText, analyzeStructured, type AIProvider, type AIGatewayOptions } from './gateway';
+export {
+  analyzeText,
+  analyzeStructured,
+  normalizeUsage,
+  type AIProvider,
+  type AIGatewayOptions,
+  type NormalizedUsage,
+} from './gateway';
 export {
   PROVIDER_REGISTRY,
   AI_PROVIDER_VALUES,

@@ -2,11 +2,8 @@ import { z } from 'zod';
 
 // 모듈1: 전체 여론 구조 분석 스키마 (ANLZ-01, ANLZ-03)
 export const MacroViewSchema = z.object({
-  overallDirection: z
-    .enum(['positive', 'negative', 'mixed'])
-    .catch('mixed')
-    .describe('전체 여론 방향성'),
-  summary: z.string().catch('').describe('핵심 흐름 요약 3~5줄'),
+  overallDirection: z.enum(['positive', 'negative', 'mixed']).describe('전체 여론 방향성'),
+  summary: z.string().min(1).describe('핵심 흐름 요약 3~5줄'),
   timeline: z
     .array(
       z.object({
@@ -16,7 +13,7 @@ export const MacroViewSchema = z.object({
         description: z.string().catch(''),
       }),
     )
-    .catch([])
+    .default([])
     .describe('주요 이벤트 타임라인'),
   inflectionPoints: z
     .array(
@@ -27,7 +24,7 @@ export const MacroViewSchema = z.object({
         afterSentiment: z.enum(['positive', 'negative', 'neutral']).catch('neutral'),
       }),
     )
-    .catch([])
+    .default([])
     .describe('여론 변곡점'),
   dailyMentionTrend: z
     .array(
@@ -43,7 +40,7 @@ export const MacroViewSchema = z.object({
           .catch({ positive: 0, negative: 0, neutral: 0 }),
       }),
     )
-    .catch([])
+    .default([])
     .describe('일별 언급량 및 감성 추이'),
 });
 

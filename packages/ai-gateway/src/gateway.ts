@@ -13,6 +13,27 @@ import {
 
 export type { AIProvider };
 
+/** AI SDK 프로바이더별 usage 필드명 차이를 정규화 */
+export interface NormalizedUsage {
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+}
+
+export function normalizeUsage(usage: Record<string, unknown> | undefined | null): NormalizedUsage {
+  if (!usage) return { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
+  // Anthropic/Gemini: inputTokens/outputTokens, OpenAI: promptTokens/completionTokens
+  const inputTokens =
+    (typeof usage.promptTokens === 'number' ? usage.promptTokens : 0) ||
+    (typeof usage.inputTokens === 'number' ? usage.inputTokens : 0);
+  const outputTokens =
+    (typeof usage.completionTokens === 'number' ? usage.completionTokens : 0) ||
+    (typeof usage.outputTokens === 'number' ? usage.outputTokens : 0);
+  const totalTokens =
+    typeof usage.totalTokens === 'number' ? usage.totalTokens : inputTokens + outputTokens;
+  return { inputTokens, outputTokens, totalTokens };
+}
+
 export interface AIGatewayOptions {
   provider?: AIProvider;
   model?: string;
@@ -118,6 +139,30 @@ export async function getModel(
   }
 }
 
+/** 외부 AbortSignal과 타임아웃을 병합 — 둘 중 하나라도 발동하면 abort */
+function mergeAbortSignals(external?: AbortSignal, timeoutMs?: number): AbortSignal {
+  const timeout = timeoutMs ?? 300_000;
+  if (!external) return AbortSignal.timeout(timeout);
+
+  // 외부 signal만 있고 타임아웃은 기본 적용
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(new Error('timeout')), timeout);
+
+  external.addEventListener(
+    'abort',
+    () => {
+      clearTimeout(timer);
+      controller.abort(external.reason);
+    },
+    { once: true },
+  );
+
+  // controller가 abort되면 타이머 정리
+  controller.signal.addEventListener('abort', () => clearTimeout(timer), { once: true });
+
+  return controller.signal;
+}
+
 // 텍스트 분석 -- systemPrompt + usage 반환 지원
 export async function analyzeText(prompt: string, options: AIGatewayOptions = {}) {
   const provider = options.provider ?? 'anthropic';
@@ -126,7 +171,7 @@ export async function analyzeText(prompt: string, options: AIGatewayOptions = {}
     ...(options.systemPrompt ? { system: options.systemPrompt } : {}),
     prompt,
     maxOutputTokens: options.maxOutputTokens ?? 4096,
-    abortSignal: options.abortSignal ?? AbortSignal.timeout(options.timeoutMs ?? 300_000),
+    abortSignal: mergeAbortSignals(options.abortSignal, options.timeoutMs),
   });
   return {
     text: result.text,
@@ -144,7 +189,7 @@ export async function analyzeStructured<T>(
 ) {
   const provider = options.provider ?? 'anthropic';
   const model = await getModel(provider, options.model, options.baseUrl, options.apiKey);
-  const abortSignal = options.abortSignal ?? AbortSignal.timeout(options.timeoutMs ?? 300_000);
+  const abortSignal = mergeAbortSignals(options.abortSignal, options.timeoutMs);
 
   // 구조화 출력 미지원 프로바이더(CLI 프록시/Custom/Ollama 등)는
   // generateText + 프롬프트 기반 JSON 추출 + Zod 파싱으로 처리
@@ -292,18 +337,29 @@ async function analyzeStructuredViaText<T>(
     `[ai-gateway] analyzeStructuredViaText: 응답 수신 (finishReason=${result.finishReason}, 텍스트 길이=${result.text.length})`,
   );
 
+  // 토큰 초과로 응답이 잘린 경우 경고
+  if (result.finishReason === 'length') {
+    console.warn(
+      `[ai-gateway] 응답이 토큰 제한으로 잘림 (finishReason=length, 텍스트 길이=${result.text.length}) — JSON 복구 시도`,
+    );
+  }
+
   const jsonStr = extractJson(result.text);
   let parsed: unknown;
   try {
     parsed = JSON.parse(jsonStr);
   } catch (e) {
+    const truncatedHint =
+      result.finishReason === 'length'
+        ? ' [원인: 응답이 토큰 제한(maxOutputTokens)으로 잘림 — maxOutputTokens 증가 권장]'
+        : '';
     console.error(
-      `[ai-gateway] JSON 파싱 실패 — finishReason=${result.finishReason}, 텍스트 길이=${result.text.length}`,
+      `[ai-gateway] JSON 파싱 실패 — finishReason=${result.finishReason}, 텍스트 길이=${result.text.length}${truncatedHint}`,
     );
     console.error(`[ai-gateway] 추출된 JSON (처음 500자): ${jsonStr.substring(0, 500)}`);
     console.error(`[ai-gateway] 원본 응답 (처음 500자): ${result.text.substring(0, 500)}`);
     throw new Error(
-      `JSON 파싱 실패: ${e instanceof Error ? e.message : String(e)}\n응답 텍스트 (처음 500자): ${result.text.substring(0, 500)}`,
+      `JSON 파싱 실패${truncatedHint}: ${e instanceof Error ? e.message : String(e)}\n응답 텍스트 (처음 500자): ${result.text.substring(0, 500)}`,
       { cause: e },
     );
   }

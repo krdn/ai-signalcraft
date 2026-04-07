@@ -2,14 +2,14 @@ import { z } from 'zod';
 
 // 모듈8: 최종 전략 요약 (REPT-02)
 export const FinalSummarySchema = z.object({
-  oneLiner: z.string().catch('').describe('현재 상태 + 승부 핵심 한 줄 요약'),
+  oneLiner: z.string().min(1).describe('현재 상태 + 승부 핵심 한 줄 요약'),
   currentState: z
     .object({
-      summary: z.string().catch(''),
-      sentiment: z.enum(['positive', 'negative', 'mixed']).catch('mixed'),
+      summary: z.string().min(1),
+      sentiment: z.enum(['positive', 'negative', 'mixed']),
       keyFactor: z.string().catch(''),
     })
-    .catch({ summary: '', sentiment: 'mixed' as const, keyFactor: '' }),
+    .describe('현재 상황 요약'),
   criticalActions: z
     .array(
       z.object({
@@ -19,7 +19,7 @@ export const FinalSummarySchema = z.object({
         timeline: z.string().catch(''),
       }),
     )
-    .catch([])
+    .default([])
     .describe('최우선 실행 과제 (최대 5개)'),
   outlook: z
     .object({

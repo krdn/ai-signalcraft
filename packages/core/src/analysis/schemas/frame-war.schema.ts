@@ -9,10 +9,10 @@ export const FrameWarSchema = z.object({
         name: z.string().catch(''),
         description: z.string().catch(''),
         strength: z.number().catch(0).describe('강도 0~100'),
-        supportingEvidence: z.array(z.string()).catch([]),
+        supportingEvidence: z.array(z.string()).default([]),
       }),
     )
-    .catch([])
+    .default([])
     .describe('지배적 프레임 TOP 5 (최대 5개)'),
   threateningFrames: z
     .array(
@@ -23,7 +23,7 @@ export const FrameWarSchema = z.object({
         counterStrategy: z.string().catch(''),
       }),
     )
-    .catch([])
+    .default([])
     .describe('위협 프레임 (최대 5개)'),
   reversibleFrames: z
     .array(
@@ -34,9 +34,9 @@ export const FrameWarSchema = z.object({
         requiredAction: z.string().catch(''),
       }),
     )
-    .catch([])
+    .default([])
     .describe('반전 가능 프레임 (최대 3개)'),
-  battlefieldSummary: z.string().catch(''),
+  battlefieldSummary: z.string().min(1).describe('프레임 전쟁 요약'),
 });
 
 export type FrameWarResult = z.infer<typeof FrameWarSchema>;
