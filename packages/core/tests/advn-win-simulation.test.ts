@@ -3,7 +3,7 @@ import { ZodError } from 'zod';
 
 describe('ADVN-04: WinSimulationSchema', () => {
   it('유효한 데이터를 파싱할 수 있다', async () => {
-    const { WinSimulationSchema } = await import('@krdn/ai-analysis-kit/schemas');
+    const { WinSimulationSchema } = await import('../src/analysis/schemas');
 
     const validData = {
       winProbability: 55,
@@ -48,7 +48,7 @@ describe('ADVN-04: WinSimulationSchema', () => {
   });
 
   it('winProbability가 number가 아니면 실패한다', async () => {
-    const { WinSimulationSchema } = await import('@krdn/ai-analysis-kit/schemas');
+    const { WinSimulationSchema } = await import('../src/analysis/schemas');
 
     expect(() =>
       WinSimulationSchema.parse({
@@ -63,7 +63,7 @@ describe('ADVN-04: WinSimulationSchema', () => {
   });
 
   it('confidenceLevel이 유효하지 않은 enum이면 실패한다', async () => {
-    const { WinSimulationSchema } = await import('@krdn/ai-analysis-kit/schemas');
+    const { WinSimulationSchema } = await import('../src/analysis/schemas');
 
     expect(() =>
       WinSimulationSchema.parse({

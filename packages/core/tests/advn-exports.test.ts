@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 
 describe('ADVN 모듈 export 확인', () => {
   it('4개 모듈이 modules/index.ts에서 export된다', async () => {
-    const mods = await import('@krdn/ai-analysis-kit/modules');
+    const mods = await import('../src/analysis/modules');
     expect(mods.approvalRatingModule).toBeDefined();
     expect(mods.frameWarModule).toBeDefined();
     expect(mods.crisisScenarioModule).toBeDefined();
@@ -10,7 +10,7 @@ describe('ADVN 모듈 export 확인', () => {
   });
 
   it('4개 스키마가 schemas/index.ts에서 export된다', async () => {
-    const schemas = await import('@krdn/ai-analysis-kit/schemas');
+    const schemas = await import('../src/analysis/schemas');
     expect(schemas.ApprovalRatingSchema).toBeDefined();
     expect(schemas.FrameWarSchema).toBeDefined();
     expect(schemas.CrisisScenarioSchema).toBeDefined();

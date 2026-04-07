@@ -2,6 +2,7 @@
   "name": "@ai-signalcraft/core",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
   "exports": {
@@ -16,7 +17,7 @@
     "worker": "tsx watch src/queue/worker-process.ts"
   },
   "dependencies": {
-    "@krdn/ai-analysis-kit": "github:krdn/ai-analysis-kit#v1.0.0",
+    "@krdn/ai-analysis-kit": "github:krdn/ai-analysis-kit#v2.0.0",
     "@ai-signalcraft/collectors": "workspace:*",
     "bullmq": "^5.0.0",
     "dotenv": "^16.4.0",

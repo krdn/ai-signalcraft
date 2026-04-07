@@ -5,13 +5,13 @@ import {
   segmentationModule,
   sentimentFramingModule,
   messageImpactModule,
-} from '@krdn/ai-analysis-kit/modules';
+} from '../src/analysis/modules';
 import {
   MacroViewSchema,
   SegmentationSchema,
   SentimentFramingSchema,
   MessageImpactSchema,
-} from '@krdn/ai-analysis-kit/schemas';
+} from '../src/analysis/schemas';
 import type { AnalysisInput } from '../src/analysis/types';
 
 // 테스트용 mock 입력 데이터

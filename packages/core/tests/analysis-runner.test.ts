@@ -114,7 +114,7 @@ describe('analysis/runner', () => {
   // 이 시나리오는 ai-analysis-kit 저장소의 단위 테스트에서 검증.
   it.skip('runModule이 성공 시 completed 상태와 usage를 반환한다', async () => {
     const { runModule } = await import('../src/analysis/runner');
-    const { macroViewModule } = await import('@krdn/ai-analysis-kit/modules');
+    const { macroViewModule } = await import('../src/analysis/modules');
     const mockInput = {
       jobId: 1,
       keyword: '테스트',
@@ -143,7 +143,7 @@ describe('analysis/runner', () => {
     (analyzeStructured as any).mockRejectedValueOnce(new Error('API 호출 실패'));
 
     const { runModule } = await import('../src/analysis/runner');
-    const { macroViewModule } = await import('@krdn/ai-analysis-kit/modules');
+    const { macroViewModule } = await import('../src/analysis/modules');
     const mockInput = {
       jobId: 1,
       keyword: '테스트',

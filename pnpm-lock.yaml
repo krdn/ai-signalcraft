@@ -66,8 +66,8 @@ importers:
         specifier: ^1.3.0
         version: 1.3.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@krdn/ai-analysis-kit':
-        specifier: github:krdn/ai-analysis-kit#v1.0.0
-        version: git+https://git@github.com:krdn/ai-analysis-kit.git#af9270edb80b848771a5c16aa16b7287e2441f81(@modelcontextprotocol/sdk@1.27.1(zod@3.25.76))(@opentelemetry/core@2.6.1(@opentelemetry/api@1.9.0))(@opentelemetry/resources@2.6.1(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-metrics@2.0.1(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.0.1(@opentelemetry/api@1.9.0))(zod@3.25.76)
+        specifier: github:krdn/ai-analysis-kit#v2.0.0
+        version: git+https://git@github.com:krdn/ai-analysis-kit.git#5fd44ba4964209f40044f74088f003067a1fb880(@modelcontextprotocol/sdk@1.27.1(zod@3.25.76))(@opentelemetry/core@2.6.1(@opentelemetry/api@1.9.0))(@opentelemetry/resources@2.6.1(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-metrics@2.0.1(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.0.1(@opentelemetry/api@1.9.0))(zod@3.25.76)
       '@radix-ui/react-slider':
         specifier: ^1.3.6
         version: 1.3.6(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -212,8 +212,8 @@ importers:
         specifier: workspace:*
         version: link:../collectors
       '@krdn/ai-analysis-kit':
-        specifier: github:krdn/ai-analysis-kit#v1.0.0
-        version: git+https://git@github.com:krdn/ai-analysis-kit.git#af9270edb80b848771a5c16aa16b7287e2441f81(@modelcontextprotocol/sdk@1.27.1(zod@3.25.76))(@opentelemetry/core@2.6.1(@opentelemetry/api@1.9.0))(@opentelemetry/resources@2.6.1(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-metrics@2.0.1(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.0.1(@opentelemetry/api@1.9.0))(zod@3.25.76)
+        specifier: github:krdn/ai-analysis-kit#v2.0.0
+        version: git+https://git@github.com:krdn/ai-analysis-kit.git#5fd44ba4964209f40044f74088f003067a1fb880(@modelcontextprotocol/sdk@1.27.1(zod@3.25.76))(@opentelemetry/core@2.6.1(@opentelemetry/api@1.9.0))(@opentelemetry/resources@2.6.1(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-metrics@2.0.1(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.0.1(@opentelemetry/api@1.9.0))(zod@3.25.76)
       '@xenova/transformers':
         specifier: ^2.17.0
         version: 2.17.2
@@ -1422,11 +1422,10 @@ packages:
   '@keyv/serialize@1.1.1':
     resolution: {integrity: sha512-dXn3FZhPv0US+7dtJsIi2R+c7qWYiReoEh5zUntWCf4oSpMNib8FDhSoed6m3QyZdx5hK7iLFkYk3rNxwt8vTA==}
 
-  '@krdn/ai-analysis-kit@git+https://git@github.com:krdn/ai-analysis-kit.git#af9270edb80b848771a5c16aa16b7287e2441f81':
-    resolution: {commit: af9270edb80b848771a5c16aa16b7287e2441f81, repo: git@github.com:krdn/ai-analysis-kit.git, type: git}
-    version: 1.0.0
+  '@krdn/ai-analysis-kit@git+https://git@github.com:krdn/ai-analysis-kit.git#5fd44ba4964209f40044f74088f003067a1fb880':
+    resolution: {commit: 5fd44ba4964209f40044f74088f003067a1fb880, repo: git@github.com:krdn/ai-analysis-kit.git, type: git}
+    version: 2.0.0
     engines: {node: '>=20'}
-    hasBin: true
     peerDependencies:
       zod: ^3.24.0
 
@@ -7220,14 +7219,13 @@ snapshots:
 
   '@keyv/serialize@1.1.1': {}
 
-  '@krdn/ai-analysis-kit@git+https://git@github.com:krdn/ai-analysis-kit.git#af9270edb80b848771a5c16aa16b7287e2441f81(@modelcontextprotocol/sdk@1.27.1(zod@3.25.76))(@opentelemetry/core@2.6.1(@opentelemetry/api@1.9.0))(@opentelemetry/resources@2.6.1(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-metrics@2.0.1(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.0.1(@opentelemetry/api@1.9.0))(zod@3.25.76)':
+  '@krdn/ai-analysis-kit@git+https://git@github.com:krdn/ai-analysis-kit.git#5fd44ba4964209f40044f74088f003067a1fb880(@modelcontextprotocol/sdk@1.27.1(zod@3.25.76))(@opentelemetry/core@2.6.1(@opentelemetry/api@1.9.0))(@opentelemetry/resources@2.6.1(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-metrics@2.0.1(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.0.1(@opentelemetry/api@1.9.0))(zod@3.25.76)':
     dependencies:
       '@ai-sdk/anthropic': 3.0.67(zod@3.25.76)
       '@ai-sdk/google': 3.0.59(zod@3.25.76)
       '@ai-sdk/openai': 3.0.51(zod@3.25.76)
       ai: 6.0.137(zod@3.25.76)
       ai-sdk-provider-gemini-cli: 2.0.1(@modelcontextprotocol/sdk@1.27.1(zod@3.25.76))(@opentelemetry/core@2.6.1(@opentelemetry/api@1.9.0))(@opentelemetry/resources@2.6.1(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-metrics@2.0.1(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.0.1(@opentelemetry/api@1.9.0))(zod@3.25.76)
-      cac: 6.7.14
       zod: 3.25.76
       zod-to-json-schema: 3.25.2(zod@3.25.76)
     transitivePeerDependencies:
@@ -8427,7 +8425,7 @@ snapshots:
   ai-sdk-provider-gemini-cli@2.0.1(@modelcontextprotocol/sdk@1.27.1(zod@3.25.76))(@opentelemetry/core@2.6.1(@opentelemetry/api@1.9.0))(@opentelemetry/resources@2.6.1(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-metrics@2.0.1(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.0.1(@opentelemetry/api@1.9.0))(zod@3.25.76):
     dependencies:
       '@ai-sdk/provider': 3.0.8
-      '@ai-sdk/provider-utils': 4.0.21(zod@3.25.76)
+      '@ai-sdk/provider-utils': 4.0.23(zod@3.25.76)
       '@google/gemini-cli-core': 0.22.4(@opentelemetry/core@2.6.1(@opentelemetry/api@1.9.0))(@opentelemetry/resources@2.6.1(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-metrics@2.0.1(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.0.1(@opentelemetry/api@1.9.0))
       '@google/genai': 1.30.0(@modelcontextprotocol/sdk@1.27.1(zod@3.25.76))
       google-auth-library: 9.15.1

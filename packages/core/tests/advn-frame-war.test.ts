@@ -3,7 +3,7 @@ import { ZodError } from 'zod';
 
 describe('ADVN-02: FrameWarSchema', () => {
   it('유효한 데이터를 파싱할 수 있다', async () => {
-    const { FrameWarSchema } = await import('@krdn/ai-analysis-kit/schemas');
+    const { FrameWarSchema } = await import('../src/analysis/schemas');
 
     const validData = {
       dominantFrames: [
@@ -40,7 +40,7 @@ describe('ADVN-02: FrameWarSchema', () => {
   });
 
   it('battlefieldSummary가 빈 문자열이면 실패한다', async () => {
-    const { FrameWarSchema } = await import('@krdn/ai-analysis-kit/schemas');
+    const { FrameWarSchema } = await import('../src/analysis/schemas');
 
     expect(() =>
       FrameWarSchema.parse({
