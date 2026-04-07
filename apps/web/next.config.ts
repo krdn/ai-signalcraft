@@ -2,7 +2,11 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   output: 'standalone',
-  transpilePackages: ['@ai-signalcraft/core', '@ai-signalcraft/collectors'],
+  transpilePackages: [
+    '@ai-signalcraft/core',
+    '@ai-signalcraft/collectors',
+    '@krdn/ai-analysis-kit/gateway',
+  ],
   serverExternalPackages: [
     'playwright-core',
     'playwright',

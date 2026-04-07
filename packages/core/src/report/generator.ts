@@ -1,5 +1,5 @@
 // 통합 리포트 마크다운 생성기 (D-04 2단계)
-import { analyzeText } from '@ai-signalcraft/ai-gateway';
+import { analyzeText } from '@krdn/ai-analysis-kit/gateway';
 import { persistAnalysisReport } from '../analysis/persist-analysis';
 import { getModuleModelConfig } from '../analysis/model-config';
 import type { ReportGenerationInput } from '../types/report';

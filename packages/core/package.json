@@ -16,7 +16,7 @@
     "worker": "tsx watch src/queue/worker-process.ts"
   },
   "dependencies": {
-    "@ai-signalcraft/ai-gateway": "workspace:*",
+    "@krdn/ai-analysis-kit": "github:krdn/ai-analysis-kit#v1.0.0",
     "@ai-signalcraft/collectors": "workspace:*",
     "bullmq": "^5.0.0",
     "dotenv": "^16.4.0",

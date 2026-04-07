@@ -9,6 +9,8 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@krdn/ai-analysis-kit": "github:krdn/ai-analysis-kit#v1.0.0",
+    "@ai-signalcraft/collectors": "workspace:*",
     "@ai-signalcraft/core": "workspace:*",
     "@auth/core": "^0.34.3",
     "@auth/drizzle-adapter": "^1.11.1",

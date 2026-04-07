@@ -1,4 +1,4 @@
-import type { AIProvider } from '@ai-signalcraft/ai-gateway';
+import type { AIProvider } from '@krdn/ai-analysis-kit/gateway';
 
 // 모듈별 AI 모델 설정 (per D-02, from model-config.ts)
 export interface ModuleModelConfig {

@@ -1,196 +1,108 @@
-// 분석 모듈 단일 실행 러너 + Stage 상수 정의
-// 오케스트레이션 로직은 pipeline-orchestrator.ts로 분리 (D-03)
+// ai-signalcraft 분석 러너 — @krdn/ai-analysis-kit의 runModule을 호출하면서
+// DB 기반 model-config / pipeline 제어 / persist 어댑터를 주입하는 thin wrapper.
 import {
-  analyzeStructured,
-  normalizeUsage,
-  type AIGatewayOptions,
-} from '@ai-signalcraft/ai-gateway';
-import { isPipelineCancelled } from '../pipeline/control';
+  runModule as kitRunModule,
+  STAGE1_MODULES as KIT_STAGE1,
+  STAGE2_MODULES as KIT_STAGE2,
+  STAGE4_PARALLEL as KIT_STAGE4_PARALLEL,
+  STAGE4_SEQUENTIAL as KIT_STAGE4_SEQUENTIAL,
+  type ModelConfigAdapter,
+  type PipelineControlAdapter,
+  type RunModuleOptions,
+  type AnalysisModule,
+  type AnalysisInput,
+  type AnalysisModuleResult,
+} from '@krdn/ai-analysis-kit';
+import { isPipelineCancelled, waitIfPaused } from '../pipeline/control';
 import { appendJobEvent } from '../pipeline/persist';
-import {
-  macroViewModule,
-  segmentationModule,
-  sentimentFramingModule,
-  messageImpactModule,
-  riskMapModule,
-  opportunityModule,
-  strategyModule,
-  approvalRatingModule,
-  frameWarModule,
-  crisisScenarioModule,
-  winSimulationModule,
-} from './modules';
-import { persistAnalysisResult } from './persist-analysis';
 import { getModuleModelConfig } from './model-config';
-import {
-  isRateLimitError,
-  isServerOverloadError,
-  parseRetryAfter,
-  sleep,
-  MAX_RATE_LIMIT_RETRIES,
-} from './retry-utils';
-import type { AnalysisModule, AnalysisInput, AnalysisModuleResult } from './types';
+import { persistAnalysisResult } from './persist-analysis';
 
-// Stage 1: 병렬 실행 (독립 모듈)
-export const STAGE1_MODULES: AnalysisModule[] = [
-  macroViewModule,
-  segmentationModule,
-  sentimentFramingModule,
-  messageImpactModule,
-];
+// Stage 상수 — kit에서 가져와 그대로 re-export (기존 import 경로 호환)
+export const STAGE1_MODULES: AnalysisModule[] = KIT_STAGE1;
+export const STAGE2_MODULES: AnalysisModule[] = KIT_STAGE2;
+export const STAGE4_PARALLEL: AnalysisModule[] = KIT_STAGE4_PARALLEL;
+export const STAGE4_SEQUENTIAL: AnalysisModule[] = KIT_STAGE4_SEQUENTIAL;
 
-// Stage 2: 순차 실행 (Stage 1 결과 의존)
-export const STAGE2_MODULES: AnalysisModule[] = [riskMapModule, opportunityModule, strategyModule];
+/** DB 기반 ModelConfigAdapter — 기존 getModuleModelConfig를 그대로 위임 */
+const dbModelConfigAdapter: ModelConfigAdapter = {
+  async resolve(moduleName: string) {
+    const cfg = await getModuleModelConfig(moduleName);
+    return {
+      provider: cfg.provider,
+      model: cfg.model,
+      ...(cfg.baseUrl ? { baseUrl: cfg.baseUrl } : {}),
+      ...(cfg.apiKey ? { apiKey: cfg.apiKey } : {}),
+    };
+  },
+};
 
-// Stage 4: 고급 분석 (ADVN 모듈)
-// ADVN-01(approval-rating), ADVN-02(frame-war): 병렬 (독립)
-// ADVN-03(crisis-scenario): ADVN-01 + risk-map 의존
-// ADVN-04(win-simulation): ADVN-01~03 전체 의존
-export const STAGE4_PARALLEL: AnalysisModule[] = [approvalRatingModule, frameWarModule];
-export const STAGE4_SEQUENTIAL: AnalysisModule[] = [crisisScenarioModule, winSimulationModule];
+/** DB 기반 PipelineControlAdapter — 기존 cancellation/pause/event 함수에 위임 */
+const dbPipelineControl: PipelineControlAdapter = {
+  async isCancelled(jobId) {
+    return isPipelineCancelled(jobId);
+  },
+  async waitIfPaused(jobId) {
+    await waitIfPaused(jobId);
+  },
+  async checkCostLimit() {
+    return true;
+  },
+  async appendEvent(jobId, level, message) {
+    await appendJobEvent(jobId, level, message).catch(() => undefined);
+  },
+};
 
-// Rate limit 유���리티는 retry-utils.ts에서 import
+/** persist 콜백 — kit이 status 전환마다 호출, 기존 persistAnalysisResult로 위임 */
+const persistCallback: NonNullable<RunModuleOptions['onPersist']> = async (event) => {
+  const base = { jobId: event.jobId, module: event.module };
+  if (event.status === 'running') {
+    await persistAnalysisResult({ ...base, status: 'running' });
+  } else if (event.status === 'skipped') {
+    await persistAnalysisResult({
+      ...base,
+      status: 'skipped',
+      errorMessage: event.errorMessage,
+    });
+  } else if (event.status === 'completed') {
+    await persistAnalysisResult({
+      ...base,
+      status: 'completed',
+      result: event.result as never,
+      usage: event.usage,
+    });
+  } else if (event.status === 'failed') {
+    await persistAnalysisResult({
+      ...base,
+      status: 'failed',
+      errorMessage: event.errorMessage,
+    });
+  }
+};
 
 /**
- * 단일 분석 모듈 실행 (AI Gateway 호출 + DB 저장)
- * 부분 실패 허용 -- 실패 시에도 에러를 throw하지 않고 failed 상태 반환
- * Rate limit 발생 시 exponential backoff로 재시도
+ * 단일 분석 모듈 실행 (DB persist + 파이프라인 제어 포함)
+ * 부분 실패 허용 — 실패 시에도 에러를 throw하지 않고 failed 상태 반환.
+ *
+ * 내부 구현은 @krdn/ai-analysis-kit의 runModule을 호출하며,
+ * ai-signalcraft 고유의 DB 저장/취소/일시정지 로직은 어댑터로 주입한다.
  */
 export async function runModule<T>(
   module: AnalysisModule<T>,
   input: AnalysisInput,
   priorResults?: Record<string, unknown>,
 ): Promise<AnalysisModuleResult<T>> {
-  // 수집 데이터가 없으면 분석 스킵 (빈 입력으로 LLM 호출 시 파싱 실패 방지)
-  const totalItems = input.articles.length + input.videos.length + input.comments.length;
-  if (totalItems === 0) {
-    console.log(`[runner] ${module.name}: 수집 데이터 0건 — 분석 스킵 (jobId=${input.jobId})`);
-    await persistAnalysisResult({
-      jobId: input.jobId,
-      module: module.name,
-      status: 'skipped',
-      errorMessage: '수집 데이터 없음 — 분석 스킵',
-    });
-    return { module: module.name, status: 'skipped', errorMessage: '수집 데이터 없음' };
-  }
-
-  try {
-    // 모듈 실행 시작을 DB에 'running' 상태로 기록
-    await persistAnalysisResult({
-      jobId: input.jobId,
-      module: module.name,
-      status: 'running',
-    });
-    console.log(`[runner] ${module.name}: 분석 시작 (jobId=${input.jobId})`);
-
-    // DB 설정 우선, 없으면 모듈 기본값 폴백
-    const config = await getModuleModelConfig(module.name);
-    console.log(
-      `[runner] ${module.name}: provider=${config.provider}, model=${config.model}, baseUrl=${config.baseUrl ?? 'NONE'}, hasApiKey=${!!config.apiKey}`,
-    );
-
-    const prompt =
-      priorResults && module.buildPromptWithContext
-        ? module.buildPromptWithContext(input, priorResults)
-        : module.buildPrompt(input);
-
-    const gatewayOptions: AIGatewayOptions = {
-      provider: config.provider,
-      model: config.model,
-      baseUrl: config.baseUrl,
-      apiKey: config.apiKey,
-      systemPrompt: module.buildSystemPrompt(),
-      maxOutputTokens: 8192,
-    };
-
-    // Rate limit 재시도 루프 (파싱 실패는 재시도 없이 즉시 에러 전파)
-    let lastError: unknown;
-    for (let attempt = 0; attempt <= MAX_RATE_LIMIT_RETRIES; attempt++) {
-      // 각 시도 전 취소 확인 — 실행 중인 모듈도 즉시 중단
-      if (await isPipelineCancelled(input.jobId)) {
-        console.log(`[runner] ${module.name}: 취소 감지 — 분석 중단 (jobId=${input.jobId})`);
-        return { module: module.name, status: 'failed', errorMessage: '사용자에 의해 중지됨' };
-      }
-
-      try {
-        const result = await analyzeStructured(prompt, module.schema, gatewayOptions);
-
-        const moduleResult: AnalysisModuleResult<T> = {
-          module: module.name,
-          status: 'completed',
-          result: result.object,
-          usage: {
-            ...normalizeUsage(result.usage as Record<string, unknown>),
-            provider: config.provider,
-            model: config.model,
-          },
-        };
-
-        await persistAnalysisResult({
-          jobId: input.jobId,
-          module: module.name,
-          status: 'completed',
-          result: moduleResult.result,
-          usage: moduleResult.usage,
-        });
-
-        return moduleResult;
-      } catch (error) {
-        lastError = error;
-        // Rate limit만 재시도 (토큰 비용 미발생)
-        if (isRateLimitError(error) && attempt < MAX_RATE_LIMIT_RETRIES) {
-          const retryAfterSec = parseRetryAfter(error);
-          const backoffMs = Math.max(retryAfterSec * 1000, (attempt + 1) * 3000);
-          const msg = `${module.name}: Rate limit 도달, ${Math.round(backoffMs / 1000)}초 후 재시도 (${attempt + 1}/${MAX_RATE_LIMIT_RETRIES})`;
-          console.log(`[runner] ${msg}`);
-          appendJobEvent(input.jobId, 'warn', msg).catch(() => {});
-          await sleep(backoffMs);
-          continue;
-        }
-        // 서버 과부하 — 1회 재시도
-        if (isServerOverloadError(error) && attempt < 1) {
-          const msg = `${module.name}: 서버 과부하, 15초 후 재시도`;
-          console.log(`[runner] ${msg}`);
-          appendJobEvent(input.jobId, 'warn', msg).catch(() => {});
-          await sleep(15_000);
-          continue;
-        }
-        // 파싱 실패 등 기타 에러 — 즉시 전파 (재시도해도 해결 안 됨, 비용만 낭비)
-        throw error;
-      }
-    }
-
-    throw lastError;
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    const errorStack = error instanceof Error ? error.stack : undefined;
-
-    // 정밀 디버깅 로그 — 실패 원인 추적
-    console.error(`[runner] ${module.name}: 분석 실패 (jobId=${input.jobId})`);
-    console.error(`[runner] ${module.name}: 에러 메시지: ${errorMessage}`);
-    if (errorStack) {
-      console.error(`[runner] ${module.name}: 스택 트레이스:\n${errorStack}`);
-    }
-    // cause 체인 추적 (예: JSON 파싱 → Zod 검증 등 중첩 에러)
-    if (error instanceof Error && error.cause) {
-      const causeMsg = error.cause instanceof Error ? error.cause.message : String(error.cause);
-      console.error(`[runner] ${module.name}: 원인(cause): ${causeMsg}`);
-    }
-
-    // 실패도 DB에 기록
-    await persistAnalysisResult({
-      jobId: input.jobId,
-      module: module.name,
-      status: 'failed',
-      errorMessage,
-    });
-
-    appendJobEvent(input.jobId, 'error', `${module.name} 분석 실패: ${errorMessage}`).catch(
-      () => {},
-    );
-    return { module: module.name, status: 'failed', errorMessage };
-  }
+  return kitRunModule<T>(
+    module,
+    input,
+    {
+      configAdapter: dbModelConfigAdapter,
+      pipelineControl: dbPipelineControl,
+      onPersist: persistCallback,
+    },
+    priorResults,
+  );
 }
 
-// 오케스트레이션 함수 re-export -- 기존 import 경로 호환성 유지
+// 오케스트레이션 함수 re-export — 기존 import 경로 호환성 유지
 export { runAnalysisPipeline } from './pipeline-orchestrator';

@@ -440,7 +440,7 @@ export async function chatWithProvider(
       case 'gemini-cli': {
         // Gemini CLI — AI SDK 경유 (OAuth 인증, Chat Completions API 없음)
         // gateway.ts의 getModel → generateText와 동일한 경로 사용
-        const { analyzeText } = await import('@ai-signalcraft/ai-gateway');
+        const { analyzeText } = await import('@krdn/ai-analysis-kit/gateway');
         const model = selectedModel || 'gemini-2.5-flash';
         const result = await analyzeText(prompt, {
           provider: 'gemini-cli',

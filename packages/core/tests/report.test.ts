@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // AI Gateway mock -- analyzeText 함수
-vi.mock('@ai-signalcraft/ai-gateway', () => ({
+vi.mock('@krdn/ai-analysis-kit/gateway', () => ({
   analyzeText: vi.fn().mockResolvedValue({
     text: '# 종합 분석 리포트: 테스트\n\n리포트 내용입니다.',
     usage: { promptTokens: 500, completionTokens: 1000, totalTokens: 1500 },
