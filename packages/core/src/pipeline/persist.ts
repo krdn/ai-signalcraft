@@ -27,6 +27,24 @@ export async function persistArticles(jobId: number, data: (typeof articles.$inf
   }
   const deduped = [...seen.values()];
 
+  // dedupe로 인해 입력 대비 손실이 크면 경고 로그 (collector sourceId 충돌 감지)
+  const dropped = data.length - deduped.length;
+  if (dropped > 0) {
+    const ratio = dropped / data.length;
+    if (ratio >= 0.1) {
+      // 10% 이상 손실 시 경고 — collector sourceId 생성 로직 점검 필요
+      try {
+        await appendJobEvent(
+          jobId,
+          'warn',
+          `persistArticles: ${data.length}건 입력 중 ${dropped}건 sourceId 중복 제거 (${(ratio * 100).toFixed(1)}%)`,
+        );
+      } catch {
+        // 로그 실패는 무시
+      }
+    }
+  }
+
   return getDb().transaction(async (tx) => {
     const upserted = await tx
       .insert(articles)

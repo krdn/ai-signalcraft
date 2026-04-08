@@ -1,4 +1,5 @@
 // 네이버 뉴스 기사 수집기 (하이브리드: 검색=fetch, 본문=Playwright)
+import { createHash } from 'node:crypto';
 import type { Browser, Page } from 'playwright';
 import * as cheerio from 'cheerio';
 import { buildNaverSearchUrl, parseNaverArticleUrl } from '../utils/naver-parser';
@@ -50,27 +51,36 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
     // Phase 1: 날짜 분할 검색 (Date-Chunked Collection)
     // 기간을 일별로 분할하여 각 날짜에서 균등하게 수집 — 최신순 편중 방지
     const allArticles: NaverArticle[] = [];
+    // 전체 수집 동안 sourceId 중복 제거 (cross-page/cross-day)
+    const globalSeenSourceIds = new Set<string>();
     const days = this.splitIntoDays(options.startDate, options.endDate);
     const perDayLimit = Math.ceil(maxItems / days.length);
-    const maxPagesPerDay = Math.min(
-      Math.ceil(this.config.maxSearchPages / days.length),
-      40, // 네이버 검색 한계: 단일 날짜에서도 40페이지(~400건) 이상 반환 안 됨
-    );
+    // 네이버 단일 날짜 검색 한계(~40페이지)까지 허용.
+    // 이전 `maxSearchPages/days.length` 공식은 긴 기간에서 날짜당 2~4페이지로 극도 제한되어
+    // Pass 2 보충 시 페이지 여유가 없어 maxItems 미달이 발생했음.
+    const maxPagesPerDay = 40;
 
-    for (const day of days) {
-      if (allArticles.length >= maxItems) break;
-      let dailyCollected = 0;
+    // 날짜별로 수집한 페이지 진행 상태 추적 (2-패스 보충을 위해)
+    const dayProgress = new Map<number, { nextPage: number; exhausted: boolean }>();
+    days.forEach((_, idx) => dayProgress.set(idx, { nextPage: 1, exhausted: false }));
+
+    // 단일 날짜에서 지정한 수만큼 수집하는 헬퍼 (page 진행 상태 유지)
+    const collectFromDay = async (dayIdx: number, targetCount: number): Promise<number> => {
+      const progress = dayProgress.get(dayIdx)!;
+      if (progress.exhausted) return 0;
+
+      const day = days[dayIdx];
       const dayStr = day.toISOString();
+      let collected = 0;
 
-      for (let pageNum = 1; pageNum <= maxPagesPerDay; pageNum++) {
-        if (dailyCollected >= perDayLimit) break;
+      while (collected < targetCount && progress.nextPage <= maxPagesPerDay) {
         if (allArticles.length >= maxItems) break;
 
         const searchUrl = buildNaverSearchUrl({
           keyword: options.keyword,
           startDate: dayStr,
           endDate: dayStr,
-          page: pageNum,
+          page: progress.nextPage,
           sort: 1,
         });
 
@@ -78,20 +88,61 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
           const response = await fetch(searchUrl, {
             headers: { ...SEARCH_HEADERS, 'User-Agent': getRandomUserAgent() },
           });
-          if (!response.ok) break;
+          if (!response.ok) {
+            progress.exhausted = true;
+            break;
+          }
 
           const html = await response.text();
           const articles = this.parseSearchResults(html);
-          if (articles.length === 0) break;
+          if (articles.length === 0) {
+            progress.exhausted = true;
+            break;
+          }
 
-          allArticles.push(...articles);
-          dailyCollected += articles.length;
+          const fresh = articles.filter((a) => {
+            if (globalSeenSourceIds.has(a.sourceId)) return false;
+            globalSeenSourceIds.add(a.sourceId);
+            return true;
+          });
+
+          allArticles.push(...fresh);
+          collected += fresh.length;
+          progress.nextPage++;
         } catch {
+          progress.exhausted = true;
           break;
         }
 
         await sleep(this.config.searchDelay.min, this.config.searchDelay.max);
       }
+
+      if (progress.nextPage > maxPagesPerDay) progress.exhausted = true;
+      return collected;
+    };
+
+    // Pass 1: 각 날짜에서 perDayLimit까지 시도
+    for (let dayIdx = 0; dayIdx < days.length; dayIdx++) {
+      if (allArticles.length >= maxItems) break;
+      await collectFromDay(dayIdx, perDayLimit);
+    }
+
+    // Pass 2: 부족분을 아직 고갈되지 않은 날짜들에서 보충
+    // round-robin 방식으로 페이지 단위(~10건)씩 돌며 maxItems 도달 또는 모든 날짜 고갈될 때까지
+    while (allArticles.length < maxItems) {
+      const availableDays = Array.from(dayProgress.entries())
+        .filter(([, p]) => !p.exhausted)
+        .map(([idx]) => idx);
+      if (availableDays.length === 0) break;
+
+      let progressedThisRound = false;
+      for (const dayIdx of availableDays) {
+        if (allArticles.length >= maxItems) break;
+        const need = maxItems - allArticles.length;
+        const got = await collectFromDay(dayIdx, Math.min(need, 10));
+        if (got > 0) progressedThisRound = true;
+      }
+      if (!progressedThisRound) break;
     }
 
     // maxItems 제한
@@ -328,14 +379,15 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
 
   /**
    * URL에서 고유 sourceId 생성 (네이버뉴스 URL이 없는 기사용)
+   * 전체 URL의 SHA-1 해시를 사용해 truncate로 인한 충돌 방지
    */
   private urlToSourceId(url: string): string {
+    const hash = createHash('sha1').update(url).digest('hex').slice(0, 16);
     try {
       const u = new URL(url);
-      const fullPath = (u.pathname + u.search).replace(/[^a-zA-Z0-9]/g, '_').substring(0, 120);
-      return `ext_${u.hostname.replace(/\./g, '_')}_${fullPath}`;
+      return `ext_${u.hostname.replace(/\./g, '_')}_${hash}`;
     } catch {
-      return `ext_${url.substring(0, 150).replace(/[^a-zA-Z0-9]/g, '_')}`;
+      return `ext_${hash}`;
     }
   }
 
