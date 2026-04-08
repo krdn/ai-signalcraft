@@ -21,6 +21,7 @@ export const collectedDataRouter = router({
         jobId: z.number(),
         page: z.number().min(1).default(1),
         perPage: z.number().min(1).max(50).default(20),
+        source: z.string().optional(),
       }),
     )
     .query(async ({ input, ctx }) => {
@@ -73,14 +74,23 @@ export const collectedDataRouter = router({
           .from(articles)
           .innerJoin(articleJobs, eq(articles.id, articleJobs.articleId))
           .leftJoin(commentCountSq, eq(articles.id, commentCountSq.articleId))
-          .where(eq(articleJobs.jobId, input.jobId))
+          .where(
+            input.source
+              ? and(eq(articleJobs.jobId, input.jobId), eq(articles.source, input.source))
+              : eq(articleJobs.jobId, input.jobId),
+          )
           .orderBy(desc(articles.publishedAt))
           .limit(input.perPage)
           .offset(offset),
         ctx.db
           .select({ count: sql<number>`count(*)::int` })
           .from(articleJobs)
-          .where(eq(articleJobs.jobId, input.jobId)),
+          .innerJoin(articles, eq(articles.id, articleJobs.articleId))
+          .where(
+            input.source
+              ? and(eq(articleJobs.jobId, input.jobId), eq(articles.source, input.source))
+              : eq(articleJobs.jobId, input.jobId),
+          ),
       ]);
 
       return {
@@ -99,6 +109,7 @@ export const collectedDataRouter = router({
         jobId: z.number(),
         page: z.number().min(1).default(1),
         perPage: z.number().min(1).max(50).default(20),
+        source: z.string().optional(),
       }),
     )
     .query(async ({ input, ctx }) => {
@@ -148,14 +159,23 @@ export const collectedDataRouter = router({
           .from(videos)
           .innerJoin(videoJobs, eq(videos.id, videoJobs.videoId))
           .leftJoin(videoCommentCountSq, eq(videos.id, videoCommentCountSq.videoId))
-          .where(eq(videoJobs.jobId, input.jobId))
+          .where(
+            input.source
+              ? and(eq(videoJobs.jobId, input.jobId), eq(videos.source, input.source))
+              : eq(videoJobs.jobId, input.jobId),
+          )
           .orderBy(desc(videos.publishedAt))
           .limit(input.perPage)
           .offset(offset),
         ctx.db
           .select({ count: sql<number>`count(*)::int` })
           .from(videoJobs)
-          .where(eq(videoJobs.jobId, input.jobId)),
+          .innerJoin(videos, eq(videos.id, videoJobs.videoId))
+          .where(
+            input.source
+              ? and(eq(videoJobs.jobId, input.jobId), eq(videos.source, input.source))
+              : eq(videoJobs.jobId, input.jobId),
+          ),
       ]);
 
       return {
@@ -176,6 +196,7 @@ export const collectedDataRouter = router({
         videoId: z.number().optional(),
         page: z.number().min(1).default(1),
         perPage: z.number().min(1).max(50).default(20),
+        source: z.string().optional(),
       }),
     )
     .query(async ({ input, ctx }) => {
@@ -197,11 +218,14 @@ export const collectedDataRouter = router({
 
       // 기본 조건: 조인 테이블 경유 jobId 필터
       const baseCondition = eq(commentJobs.jobId, input.jobId);
-      const whereCondition = input.articleId
+      const scopedCondition = input.articleId
         ? and(baseCondition, eq(comments.articleId, input.articleId))
         : input.videoId
           ? and(baseCondition, eq(comments.videoId, input.videoId))
           : baseCondition;
+      const whereCondition = input.source
+        ? and(scopedCondition, eq(comments.source, input.source))
+        : scopedCondition;
 
       const [rows, countResult] = await Promise.all([
         ctx.db

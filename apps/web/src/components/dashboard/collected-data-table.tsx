@@ -16,12 +16,14 @@ export interface ArticlesViewProps {
   jobId: number;
   page: number;
   onPageChange: (page: number) => void;
+  source?: string | null;
 }
 
 export interface VideosViewProps {
   jobId: number;
   page: number;
   onPageChange: (page: number) => void;
+  source?: string | null;
 }
 
 export interface CommentsViewProps {
@@ -30,6 +32,7 @@ export interface CommentsViewProps {
   page: number;
   onPageChange: (page: number) => void;
   onBack: () => void;
+  source?: string | null;
 }
 
 // --- 기사 내 인라인 댓글 뷰 ---
@@ -190,11 +193,17 @@ function InlineVideoCommentsView({ jobId, videoId }: { jobId: number; videoId: n
 
 // --- 기사 목록 뷰 ---
 
-export function ArticlesView({ jobId, page, onPageChange }: ArticlesViewProps) {
+export function ArticlesView({ jobId, page, onPageChange, source }: ArticlesViewProps) {
   const [expandedArticleId, setExpandedArticleId] = useState<number | null>(null);
   const { data, isLoading } = useQuery({
-    queryKey: ['collectedData', 'getArticles', jobId, page],
-    queryFn: () => trpcClient.collectedData.getArticles.query({ jobId, page, perPage: 10 }),
+    queryKey: ['collectedData', 'getArticles', jobId, page, source],
+    queryFn: () =>
+      trpcClient.collectedData.getArticles.query({
+        jobId,
+        page,
+        perPage: 10,
+        ...(source ? { source } : {}),
+      }),
   });
 
   if (isLoading) {
@@ -316,11 +325,17 @@ export function ArticlesView({ jobId, page, onPageChange }: ArticlesViewProps) {
 
 // --- 영상 목록 뷰 ---
 
-export function VideosView({ jobId, page, onPageChange }: VideosViewProps) {
+export function VideosView({ jobId, page, onPageChange, source }: VideosViewProps) {
   const [expandedVideoId, setExpandedVideoId] = useState<number | null>(null);
   const { data, isLoading } = useQuery({
-    queryKey: ['collectedData', 'getVideos', jobId, page],
-    queryFn: () => trpcClient.collectedData.getVideos.query({ jobId, page, perPage: 10 }),
+    queryKey: ['collectedData', 'getVideos', jobId, page, source],
+    queryFn: () =>
+      trpcClient.collectedData.getVideos.query({
+        jobId,
+        page,
+        perPage: 10,
+        ...(source ? { source } : {}),
+      }),
   });
 
   if (isLoading) {
@@ -449,13 +464,21 @@ export function VideosView({ jobId, page, onPageChange }: VideosViewProps) {
 
 // --- 댓글 목록 뷰 ---
 
-export function CommentsView({ jobId, articleId, page, onPageChange, onBack }: CommentsViewProps) {
+export function CommentsView({
+  jobId,
+  articleId,
+  page,
+  onPageChange,
+  onBack,
+  source,
+}: CommentsViewProps) {
   const { data, isLoading } = useQuery({
-    queryKey: ['collectedData', 'getComments', jobId, articleId, page],
+    queryKey: ['collectedData', 'getComments', jobId, articleId, page, source],
     queryFn: () =>
       trpcClient.collectedData.getComments.query({
         jobId,
         ...(articleId ? { articleId } : {}),
+        ...(source ? { source } : {}),
         page,
         perPage: 20,
       }),

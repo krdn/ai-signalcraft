@@ -1,9 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Newspaper, FileText, BarChart3, Video, MessageSquare } from 'lucide-react';
 import { SummaryView } from './collected-data-summary';
 import { ArticlesView, VideosView, CommentsView } from './collected-data-table';
+import { SOURCE_LABELS } from './collected-data-shared';
+import { trpcClient } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 
 interface CollectedDataViewProps {
@@ -16,6 +19,28 @@ export function CollectedDataView({ jobId }: CollectedDataViewProps) {
   const [videoPage, setVideoPage] = useState(1);
   const [commentPage, setCommentPage] = useState(1);
   const [selectedArticleId, setSelectedArticleId] = useState<number | null>(null);
+  const [sourceFilter, setSourceFilter] = useState<string | null>(null);
+
+  // 사용 가능한 소스 목록 (요약 데이터 재사용)
+  const { data: summary } = useQuery({
+    queryKey: ['collectedData', 'getSummary', jobId],
+    queryFn: () => trpcClient.collectedData.getSummary.query({ jobId: jobId! }),
+    enabled: !!jobId,
+  });
+
+  const availableSources = summary
+    ? Array.from(
+        new Map(
+          summary.sourceBreakdown.map((s) => [s.source, { source: s.source, count: s.count }]),
+        ).values(),
+      ).sort((a, b) => b.count - a.count)
+    : [];
+
+  const resetPages = () => {
+    setArticlePage(1);
+    setVideoPage(1);
+    setCommentPage(1);
+  };
 
   if (!jobId) {
     return (
@@ -75,12 +100,55 @@ export function CollectedDataView({ jobId }: CollectedDataViewProps) {
         </Button>
       </div>
 
+      {/* 데이터 소스 필터 (요약 뷰 제외) */}
+      {view !== 'summary' && availableSources.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs text-muted-foreground">소스:</span>
+          <Button
+            variant={sourceFilter === null ? 'default' : 'outline'}
+            size="sm"
+            className="h-7 text-xs"
+            onClick={() => {
+              setSourceFilter(null);
+              resetPages();
+            }}
+          >
+            전체
+          </Button>
+          {availableSources.map((s) => (
+            <Button
+              key={s.source}
+              variant={sourceFilter === s.source ? 'default' : 'outline'}
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => {
+                setSourceFilter(s.source);
+                resetPages();
+              }}
+            >
+              {SOURCE_LABELS[s.source] ?? s.source}
+              <span className="ml-1 text-[10px] opacity-70">{s.count}</span>
+            </Button>
+          ))}
+        </div>
+      )}
+
       {view === 'summary' && <SummaryView jobId={jobId} />}
       {view === 'articles' && (
-        <ArticlesView jobId={jobId} page={articlePage} onPageChange={setArticlePage} />
+        <ArticlesView
+          jobId={jobId}
+          page={articlePage}
+          onPageChange={setArticlePage}
+          source={sourceFilter}
+        />
       )}
       {view === 'videos' && (
-        <VideosView jobId={jobId} page={videoPage} onPageChange={setVideoPage} />
+        <VideosView
+          jobId={jobId}
+          page={videoPage}
+          onPageChange={setVideoPage}
+          source={sourceFilter}
+        />
       )}
       {view === 'comments' && (
         <CommentsView
@@ -88,6 +156,7 @@ export function CollectedDataView({ jobId }: CollectedDataViewProps) {
           articleId={selectedArticleId}
           page={commentPage}
           onPageChange={setCommentPage}
+          source={sourceFilter}
           onBack={() => {
             setSelectedArticleId(null);
             setView('articles');
