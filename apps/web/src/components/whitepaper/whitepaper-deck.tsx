@@ -253,16 +253,17 @@ export function WhitepaperDeck() {
       )}
 
       {/* ─── 화면 모드: 현재 슬라이드 1장 ─── */}
-      <main className="screen-only mx-auto max-w-7xl px-3 py-4 sm:px-4 sm:py-6">
+      <main className="screen-only mx-auto w-full px-3 py-4 sm:px-4 sm:py-6">
         <div className="flex justify-center">
           {/*
-            모바일에서는 1280px 폭의 슬라이드를 CSS scale로 통째 축소해 16:9 비율과
-            내부 폰트 비례를 그대로 유지한다 (텍스트 잘림 방지).
+            1280px 폭의 슬라이드를 CSS scale로 통째 축소/확대해 16:9 비율과
+            내부 폰트 비례를 그대로 유지한다. 뷰포트 높이까지 고려해
+            가로/세로 중 더 제약이 큰 쪽에 맞춰 스케일한다.
           */}
           <div
             ref={stageRef}
-            className="relative w-full max-w-6xl overflow-hidden"
-            style={{ aspectRatio: '16 / 9' }}
+            className="relative w-full overflow-hidden"
+            style={{ maxWidth: 'min(100%, calc((100vh - 220px) * 16 / 9))', aspectRatio: '16 / 9' }}
           >
             <article
               className="absolute left-0 top-0 flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-lg"
