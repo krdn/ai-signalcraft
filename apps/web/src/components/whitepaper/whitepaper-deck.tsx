@@ -123,13 +123,12 @@ export function WhitepaperDeck() {
     <div className="min-h-screen bg-background text-foreground">
       {/* ─── 화면용 (인쇄 시 숨김) 상단 툴바 ─── */}
       <header className="screen-only sticky top-0 z-40 border-b bg-background/90 backdrop-blur">
-        <div className="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4">
+        <div className="mx-auto flex h-14 max-w-7xl items-center gap-2 px-3 sm:gap-3 sm:px-4">
           <Link
             href="/"
-            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground sm:text-sm"
           >
-            <ChevronLeft className="h-4 w-4" />
-            홈으로
+            <ChevronLeft className="h-4 w-4" />홈
           </Link>
           <div className="ml-2 hidden text-sm font-semibold text-foreground md:block">
             AI SignalCraft 제품 소개
@@ -146,14 +145,14 @@ export function WhitepaperDeck() {
           <button
             type="button"
             onClick={() => setNavOpen((o) => !o)}
-            className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted"
+            className="rounded-md border border-border px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-muted sm:px-3 sm:text-xs"
           >
             목차 ({current + 1}/{total})
           </button>
           <button
             type="button"
             onClick={toggleFullscreen}
-            className="rounded-md border border-border p-1.5 text-foreground hover:bg-muted"
+            className="hidden rounded-md border border-border p-1.5 text-foreground hover:bg-muted sm:inline-flex"
             title="풀스크린 (F)"
           >
             {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
@@ -161,11 +160,12 @@ export function WhitepaperDeck() {
           <button
             type="button"
             onClick={handlePrint}
-            className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+            className="flex items-center gap-1 rounded-md bg-primary px-2 py-1.5 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90 sm:gap-1.5 sm:px-3 sm:text-xs"
             title="PDF로 다운로드 (P)"
           >
-            <Download className="h-4 w-4" />
-            PDF 다운로드
+            <Download className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">PDF 다운로드</span>
+            <span className="sm:hidden">PDF</span>
           </button>
         </div>
         {/* 진행 막대 */}
@@ -234,19 +234,25 @@ export function WhitepaperDeck() {
       )}
 
       {/* ─── 화면 모드: 현재 슬라이드 1장 ─── */}
-      <main className="screen-only mx-auto max-w-7xl px-4 py-6">
+      <main className="screen-only mx-auto max-w-7xl px-3 py-4 sm:px-4 sm:py-6">
         <div className="flex justify-center">
-          <article
-            className="slide-frame relative aspect-[16/9] w-full max-w-6xl overflow-hidden rounded-xl border border-border bg-card p-10 shadow-lg"
-            key={SLIDES[current].id}
-          >
-            <div className="flex h-full flex-col">{SLIDES[current].render()}</div>
-            {/* 슬라이드 푸터 */}
-            <div className="absolute bottom-3 right-5 text-[10px] text-muted-foreground">
-              {String(current + 1).padStart(2, '0')} / {String(total).padStart(2, '0')} · AI
-              SignalCraft
-            </div>
-          </article>
+          {/*
+            모바일에서는 1280px 폭의 슬라이드를 CSS scale로 통째 축소해 16:9 비율과
+            내부 폰트 비례를 그대로 유지한다 (텍스트 잘림 방지).
+          */}
+          <div className="slide-stage relative w-full max-w-6xl" style={{ aspectRatio: '16 / 9' }}>
+            <article
+              className="slide-frame absolute left-1/2 top-1/2 flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-lg"
+              key={SLIDES[current].id}
+            >
+              <div className="flex h-full flex-col">{SLIDES[current].render()}</div>
+              {/* 슬라이드 푸터 */}
+              <div className="absolute bottom-3 right-5 text-[10px] text-muted-foreground">
+                {String(current + 1).padStart(2, '0')} / {String(total).padStart(2, '0')} · AI
+                SignalCraft
+              </div>
+            </article>
+          </div>
         </div>
 
         {/* 좌우 컨트롤 */}
@@ -294,6 +300,19 @@ export function WhitepaperDeck() {
 
       {/* ─── 인쇄/화면 분기 스타일 ─── */}
       <style jsx global>{`
+        /* 슬라이드 무대: 1280×720 고정 → 컨테이너 폭에 맞춰 비율 유지 축소 */
+        .slide-stage {
+          /* CSS 변수로 컨테이너 폭 기반 scale 계산 */
+          container-type: inline-size;
+        }
+        .slide-frame {
+          width: 1280px;
+          height: 720px;
+          padding: 40px;
+          /* container query 단위(cqw) 사용 — stage 폭의 1/1280만큼 scale */
+          transform: translate(-50%, -50%) scale(calc(100cqw / 1280));
+          transform-origin: center center;
+        }
         .print-only {
           display: none;
         }

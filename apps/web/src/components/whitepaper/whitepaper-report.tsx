@@ -20,8 +20,10 @@ import {
   Download,
   ExternalLink,
   Layers,
+  Menu,
   Printer,
   Sparkles,
+  X,
 } from 'lucide-react';
 import type { ReportModule } from './report-data';
 import { REPORT_META, REPORT_MODULES, REPORT_SECTIONS } from './report-data';
@@ -38,6 +40,7 @@ const STAGE_COLORS: Record<string, string> = {
 
 export function WhitepaperReport() {
   const [activeSection, setActiveSection] = useState<string>('summary');
+  const [tocOpen, setTocOpen] = useState(false);
 
   const handlePrint = useCallback(() => {
     if (typeof window !== 'undefined') window.print();
@@ -75,35 +78,104 @@ export function WhitepaperReport() {
     <div className="min-h-screen bg-background text-foreground">
       {/* ─── 상단 툴바 (인쇄 시 숨김) ─── */}
       <header className="screen-only sticky top-0 z-40 border-b bg-background/90 backdrop-blur">
-        <div className="mx-auto flex h-14 max-w-[1400px] items-center gap-3 px-4">
+        <div className="mx-auto flex h-14 max-w-[1400px] items-center gap-2 px-3 sm:gap-3 sm:px-4">
           <Link
             href="/whitepaper"
-            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground sm:text-sm"
           >
             <ChevronLeft className="h-4 w-4" />
-            슬라이드 데크로
+            <span className="hidden sm:inline">슬라이드 데크로</span>
+            <span className="sm:hidden">데크</span>
           </Link>
-          <span className="text-muted-foreground">·</span>
-          <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">
+          <span className="hidden text-muted-foreground sm:inline">·</span>
+          <Link
+            href="/"
+            className="hidden text-sm text-muted-foreground hover:text-foreground sm:inline"
+          >
             홈으로
           </Link>
           <div className="ml-2 hidden text-sm font-semibold text-foreground md:block">
             AI SignalCraft 종합 기술 리포트
           </div>
           <div className="flex-1" />
+          {/* 모바일 전용 목차 토글 */}
+          <button
+            type="button"
+            onClick={() => setTocOpen(true)}
+            className="flex items-center gap-1 rounded-md border border-border px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-muted lg:hidden"
+            aria-label="목차 열기"
+          >
+            <Menu className="h-3.5 w-3.5" />
+            목차
+          </button>
           <button
             type="button"
             onClick={handlePrint}
-            className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+            className="flex items-center gap-1 rounded-md bg-primary px-2 py-1.5 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90 sm:gap-1.5 sm:px-3 sm:text-xs"
             title="브라우저 인쇄로 PDF 저장"
           >
-            <Download className="h-4 w-4" />
-            PDF 다운로드
+            <Download className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">PDF 다운로드</span>
+            <span className="sm:hidden">PDF</span>
           </button>
         </div>
       </header>
 
-      <div className="mx-auto flex max-w-[1400px] gap-8 px-4 py-8 lg:px-8">
+      {/* ─── 모바일 목차 시트 ─── */}
+      {tocOpen && (
+        <div className="screen-only fixed inset-0 z-50 flex lg:hidden">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setTocOpen(false)}
+            aria-hidden
+          />
+          <aside className="relative ml-auto h-full w-72 overflow-y-auto border-l border-border bg-card p-4 shadow-xl">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                <BookOpen className="h-3.5 w-3.5" />
+                목차
+              </h3>
+              <button
+                type="button"
+                onClick={() => setTocOpen(false)}
+                className="rounded-md p-1 text-muted-foreground hover:bg-muted"
+                aria-label="닫기"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <nav className="space-y-0.5">
+              {REPORT_SECTIONS.map((s) => (
+                <a
+                  key={s.id}
+                  href={`#${s.id}`}
+                  onClick={() => setTocOpen(false)}
+                  className={cn(
+                    'block rounded-md px-3 py-2 text-sm transition-colors',
+                    activeSection === s.id
+                      ? 'bg-primary/10 font-semibold text-primary'
+                      : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                  )}
+                >
+                  {s.id === 'summary' ? (
+                    <span className="flex items-center gap-1.5">
+                      <Sparkles className="h-3.5 w-3.5" />
+                      {s.title}
+                    </span>
+                  ) : (
+                    <span>
+                      <span className="mr-1.5 text-xs text-muted-foreground/70">{s.no}.</span>
+                      {s.title}
+                    </span>
+                  )}
+                </a>
+              ))}
+            </nav>
+          </aside>
+        </div>
+      )}
+
+      <div className="mx-auto flex max-w-[1400px] gap-8 px-3 py-6 sm:px-4 sm:py-8 lg:px-8">
         {/* ─── 좌측 사이드바 목차 (인쇄 시 숨김) ─── */}
         <aside className="screen-only hidden w-60 shrink-0 lg:block">
           <div className="sticky top-20">
@@ -153,8 +225,10 @@ export function WhitepaperReport() {
         <main className="report-body min-w-0 flex-1">
           {/* 헤더 메타 */}
           <header className="mb-10 border-b border-border pb-6">
-            <h1 className="text-3xl font-bold text-foreground md:text-4xl">{REPORT_META.title}</h1>
-            <p className="mt-2 text-base text-muted-foreground md:text-lg">
+            <h1 className="text-2xl font-bold leading-tight text-foreground sm:text-3xl md:text-4xl">
+              {REPORT_META.title}
+            </h1>
+            <p className="mt-2 text-sm text-muted-foreground sm:text-base md:text-lg">
               {REPORT_META.subtitle}
             </p>
             <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
@@ -256,8 +330,8 @@ export function WhitepaperReport() {
               한 매체에만 의존하면 그 매체의 정치 편향이 모든 분석에 들어갑니다. 본 시스템은
               진영·세대·플랫폼이 다른 5개 소스를 동시에 수집해 사각지대를 없앱니다.
             </p>
-            <div className="overflow-hidden rounded-lg border border-border">
-              <table className="w-full text-sm">
+            <div className="overflow-x-auto rounded-lg border border-border">
+              <table className="w-full min-w-[560px] text-sm">
                 <thead className="bg-muted/50">
                   <tr>
                     <th className="border-b border-border p-3 text-left font-semibold">#</th>
@@ -314,8 +388,8 @@ export function WhitepaperReport() {
               모듈의 성격에 따라 다른 모델을 배정해 <strong>속도·비용·품질</strong>의 균형을 맞추고{' '}
               <strong>교차 검증 효과</strong>를 얻습니다.
             </p>
-            <div className="overflow-hidden rounded-lg border border-border">
-              <table className="w-full text-sm">
+            <div className="overflow-x-auto rounded-lg border border-border">
+              <table className="w-full min-w-[560px] text-sm">
                 <thead className="bg-muted/50">
                   <tr>
                     <th className="border-b border-border p-3 text-left font-semibold">단계</th>
@@ -359,8 +433,8 @@ export function WhitepaperReport() {
               분야에서 검증된 이론을 LLM 시대에 맞게 재구현한 것입니다. 핵심 이론 계보를 한 표로
               정리하면 다음과 같습니다.
             </p>
-            <div className="overflow-hidden rounded-lg border border-border">
-              <table className="w-full text-sm">
+            <div className="overflow-x-auto rounded-lg border border-border">
+              <table className="w-full min-w-[560px] text-sm">
                 <thead className="bg-muted/50">
                   <tr>
                     <th className="border-b border-border p-3 text-left font-semibold">분야</th>
@@ -432,8 +506,8 @@ export function WhitepaperReport() {
 
           {/* ─── 6. 경쟁 접근과의 차이 ─── */}
           <Section id="comparison" title="6. 경쟁 접근과의 차이" eyebrow="DIFFERENTIATION">
-            <div className="overflow-hidden rounded-lg border border-border">
-              <table className="w-full text-sm">
+            <div className="overflow-x-auto rounded-lg border border-border">
+              <table className="w-full min-w-[560px] text-sm">
                 <thead className="bg-muted/50">
                   <tr>
                     <th className="border-b border-border p-3 text-left font-semibold">항목</th>
