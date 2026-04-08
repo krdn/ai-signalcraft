@@ -15,7 +15,7 @@
  *  - 좌측 점프 네비 (썸네일)
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   ArrowLeft,
@@ -62,12 +62,31 @@ const SLIDES: SlideDef[] = [
   { id: 'cta', title: '다음 단계', render: () => <CtaSlide /> },
 ];
 
+const SLIDE_WIDTH = 1280;
+const SLIDE_HEIGHT = 720;
+
 export function WhitepaperDeck() {
   const [current, setCurrent] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
 
   const total = SLIDES.length;
+
+  // 슬라이드 무대 폭에 맞춰 1280px 기준 scale 계산
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    const update = () => {
+      const w = stage.clientWidth;
+      setScale(w / SLIDE_WIDTH);
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(stage);
+    return () => ro.disconnect();
+  }, []);
 
   const goNext = useCallback(() => setCurrent((c) => Math.min(c + 1, total - 1)), [total]);
   const goPrev = useCallback(() => setCurrent((c) => Math.max(c - 1, 0)), []);
@@ -240,9 +259,20 @@ export function WhitepaperDeck() {
             모바일에서는 1280px 폭의 슬라이드를 CSS scale로 통째 축소해 16:9 비율과
             내부 폰트 비례를 그대로 유지한다 (텍스트 잘림 방지).
           */}
-          <div className="slide-stage relative w-full max-w-6xl" style={{ aspectRatio: '16 / 9' }}>
+          <div
+            ref={stageRef}
+            className="relative w-full max-w-6xl overflow-hidden"
+            style={{ aspectRatio: '16 / 9' }}
+          >
             <article
-              className="slide-frame absolute left-1/2 top-1/2 flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-lg"
+              className="absolute left-0 top-0 flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-lg"
+              style={{
+                width: SLIDE_WIDTH,
+                height: SLIDE_HEIGHT,
+                padding: 40,
+                transform: `scale(${scale})`,
+                transformOrigin: 'top left',
+              }}
               key={SLIDES[current].id}
             >
               <div className="flex h-full flex-col">{SLIDES[current].render()}</div>
@@ -300,19 +330,6 @@ export function WhitepaperDeck() {
 
       {/* ─── 인쇄/화면 분기 스타일 ─── */}
       <style jsx global>{`
-        /* 슬라이드 무대: 1280×720 고정 → 컨테이너 폭에 맞춰 비율 유지 축소 */
-        .slide-stage {
-          /* CSS 변수로 컨테이너 폭 기반 scale 계산 */
-          container-type: inline-size;
-        }
-        .slide-frame {
-          width: 1280px;
-          height: 720px;
-          padding: 40px;
-          /* container query 단위(cqw) 사용 — stage 폭의 1/1280만큼 scale */
-          transform: translate(-50%, -50%) scale(calc(100cqw / 1280));
-          transform-origin: center center;
-        }
         .print-only {
           display: none;
         }
