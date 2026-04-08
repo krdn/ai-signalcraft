@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { signOut, useSession } from 'next-auth/react';
 import {
   Activity,
+  BookOpen,
   Brain,
   Database,
   FileText,
@@ -164,6 +165,18 @@ export function TopNav({ activeTab, onTabChange }: TopNavProps) {
       <div className="flex-1 md:hidden text-center">
         <span className="text-sm font-medium text-foreground">{TABS[activeTab].label}</span>
       </div>
+
+      {/* 제품 소개 (영업용 화이트페이퍼) — 모든 사용자 */}
+      <Link
+        href="/whitepaper"
+        target="_blank"
+        rel="noopener"
+        className="mr-1 hidden items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground sm:flex"
+        title="제품 소개 슬라이드 (새 창)"
+      >
+        <BookOpen className="h-4 w-4" />
+        <span>제품 소개</span>
+      </Link>
 
       {/* AI 모델 설정 — admin만 표시 */}
       {userRole === 'admin' && (

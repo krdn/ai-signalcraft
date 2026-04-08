@@ -11,6 +11,7 @@ import {
   Clock,
   Globe,
   ExternalLink,
+  FileText,
   HelpCircle,
   Handshake,
   Sparkles,
@@ -58,6 +59,12 @@ export function LandingContent() {
             </a>
             <Link href="/programs" className="hover:text-foreground">
               파트너
+            </Link>
+            <Link href="/whitepaper" className="hover:text-foreground">
+              제품 소개
+            </Link>
+            <Link href="/whitepaper/report" className="hover:text-foreground">
+              상세 리포트
             </Link>
           </div>
           <div className="flex items-center gap-2">
@@ -108,6 +115,13 @@ export function LandingContent() {
             <a href="#features" className={cn(buttonVariants({ variant: 'outline', size: 'lg' }))}>
               기능 살펴보기
             </a>
+            <Link
+              href="/whitepaper"
+              className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'gap-1.5')}
+            >
+              <FileText className="size-4" />
+              제품 소개 (PDF)
+            </Link>
           </div>
           <p className="mt-4 text-sm text-muted-foreground">
             카드 등록 없이 시작 · 설치 불필요 · 5분 안에 첫 분석
