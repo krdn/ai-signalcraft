@@ -20,6 +20,7 @@ import {
   Play,
   Settings,
   Sun,
+  Telescope,
   TrendingUp,
   Users,
 } from 'lucide-react';
@@ -64,6 +65,7 @@ const TABS: { label: string; icon: LucideIcon }[] = [
   { label: 'AI 리포트', icon: FileText },
   { label: '히스토리', icon: History },
   { label: '고급 분석', icon: Brain },
+  { label: '탐색', icon: Telescope },
 ];
 
 interface TopNavProps {

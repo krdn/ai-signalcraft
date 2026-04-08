@@ -12,6 +12,7 @@ import { ReportView } from '@/components/report/report-view';
 import { DashboardView } from '@/components/dashboard/dashboard-view';
 import { CollectedDataView } from '@/components/dashboard/collected-data-view';
 import { AdvancedView } from '@/components/advanced/advanced-view';
+import { ExploreView } from '@/components/explore/explore-view';
 import { Button } from '@/components/ui/button';
 import { DemoQuotaBanner } from '@/components/demo/demo-quota-banner';
 import { UpgradeModal } from '@/components/demo/upgrade-modal';
@@ -148,6 +149,21 @@ function CollectedDataTab({
   );
 }
 
+// 탐색 탭 — 사용자 자체 시각화 대시보드
+function ExploreTab({
+  jobId,
+  onGoToAnalysis,
+}: {
+  jobId: number | null;
+  onGoToAnalysis: () => void;
+}) {
+  return (
+    <ResultTabWrapper jobId={jobId} onGoToAnalysis={onGoToAnalysis}>
+      <ExploreView jobId={jobId} />
+    </ResultTabWrapper>
+  );
+}
+
 // 고급 분석 탭
 function AdvancedTab({
   jobId,
@@ -239,6 +255,7 @@ export default function Home() {
             onGoToAnalysis={handleGoToAnalysis}
             isShowcase={isShowcase}
           />,
+          <ExploreTab key="explore" jobId={activeJobId} onGoToAnalysis={handleGoToAnalysis} />,
         ]}
       />
     </main>
