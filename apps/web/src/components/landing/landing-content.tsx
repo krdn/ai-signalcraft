@@ -14,6 +14,7 @@ import {
   FileText,
   HelpCircle,
   Handshake,
+  Menu,
   Sparkles,
   Zap,
 } from 'lucide-react';
@@ -23,6 +24,14 @@ import { PRICING, COMPARISONS } from './data/pricing';
 import { USE_CASE_CATEGORIES, USE_CASE_DETAILS } from './data/use-cases';
 import { UseCaseDetailModal } from './use-case-detail-modal';
 import { ShowcaseSection } from './showcase-section';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+  SheetClose,
+} from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -77,15 +86,113 @@ export function LandingContent() {
               <>
                 <Link
                   href="/login"
-                  className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }))}
+                  className={cn(
+                    buttonVariants({ variant: 'ghost', size: 'sm' }),
+                    'hidden sm:inline-flex',
+                  )}
                 >
                   로그인
                 </Link>
-                <Link href="/demo" className={cn(buttonVariants({ size: 'sm' }))}>
+                <Link
+                  href="/demo"
+                  className={cn(buttonVariants({ size: 'sm' }), 'hidden sm:inline-flex')}
+                >
                   무료 체험
                 </Link>
               </>
             )}
+            {/* Mobile menu */}
+            <Sheet>
+              <SheetTrigger
+                aria-label="메뉴 열기"
+                className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'md:hidden px-2')}
+              >
+                <Menu className="size-5" />
+              </SheetTrigger>
+              <SheetContent side="right" className="w-72">
+                <SheetHeader>
+                  <SheetTitle>메뉴</SheetTitle>
+                </SheetHeader>
+                <nav className="mt-6 flex flex-col gap-1 px-4 text-base">
+                  <SheetClose
+                    nativeButton={false}
+                    render={<a href="#showcase" className="rounded-md px-2 py-2 hover:bg-accent" />}
+                  >
+                    샘플 분석
+                  </SheetClose>
+                  <SheetClose
+                    nativeButton={false}
+                    render={<a href="#features" className="rounded-md px-2 py-2 hover:bg-accent" />}
+                  >
+                    기능
+                  </SheetClose>
+                  <SheetClose
+                    nativeButton={false}
+                    render={
+                      <a href="#use-cases" className="rounded-md px-2 py-2 hover:bg-accent" />
+                    }
+                  >
+                    활용 사례
+                  </SheetClose>
+                  <SheetClose
+                    nativeButton={false}
+                    render={<a href="#pricing" className="rounded-md px-2 py-2 hover:bg-accent" />}
+                  >
+                    가격
+                  </SheetClose>
+                  <SheetClose
+                    nativeButton={false}
+                    render={
+                      <Link href="/programs" className="rounded-md px-2 py-2 hover:bg-accent" />
+                    }
+                  >
+                    파트너
+                  </SheetClose>
+                  <SheetClose
+                    nativeButton={false}
+                    render={
+                      <Link href="/whitepaper" className="rounded-md px-2 py-2 hover:bg-accent" />
+                    }
+                  >
+                    제품 소개
+                  </SheetClose>
+                  <SheetClose
+                    nativeButton={false}
+                    render={
+                      <Link
+                        href="/whitepaper/report"
+                        className="rounded-md px-2 py-2 hover:bg-accent"
+                      />
+                    }
+                  >
+                    상세 리포트
+                  </SheetClose>
+                  {!isLoggedIn && (
+                    <div className="mt-4 flex flex-col gap-2 border-t pt-4">
+                      <SheetClose
+                        nativeButton={false}
+                        render={
+                          <Link
+                            href="/login"
+                            className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
+                          />
+                        }
+                      >
+                        로그인
+                      </SheetClose>
+                      <SheetClose
+                        nativeButton={false}
+                        render={
+                          <Link href="/demo" className={cn(buttonVariants({ size: 'sm' }))} />
+                        }
+                      >
+                        무료 체험
+                      </SheetClose>
+                    </div>
+                  )}
+                </nav>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
       </nav>
