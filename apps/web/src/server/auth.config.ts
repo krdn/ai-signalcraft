@@ -40,7 +40,8 @@ export const authConfig: NextAuthConfig = {
         nextUrl.pathname.startsWith('/hardware') ||
         nextUrl.pathname.startsWith('/shared') ||
         nextUrl.pathname.startsWith('/showcase') ||
-        nextUrl.pathname.startsWith('/whitepaper');
+        nextUrl.pathname.startsWith('/whitepaper') ||
+        nextUrl.pathname.startsWith('/programs');
       const isAdminPage = nextUrl.pathname.startsWith('/admin');
       const isSalesPage = nextUrl.pathname.startsWith('/sales');
       const isPartnerPage =
