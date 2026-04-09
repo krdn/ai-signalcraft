@@ -5,6 +5,7 @@ import {
   collectionJobs,
   analysisResults,
   analysisReports,
+  analysisPresets,
   triggerCollection,
   triggerAnalysisResume,
   cleanupBeforeNewPipeline,
@@ -53,6 +54,7 @@ export const analysisRouter = router({
             ]),
           )
           .default([]),
+        keywordType: z.string().optional(),
       }),
     )
     .mutation(async ({ input, ctx }) => {
@@ -85,6 +87,76 @@ export const analysisRouter = router({
         costLimitUsd = guard.costLimitUsd;
       }
 
+      // 프리셋 조회 및 스냅샷 생성
+      let keywordType: string | null = null;
+      let appliedPreset: {
+        slug: string;
+        title: string;
+        sources: Record<string, boolean>;
+        limits: {
+          naverArticles: number;
+          youtubeVideos: number;
+          communityPosts: number;
+          commentsPerItem: number;
+        };
+        optimization: 'none' | 'light' | 'standard' | 'aggressive';
+        skippedModules: string[];
+        enableItemAnalysis: boolean;
+        customized: boolean;
+      } | null = null;
+
+      if (input.keywordType) {
+        const [preset] = await ctx.db
+          .select()
+          .from(analysisPresets)
+          .where(eq(analysisPresets.slug, input.keywordType))
+          .limit(1);
+
+        if (preset) {
+          keywordType = preset.slug;
+
+          // 프리셋 스냅샷 생성
+          appliedPreset = {
+            slug: preset.slug,
+            title: preset.title,
+            sources: preset.sources,
+            limits: preset.limits,
+            optimization: preset.optimization,
+            skippedModules: preset.skippedModules,
+            enableItemAnalysis: preset.enableItemAnalysis,
+            customized: false,
+          };
+
+          // 프리셋의 skippedModules 적용 (데모 가드와 병합)
+          if (!skippedModules) {
+            skippedModules = preset.skippedModules as string[];
+          } else {
+            const merged = new Set([...skippedModules, ...(preset.skippedModules as string[])]);
+            skippedModules = [...merged];
+          }
+
+          // 사용자가 프리셋 값을 변경했는지 확인
+          const presetSources = preset.sources as Record<string, boolean>;
+          const presetLimits = preset.limits as Record<string, number>;
+          const inputSources = input.sources ?? [];
+          const inputLimits = input.limits;
+
+          const sourcesChanged =
+            inputSources.length > 0 &&
+            JSON.stringify(
+              Object.keys(presetSources)
+                .filter((k) => presetSources[k])
+                .sort(),
+            ) !== JSON.stringify([...inputSources].sort());
+          const limitsChanged =
+            inputLimits && JSON.stringify(inputLimits) !== JSON.stringify(presetLimits);
+
+          if (sourcesChanged || limitsChanged) {
+            appliedPreset!.customized = true;
+          }
+        }
+      }
+
       // 0. 이전 취소/실패 작업의 Redis 잔여물 정리
       try {
         const cleaned = await cleanupBeforeNewPipeline();
@@ -108,6 +180,8 @@ export const analysisRouter = router({
           skippedModules,
           costLimitUsd,
           breakpoints: input.breakpoints,
+          keywordType,
+          appliedPreset,
         })
         .returning();
 

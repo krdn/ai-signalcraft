@@ -14,6 +14,7 @@ import { showcaseRouter } from './routers/showcase';
 import { exploreRouter } from './routers/explore';
 import { releaseRouter } from './routers/release';
 import { featureRequestRouter } from './routers/feature-request';
+import { presetsRouter } from './routers/presets';
 
 export const appRouter = router({
   analysis: analysisRouter,
@@ -31,5 +32,6 @@ export const appRouter = router({
   explore: exploreRouter,
   release: releaseRouter,
   featureRequest: featureRequestRouter,
+  presets: presetsRouter,
 });
 export type AppRouter = typeof appRouter;

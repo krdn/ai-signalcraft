@@ -27,12 +27,29 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 interface TriggerFormProps {
   onJobStarted: (jobId: number) => void;
+  preset?: {
+    slug: string;
+    title: string;
+    icon: string;
+    sources: Record<string, boolean>;
+    customSourceIds: string[];
+    limits: {
+      naverArticles: number;
+      youtubeVideos: number;
+      communityPosts: number;
+      commentsPerItem: number;
+    };
+    optimization: 'none' | 'light' | 'standard' | 'aggressive';
+    skippedModules: string[];
+    enableItemAnalysis: boolean;
+  } | null;
+  onChangePreset?: () => void;
 }
 
 // SSR/CSR 간 동일한 초기값을 보장하기 위해 고정 날짜를 초기값으로 사용
 const STABLE_INIT_DATE = new Date(0);
 
-export function TriggerForm({ onJobStarted }: TriggerFormProps) {
+export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFormProps) {
   const { data: session } = useSession();
   const userRole = session?.user?.role;
   const isDemo = userRole === 'demo';
@@ -97,9 +114,26 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
     }
   }, [defaultLimits]);
 
+  // 프리셋 기본값 적용
+  useEffect(() => {
+    if (!preset) return;
+    const enabledSources = Object.entries(preset.sources)
+      .filter(([, v]) => v)
+      .map(([k]) => k) as SourceId[];
+    setSources(enabledSources);
+    setCustomSourceIds(preset.customSourceIds);
+    setMaxNaverArticles(preset.limits.naverArticles);
+    setMaxYoutubeVideos(preset.limits.youtubeVideos);
+    setMaxCommunityPosts(preset.limits.communityPosts);
+    setMaxCommentsPerItem(preset.limits.commentsPerItem);
+    setOptimizationPreset(preset.optimization);
+    setEnableItemAnalysis(preset.enableItemAnalysis);
+  }, [preset]);
+
   const triggerMutation = useMutation({
     mutationFn: (input: {
       keyword: string;
+      keywordType?: string;
       sources: SourceId[];
       customSourceIds?: string[];
       startDate: string;
@@ -146,6 +180,7 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
 
     triggerMutation.mutate({
       keyword: keyword.trim(),
+      ...(preset?.slug && { keywordType: preset.slug }),
       sources,
       customSourceIds: customSourceIds.length > 0 ? customSourceIds : undefined,
       startDate: resolvedStart.toISOString(),
@@ -213,6 +248,25 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* 선택된 프리셋 표시 */}
+          {preset && onChangePreset && (
+            <div className="flex items-center justify-between rounded-lg border bg-primary/5 border-primary/20 p-3">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-primary">{preset.title}</span>
+                <span className="text-xs text-muted-foreground">프리셋 적용됨</span>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="text-xs"
+                onClick={onChangePreset}
+              >
+                유형 변경
+              </Button>
+            </div>
+          )}
+
           {/* 키워드 입력 */}
           <div className="space-y-2">
             <Label htmlFor="keyword">키워드</Label>

@@ -7,3 +7,4 @@ export * from './partner';
 export * from './sales';
 export * from './customers';
 export * from './releases';
+export * from './presets';
