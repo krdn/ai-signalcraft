@@ -1,7 +1,11 @@
 // 수집 Worker 핸들러 -- collectors 큐
 // D-04: 부분 실패 허용 -- 개별 소스 실패 시 빈 결과 반환 (파이프라인 중단 방지)
 import type { Job } from 'bullmq';
-import { getCollector } from '@ai-signalcraft/collectors';
+import {
+  getCollector,
+  buildDynamicCollector,
+  type DataSourceSnapshot,
+} from '@ai-signalcraft/collectors';
 import { updateJobProgress, appendJobEvent } from '../pipeline';
 import { isPipelineCancelled } from '../pipeline/control';
 import { createLogger } from '../utils/logger';
@@ -18,10 +22,15 @@ interface CollectorResult {
 export function createCollectorHandler(): (job: Job) => Promise<CollectorResult> {
   return async (job: Job): Promise<CollectorResult> => {
     const { source, keyword, startDate, endDate, maxItems, maxComments, dbJobId } = job.data;
-    const collector = getCollector(source);
+    const dataSourceSnapshot = job.data.dataSourceSnapshot as DataSourceSnapshot | undefined;
+
+    // 동적 소스(RSS/HTML)면 factory로 인스턴스 생성, 아니면 기존 정적 registry 조회
+    const collector = dataSourceSnapshot
+      ? buildDynamicCollector(dataSourceSnapshot)
+      : getCollector(source);
     if (!collector) throw new Error(`Unknown source: ${source}`);
 
-    const pKey = progressKey(source);
+    const pKey = progressKey(source, dataSourceSnapshot?.id);
 
     const startTime = Date.now();
     logger.info(`[${source}] 수집 시작 (keyword=${keyword}, maxItems=${maxItems})`);

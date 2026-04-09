@@ -8,6 +8,9 @@ import {
   triggerCollection,
   triggerAnalysisResume,
   cleanupBeforeNewPipeline,
+  resumePipelineWithMode,
+  runToEndPipeline,
+  updateBreakpoints,
 } from '@ai-signalcraft/core';
 import { protectedProcedure, router } from '../init';
 import { buildJobCondition } from '../shared/query-helpers';
@@ -19,7 +22,8 @@ export const analysisRouter = router({
     .input(
       z.object({
         keyword: z.string().min(1).max(50),
-        sources: z.array(z.enum(['naver', 'youtube', 'dcinside', 'fmkorea', 'clien'])).min(1),
+        sources: z.array(z.enum(['naver', 'youtube', 'dcinside', 'fmkorea', 'clien'])).optional(),
+        customSourceIds: z.array(z.string().uuid()).optional(),
         startDate: z.string(), // ISO date string
         endDate: z.string(),
         options: z
@@ -36,9 +40,31 @@ export const analysisRouter = router({
             commentsPerItem: z.number().min(10).max(2000),
           })
           .optional(),
+        breakpoints: z
+          .array(
+            z.enum([
+              'collection',
+              'normalize',
+              'token-optimization',
+              'item-analysis',
+              'analysis-stage1',
+              'analysis-stage2',
+              'analysis-stage4',
+            ]),
+          )
+          .default([]),
       }),
     )
     .mutation(async ({ input, ctx }) => {
+      // 최소 하나의 소스(하드코딩 또는 동적) 선택 필수
+      const hasSources = (input.sources?.length ?? 0) > 0;
+      const hasCustom = (input.customSourceIds?.length ?? 0) > 0;
+      if (!hasSources && !hasCustom) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: '최소 하나 이상의 소스를 선택해 주세요.',
+        });
+      }
       const userRole = ctx.session.user.role;
       let effectiveLimits = input.limits ?? null;
       let effectiveOptions = input.options ?? null;
@@ -81,6 +107,7 @@ export const analysisRouter = router({
           limits: effectiveLimits,
           skippedModules,
           costLimitUsd,
+          breakpoints: input.breakpoints,
         })
         .returning();
 
@@ -91,6 +118,7 @@ export const analysisRouter = router({
           startDate: new Date(input.startDate).toISOString(),
           endDate: new Date(input.endDate).toISOString(),
           sources: input.sources,
+          customSourceIds: input.customSourceIds,
           limits: effectiveLimits ?? undefined,
         },
         job.id,
@@ -270,5 +298,43 @@ export const analysisRouter = router({
         .where(eq(analysisReports.jobId, input.jobId))
         .limit(1);
       return report ?? null;
+    }),
+
+  resume: protectedProcedure
+    .input(
+      z.object({
+        jobId: z.number(),
+        mode: z.enum(['continue', 'step-once']),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      return await resumePipelineWithMode(input.jobId, input.mode);
+    }),
+
+  runToEnd: protectedProcedure
+    .input(z.object({ jobId: z.number() }))
+    .mutation(async ({ input }) => {
+      return await runToEndPipeline(input.jobId);
+    }),
+
+  updateBreakpoints: protectedProcedure
+    .input(
+      z.object({
+        jobId: z.number(),
+        breakpoints: z.array(
+          z.enum([
+            'collection',
+            'normalize',
+            'token-optimization',
+            'item-analysis',
+            'analysis-stage1',
+            'analysis-stage2',
+            'analysis-stage4',
+          ]),
+        ),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      return await updateBreakpoints(input.jobId, input.breakpoints);
     }),
 });

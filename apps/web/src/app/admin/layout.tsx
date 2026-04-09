@@ -8,12 +8,16 @@ import {
   Briefcase,
   Handshake,
   Home,
+  Lightbulb,
+  Megaphone,
   Monitor,
+  Rss,
   Sparkles,
   Star,
   Users,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { WorkerHealthBadge } from '@/components/admin/worker-health-badge';
 
 const NAV_ITEMS = [
   { href: '/admin', label: '오버뷰', icon: Home },
@@ -21,9 +25,12 @@ const NAV_ITEMS = [
   { href: '/admin/jobs', label: '작업 모니터링', icon: Briefcase },
   { href: '/admin/usage', label: '비용/사용량', icon: BarChart3 },
   { href: '/admin/system', label: '시스템', icon: Monitor },
+  { href: '/admin/sources', label: '데이터 소스', icon: Rss },
   { href: '/admin/partners', label: '파트너 관리', icon: Handshake },
   { href: '/admin/demo', label: '데모 관리', icon: Sparkles },
   { href: '/admin/showcase', label: '쇼케이스', icon: Star },
+  { href: '/admin/releases', label: '릴리스', icon: Megaphone },
+  { href: '/admin/feature-requests', label: '기능 제안', icon: Lightbulb },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -41,9 +48,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </span>
         </Link>
         <div className="flex-1" />
+        <WorkerHealthBadge />
         <Link
           href="/"
-          className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          className="ml-4 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           대시보드로 돌아가기
         </Link>

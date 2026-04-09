@@ -9,6 +9,11 @@ import {
   Lightbulb,
   HelpCircle,
   ChevronDown,
+  Bookmark,
+  Pause,
+  Play,
+  SkipForward,
+  FastForward,
 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -66,6 +71,10 @@ export function TriggerFormHelp({
                 <TabsTrigger value="cost" className="gap-1 text-xs">
                   <DollarSign className="h-3 w-3" />
                   비용/시간
+                </TabsTrigger>
+                <TabsTrigger value="breakpoints" className="gap-1 text-xs">
+                  <Bookmark className="h-3 w-3" />
+                  단계별 정지
                 </TabsTrigger>
               </TabsList>
             </div>
@@ -130,6 +139,10 @@ export function TriggerFormHelp({
                   <li>• 분석이 진행되는 동안 다른 탭을 둘러볼 수 있습니다</li>
                   <li>• 완료 후 &quot;AI 리포트&quot; 탭에서 종합 분석 결과를 확인하세요</li>
                   <li>• 분석 중 특정 모듈을 건너뛰거나 비용 한도를 설정할 수 있습니다</li>
+                  <li>
+                    • <span className="text-foreground font-medium">단계별 검수 정지</span> 기능으로
+                    특정 단계 완료 후 결과를 확인하고 재개할 수 있습니다 (아래 탭 참고)
+                  </li>
                 </ul>
               </div>
             </TabsContent>
@@ -744,6 +757,257 @@ export function TriggerFormHelp({
                     수와 예상 비용을 실시간으로 확인할 수 있습니다.
                   </p>
                 </div>
+              </div>
+            </TabsContent>
+
+            {/* 단계별 검수 정지 가이드 */}
+            <TabsContent value="breakpoints" className="p-4 space-y-4 mt-0">
+              <div>
+                <h4 className="font-semibold text-foreground flex items-center gap-1.5 mb-2">
+                  <Bookmark className="h-4 w-4 text-amber-500" />
+                  단계별 검수 정지 (브레이크포인트)
+                </h4>
+                <p className="text-muted-foreground mb-3">
+                  분석 파이프라인의 특정 단계가 끝날 때마다 자동으로 정지하여 중간 결과를 확인하고,
+                  검수 후 수동으로 다음 단계를 진행할 수 있는 기능입니다. 검수·디버깅·단계별 결과
+                  비교에 유용합니다.
+                </p>
+              </div>
+
+              <div className="rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3">
+                <p className="font-medium text-foreground text-xs mb-1.5">언제 사용하면 좋나요?</p>
+                <ul className="space-y-1 text-xs text-muted-foreground">
+                  <li>
+                    • <span className="text-foreground">수집 품질 검수:</span> 수집된 데이터가
+                    의도한 범위·양인지 확인 후 분석 진행
+                  </li>
+                  <li>
+                    • <span className="text-foreground">개별 감정 결과 검증:</span> 기사/댓글 감정
+                    분석 결과를 확인 후 AI 분석 진행 여부 결정
+                  </li>
+                  <li>
+                    • <span className="text-foreground">Stage별 비교:</span> Stage 1(거시 분석)
+                    결과를 먼저 보고 Stage 2(전략) 진행 여부 결정
+                  </li>
+                  <li>
+                    • <span className="text-foreground">비용 통제:</span> 중간 단계에서 결과가
+                    기대에 못 미치면 즉시 취소해 이후 비용 절감
+                  </li>
+                </ul>
+              </div>
+
+              <div>
+                <p className="font-medium text-foreground text-xs mb-2">정지 가능한 단계 (7개)</p>
+                <div className="space-y-1.5 text-xs">
+                  <div className="flex gap-2 items-start">
+                    <Badge variant="outline" className="shrink-0 text-[10px]">
+                      1
+                    </Badge>
+                    <div>
+                      <span className="text-foreground font-medium">수집 완료 후</span>
+                      <span className="text-muted-foreground">
+                        {' '}
+                        — 네이버·유튜브·커뮤니티 원본 데이터 확보 시점
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 items-start">
+                    <Badge variant="outline" className="shrink-0 text-[10px]">
+                      2
+                    </Badge>
+                    <div>
+                      <span className="text-foreground font-medium">정규화 완료 후</span>
+                      <span className="text-muted-foreground"> — DB 저장·중복 제거 완료 시점</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 items-start">
+                    <Badge variant="outline" className="shrink-0 text-[10px]">
+                      3
+                    </Badge>
+                    <div>
+                      <span className="text-foreground font-medium">토큰 최적화 완료 후</span>
+                      <span className="text-muted-foreground">
+                        {' '}
+                        — 분석 전 전처리/압축 완료 시점
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 items-start">
+                    <Badge variant="outline" className="shrink-0 text-[10px]">
+                      4
+                    </Badge>
+                    <div>
+                      <span className="text-foreground font-medium">개별 감정 분석 완료 후</span>
+                      <span className="text-muted-foreground">
+                        {' '}
+                        — 기사/댓글 단위 감정 태깅 완료 시점
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 items-start">
+                    <Badge variant="outline" className="shrink-0 text-[10px]">
+                      5
+                    </Badge>
+                    <div>
+                      <span className="text-foreground font-medium">AI 분석 Stage 1 완료 후</span>
+                      <span className="text-muted-foreground">
+                        {' '}
+                        — 거시 관점·세그먼트·감정 프레임·메시지 영향 (병렬 4모듈)
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 items-start">
+                    <Badge variant="outline" className="shrink-0 text-[10px]">
+                      6
+                    </Badge>
+                    <div>
+                      <span className="text-foreground font-medium">AI 분석 Stage 2 완료 후</span>
+                      <span className="text-muted-foreground">
+                        {' '}
+                        — 리스크맵·기회·전략·최종 요약 완료 시점
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 items-start">
+                    <Badge variant="outline" className="shrink-0 text-[10px]">
+                      7
+                    </Badge>
+                    <div>
+                      <span className="text-foreground font-medium">AI 분석 Stage 4 완료 후</span>
+                      <span className="text-muted-foreground">
+                        {' '}
+                        — 지지율·프레임 전쟁·위기 시나리오 등 고급 분석 완료 시점
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div>
+                <p className="font-medium text-foreground text-xs mb-2">사용 방법</p>
+                <ol className="space-y-2 text-xs text-muted-foreground">
+                  <li className="flex gap-2">
+                    <Badge
+                      variant="outline"
+                      className="shrink-0 h-5 w-5 justify-center p-0 text-xs"
+                    >
+                      1
+                    </Badge>
+                    <div>
+                      <span className="text-foreground font-medium">분석 시작 전 설정:</span> 분석
+                      옵션 아래의{' '}
+                      <span className="inline-flex items-center gap-0.5 font-medium text-foreground">
+                        <Bookmark className="h-3 w-3" />
+                        단계별 검수 정지
+                      </span>{' '}
+                      섹션을 열고 정지할 단계를 체크
+                    </div>
+                  </li>
+                  <li className="flex gap-2">
+                    <Badge
+                      variant="outline"
+                      className="shrink-0 h-5 w-5 justify-center p-0 text-xs"
+                    >
+                      2
+                    </Badge>
+                    <div>
+                      <span className="text-foreground font-medium">자동 정지:</span> 선택한 단계가
+                      끝나면 자동으로 정지, 해당 카드가 앰버색으로 강조되며 인라인 제어 패널이
+                      나타남
+                    </div>
+                  </li>
+                  <li className="flex gap-2">
+                    <Badge
+                      variant="outline"
+                      className="shrink-0 h-5 w-5 justify-center p-0 text-xs"
+                    >
+                      3
+                    </Badge>
+                    <div>
+                      <span className="text-foreground font-medium">결과 검수:</span> 파이프라인
+                      모니터의 &quot;개요&quot; · &quot;수집&quot; · &quot;분석&quot; 탭에서
+                      현재까지 진행된 결과 확인
+                    </div>
+                  </li>
+                  <li className="flex gap-2">
+                    <Badge
+                      variant="outline"
+                      className="shrink-0 h-5 w-5 justify-center p-0 text-xs"
+                    >
+                      4
+                    </Badge>
+                    <div>
+                      <span className="text-foreground font-medium">재개 선택:</span> 인라인 패널의
+                      4 버튼 중 하나 선택 (아래 설명)
+                    </div>
+                  </li>
+                </ol>
+              </div>
+
+              <div>
+                <p className="font-medium text-foreground text-xs mb-2">재개 버튼 4종</p>
+                <div className="space-y-2 text-xs">
+                  <div className="flex gap-2 items-start rounded-md border p-2">
+                    <Play className="h-4 w-4 shrink-0 text-blue-600 mt-0.5" />
+                    <div>
+                      <p className="text-foreground font-medium">다음 단계 실행</p>
+                      <p className="text-muted-foreground">
+                        다음 브레이크포인트까지 진행. 설정한 BP가 더 없으면 끝까지 완료.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 items-start rounded-md border p-2">
+                    <SkipForward className="h-4 w-4 shrink-0 text-foreground mt-0.5" />
+                    <div>
+                      <p className="text-foreground font-medium">한 단계만 실행 (step-once)</p>
+                      <p className="text-muted-foreground">
+                        바로 다음 단계 하나만 실행하고 즉시 다시 정지. 단계별로 결과를 꼼꼼히 볼 때.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 items-start rounded-md border p-2">
+                    <FastForward className="h-4 w-4 shrink-0 text-foreground mt-0.5" />
+                    <div>
+                      <p className="text-foreground font-medium">끝까지 실행</p>
+                      <p className="text-muted-foreground">
+                        모든 브레이크포인트를 무시하고 리포트까지 완주. 검수 종료 시 사용.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 items-start rounded-md border border-red-200 dark:border-red-900/50 p-2">
+                    <Pause className="h-4 w-4 shrink-0 text-red-600 mt-0.5" />
+                    <div>
+                      <p className="text-foreground font-medium">취소</p>
+                      <p className="text-muted-foreground">
+                        작업을 완전히 중지. 이미 수집·저장된 데이터는 유지되지만 이후 단계는
+                        진행되지 않음.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-dashed p-3 space-y-1.5">
+                <p className="font-medium text-foreground text-xs">참고 사항</p>
+                <ul className="space-y-1 text-xs text-muted-foreground">
+                  <li>
+                    • 24시간 내에 재개하지 않으면{' '}
+                    <span className="text-foreground">자동으로 취소</span>됩니다 (무한 대기 방지).
+                  </li>
+                  <li>
+                    • 정지 중에도 비용이 더 발생하지는 않습니다 (이미 진행된 단계의 비용만 청구).
+                  </li>
+                  <li>
+                    • 브레이크포인트는 분석 시작 전에만 설정 가능하며, 실행 중에는 변경할 수
+                    없습니다 (향후 개선 예정).
+                  </li>
+                  <li>
+                    • 동시에 여러 BP 잡이 정지되면 뒤따르는 잡 처리가 지연될 수 있으니, 검수가
+                    끝나면 되도록 빨리 재개 또는 취소하는 것을 권장합니다.
+                  </li>
+                </ul>
               </div>
             </TabsContent>
           </Tabs>

@@ -3,6 +3,8 @@ import { eq } from 'drizzle-orm';
 import { getDb } from '../db';
 import { collectionJobs } from '../db/schema/collections';
 import { analysisResults } from '../db/schema/analysis';
+import type { BreakpointStage } from '../types/breakpoints';
+import { appendJobEvent } from './persist';
 // cancelPipeline은 control.ts에서 정의 — 순환 참조 방지를 위해 동적 import
 
 /** 파이프라인이 취소되었는지 확인 */
@@ -106,4 +108,105 @@ export async function getSkippedModules(jobId: number): Promise<string[]> {
     .where(eq(collectionJobs.id, jobId))
     .limit(1);
   return (job?.skippedModules as string[]) ?? [];
+}
+
+// step-once 메모리 플래그 — 다음 게이트 호출 시 강제 정지
+const pendingStepStop = new Map<number, boolean>();
+
+const POLL_SCHEDULE: Array<{ intervalMs: number; count: number }> = [
+  { intervalMs: 3000, count: 10 }, // 0~30s
+  { intervalMs: 10000, count: 30 }, // 30s~5.5m
+  { intervalMs: 60000, count: 1437 }, // 5.5m~24h
+];
+
+/**
+ * 단계 경계 게이트 — breakpoints에 포함되면 paused로 전환 후 polling 대기.
+ * @returns true=계속 진행, false=취소되거나 24h 초과
+ */
+export async function awaitStageGate(jobId: number, stageName: BreakpointStage): Promise<boolean> {
+  const db = getDb();
+
+  const [jobRow] = await db
+    .select({
+      status: collectionJobs.status,
+      breakpoints: collectionJobs.breakpoints,
+      resumeMode: collectionJobs.resumeMode,
+    })
+    .from(collectionJobs)
+    .where(eq(collectionJobs.id, jobId))
+    .limit(1);
+
+  if (!jobRow) return false;
+  if (jobRow.status === 'cancelled') return false;
+
+  const breakpoints = (jobRow.breakpoints as string[]) ?? [];
+  const stepStop = pendingStepStop.get(jobId) === true;
+  const shouldStop = stepStop || breakpoints.includes(stageName);
+
+  if (!shouldStop) return true;
+
+  pendingStepStop.delete(jobId);
+
+  const now = new Date();
+  await db
+    .update(collectionJobs)
+    .set({
+      status: 'paused',
+      pausedAt: now,
+      pausedAtStage: stageName,
+      resumeMode: null,
+      updatedAt: now,
+    })
+    .where(eq(collectionJobs.id, jobId));
+
+  await appendJobEvent(
+    jobId,
+    'info',
+    `브레이크포인트: ${stageName} 완료 후 정지 (24시간 내 재개하지 않으면 자동 취소)`,
+  ).catch(() => {});
+
+  for (const phase of POLL_SCHEDULE) {
+    for (let i = 0; i < phase.count; i++) {
+      await new Promise((resolve) => setTimeout(resolve, phase.intervalMs));
+
+      const [current] = await db
+        .select({
+          status: collectionJobs.status,
+          resumeMode: collectionJobs.resumeMode,
+        })
+        .from(collectionJobs)
+        .where(eq(collectionJobs.id, jobId))
+        .limit(1);
+
+      if (!current) return false;
+      if (current.status === 'cancelled') return false;
+
+      if (current.status === 'running') {
+        await db
+          .update(collectionJobs)
+          .set({ pausedAt: null, pausedAtStage: null, updatedAt: new Date() })
+          .where(eq(collectionJobs.id, jobId));
+
+        if (current.resumeMode === 'step-once') {
+          pendingStepStop.set(jobId, true);
+          await db
+            .update(collectionJobs)
+            .set({ resumeMode: null })
+            .where(eq(collectionJobs.id, jobId));
+        }
+
+        await appendJobEvent(jobId, 'info', `브레이크포인트 재개: ${stageName}`).catch(() => {});
+        return true;
+      }
+    }
+  }
+
+  const { cancelPipeline } = await import('./control');
+  await cancelPipeline(jobId);
+  await appendJobEvent(
+    jobId,
+    'warn',
+    '브레이크포인트 24시간 초과 — 작업이 자동 취소되었습니다',
+  ).catch(() => {});
+  return false;
 }

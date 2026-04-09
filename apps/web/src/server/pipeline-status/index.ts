@@ -50,9 +50,50 @@ export async function getPipelineStatus(jobId: number) {
   // 상태 파생
   const isCancelled = job.status === 'cancelled';
   const isPaused = job.status === 'paused';
-  const collectionDone = job.status === 'completed' || job.status === 'partial_failure';
+  // BP 정지 시 — 정지된 단계 이전 단계는 모두 완료된 것으로 간주
+  // (awaitStageGate는 stage 완료 후에 호출되므로 pausedAtStage 자체도 완료됨)
+  const BP_STAGE_ORDER = [
+    'collection',
+    'normalize',
+    'token-optimization',
+    'item-analysis',
+    'analysis-stage1',
+    'analysis-stage2',
+    'analysis-stage4',
+  ];
+  const pausedStageIdx = isPaused ? BP_STAGE_ORDER.indexOf((job as any).pausedAtStage ?? '') : -1;
+  const isStageCompletedByBP = (bpStage: string): boolean => {
+    if (pausedStageIdx < 0) return false;
+    const idx = BP_STAGE_ORDER.indexOf(bpStage);
+    return idx >= 0 && idx <= pausedStageIdx;
+  };
+
+  // progress 데이터로부터 단계 완료 여부 추론 (cancelled/paused 상태에서도 정확히 표시)
+  const progressData = (job.progress ?? {}) as Record<string, any>;
+  const SOURCE_KEYS = ['naver', 'youtube', 'dcinside', 'fmkorea', 'clien'] as const;
+  const collectionByProgress = SOURCE_KEYS.some((k) => progressData[k]?.status === 'completed');
+  // normalize는 별도 progress 키가 없으므로 collectionByProgress + 후속 단계 흔적으로 추론
+  const tokenOptByProgress =
+    progressData['token-optimization']?.status === 'completed' ||
+    progressData['token-optimization']?.status === 'skipped';
+  const itemAnalysisByProgress =
+    progressData['item-analysis']?.status === 'completed' ||
+    progressData['item-analysis']?.status === 'skipped';
+  // 후속 단계가 시작됐다면 normalize는 완료된 것
+  const normalizeByProgress =
+    collectionByProgress && (tokenOptByProgress || itemAnalysisByProgress);
+
+  const collectionDone =
+    job.status === 'completed' ||
+    job.status === 'partial_failure' ||
+    isStageCompletedByBP('collection') ||
+    collectionByProgress;
   const collectionFailed = job.status === 'failed';
-  const normalizationDone = collectionDone;
+  const normalizationDone =
+    job.status === 'completed' ||
+    job.status === 'partial_failure' ||
+    isStageCompletedByBP('normalize') ||
+    normalizeByProgress;
   const analysisStarted = analysisRows.length > 0;
   const analysisInProgress = analysisRows.some(
     (r) => r.status === 'running' || r.status === 'pending',
@@ -238,6 +279,9 @@ export async function getPipelineStatus(jobId: number) {
     keyword: job.keyword,
     costLimitUsd: (job as any).costLimitUsd ?? null,
     skippedModules: (job as any).skippedModules ?? [],
+    pausedAt: job.pausedAt ? new Date(job.pausedAt).toISOString() : null,
+    pausedAtStage: job.pausedAtStage ?? null,
+    breakpoints: (job.breakpoints as string[]) ?? [],
     pipelineStages,
     analysisModuleCount: { total: analysisRows.length, completed: completedModulesCount },
     hasReport: reportDone,

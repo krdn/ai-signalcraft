@@ -6,6 +6,7 @@ import {
   checkCostLimit,
   getSkippedModules,
 } from '../pipeline/control';
+import { awaitStageGate } from '../pipeline/pipeline-checks';
 import { appendJobEvent, updateJobProgress } from '../pipeline/persist';
 import { getDb } from '../db';
 import { collectionJobs } from '../db/schema/collections';
@@ -257,6 +258,12 @@ export async function runAnalysisPipeline(
     await updateJobProgress(jobId, { 'token-optimization': { status: 'skipped' } }).catch(() => {});
   }
 
+  // BP 게이트: 토큰 최적화 완료 후
+  if (!(await awaitStageGate(jobId, 'token-optimization'))) {
+    cancelledByUser = true;
+    return buildResult(allResults, cancelledByUser, costLimitExceeded, input);
+  }
+
   // Stage 0: 개별 항목 분석
   let itemAnalysisPromise: Promise<void> = Promise.resolve();
   if (jobRow?.options?.enableItemAnalysis) {
@@ -274,9 +281,16 @@ export async function runAnalysisPipeline(
     await updateJobProgress(jobId, { 'item-analysis': { status: 'skipped' } }).catch(() => {});
   }
 
+  // BP 게이트: 개별 감정 분석 완료 후
+  // (itemAnalysisPromise는 Stage 1과 병렬로 시작했으므로 게이트 전에 await)
+  await itemAnalysisPromise;
+  if (!(await awaitStageGate(jobId, 'item-analysis'))) {
+    cancelledByUser = true;
+    return buildResult(allResults, cancelledByUser, costLimitExceeded, input);
+  }
+
   // Stage 1: 병렬 실행
   if (!(await preRunCheck())) {
-    await itemAnalysisPromise;
     return buildResult(allResults, cancelledByUser, costLimitExceeded, input);
   }
 
@@ -285,13 +299,20 @@ export async function runAnalysisPipeline(
   );
   for (const m of STAGE1_MODULES.filter((m) => isSkipped(m.name))) await markSkipped(m.name);
 
-  const [, stage1Results] = await Promise.all([
-    itemAnalysisPromise,
-    runWithProviderGrouping(stage1Active, (m) => runModuleMapReduce(m, input), providerConcurrency),
-  ]);
+  const stage1Results = await runWithProviderGrouping(
+    stage1Active,
+    (m) => runModuleMapReduce(m, input),
+    providerConcurrency,
+  );
   collectResults(stage1Results);
 
   if (checkFailAndAbort('Stage 1')) {
+    return buildResult(allResults, cancelledByUser, costLimitExceeded, input);
+  }
+
+  // BP 게이트: AI 분석 Stage 1 완료 후
+  if (!(await awaitStageGate(jobId, 'analysis-stage1'))) {
+    cancelledByUser = true;
     return buildResult(allResults, cancelledByUser, costLimitExceeded, input);
   }
 
@@ -346,6 +367,12 @@ export async function runAnalysisPipeline(
     return buildResult(allResults, cancelledByUser, costLimitExceeded, input);
   }
 
+  // BP 게이트: AI 분석 Stage 2/3 완료 후
+  if (!(await awaitStageGate(jobId, 'analysis-stage2'))) {
+    cancelledByUser = true;
+    return buildResult(allResults, cancelledByUser, costLimitExceeded, input);
+  }
+
   // Stage 4: 고급 분석
   if (await preRunCheck()) {
     const stage4aActive = STAGE4_PARALLEL.filter(
@@ -380,6 +407,12 @@ export async function runAnalysisPipeline(
         return buildResult(allResults, cancelledByUser, costLimitExceeded, input);
       }
     }
+  }
+
+  // BP 게이트: AI 분석 Stage 4 완료 후
+  if (!(await awaitStageGate(jobId, 'analysis-stage4'))) {
+    cancelledByUser = true;
+    return buildResult(allResults, cancelledByUser, costLimitExceeded, input);
   }
 
   // 리포트 생성

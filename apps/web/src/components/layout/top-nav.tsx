@@ -23,6 +23,8 @@ import {
   Telescope,
   TrendingUp,
   Users,
+  Lightbulb,
+  Megaphone,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useTheme } from '@/lib/theme';
@@ -57,6 +59,7 @@ import { ProviderKeys } from '@/components/settings/provider-keys';
 import { ConcurrencySettings } from '@/components/settings/concurrency-settings';
 import { CollectionLimitsSettings } from '@/components/settings/collection-limits-settings';
 import { cn } from '@/lib/utils';
+import { ReleaseBell } from '@/components/release-bell';
 
 const TABS: { label: string; icon: LucideIcon }[] = [
   { label: '분석 실행', icon: Play },
@@ -218,6 +221,9 @@ export function TopNav({ activeTab, onTabChange }: TopNavProps) {
         </Dialog>
       )}
 
+      {/* 업데이트 벨 */}
+      <ReleaseBell className="mr-1" />
+
       {/* 사용자 메뉴 */}
       <DropdownMenu>
         <DropdownMenuTrigger className="shrink-0 rounded-full focus:outline-none focus:ring-2 focus:ring-primary">
@@ -235,6 +241,18 @@ export function TopNav({ activeTab, onTabChange }: TopNavProps) {
             <Link href="/" className="flex w-full items-center gap-2 px-1.5 py-1">
               <Globe className="h-4 w-4" />
               <span>홈페이지</span>
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem className="p-0">
+            <Link href="/changelog" className="flex w-full items-center gap-2 px-1.5 py-1">
+              <Megaphone className="h-4 w-4" />
+              <span>업데이트 히스토리</span>
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem className="p-0">
+            <Link href="/feedback" className="flex w-full items-center gap-2 px-1.5 py-1">
+              <Lightbulb className="h-4 w-4" />
+              <span>기능 제안</span>
             </Link>
           </DropdownMenuItem>
           {session?.user?.role === 'admin' && (

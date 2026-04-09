@@ -5,6 +5,8 @@ export const CollectionTriggerSchema = z.object({
   startDate: z.string().datetime(), // ISO 8601
   endDate: z.string().datetime(),
   sources: z.array(z.enum(['naver', 'youtube', 'dcinside', 'fmkorea', 'clien'])).optional(),
+  // 관리자 UI에서 등록한 동적 data_sources.id 목록 (RSS/HTML)
+  customSourceIds: z.array(z.string().uuid()).optional(),
   limits: z
     .object({
       naverArticles: z.number().default(1000),
@@ -29,3 +31,4 @@ export type JobProgress = Record<string, SourceStatus>;
 export * from './analysis';
 export * from './report';
 export * from './pipeline';
+export * from './breakpoints';

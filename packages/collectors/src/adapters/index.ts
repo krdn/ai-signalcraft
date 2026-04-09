@@ -14,4 +14,7 @@ export { YoutubeCommentsCollector, type YoutubeComment } from './youtube-comment
 export { DCInsideCollector } from './dcinside';
 export { FMKoreaCollector } from './fmkorea';
 export { ClienCollector } from './clien';
+export { RssCollector, type RssCollectorConfig } from './rss';
+export { HtmlCollector, type HtmlCollectorConfig, type HtmlSelectors } from './html';
+export { buildDynamicCollector, type DataSourceSnapshot, type DynamicAdapterType } from './factory';
 export type { CommunityPost, CommunityComment } from '../types/community';

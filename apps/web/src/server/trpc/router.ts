@@ -12,6 +12,8 @@ import { partnerRouter } from './routers/partner';
 import { salesRouter } from './routers/sales';
 import { showcaseRouter } from './routers/showcase';
 import { exploreRouter } from './routers/explore';
+import { releaseRouter } from './routers/release';
+import { featureRequestRouter } from './routers/feature-request';
 
 export const appRouter = router({
   analysis: analysisRouter,
@@ -27,5 +29,7 @@ export const appRouter = router({
   sales: salesRouter,
   showcase: showcaseRouter,
   explore: exploreRouter,
+  release: releaseRouter,
+  featureRequest: featureRequestRouter,
 });
 export type AppRouter = typeof appRouter;

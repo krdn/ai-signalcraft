@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { Loader2, ChevronDown, Lock } from 'lucide-react';
 import { format, subDays, addDays } from 'date-fns';
 import { TriggerFormHelp } from './trigger-form-help';
+import { BreakpointSection, type BreakpointValue } from './trigger-form/breakpoint-section';
 import {
   type OptimizationPreset,
   type SourceId,
@@ -45,6 +46,14 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
 
   const [keyword, setKeyword] = useState('');
   const [sources, setSources] = useState<SourceId[]>([...ALL_SOURCES]);
+  const [customSourceIds, setCustomSourceIds] = useState<string[]>([]);
+
+  // 관리자가 /admin/sources에서 등록한 동적 소스 (RSS/HTML)
+  const { data: customSources } = useQuery({
+    queryKey: ['sources', 'enabled'],
+    queryFn: () => trpcClient.admin.sources.listEnabled.query(),
+    staleTime: 60 * 1000,
+  });
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [helpTab, setHelpTab] = useState('quickstart');
   const [startDate, setStartDate] = useState<Date>(STABLE_INIT_DATE);
@@ -61,6 +70,7 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
   const [maxCommunityPosts, setMaxCommunityPosts] = useState(50);
   const [maxCommentsPerItem, setMaxCommentsPerItem] = useState(500);
   const [optimizationPreset, setOptimizationPreset] = useState<OptimizationPreset>('standard');
+  const [breakpoints, setBreakpoints] = useState<BreakpointValue[]>([]);
 
   // 클라이언트 마운트 후 실제 날짜 설정 (hydration mismatch 방지)
   useEffect(() => {
@@ -91,6 +101,7 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
     mutationFn: (input: {
       keyword: string;
       sources: SourceId[];
+      customSourceIds?: string[];
       startDate: string;
       endDate: string;
       options?: { enableItemAnalysis?: boolean; tokenOptimization?: OptimizationPreset };
@@ -100,6 +111,7 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
         communityPosts: number;
         commentsPerItem: number;
       };
+      breakpoints?: BreakpointValue[];
     }) => trpcClient.analysis.trigger.mutate(input),
     onSuccess: (data) => {
       toast.success('분석이 시작되었습니다');
@@ -120,9 +132,13 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
 
   const isAllSelected = ALL_SOURCES.every((s) => sources.includes(s));
 
+  const handleCustomSourceToggle = (id: string, checked: boolean) => {
+    setCustomSourceIds((prev) => (checked ? [...prev, id] : prev.filter((v) => v !== id)));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!keyword.trim() || sources.length === 0) return;
+    if (!keyword.trim() || (sources.length === 0 && customSourceIds.length === 0)) return;
 
     // 이벤트 모드: 이벤트 날짜 전후 N일로 자동 계산
     const resolvedStart = dateMode === 'event' ? subDays(eventDate, eventRadius) : startDate;
@@ -131,6 +147,7 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
     triggerMutation.mutate({
       keyword: keyword.trim(),
       sources,
+      customSourceIds: customSourceIds.length > 0 ? customSourceIds : undefined,
       startDate: resolvedStart.toISOString(),
       endDate: resolvedEnd.toISOString(),
       options:
@@ -146,6 +163,7 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
         communityPosts: maxCommunityPosts,
         commentsPerItem: maxCommentsPerItem,
       },
+      breakpoints: breakpoints.length > 0 ? breakpoints : undefined,
     });
   };
 
@@ -240,6 +258,29 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
                   </div>
                 </div>
               ))}
+              {/* 사용자 정의 소스 (관리자가 /admin/sources에서 등록한 RSS/HTML) */}
+              {customSources && customSources.length > 0 && !isDemo && (
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground">사용자 정의 소스</p>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pl-2">
+                    {customSources.map((cs) => (
+                      <label key={cs.id} className="flex items-center gap-2 cursor-pointer">
+                        <Checkbox
+                          checked={customSourceIds.includes(cs.id)}
+                          onCheckedChange={(checked) => handleCustomSourceToggle(cs.id, !!checked)}
+                          disabled={triggerMutation.isPending}
+                        />
+                        <span className="text-sm">
+                          {cs.name}
+                          <span className="ml-1 text-[10px] text-muted-foreground uppercase">
+                            {cs.adapterType}
+                          </span>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -560,11 +601,18 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
             </CollapsibleContent>
           </Collapsible>
 
+          {/* 단계별 검수 정지 — 데모 사용자는 표시하지 않음 */}
+          {!isDemo && <BreakpointSection value={breakpoints} onChange={setBreakpoints} />}
+
           {/* 실행 버튼 */}
           <Button
             type="submit"
             className="w-full"
-            disabled={triggerMutation.isPending || !keyword.trim() || sources.length === 0}
+            disabled={
+              triggerMutation.isPending ||
+              !keyword.trim() ||
+              (sources.length === 0 && customSourceIds.length === 0)
+            }
           >
             {triggerMutation.isPending ? (
               <>

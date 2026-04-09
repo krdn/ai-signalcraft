@@ -1,7 +1,13 @@
 // 파이프라인 Worker 핸들러 -- pipeline 큐 (normalize + persist)
 import type { Job } from 'bullmq';
 import { NaverCommentsCollector, YoutubeCommentsCollector } from '@ai-signalcraft/collectors';
-import type { NaverComment, YoutubeComment, CommunityPost } from '@ai-signalcraft/collectors';
+import type {
+  NaverComment,
+  YoutubeComment,
+  CommunityPost,
+  DataSourceSnapshot,
+} from '@ai-signalcraft/collectors';
+import { eq } from 'drizzle-orm';
 import {
   normalizeNaverArticle,
   normalizeNaverComment,
@@ -9,12 +15,16 @@ import {
   normalizeYoutubeComment,
   normalizeCommunityPost,
   normalizeCommunityComment,
+  normalizeFeedArticle,
   persistArticles,
   persistVideos,
   persistComments,
   updateJobProgress,
 } from '../pipeline';
+import { getDb } from '../db';
+import { dataSources } from '../db/schema/sources';
 import { isPipelineCancelled } from '../pipeline/control';
+import { awaitStageGate } from '../pipeline/pipeline-checks';
 import { createLogger } from '../utils/logger';
 import { triggerAnalysis } from './flows';
 import { COMMUNITY_SOURCES } from './worker-config';
@@ -40,9 +50,19 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
       const childValues = await job.getChildrenValues();
       const results: Record<string, unknown> = {};
 
-      for (const [_key, value] of Object.entries(childValues)) {
-        const childResult = value as { source: string; items: unknown[]; count: number };
-        results[childResult.source] = childResult;
+      // normalize-feed-*: 동적 소스(RSS/HTML)는 여러 인스턴스가 같은 'rss'/'html' source를
+      // 공유할 수 있으므로 key에 dataSourceSnapshot.id를 포함시켜 충돌을 방지한다.
+      if (job.name.startsWith('normalize-feed-')) {
+        const snapshot = job.data.dataSourceSnapshot as DataSourceSnapshot;
+        for (const value of Object.values(childValues)) {
+          const childResult = value as { source: string; items: unknown[]; count: number };
+          results[`feed_${snapshot.id}`] = { ...childResult, dataSourceSnapshot: snapshot };
+        }
+      } else {
+        for (const [_key, value] of Object.entries(childValues)) {
+          const childResult = value as { source: string; items: unknown[]; count: number };
+          results[childResult.source] = childResult;
+        }
       }
 
       // normalize-naver: 기사 수집 결과에서 URL 추출 후 댓글 병렬 수집
@@ -280,6 +300,11 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
         return { skipped: true, reason: 'cancelled' };
       }
 
+      // BP 게이트: 수집 완료 후 (모든 children 완료 후 persist 진입 전)
+      if (dbJobId && !(await awaitStageGate(dbJobId, 'collection'))) {
+        return { cancelled: true };
+      }
+
       // 자식 작업(normalize)의 결과를 가져와 DB에 저장
       const childValues = await job.getChildrenValues();
 
@@ -360,6 +385,32 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
             await persistComments(jobIdForDb, allCommunityComments);
           }
         }
+
+        // Step 6: 동적 소스 (RSS/HTML) persist
+        // normalize-feed-* 에서 만든 `feed_<uuid>` 키를 찾아 처리
+        for (const [key, value] of Object.entries(results)) {
+          if (!key.startsWith('feed_')) continue;
+          const feedResult = value as {
+            items: unknown[];
+            dataSourceSnapshot: DataSourceSnapshot;
+          };
+          const snapshot = feedResult.dataSourceSnapshot;
+          const normalized = (feedResult.items as any[]).map((item) =>
+            normalizeFeedArticle(item, snapshot),
+          );
+          if (normalized.length > 0) {
+            await persistArticles(jobIdForDb, normalized);
+          }
+          // lastCollectedAt 갱신 — 관리 UI에 표시
+          try {
+            await getDb()
+              .update(dataSources)
+              .set({ lastCollectedAt: new Date(), updatedAt: new Date() })
+              .where(eq(dataSources.id, snapshot.id));
+          } catch (err) {
+            logger.warn(`[persist] data_sources.lastCollectedAt 갱신 실패 (${snapshot.id}):`, err);
+          }
+        }
       }
 
       // D-06: 최종 상태 업데이트 -- dbJobId는 number이므로 parseInt 불필요
@@ -375,6 +426,10 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
         if (dbJobId && (await isPipelineCancelled(dbJobId))) {
           logger.info(`[persist] 취소됨 — 분석 트리거 건너뜀 (dbJobId=${dbJobId})`);
         } else {
+          // BP 게이트: 정규화 완료 후 (analysis 트리거 직전)
+          if (dbJobId && !(await awaitStageGate(dbJobId, 'normalize'))) {
+            return { cancelled: true };
+          }
           await triggerAnalysis(dbJobId, keyword);
           logger.info(`분석 파이프라인 트리거됨: job=${dbJobId}, keyword=${keyword}`);
         }

@@ -8,8 +8,10 @@ import {
   real,
   index,
   boolean,
+  uuid,
 } from 'drizzle-orm/pg-core';
 import { teams, users } from './auth';
+import { dataSources } from './sources';
 
 // 수집 작업 (D-06: 소스별 상세 추적)
 export const collectionJobs = pgTable(
@@ -41,6 +43,11 @@ export const collectionJobs = pgTable(
     }>(),
     errorDetails: jsonb('error_details').$type<Record<string, string>>(),
     costLimitUsd: real('cost_limit_usd'), // 비용 한도 (USD) — 초과 시 자동 중지
+    // 단계별 브레이크포인트 — 사전 선택 시 해당 단계 완료 후 자동 정지
+    breakpoints: jsonb('breakpoints').$type<string[]>().default([]),
+    pausedAt: timestamp('paused_at'),
+    pausedAtStage: text('paused_at_stage'),
+    resumeMode: text('resume_mode', { enum: ['continue', 'step-once'] }),
     skippedModules: jsonb('skipped_modules').$type<string[]>(), // 스킵할 분석 모듈 목록
     options: jsonb('options').$type<{
       enableItemAnalysis?: boolean;
@@ -54,6 +61,7 @@ export const collectionJobs = pgTable(
   (table) => [
     index('collection_jobs_user_id_idx').on(table.userId),
     index('collection_jobs_featured_idx').on(table.isFeatured),
+    index('collection_jobs_paused_at_idx').on(table.pausedAt),
   ],
 );
 
@@ -65,6 +73,9 @@ export const articles = pgTable(
     jobId: integer('job_id').references(() => collectionJobs.id, { onDelete: 'set null' }),
     source: text('source').notNull(),
     sourceId: text('source_id').notNull(),
+    dataSourceId: uuid('data_source_id').references(() => dataSources.id, {
+      onDelete: 'set null',
+    }),
     url: text('url').notNull(),
     title: text('title').notNull(),
     content: text('content'),
@@ -88,6 +99,9 @@ export const videos = pgTable(
     jobId: integer('job_id').references(() => collectionJobs.id, { onDelete: 'set null' }),
     source: text('source').notNull(),
     sourceId: text('source_id').notNull(),
+    dataSourceId: uuid('data_source_id').references(() => dataSources.id, {
+      onDelete: 'set null',
+    }),
     url: text('url').notNull(),
     title: text('title').notNull(),
     description: text('description'),
@@ -111,6 +125,9 @@ export const comments = pgTable(
     jobId: integer('job_id').references(() => collectionJobs.id, { onDelete: 'set null' }),
     source: text('source').notNull(),
     sourceId: text('source_id').notNull(),
+    dataSourceId: uuid('data_source_id').references(() => dataSources.id, {
+      onDelete: 'set null',
+    }),
     parentId: text('parent_id'),
     articleId: integer('article_id').references(() => articles.id, { onDelete: 'set null' }),
     videoId: integer('video_id').references(() => videos.id, { onDelete: 'set null' }),
