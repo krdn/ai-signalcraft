@@ -50,9 +50,33 @@ export async function getPipelineStatus(jobId: number) {
   // 상태 파생
   const isCancelled = job.status === 'cancelled';
   const isPaused = job.status === 'paused';
-  const collectionDone = job.status === 'completed' || job.status === 'partial_failure';
+  // BP 정지 시 — 정지된 단계 이전 단계는 모두 완료된 것으로 간주
+  // (awaitStageGate는 stage 완료 후에 호출되므로 pausedAtStage 자체도 완료됨)
+  const BP_STAGE_ORDER = [
+    'collection',
+    'normalize',
+    'token-optimization',
+    'item-analysis',
+    'analysis-stage1',
+    'analysis-stage2',
+    'analysis-stage4',
+  ];
+  const pausedStageIdx = isPaused ? BP_STAGE_ORDER.indexOf((job as any).pausedAtStage ?? '') : -1;
+  const isStageCompletedByBP = (bpStage: string): boolean => {
+    if (pausedStageIdx < 0) return false;
+    const idx = BP_STAGE_ORDER.indexOf(bpStage);
+    return idx >= 0 && idx <= pausedStageIdx;
+  };
+
+  const collectionDone =
+    job.status === 'completed' ||
+    job.status === 'partial_failure' ||
+    isStageCompletedByBP('collection');
   const collectionFailed = job.status === 'failed';
-  const normalizationDone = collectionDone;
+  const normalizationDone =
+    job.status === 'completed' ||
+    job.status === 'partial_failure' ||
+    isStageCompletedByBP('normalize');
   const analysisStarted = analysisRows.length > 0;
   const analysisInProgress = analysisRows.some(
     (r) => r.status === 'running' || r.status === 'pending',
