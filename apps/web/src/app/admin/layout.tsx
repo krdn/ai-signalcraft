@@ -15,6 +15,7 @@ import {
   Users,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { WorkerHealthBadge } from '@/components/admin/worker-health-badge';
 
 const NAV_ITEMS = [
   { href: '/admin', label: '오버뷰', icon: Home },
@@ -43,9 +44,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </span>
         </Link>
         <div className="flex-1" />
+        <WorkerHealthBadge />
         <Link
           href="/"
-          className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          className="ml-4 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           대시보드로 돌아가기
         </Link>
