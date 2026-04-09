@@ -1,4 +1,5 @@
-import { router } from '../../init';
+import { getWorkerStatus } from '@ai-signalcraft/core';
+import { router, systemAdminProcedure } from '../../init';
 import { usersRouter } from './users';
 import { teamsRouter } from './teams';
 import { jobsRouter } from './jobs';
@@ -19,4 +20,7 @@ export const adminRouter = router({
   partners: adminPartnersRouter,
   showcase: adminShowcaseRouter,
   sources: sourcesRouter,
+  workerStatus: systemAdminProcedure.query(async () => {
+    return await getWorkerStatus();
+  }),
 });

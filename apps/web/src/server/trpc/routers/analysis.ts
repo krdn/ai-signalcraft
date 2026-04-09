@@ -8,6 +8,9 @@ import {
   triggerCollection,
   triggerAnalysisResume,
   cleanupBeforeNewPipeline,
+  resumePipelineWithMode,
+  runToEndPipeline,
+  updateBreakpoints,
 } from '@ai-signalcraft/core';
 import { protectedProcedure, router } from '../init';
 import { buildJobCondition } from '../shared/query-helpers';
@@ -37,6 +40,19 @@ export const analysisRouter = router({
             commentsPerItem: z.number().min(10).max(2000),
           })
           .optional(),
+        breakpoints: z
+          .array(
+            z.enum([
+              'collection',
+              'normalize',
+              'token-optimization',
+              'item-analysis',
+              'analysis-stage1',
+              'analysis-stage2',
+              'analysis-stage4',
+            ]),
+          )
+          .default([]),
       }),
     )
     .mutation(async ({ input, ctx }) => {
@@ -91,6 +107,7 @@ export const analysisRouter = router({
           limits: effectiveLimits,
           skippedModules,
           costLimitUsd,
+          breakpoints: input.breakpoints,
         })
         .returning();
 
@@ -281,5 +298,43 @@ export const analysisRouter = router({
         .where(eq(analysisReports.jobId, input.jobId))
         .limit(1);
       return report ?? null;
+    }),
+
+  resume: protectedProcedure
+    .input(
+      z.object({
+        jobId: z.number(),
+        mode: z.enum(['continue', 'step-once']),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      return await resumePipelineWithMode(input.jobId, input.mode);
+    }),
+
+  runToEnd: protectedProcedure
+    .input(z.object({ jobId: z.number() }))
+    .mutation(async ({ input }) => {
+      return await runToEndPipeline(input.jobId);
+    }),
+
+  updateBreakpoints: protectedProcedure
+    .input(
+      z.object({
+        jobId: z.number(),
+        breakpoints: z.array(
+          z.enum([
+            'collection',
+            'normalize',
+            'token-optimization',
+            'item-analysis',
+            'analysis-stage1',
+            'analysis-stage2',
+            'analysis-stage4',
+          ]),
+        ),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      return await updateBreakpoints(input.jobId, input.breakpoints);
     }),
 });
