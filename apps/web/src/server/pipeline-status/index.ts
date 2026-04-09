@@ -68,15 +68,32 @@ export async function getPipelineStatus(jobId: number) {
     return idx >= 0 && idx <= pausedStageIdx;
   };
 
+  // progress 데이터로부터 단계 완료 여부 추론 (cancelled/paused 상태에서도 정확히 표시)
+  const progressData = (job.progress ?? {}) as Record<string, any>;
+  const SOURCE_KEYS = ['naver', 'youtube', 'dcinside', 'fmkorea', 'clien'] as const;
+  const collectionByProgress = SOURCE_KEYS.some((k) => progressData[k]?.status === 'completed');
+  // normalize는 별도 progress 키가 없으므로 collectionByProgress + 후속 단계 흔적으로 추론
+  const tokenOptByProgress =
+    progressData['token-optimization']?.status === 'completed' ||
+    progressData['token-optimization']?.status === 'skipped';
+  const itemAnalysisByProgress =
+    progressData['item-analysis']?.status === 'completed' ||
+    progressData['item-analysis']?.status === 'skipped';
+  // 후속 단계가 시작됐다면 normalize는 완료된 것
+  const normalizeByProgress =
+    collectionByProgress && (tokenOptByProgress || itemAnalysisByProgress);
+
   const collectionDone =
     job.status === 'completed' ||
     job.status === 'partial_failure' ||
-    isStageCompletedByBP('collection');
+    isStageCompletedByBP('collection') ||
+    collectionByProgress;
   const collectionFailed = job.status === 'failed';
   const normalizationDone =
     job.status === 'completed' ||
     job.status === 'partial_failure' ||
-    isStageCompletedByBP('normalize');
+    isStageCompletedByBP('normalize') ||
+    normalizeByProgress;
   const analysisStarted = analysisRows.length > 0;
   const analysisInProgress = analysisRows.some(
     (r) => r.status === 'running' || r.status === 'pending',
