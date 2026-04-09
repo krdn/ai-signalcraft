@@ -24,6 +24,7 @@ import {
 import { getDb } from '../db';
 import { dataSources } from '../db/schema/sources';
 import { isPipelineCancelled } from '../pipeline/control';
+import { awaitStageGate } from '../pipeline/pipeline-checks';
 import { createLogger } from '../utils/logger';
 import { triggerAnalysis } from './flows';
 import { COMMUNITY_SOURCES } from './worker-config';
@@ -299,6 +300,11 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
         return { skipped: true, reason: 'cancelled' };
       }
 
+      // BP 게이트: 수집 완료 후 (모든 children 완료 후 persist 진입 전)
+      if (dbJobId && !(await awaitStageGate(dbJobId, 'collection'))) {
+        return { cancelled: true };
+      }
+
       // 자식 작업(normalize)의 결과를 가져와 DB에 저장
       const childValues = await job.getChildrenValues();
 
@@ -420,6 +426,10 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
         if (dbJobId && (await isPipelineCancelled(dbJobId))) {
           logger.info(`[persist] 취소됨 — 분석 트리거 건너뜀 (dbJobId=${dbJobId})`);
         } else {
+          // BP 게이트: 정규화 완료 후 (analysis 트리거 직전)
+          if (dbJobId && !(await awaitStageGate(dbJobId, 'normalize'))) {
+            return { cancelled: true };
+          }
           await triggerAnalysis(dbJobId, keyword);
           logger.info(`분석 파이프라인 트리거됨: job=${dbJobId}, keyword=${keyword}`);
         }
