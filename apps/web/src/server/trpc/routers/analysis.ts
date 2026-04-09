@@ -89,7 +89,21 @@ export const analysisRouter = router({
 
       // 프리셋 조회 및 스냅샷 생성
       let keywordType: string | null = null;
-      let appliedPreset: Record<string, unknown> | null = null;
+      let appliedPreset: {
+        slug: string;
+        title: string;
+        sources: Record<string, boolean>;
+        limits: {
+          naverArticles: number;
+          youtubeVideos: number;
+          communityPosts: number;
+          commentsPerItem: number;
+        };
+        optimization: 'none' | 'light' | 'standard' | 'aggressive';
+        skippedModules: string[];
+        enableItemAnalysis: boolean;
+        customized: boolean;
+      } | null = null;
 
       if (input.keywordType) {
         const [preset] = await ctx.db
@@ -138,7 +152,7 @@ export const analysisRouter = router({
             inputLimits && JSON.stringify(inputLimits) !== JSON.stringify(presetLimits);
 
           if (sourcesChanged || limitsChanged) {
-            (appliedPreset as Record<string, unknown>).customized = true;
+            appliedPreset!.customized = true;
           }
         }
       }

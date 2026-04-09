@@ -279,7 +279,7 @@ export function PresetFormDialog({ open, onOpenChange, editData }: Props) {
             <div className="grid grid-cols-3 gap-3">
               <div className="grid gap-1.5">
                 <Label htmlFor="preset-category">카테고리</Label>
-                <Select value={category} onValueChange={setCategory}>
+                <Select value={category} onValueChange={(v) => v && setCategory(v)}>
                   <SelectTrigger id="preset-category">
                     <SelectValue />
                   </SelectTrigger>
@@ -409,7 +409,7 @@ export function PresetFormDialog({ open, onOpenChange, editData }: Props) {
           {/* 최적화 */}
           <div className="grid gap-1.5">
             <Label htmlFor="preset-optimization">최적화 수준</Label>
-            <Select value={optimization} onValueChange={setOptimization}>
+            <Select value={optimization} onValueChange={(v) => v && setOptimization(v)}>
               <SelectTrigger id="preset-optimization">
                 <SelectValue />
               </SelectTrigger>

@@ -14,7 +14,7 @@ interface PresetCardProps {
 }
 
 function getIcon(name: string): LucideIcon {
-  const Icon = (LucideIcons as Record<string, LucideIcon>)[name];
+  const Icon = (LucideIcons as unknown as Record<string, LucideIcon>)[name];
   return Icon ?? LucideIcons.HelpCircle;
 }
 
