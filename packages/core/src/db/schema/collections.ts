@@ -43,6 +43,11 @@ export const collectionJobs = pgTable(
     }>(),
     errorDetails: jsonb('error_details').$type<Record<string, string>>(),
     costLimitUsd: real('cost_limit_usd'), // 비용 한도 (USD) — 초과 시 자동 중지
+    // 단계별 브레이크포인트 — 사전 선택 시 해당 단계 완료 후 자동 정지
+    breakpoints: jsonb('breakpoints').$type<string[]>().default([]),
+    pausedAt: timestamp('paused_at'),
+    pausedAtStage: text('paused_at_stage'),
+    resumeMode: text('resume_mode', { enum: ['continue', 'step-once'] }),
     skippedModules: jsonb('skipped_modules').$type<string[]>(), // 스킵할 분석 모듈 목록
     options: jsonb('options').$type<{
       enableItemAnalysis?: boolean;
@@ -56,6 +61,7 @@ export const collectionJobs = pgTable(
   (table) => [
     index('collection_jobs_user_id_idx').on(table.userId),
     index('collection_jobs_featured_idx').on(table.isFeatured),
+    index('collection_jobs_paused_at_idx').on(table.pausedAt),
   ],
 );
 
