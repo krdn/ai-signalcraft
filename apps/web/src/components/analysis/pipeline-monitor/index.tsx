@@ -80,6 +80,16 @@ export function PipelineMonitor({ jobId, onComplete, onRetry }: PipelineMonitorP
     }
   }, [data?.status, data?.hasReport, data?.analysisModulesDetailed, onComplete]);
 
+  const updateBreakpointsMutation = useMutation({
+    mutationFn: (breakpoints: string[]) =>
+      trpcClient.analysis.updateBreakpoints.mutate({
+        jobId: jobId!,
+        breakpoints: breakpoints as Parameters<
+          typeof trpcClient.analysis.updateBreakpoints.mutate
+        >[0]['breakpoints'],
+      }),
+  });
+
   if (!jobId) return null;
 
   if (isLoading) {
@@ -114,16 +124,6 @@ export function PipelineMonitor({ jobId, onComplete, onRetry }: PipelineMonitorP
     analysisModulesDetailed: data.analysisModulesDetailed ?? [],
     events: data.events ?? [],
   };
-
-  const updateBreakpointsMutation = useMutation({
-    mutationFn: (breakpoints: string[]) =>
-      trpcClient.analysis.updateBreakpoints.mutate({
-        jobId: jobId!,
-        breakpoints: breakpoints as Parameters<
-          typeof trpcClient.analysis.updateBreakpoints.mutate
-        >[0]['breakpoints'],
-      }),
-  });
 
   const hasFailed = data.status === 'failed';
   const isCancelled = data.status === 'cancelled';
