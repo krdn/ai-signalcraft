@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { eq, asc } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
-import { analysisPresets } from '@krdn/core';
+import { analysisPresets } from '@ai-signalcraft/core';
 import { router, systemAdminProcedure } from '../../init';
 
 const presetInputSchema = z.object({

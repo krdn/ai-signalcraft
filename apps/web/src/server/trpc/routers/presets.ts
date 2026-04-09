@@ -1,5 +1,5 @@
 import { asc, eq } from 'drizzle-orm';
-import { analysisPresets } from '@krdn/core';
+import { analysisPresets } from '@ai-signalcraft/core';
 import { router, protectedProcedure } from '../init';
 
 export const presetsRouter = router({
