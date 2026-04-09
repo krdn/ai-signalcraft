@@ -12,6 +12,7 @@ import {
   ClienCollector,
   registerCollector,
 } from '@ai-signalcraft/collectors';
+import { startExpirePausedCron } from '../pipeline/expire-paused';
 import type { CommunitySource } from '../pipeline/normalize';
 // 모노리포 루트 탐색 -- pnpm-workspace.yaml이 있는 디렉토리
 export function findMonorepoRoot(startDir: string): string {
@@ -78,4 +79,27 @@ export function progressKey(source: string, dataSourceId?: string): string {
   if (source === 'naver-news') return 'naver';
   if (source === 'youtube-videos' || source === 'youtube-comments') return 'youtube';
   return source; // dcinside, fmkorea, clien
+}
+
+/**
+ * 워커 프로세스 보호 — uncaughtException/unhandledRejection 핸들러,
+ * graceful SIGTERM, expire-paused cron 부트스트랩
+ */
+export function setupWorkerProcess() {
+  process.on('uncaughtException', (err) => {
+    console.error('[worker] FATAL uncaughtException:', err);
+    process.exit(1);
+  });
+
+  process.on('unhandledRejection', (err) => {
+    console.error('[worker] FATAL unhandledRejection:', err);
+    process.exit(1);
+  });
+
+  process.on('SIGTERM', () => {
+    console.log('[worker] SIGTERM 수신 — graceful shutdown');
+    setTimeout(() => process.exit(0), 5000);
+  });
+
+  startExpirePausedCron();
 }
