@@ -11,6 +11,7 @@ import { adminShowcaseRouter } from './showcase';
 import { sourcesRouter } from './sources';
 import { adminReleasesRouter } from './releases';
 import { adminFeatureRequestsRouter } from './feature-requests';
+import { adminPresetsRouter } from './presets';
 
 export const adminRouter = router({
   users: usersRouter,
@@ -24,6 +25,7 @@ export const adminRouter = router({
   sources: sourcesRouter,
   releases: adminReleasesRouter,
   featureRequests: adminFeatureRequestsRouter,
+  presets: adminPresetsRouter,
   workerStatus: systemAdminProcedure.query(async () => {
     return await getWorkerStatus();
   }),
