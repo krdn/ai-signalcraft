@@ -53,6 +53,22 @@ export const collectionJobs = pgTable(
       enableItemAnalysis?: boolean;
       tokenOptimization?: 'none' | 'light' | 'standard' | 'aggressive';
     }>(),
+    keywordType: text('keyword_type'),
+    appliedPreset: jsonb('applied_preset').$type<{
+      slug: string;
+      title: string;
+      sources: Record<string, boolean>;
+      limits: {
+        naverArticles: number;
+        youtubeVideos: number;
+        communityPosts: number;
+        commentsPerItem: number;
+      };
+      optimization: 'none' | 'light' | 'standard' | 'aggressive';
+      skippedModules: string[];
+      enableItemAnalysis: boolean;
+      customized: boolean;
+    }>(),
     isFeatured: boolean('is_featured').notNull().default(false), // 쇼케이스 지정 여부
     featuredAt: timestamp('featured_at'), // 쇼케이스 선택 시점 (정렬용)
     createdAt: timestamp('created_at').defaultNow().notNull(),
