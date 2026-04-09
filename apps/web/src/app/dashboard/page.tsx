@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { useSession } from 'next-auth/react';
 import { ArrowLeft, Play } from 'lucide-react';
 import { TopNav } from '@/components/layout/top-nav';
 import { TabLayout } from '@/components/layout/tab-layout';
-import { TriggerForm } from '@/components/analysis/trigger-form';
+import { AnalysisLauncher } from '@/components/analysis/analysis-launcher';
 import { PipelineMonitor } from '@/components/analysis/pipeline-monitor';
 import { RecentJobs } from '@/components/analysis/recent-jobs';
 import { HistoryTable } from '@/components/analysis/history-table';
@@ -30,6 +31,7 @@ function AnalysisTab({
   onSelectJob,
   onSelectShowcase,
   onNewAnalysis,
+  isDemo,
 }: {
   activeJobId: number | null;
   onJobStarted: (jobId: number) => void;
@@ -37,6 +39,7 @@ function AnalysisTab({
   onSelectJob: (jobId: number) => void;
   onSelectShowcase: (jobId: number) => void;
   onNewAnalysis: () => void;
+  isDemo?: boolean;
 }) {
   return (
     <div className="space-y-4">
@@ -50,7 +53,7 @@ function AnalysisTab({
           <Play className="h-4 w-4 mr-1" />새 분석 실행
         </Button>
       ) : (
-        <TriggerForm onJobStarted={onJobStarted} />
+        <AnalysisLauncher onJobStarted={onJobStarted} isDemo={isDemo} />
       )}
       <PipelineMonitor
         jobId={activeJobId}
@@ -182,6 +185,8 @@ function AdvancedTab({
 }
 
 export default function Home() {
+  const { data: session } = useSession();
+  const isDemo = session?.user?.role === 'demo';
   const [activeTab, setActiveTab] = useState(0);
   const [activeJobId, setActiveJobId] = useState<number | null>(null);
   const [isShowcase, setIsShowcase] = useState(false);
@@ -230,6 +235,7 @@ export default function Home() {
             onSelectJob={handleSelectJob}
             onSelectShowcase={handleSelectShowcase}
             onNewAnalysis={handleGoToAnalysis}
+            isDemo={isDemo}
           />,
           <DashboardTab
             key="dashboard"
