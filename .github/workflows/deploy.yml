@@ -11,6 +11,8 @@ jobs:
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # release 스크립트가 이전 커밋 이력을 조회함
 
       - name: Copy env file
         run: cp ~/projects/ai/ai-signalcraft/.env.production .env.production
@@ -24,6 +26,19 @@ jobs:
           pnpm --filter @ai-signalcraft/core db:push
           echo "DB schema synced"
 
+      - name: Generate Release Draft
+        shell: bash -l {0}
+        continue-on-error: true
+        run: |
+          source ~/.nvm/nvm.sh
+          export DATABASE_URL=$(grep ^DATABASE_URL .env.production | sed 's/DATABASE_URL=//' | sed 's/@postgres:5432/@localhost:5438/')
+          export ANTHROPIC_API_KEY=$(grep ^ANTHROPIC_API_KEY .env.production | sed 's/ANTHROPIC_API_KEY=//')
+          LAST_SHA=$(pnpm --silent --filter @ai-signalcraft/core exec tsx scripts/get-last-release-sha.ts)
+          echo "Last release sha: $LAST_SHA"
+          pnpm --filter @ai-signalcraft/core exec tsx scripts/generate-release.ts \
+            --from "$LAST_SHA" --to "${{ github.sha }}" --gh-sha "${{ github.sha }}" \
+            || echo "Release draft generation failed, continuing deploy"
+
       - name: Build & Deploy (Docker Compose)
         working-directory: docker
         run: |
@@ -34,3 +49,12 @@ jobs:
         run: |
           sleep 10
           curl -sf http://localhost:3300 > /dev/null && echo "Web OK" || echo "Web FAILED"
+
+      - name: Publish Release
+        if: success()
+        shell: bash -l {0}
+        continue-on-error: true
+        run: |
+          source ~/.nvm/nvm.sh
+          export DATABASE_URL=$(grep ^DATABASE_URL .env.production | sed 's/DATABASE_URL=//' | sed 's/@postgres:5432/@localhost:5438/')
+          pnpm --filter @ai-signalcraft/core exec tsx scripts/publish-release.ts --gh-sha "${{ github.sha }}"

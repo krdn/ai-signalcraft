@@ -8,6 +8,8 @@ import {
   Briefcase,
   Handshake,
   Home,
+  Lightbulb,
+  Megaphone,
   Monitor,
   Rss,
   Sparkles,
@@ -27,6 +29,8 @@ const NAV_ITEMS = [
   { href: '/admin/partners', label: '파트너 관리', icon: Handshake },
   { href: '/admin/demo', label: '데모 관리', icon: Sparkles },
   { href: '/admin/showcase', label: '쇼케이스', icon: Star },
+  { href: '/admin/releases', label: '릴리스', icon: Megaphone },
+  { href: '/admin/feature-requests', label: '기능 제안', icon: Lightbulb },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

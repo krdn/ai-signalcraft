@@ -22,6 +22,7 @@ mono_crash.*
 [Dd]ebugPublic/
 [Rr]elease/
 [Rr]eleases/
+!**/app/admin/releases/
 x64/
 x86/
 [Ww][Ii][Nn]32/

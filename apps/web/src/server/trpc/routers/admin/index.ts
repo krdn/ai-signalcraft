@@ -9,6 +9,8 @@ import { demoRouter } from './demo';
 import { adminPartnersRouter } from './partners';
 import { adminShowcaseRouter } from './showcase';
 import { sourcesRouter } from './sources';
+import { adminReleasesRouter } from './releases';
+import { adminFeatureRequestsRouter } from './feature-requests';
 
 export const adminRouter = router({
   users: usersRouter,
@@ -20,6 +22,8 @@ export const adminRouter = router({
   partners: adminPartnersRouter,
   showcase: adminShowcaseRouter,
   sources: sourcesRouter,
+  releases: adminReleasesRouter,
+  featureRequests: adminFeatureRequestsRouter,
   workerStatus: systemAdminProcedure.query(async () => {
     return await getWorkerStatus();
   }),
