@@ -1,6 +1,10 @@
 import { FlowProducer } from 'bullmq';
+import { and, eq, inArray } from 'drizzle-orm';
+import type { DataSourceSnapshot } from '@ai-signalcraft/collectors';
 import type { CollectionTrigger } from '../types';
 import type { ResumeOptions } from '../analysis/pipeline-orchestrator';
+import { getDb } from '../db';
+import { dataSources } from '../db/schema/sources';
 import { getBullMQOptions } from './connection';
 
 // FlowProducer를 lazy 초기화 -- import 시 Redis 연결 시도 방지
@@ -142,6 +146,47 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
         },
       ],
     });
+  }
+
+  // 동적 데이터 소스 (관리자가 /admin/sources에서 등록한 RSS/HTML)
+  if (params.customSourceIds && params.customSourceIds.length > 0) {
+    const rows = await getDb().query.dataSources.findMany({
+      where: and(inArray(dataSources.id, params.customSourceIds), eq(dataSources.enabled, true)),
+    });
+    for (const row of rows) {
+      const snapshot: DataSourceSnapshot = {
+        id: row.id,
+        name: row.name,
+        adapterType: row.adapterType,
+        url: row.url,
+        config: row.config ?? null,
+        defaultLimit: row.defaultLimit,
+      };
+      children.push({
+        name: `normalize-feed-${row.id}`,
+        queueName: 'pipeline',
+        data: {
+          source: row.adapterType,
+          dataSourceSnapshot: snapshot,
+          flowId,
+          dbJobId,
+        },
+        children: [
+          {
+            name: `collect-feed-${row.id}`,
+            queueName: 'collectors',
+            data: {
+              ...params,
+              source: row.adapterType,
+              dataSourceSnapshot: snapshot,
+              maxItems: row.defaultLimit,
+              flowId,
+              dbJobId,
+            },
+          },
+        ],
+      });
+    }
   }
 
   const flow = await getFlowProducer().add({

@@ -8,8 +8,10 @@ import {
   real,
   index,
   boolean,
+  uuid,
 } from 'drizzle-orm/pg-core';
 import { teams, users } from './auth';
+import { dataSources } from './sources';
 
 // 수집 작업 (D-06: 소스별 상세 추적)
 export const collectionJobs = pgTable(
@@ -65,6 +67,9 @@ export const articles = pgTable(
     jobId: integer('job_id').references(() => collectionJobs.id, { onDelete: 'set null' }),
     source: text('source').notNull(),
     sourceId: text('source_id').notNull(),
+    dataSourceId: uuid('data_source_id').references(() => dataSources.id, {
+      onDelete: 'set null',
+    }),
     url: text('url').notNull(),
     title: text('title').notNull(),
     content: text('content'),
@@ -88,6 +93,9 @@ export const videos = pgTable(
     jobId: integer('job_id').references(() => collectionJobs.id, { onDelete: 'set null' }),
     source: text('source').notNull(),
     sourceId: text('source_id').notNull(),
+    dataSourceId: uuid('data_source_id').references(() => dataSources.id, {
+      onDelete: 'set null',
+    }),
     url: text('url').notNull(),
     title: text('title').notNull(),
     description: text('description'),
@@ -111,6 +119,9 @@ export const comments = pgTable(
     jobId: integer('job_id').references(() => collectionJobs.id, { onDelete: 'set null' }),
     source: text('source').notNull(),
     sourceId: text('source_id').notNull(),
+    dataSourceId: uuid('data_source_id').references(() => dataSources.id, {
+      onDelete: 'set null',
+    }),
     parentId: text('parent_id'),
     articleId: integer('article_id').references(() => articles.id, { onDelete: 'set null' }),
     videoId: integer('video_id').references(() => videos.id, { onDelete: 'set null' }),

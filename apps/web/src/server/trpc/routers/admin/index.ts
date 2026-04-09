@@ -7,6 +7,7 @@ import { overviewRouter } from './overview';
 import { demoRouter } from './demo';
 import { adminPartnersRouter } from './partners';
 import { adminShowcaseRouter } from './showcase';
+import { sourcesRouter } from './sources';
 
 export const adminRouter = router({
   users: usersRouter,
@@ -17,4 +18,5 @@ export const adminRouter = router({
   demo: demoRouter,
   partners: adminPartnersRouter,
   showcase: adminShowcaseRouter,
+  sources: sourcesRouter,
 });

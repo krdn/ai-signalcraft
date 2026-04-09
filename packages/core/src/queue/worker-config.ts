@@ -59,6 +59,8 @@ export function countBySourceType(source: string, items: unknown[]): Record<stri
   if (source === 'naver-news') return { articles: count, comments: 0 };
   if (source === 'youtube-videos') return { videos: count, comments: 0 };
   if (source === 'youtube-comments') return { comments: count };
+  // 동적 소스 (RSS/HTML) — 댓글 수집 없음, 기사만 카운트
+  if (source === 'rss' || source === 'html') return { articles: count, comments: 0 };
   // 커뮤니티 소스: 게시글 수 + 내장 댓글 수
   const posts = count;
   const commentCount = items.reduce<number>(
@@ -69,7 +71,10 @@ export function countBySourceType(source: string, items: unknown[]): Record<stri
 }
 
 // progress JSONB 키 매핑 (소스명 -> progress 키)
-export function progressKey(source: string): string {
+// dataSourceId가 제공되면 동적 소스의 고유 키(ds_<short>)로 반환 — 여러 RSS/HTML 소스가
+// 같은 trigger 안에서 독립적으로 progress 추적 가능.
+export function progressKey(source: string, dataSourceId?: string): string {
+  if (dataSourceId) return `ds_${dataSourceId.slice(0, 8)}`;
   if (source === 'naver-news') return 'naver';
   if (source === 'youtube-videos' || source === 'youtube-comments') return 'youtube';
   return source; // dcinside, fmkorea, clien

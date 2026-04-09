@@ -54,6 +54,8 @@ export const SOURCE_LABELS: Record<string, string> = {
   dcinside: 'DC갤러리',
   fmkorea: '에펨코리아',
   clien: '클리앙',
+  rss: 'RSS',
+  html: '웹',
 };
 
 // 페이지네이션 컴포넌트

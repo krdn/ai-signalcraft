@@ -6,6 +6,7 @@ import type {
   YoutubeComment,
   CommunityPost,
   CommunityComment,
+  DataSourceSnapshot,
 } from '@ai-signalcraft/collectors';
 import type { articles, videos, comments } from '../db/schema/collections';
 import type { CommunitySource } from '../types/pipeline';
@@ -30,6 +31,30 @@ export function normalizeNaverArticle(article: NaverArticle): typeof articles.$i
     content: article.content,
     author: article.author,
     publisher: article.publisher,
+    publishedAt: toDate(article.publishedAt),
+    rawData: article.rawData,
+  };
+}
+
+/**
+ * 동적 소스(RSS/HTML)로부터 수집된 article을 articles 테이블 insert 형식으로 정규화.
+ * - source: adapterType ('rss' | 'html')
+ * - dataSourceId: data_sources 행의 uuid FK
+ * - publisher: 기본값은 snapshot.name (관리자가 지정한 표시명)
+ */
+export function normalizeFeedArticle(
+  article: NaverArticle,
+  snapshot: DataSourceSnapshot,
+): typeof articles.$inferInsert {
+  return {
+    source: snapshot.adapterType,
+    sourceId: article.sourceId,
+    dataSourceId: snapshot.id,
+    url: article.url,
+    title: article.title,
+    content: article.content,
+    author: article.author,
+    publisher: article.publisher ?? snapshot.name,
     publishedAt: toDate(article.publishedAt),
     rawData: article.rawData,
   };

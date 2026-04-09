@@ -45,6 +45,14 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
 
   const [keyword, setKeyword] = useState('');
   const [sources, setSources] = useState<SourceId[]>([...ALL_SOURCES]);
+  const [customSourceIds, setCustomSourceIds] = useState<string[]>([]);
+
+  // 관리자가 /admin/sources에서 등록한 동적 소스 (RSS/HTML)
+  const { data: customSources } = useQuery({
+    queryKey: ['sources', 'enabled'],
+    queryFn: () => trpcClient.admin.sources.listEnabled.query(),
+    staleTime: 60 * 1000,
+  });
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [helpTab, setHelpTab] = useState('quickstart');
   const [startDate, setStartDate] = useState<Date>(STABLE_INIT_DATE);
@@ -91,6 +99,7 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
     mutationFn: (input: {
       keyword: string;
       sources: SourceId[];
+      customSourceIds?: string[];
       startDate: string;
       endDate: string;
       options?: { enableItemAnalysis?: boolean; tokenOptimization?: OptimizationPreset };
@@ -120,9 +129,13 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
 
   const isAllSelected = ALL_SOURCES.every((s) => sources.includes(s));
 
+  const handleCustomSourceToggle = (id: string, checked: boolean) => {
+    setCustomSourceIds((prev) => (checked ? [...prev, id] : prev.filter((v) => v !== id)));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!keyword.trim() || sources.length === 0) return;
+    if (!keyword.trim() || (sources.length === 0 && customSourceIds.length === 0)) return;
 
     // 이벤트 모드: 이벤트 날짜 전후 N일로 자동 계산
     const resolvedStart = dateMode === 'event' ? subDays(eventDate, eventRadius) : startDate;
@@ -131,6 +144,7 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
     triggerMutation.mutate({
       keyword: keyword.trim(),
       sources,
+      customSourceIds: customSourceIds.length > 0 ? customSourceIds : undefined,
       startDate: resolvedStart.toISOString(),
       endDate: resolvedEnd.toISOString(),
       options:
@@ -240,6 +254,29 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
                   </div>
                 </div>
               ))}
+              {/* 사용자 정의 소스 (관리자가 /admin/sources에서 등록한 RSS/HTML) */}
+              {customSources && customSources.length > 0 && !isDemo && (
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground">사용자 정의 소스</p>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pl-2">
+                    {customSources.map((cs) => (
+                      <label key={cs.id} className="flex items-center gap-2 cursor-pointer">
+                        <Checkbox
+                          checked={customSourceIds.includes(cs.id)}
+                          onCheckedChange={(checked) => handleCustomSourceToggle(cs.id, !!checked)}
+                          disabled={triggerMutation.isPending}
+                        />
+                        <span className="text-sm">
+                          {cs.name}
+                          <span className="ml-1 text-[10px] text-muted-foreground uppercase">
+                            {cs.adapterType}
+                          </span>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -564,7 +601,11 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
           <Button
             type="submit"
             className="w-full"
-            disabled={triggerMutation.isPending || !keyword.trim() || sources.length === 0}
+            disabled={
+              triggerMutation.isPending ||
+              !keyword.trim() ||
+              (sources.length === 0 && customSourceIds.length === 0)
+            }
           >
             {triggerMutation.isPending ? (
               <>

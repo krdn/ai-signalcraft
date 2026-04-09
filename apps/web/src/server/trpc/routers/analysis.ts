@@ -19,7 +19,8 @@ export const analysisRouter = router({
     .input(
       z.object({
         keyword: z.string().min(1).max(50),
-        sources: z.array(z.enum(['naver', 'youtube', 'dcinside', 'fmkorea', 'clien'])).min(1),
+        sources: z.array(z.enum(['naver', 'youtube', 'dcinside', 'fmkorea', 'clien'])).optional(),
+        customSourceIds: z.array(z.string().uuid()).optional(),
         startDate: z.string(), // ISO date string
         endDate: z.string(),
         options: z
@@ -39,6 +40,15 @@ export const analysisRouter = router({
       }),
     )
     .mutation(async ({ input, ctx }) => {
+      // 최소 하나의 소스(하드코딩 또는 동적) 선택 필수
+      const hasSources = (input.sources?.length ?? 0) > 0;
+      const hasCustom = (input.customSourceIds?.length ?? 0) > 0;
+      if (!hasSources && !hasCustom) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: '최소 하나 이상의 소스를 선택해 주세요.',
+        });
+      }
       const userRole = ctx.session.user.role;
       let effectiveLimits = input.limits ?? null;
       let effectiveOptions = input.options ?? null;
@@ -91,6 +101,7 @@ export const analysisRouter = router({
           startDate: new Date(input.startDate).toISOString(),
           endDate: new Date(input.endDate).toISOString(),
           sources: input.sources,
+          customSourceIds: input.customSourceIds,
           limits: effectiveLimits ?? undefined,
         },
         job.id,
