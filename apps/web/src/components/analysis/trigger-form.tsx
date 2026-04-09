@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { Loader2, ChevronDown, Lock } from 'lucide-react';
 import { format, subDays, addDays } from 'date-fns';
 import { TriggerFormHelp } from './trigger-form-help';
+import { BreakpointSection, type BreakpointValue } from './trigger-form/breakpoint-section';
 import {
   type OptimizationPreset,
   type SourceId,
@@ -69,6 +70,7 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
   const [maxCommunityPosts, setMaxCommunityPosts] = useState(50);
   const [maxCommentsPerItem, setMaxCommentsPerItem] = useState(500);
   const [optimizationPreset, setOptimizationPreset] = useState<OptimizationPreset>('standard');
+  const [breakpoints, setBreakpoints] = useState<BreakpointValue[]>([]);
 
   // 클라이언트 마운트 후 실제 날짜 설정 (hydration mismatch 방지)
   useEffect(() => {
@@ -109,6 +111,7 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
         communityPosts: number;
         commentsPerItem: number;
       };
+      breakpoints?: BreakpointValue[];
     }) => trpcClient.analysis.trigger.mutate(input),
     onSuccess: (data) => {
       toast.success('분석이 시작되었습니다');
@@ -160,6 +163,7 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
         communityPosts: maxCommunityPosts,
         commentsPerItem: maxCommentsPerItem,
       },
+      breakpoints: breakpoints.length > 0 ? breakpoints : undefined,
     });
   };
 
@@ -596,6 +600,9 @@ export function TriggerForm({ onJobStarted }: TriggerFormProps) {
               </div>
             </CollapsibleContent>
           </Collapsible>
+
+          {/* 단계별 검수 정지 — 데모 사용자는 표시하지 않음 */}
+          {!isDemo && <BreakpointSection value={breakpoints} onChange={setBreakpoints} />}
 
           {/* 실행 버튼 */}
           <Button
