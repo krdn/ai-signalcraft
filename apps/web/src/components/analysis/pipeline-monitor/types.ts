@@ -88,6 +88,15 @@ export interface ItemAnalysisData {
   status: string;
 }
 
+export type BreakpointStage =
+  | 'collection'
+  | 'normalize'
+  | 'token-optimization'
+  | 'item-analysis'
+  | 'analysis-stage1'
+  | 'analysis-stage2'
+  | 'analysis-stage4';
+
 export interface PipelineStatusData {
   status: string;
   keyword: string;

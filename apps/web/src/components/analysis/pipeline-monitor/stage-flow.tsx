@@ -13,6 +13,7 @@ import {
   FileText,
   Ban,
   Zap,
+  Bookmark,
 } from 'lucide-react';
 import { PulseRing } from './pulse-ring';
 import { STAGE_HELP, PIPELINE_STEPS } from './constants';
@@ -25,6 +26,10 @@ interface StageFlowProps {
   stages: Record<string, { status: string }>;
   timeline: PipelineTimeline;
   elapsedSeconds: number;
+  breakpoints?: string[];
+  pausedAtStage?: string | null;
+  isPaused?: boolean;
+  onToggleBreakpoint?: (stageKey: string) => void;
 }
 
 const STAGE_ICONS: Record<string, typeof Download> = {
@@ -64,10 +69,22 @@ function connectorClass(fromStatus: string, toStatus: string): string {
   return 'bg-muted-foreground/20 h-px border-t border-dashed border-muted-foreground/30';
 }
 
+/** UI 단계 키 → BP 키 매핑 (PIPELINE_STEPS와 BP enum의 차이 처리) */
+function stageToBpKey(stepKey: string): string | null {
+  if (stepKey === 'normalization') return 'normalize';
+  if (stepKey === 'analysis') return 'analysis-stage1'; // 대표값 — stage2/4는 trigger-form에서 별도 설정
+  if (stepKey === 'report') return null; // report는 BP 대상 아님
+  return stepKey;
+}
+
 export const StageFlow = memo(function StageFlow({
   stages,
   timeline,
   elapsedSeconds,
+  breakpoints,
+  pausedAtStage,
+  isPaused,
+  onToggleBreakpoint,
 }: StageFlowProps) {
   const segments = computeSegments(timeline, stages, elapsedSeconds);
 
@@ -82,23 +99,37 @@ export const StageFlow = memo(function StageFlow({
           const isActive = status === 'running';
           const isCompleted = status === 'completed';
 
+          const bpKey = stageToBpKey(step.key);
+          const isBreakpoint = bpKey != null && (breakpoints?.includes(bpKey) ?? false);
+          const isPausedHere = !!isPaused && bpKey != null && pausedAtStage === bpKey;
+          const canToggle = bpKey != null && status === 'pending' && !!onToggleBreakpoint;
+
           return (
             <div key={step.key} className="flex items-center flex-1 min-w-0">
               {/* 노드 */}
               <Tooltip>
                 <TooltipTrigger className="w-full cursor-default block">
-                  <div>
+                  <div
+                    onClick={() => {
+                      if (canToggle && bpKey) onToggleBreakpoint!(bpKey);
+                    }}
+                    className={canToggle ? 'cursor-pointer' : ''}
+                  >
                     <PulseRing active={isActive} color="bg-blue-400">
                       <div
                         className={`
-                          flex flex-col items-center gap-1 rounded-lg border px-2 py-2 text-xs transition-all w-full
+                          relative flex flex-col items-center gap-1 rounded-lg border px-2 py-2 text-xs transition-all w-full
                           ${isActive ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/40 glow-blue' : ''}
                           ${isCompleted ? 'border-green-500/50 bg-green-50/50 dark:bg-green-950/20' : ''}
                           ${status === 'failed' ? 'border-red-500/50 bg-red-50/50 dark:bg-red-950/20' : ''}
                           ${status === 'cancelled' ? 'border-zinc-400/50 bg-zinc-100/50 dark:bg-zinc-800/30 opacity-60' : ''}
                           ${status === 'pending' || status === 'skipped' ? 'border-border bg-muted/30' : ''}
+                          ${isPausedHere ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/40 ring-2 ring-amber-400 scale-105' : ''}
                         `}
                       >
+                        {isBreakpoint && (
+                          <Bookmark className="absolute top-1 right-1 h-3 w-3 fill-amber-500 text-amber-500" />
+                        )}
                         <div className="flex items-center gap-1.5">
                           <Icon className="h-3.5 w-3.5 shrink-0" />
                           <span className="font-medium truncate">{step.label}</span>
