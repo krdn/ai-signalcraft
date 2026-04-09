@@ -21,6 +21,7 @@ import {
 import { PipelineHeader } from './pipeline-header';
 import { LiveStatsBar } from './live-stats-bar';
 import { StageFlow } from './stage-flow';
+import { BreakpointControl } from './breakpoint-control';
 import { CollectionLanes } from './collection-lanes';
 import { AnalysisModuleGrid } from './analysis-module-grid';
 import { LiveEventFeed } from './live-event-feed';
@@ -114,6 +115,16 @@ export function PipelineMonitor({ jobId, onComplete, onRetry }: PipelineMonitorP
     events: data.events ?? [],
   };
 
+  const updateBreakpointsMutation = useMutation({
+    mutationFn: (breakpoints: string[]) =>
+      trpcClient.analysis.updateBreakpoints.mutate({
+        jobId: jobId!,
+        breakpoints: breakpoints as Parameters<
+          typeof trpcClient.analysis.updateBreakpoints.mutate
+        >[0]['breakpoints'],
+      }),
+  });
+
   const hasFailed = data.status === 'failed';
   const isCancelled = data.status === 'cancelled';
   const isPaused = data.status === 'paused';
@@ -164,7 +175,30 @@ export function PipelineMonitor({ jobId, onComplete, onRetry }: PipelineMonitorP
           stages={data.pipelineStages ?? {}}
           timeline={statusData.timeline}
           elapsedSeconds={data.elapsedSeconds ?? 0}
+          breakpoints={(data.breakpoints as string[]) ?? []}
+          pausedAtStage={data.pausedAtStage ?? null}
+          isPaused={isPaused}
+          onToggleBreakpoint={(stageKey) => {
+            const current = (data.breakpoints as string[]) ?? [];
+            const next = current.includes(stageKey)
+              ? current.filter((s: string) => s !== stageKey)
+              : [...current, stageKey];
+            updateBreakpointsMutation.mutate(next);
+          }}
         />
+
+        {/* BP 정지 제어 패널 — paused 상태일 때만 표시 */}
+        {isPaused && data.pausedAtStage && data.pausedAt && (
+          <BreakpointControl
+            jobId={jobId!}
+            pausedAtStage={data.pausedAtStage}
+            pausedAt={
+              typeof data.pausedAt === 'string'
+                ? data.pausedAt
+                : new Date(data.pausedAt).toISOString()
+            }
+          />
+        )}
 
         {/* 제어 버튼 */}
         {isInProgress && jobId && (
