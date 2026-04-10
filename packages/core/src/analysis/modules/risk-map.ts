@@ -1,7 +1,8 @@
 import { RiskMapSchema, type RiskMapResult } from '../schemas/risk-map.schema';
 import type { AnalysisModule, AnalysisInput } from '../types';
+import type { AnalysisDomain } from '../domain';
 import { MODULE_MODEL_MAP } from '../types';
-import { ANALYSIS_CONSTRAINTS, distillForRiskMap } from './prompt-utils';
+import { ANALYSIS_CONSTRAINTS, distillForRiskMap, buildModuleSystemPrompt } from './prompt-utils';
 
 const config = MODULE_MODEL_MAP['risk-map'];
 
@@ -14,7 +15,11 @@ export const riskMapModule: AnalysisModule<RiskMapResult> = {
   model: config.model,
   schema: RiskMapSchema,
 
-  buildSystemPrompt(): string {
+  buildSystemPrompt(domain?: AnalysisDomain): string {
+    const override = buildModuleSystemPrompt('risk-map', domain);
+    if (override) {
+      return `${override}\n${ANALYSIS_CONSTRAINTS}`;
+    }
     return `당신은 정치 리스크 분석 및 위기 예측 전문가입니다.
 여론 데이터에서 **현재 잠재된 리스크와 향후 폭발 가능성**을 도출합니다.
 
@@ -72,7 +77,11 @@ ${commentsSample}
 - overallRiskLevel과 riskTrend를 종합 판단하세요`;
   },
 
-  buildPromptWithContext(data: AnalysisInput, priorResults: Record<string, unknown>): string {
+  buildPromptWithContext(
+    data: AnalysisInput,
+    priorResults: Record<string, unknown>,
+    _domain?: AnalysisDomain,
+  ): string {
     const basePrompt = this.buildPrompt(data);
     const distilledContext = distillForRiskMap(priorResults);
 

@@ -1,11 +1,13 @@
 import type { AnalysisModule, AnalysisInput } from '../types';
+import type { AnalysisDomain } from '../domain';
 import { MODULE_MODEL_MAP } from '../types';
 import { MessageImpactSchema, type MessageImpactResult } from '../schemas/message-impact.schema';
 import {
   formatInputData,
-  PLATFORM_KNOWLEDGE,
   ANALYSIS_CONSTRAINTS,
-  IMPACT_SCORE_ANCHOR,
+  getPlatformKnowledge,
+  getImpactScoreAnchor,
+  buildModuleSystemPrompt,
 } from './prompt-utils';
 
 // 모듈4: 메시지 효과 분석 (DEEP-02)
@@ -16,7 +18,11 @@ export const messageImpactModule: AnalysisModule<MessageImpactResult> = {
   model: MODULE_MODEL_MAP['message-impact'].model,
   schema: MessageImpactSchema,
 
-  buildSystemPrompt(): string {
+  buildSystemPrompt(domain?: AnalysisDomain): string {
+    const override = buildModuleSystemPrompt('message-impact', domain);
+    if (override) {
+      return `${override}\n\n${getImpactScoreAnchor(domain)}\n${getPlatformKnowledge(domain)}\n${ANALYSIS_CONSTRAINTS}`;
+    }
     return `당신은 정치 커뮤니케이션 효과 분석 전문가입니다.
 온라인 여론 데이터에서 **여론을 실제로 움직인 메시지**를 식별하고, 성공/실패 원인을 분석합니다.
 
@@ -31,8 +37,8 @@ export const messageImpactModule: AnalysisModule<MessageImpactResult> = {
 - 존재하지 않는 발언을 생성하지 마세요
 - 원문이 길면 핵심 부분만 발췌하되, 의미가 왜곡되지 않도록 하세요
 
-${IMPACT_SCORE_ANCHOR}
-${PLATFORM_KNOWLEDGE}
+${getImpactScoreAnchor(domain)}
+${getPlatformKnowledge(domain)}
 ${ANALYSIS_CONSTRAINTS}`;
   },
 

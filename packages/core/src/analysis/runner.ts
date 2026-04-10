@@ -13,9 +13,11 @@ import {
 } from '@krdn/ai-analysis-kit';
 import { isPipelineCancelled, waitIfPaused } from '../pipeline/control';
 import { appendJobEvent } from '../pipeline/persist';
-import { getModuleModelConfig } from './model-config';
+import { getModuleModelConfig, getModuleModelConfigForPreset } from './model-config';
 import { persistAnalysisResult } from './persist-analysis';
 import type { AnalysisModule, AnalysisInput, AnalysisModuleResult } from './types';
+import type { AnalysisDomain } from './domain';
+import { getDomainConfig } from './domain';
 import {
   macroViewModule,
   segmentationModule,
@@ -28,7 +30,23 @@ import {
   frameWarModule,
   crisisScenarioModule,
   winSimulationModule,
+  fanLoyaltyIndexModule,
+  fandomNarrativeWarModule,
+  fandomCrisisScenarioModule,
+  releaseReceptionPredictionModule,
 } from './modules';
+
+/** 모듈명 → 모듈 인스턴스 매핑 (Stage 4 라우팅용) */
+const MODULE_MAP: Record<string, AnalysisModule> = {
+  'approval-rating': approvalRatingModule,
+  'frame-war': frameWarModule,
+  'crisis-scenario': crisisScenarioModule,
+  'win-simulation': winSimulationModule,
+  'fan-loyalty-index': fanLoyaltyIndexModule,
+  'fandom-narrative-war': fandomNarrativeWarModule,
+  'fandom-crisis-scenario': fandomCrisisScenarioModule,
+  'release-reception-prediction': releaseReceptionPredictionModule,
+};
 
 // ---------- Stage 상수 (로컬) ----------
 // Stage 1: 병렬 실행 (독립 모듈)
@@ -43,11 +61,22 @@ export const STAGE1_MODULES: AnalysisModule[] = [
 export const STAGE2_MODULES: AnalysisModule[] = [riskMapModule, opportunityModule, strategyModule];
 
 // Stage 4: 고급 분석 (ADVN 모듈)
-// ADVN-01(approval-rating), ADVN-02(frame-war): 병렬 (독립)
-// ADVN-03(crisis-scenario): ADVN-01 + risk-map 의존
-// ADVN-04(win-simulation): ADVN-01~03 전체 의존
+// 기본값(정치 도메인) — 하위 호환성 유지
 export const STAGE4_PARALLEL: AnalysisModule[] = [approvalRatingModule, frameWarModule];
 export const STAGE4_SEQUENTIAL: AnalysisModule[] = [crisisScenarioModule, winSimulationModule];
+
+/** 도메인에 따른 Stage 4 모듈 조회 */
+export function getStage4Modules(domain?: AnalysisDomain): {
+  parallel: AnalysisModule[];
+  sequential: AnalysisModule[];
+} {
+  const d = domain ?? 'political';
+  const config = getDomainConfig(d);
+  return {
+    parallel: config.stage4.parallel.map((name) => MODULE_MAP[name]).filter(Boolean),
+    sequential: config.stage4.sequential.map((name) => MODULE_MAP[name]).filter(Boolean),
+  };
+}
 
 // ---------- kit runModule에 주입할 어댑터 ----------
 /** DB 기반 ModelConfigAdapter */
@@ -62,6 +91,21 @@ const dbModelConfigAdapter: ModelConfigAdapter = {
     };
   },
 };
+
+/** 프리셋 인식 ModelConfigAdapter 팩토리 */
+export function createModelConfigAdapter(presetSlug?: string): ModelConfigAdapter {
+  return {
+    async resolve(moduleName: string) {
+      const cfg = await getModuleModelConfigForPreset(moduleName, presetSlug);
+      return {
+        provider: cfg.provider,
+        model: cfg.model,
+        ...(cfg.baseUrl ? { baseUrl: cfg.baseUrl } : {}),
+        ...(cfg.apiKey ? { apiKey: cfg.apiKey } : {}),
+      };
+    },
+  };
+}
 
 /** DB 기반 PipelineControlAdapter */
 const dbPipelineControl: PipelineControlAdapter = {
@@ -123,12 +167,13 @@ export async function runModule<T>(
   module: AnalysisModule<T>,
   input: AnalysisInput,
   priorResults?: Record<string, unknown>,
+  configAdapter?: ModelConfigAdapter,
 ): Promise<AnalysisModuleResult<T>> {
   const result = await kitRunModule<AnalysisInput, T>(
     module as unknown as KitAnalysisModule<AnalysisInput, T>,
     input,
     {
-      configAdapter: dbModelConfigAdapter,
+      configAdapter: configAdapter ?? dbModelConfigAdapter,
       pipelineControl: dbPipelineControl,
       onPersist: persistCallback,
       extractMeta,

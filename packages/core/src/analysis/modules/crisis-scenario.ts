@@ -1,7 +1,13 @@
 import { CrisisScenarioSchema, type CrisisScenarioResult } from '../schemas/crisis-scenario.schema';
 import type { AnalysisModule, AnalysisInput } from '../types';
+import type { AnalysisDomain } from '../domain';
 import { MODULE_MODEL_MAP } from '../types';
-import { ANALYSIS_CONSTRAINTS, PROBABILITY_ANCHOR, distillForCrisisScenario } from './prompt-utils';
+import {
+  ANALYSIS_CONSTRAINTS,
+  distillForCrisisScenario,
+  buildModuleSystemPrompt,
+  getProbabilityAnchor,
+} from './prompt-utils';
 
 const config = MODULE_MODEL_MAP['crisis-scenario'];
 
@@ -14,7 +20,11 @@ export const crisisScenarioModule: AnalysisModule<CrisisScenarioResult> = {
   model: config.model,
   schema: CrisisScenarioSchema,
 
-  buildSystemPrompt(): string {
+  buildSystemPrompt(domain?: AnalysisDomain): string {
+    const override = buildModuleSystemPrompt('crisis-scenario', domain);
+    if (override) {
+      return `${override}\n${getProbabilityAnchor(domain)}\n${ANALYSIS_CONSTRAINTS}`;
+    }
     return `당신은 정치 위기 관리 및 시나리오 플래닝 전문가입니다.
 리스크 분석과 지지율 추정을 기반으로 **3가지 시나리오(확산/통제/역전)**를 구체적으로 시뮬레이션합니다.
 
@@ -35,7 +45,7 @@ export const crisisScenarioModule: AnalysisModule<CrisisScenarioResult> = {
 - responseStrategy: "누가, 무엇을, 언제까지" 수준의 실행 계획
 - timeframe: 구체적 기간 (예: "48시간 내", "1주", "2~4주")
 
-${PROBABILITY_ANCHOR}
+${getProbabilityAnchor(domain)}
 ${ANALYSIS_CONSTRAINTS}`;
   },
 
@@ -79,7 +89,11 @@ ${commentsSample}
 - 3개 시나리오를 종합하여 현재 가장 적합한 대응 방향을 제시하세요`;
   },
 
-  buildPromptWithContext(data: AnalysisInput, priorResults: Record<string, unknown>): string {
+  buildPromptWithContext(
+    data: AnalysisInput,
+    priorResults: Record<string, unknown>,
+    _domain?: AnalysisDomain,
+  ): string {
     const basePrompt = this.buildPrompt(data);
     const distilledContext = distillForCrisisScenario(priorResults);
 

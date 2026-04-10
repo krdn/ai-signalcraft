@@ -14,6 +14,7 @@ export interface PresetData {
   id: string;
   slug: string;
   category: string;
+  domain: string;
   title: string;
   description: string;
   icon: string;
@@ -37,6 +38,11 @@ interface PresetSelectorProps {
 }
 
 const CATEGORY_ORDER = ['핵심 활용', '산업 특화', '확장 영역'];
+
+// 공통 모듈 수 (Stage 1: 4 + Stage 2: 3 + Stage 3: 1 = 8)
+const COMMON_MODULE_COUNT = 8;
+// 도메인별 Stage 4 모듈 수
+const DOMAIN_MODULE_COUNT = 4;
 
 export function PresetSelector({ onSelect, onSkip }: PresetSelectorProps) {
   const { data: presets, isLoading } = useQuery({
@@ -96,6 +102,9 @@ export function PresetSelector({ onSelect, onSkip }: PresetSelectorProps) {
                       description={preset.description}
                       icon={preset.icon}
                       highlight={preset.highlight}
+                      domain={preset.domain}
+                      skippedModules={preset.skippedModules}
+                      totalModules={COMMON_MODULE_COUNT + DOMAIN_MODULE_COUNT}
                       onClick={() => onSelect(preset)}
                     />
                   ))}

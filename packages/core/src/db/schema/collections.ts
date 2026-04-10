@@ -54,6 +54,7 @@ export const collectionJobs = pgTable(
       tokenOptimization?: 'none' | 'light' | 'standard' | 'aggressive';
     }>(),
     keywordType: text('keyword_type'),
+    domain: text('domain').notNull().default('political'),
     appliedPreset: jsonb('applied_preset').$type<{
       slug: string;
       title: string;

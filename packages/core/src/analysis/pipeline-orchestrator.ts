@@ -16,8 +16,8 @@ import {
   runModule,
   STAGE1_MODULES,
   STAGE2_MODULES,
-  STAGE4_PARALLEL,
-  STAGE4_SEQUENTIAL,
+  getStage4Modules,
+  createModelConfigAdapter,
 } from './runner';
 import { runModuleMapReduce } from './map-reduce';
 import { loadAnalysisInput } from './data-loader';
@@ -225,12 +225,16 @@ export async function runAnalysisPipeline(
     }
   }
 
-  // jobRow 조회 (옵션 확인용)
+  // jobRow 조회 (옵션 + 프리셋 slug 확인용)
   const [jobRow] = await getDb()
-    .select({ options: collectionJobs.options })
+    .select({ options: collectionJobs.options, keywordType: collectionJobs.keywordType })
     .from(collectionJobs)
     .where(eq(collectionJobs.id, jobId))
     .limit(1);
+
+  // 프리셋별 모델 설정 어댑터 생성
+  const presetSlug = jobRow?.keywordType ?? undefined;
+  const modelAdapter = createModelConfigAdapter(presetSlug);
 
   // 토큰 최적화 전처리
   const tokenOptimization = (jobRow?.options?.tokenOptimization ?? 'none') as OptimizationPreset;
@@ -301,7 +305,7 @@ export async function runAnalysisPipeline(
 
   const stage1Results = await runWithProviderGrouping(
     stage1Active,
-    (m) => runModuleMapReduce(m, input),
+    (m) => runModuleMapReduce(m, input, undefined, modelAdapter),
     providerConcurrency,
   );
   collectResults(stage1Results);
@@ -328,7 +332,7 @@ export async function runAnalysisPipeline(
 
     const stage2Results = await runWithProviderGrouping(
       stage2Parallel,
-      (m) => runModule(m, input, priorResults),
+      (m) => runModule(m, input, priorResults, modelAdapter),
       providerConcurrency,
     );
     collectResults(stage2Results);
@@ -337,7 +341,7 @@ export async function runAnalysisPipeline(
       if (isSkipped(strategyMod.name)) {
         await markSkipped(strategyMod.name);
       } else if (!isAlreadyCompleted(strategyMod.name)) {
-        const result = await runModule(strategyMod, input, priorResults);
+        const result = await runModule(strategyMod, input, priorResults, modelAdapter);
         allResults[result.module] = result;
         if (result.status === 'completed') priorResults[result.module] = result.result;
       }
@@ -358,7 +362,7 @@ export async function runAnalysisPipeline(
   if (isSkipped(finalSummaryModule.name)) {
     await markSkipped(finalSummaryModule.name);
   } else if (!isAlreadyCompleted(finalSummaryModule.name)) {
-    const finalResult = await runModule(finalSummaryModule, input, priorResults);
+    const finalResult = await runModule(finalSummaryModule, input, priorResults, modelAdapter);
     allResults[finalResult.module] = finalResult;
     if (finalResult.status === 'completed') priorResults[finalResult.module] = finalResult.result;
   }
@@ -373,17 +377,20 @@ export async function runAnalysisPipeline(
     return buildResult(allResults, cancelledByUser, costLimitExceeded, input);
   }
 
-  // Stage 4: 고급 분석
+  // Stage 4: 고급 분석 (도메인별 모듈 라우팅)
   if (await preRunCheck()) {
-    const stage4aActive = STAGE4_PARALLEL.filter(
+    const { parallel: stage4Parallel, sequential: stage4Sequential } = getStage4Modules(
+      input.domain,
+    );
+    const stage4aActive = stage4Parallel.filter(
       (m) => !isSkipped(m.name) && !isAlreadyCompleted(m.name),
     );
-    for (const m of STAGE4_PARALLEL.filter((m) => isSkipped(m.name))) await markSkipped(m.name);
+    for (const m of stage4Parallel.filter((m) => isSkipped(m.name))) await markSkipped(m.name);
 
     collectResults(
       await runWithProviderGrouping(
         stage4aActive,
-        (m) => runModule(m, input, priorResults),
+        (m) => runModule(m, input, priorResults, modelAdapter),
         providerConcurrency,
       ),
     );
@@ -392,7 +399,7 @@ export async function runAnalysisPipeline(
       return buildResult(allResults, cancelledByUser, costLimitExceeded, input);
     }
 
-    for (const module of STAGE4_SEQUENTIAL) {
+    for (const module of stage4Sequential) {
       if (!(await preRunCheck())) break;
       if (isSkipped(module.name)) {
         await markSkipped(module.name);
@@ -400,7 +407,7 @@ export async function runAnalysisPipeline(
       }
       if (isAlreadyCompleted(module.name)) continue;
 
-      const result = await runModule(module, input, priorResults);
+      const result = await runModule(module, input, priorResults, modelAdapter);
       allResults[result.module] = result;
       if (result.status === 'completed') priorResults[result.module] = result.result;
       if (checkFailAndAbort('Stage 4b')) {

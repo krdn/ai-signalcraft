@@ -135,6 +135,11 @@ export const analysisRouter = router({
             skippedModules = [...merged];
           }
 
+          // 프리셋의 domain 값을 job에 복사
+          if (preset.domain) {
+            (input as any).domain = preset.domain;
+          }
+
           // 사용자가 프리셋 값을 변경했는지 확인
           const presetSources = preset.sources as Record<string, boolean>;
           const presetLimits = preset.limits as Record<string, number>;
@@ -182,6 +187,7 @@ export const analysisRouter = router({
           breakpoints: input.breakpoints,
           keywordType,
           appliedPreset,
+          domain: (input as any).domain ?? 'political',
         })
         .returning();
 

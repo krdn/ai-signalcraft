@@ -1,4 +1,5 @@
 import type { AnalysisModule, AnalysisInput } from '../types';
+import type { AnalysisDomain } from '../domain';
 import { MODULE_MODEL_MAP } from '../types';
 import {
   SentimentFramingSchema,
@@ -6,9 +7,10 @@ import {
 } from '../schemas/sentiment-framing.schema';
 import {
   formatInputData,
-  PLATFORM_KNOWLEDGE,
   ANALYSIS_CONSTRAINTS,
-  FRAME_STRENGTH_ANCHOR,
+  getPlatformKnowledge,
+  getFrameStrengthAnchor,
+  buildModuleSystemPrompt,
 } from './prompt-utils';
 
 // 모듈3: 감정 및 프레임 분석 (ANLZ-01, ANLZ-02, DEEP-01)
@@ -19,7 +21,11 @@ export const sentimentFramingModule: AnalysisModule<SentimentFramingResult> = {
   model: MODULE_MODEL_MAP['sentiment-framing'].model,
   schema: SentimentFramingSchema,
 
-  buildSystemPrompt(): string {
+  buildSystemPrompt(domain?: AnalysisDomain): string {
+    const override = buildModuleSystemPrompt('sentiment-framing', domain);
+    if (override) {
+      return `${override}\n${getFrameStrengthAnchor(domain)}\n${getPlatformKnowledge(domain)}\n${ANALYSIS_CONSTRAINTS}`;
+    }
     return `당신은 미디어 프레이밍(framing) 이론과 감정 분석(sentiment analysis) 전문가입니다.
 온라인 여론 데이터에서 **감정의 분포, 핵심 키워드, 프레임의 경쟁 구조**를 정량·정성 분석합니다.
 
@@ -34,8 +40,8 @@ export const sentimentFramingModule: AnalysisModule<SentimentFramingResult> = {
 - **프레임**: "경제 실패론", "교육 개혁 기대론", "굴욕 외교론" → 같은 토픽을 특정 관점으로 해석
 - 프레임은 반드시 "~론", "~프레임", "~서사" 형태로 명명하세요
 
-${FRAME_STRENGTH_ANCHOR}
-${PLATFORM_KNOWLEDGE}
+${getFrameStrengthAnchor(domain)}
+${getPlatformKnowledge(domain)}
 ${ANALYSIS_CONSTRAINTS}`;
   },
 

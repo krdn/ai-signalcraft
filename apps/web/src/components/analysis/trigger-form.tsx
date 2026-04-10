@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
-import { Loader2, ChevronDown, Lock } from 'lucide-react';
+import { Loader2, ChevronDown, Lock, Shield, Heart } from 'lucide-react';
 import { format, subDays, addDays } from 'date-fns';
 import { TriggerFormHelp } from './trigger-form-help';
 import { BreakpointSection, type BreakpointValue } from './trigger-form/breakpoint-section';
@@ -255,15 +255,37 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
                 <span className="text-sm font-medium text-primary">{preset.title}</span>
                 <span className="text-xs text-muted-foreground">프리셋 적용됨</span>
               </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="text-xs"
-                onClick={onChangePreset}
-              >
-                유형 변경
-              </Button>
+              <div className="flex items-center gap-2">
+                {preset.slug &&
+                  (() => {
+                    const isFandom = ['entertainment', 'sports'].includes(preset.slug);
+                    return (
+                      <span
+                        className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-medium ${
+                          isFandom
+                            ? 'border-violet-500/30 bg-violet-500/10 text-violet-600 dark:text-violet-400'
+                            : 'border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                        }`}
+                      >
+                        {isFandom ? (
+                          <Heart className="h-2.5 w-2.5" />
+                        ) : (
+                          <Shield className="h-2.5 w-2.5" />
+                        )}
+                        {isFandom ? '팬덤' : '정치'} 분석
+                      </span>
+                    );
+                  })()}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs"
+                  onClick={onChangePreset}
+                >
+                  유형 변경
+                </Button>
+              </div>
             </div>
           )}
 

@@ -1,7 +1,8 @@
 import { StrategySchema, type StrategyResult } from '../schemas/strategy.schema';
 import type { AnalysisModule, AnalysisInput } from '../types';
+import type { AnalysisDomain } from '../domain';
 import { MODULE_MODEL_MAP } from '../types';
-import { ANALYSIS_CONSTRAINTS, distillForStrategy } from './prompt-utils';
+import { ANALYSIS_CONSTRAINTS, distillForStrategy, buildModuleSystemPrompt } from './prompt-utils';
 
 const config = MODULE_MODEL_MAP['strategy'];
 
@@ -14,7 +15,11 @@ export const strategyModule: AnalysisModule<StrategyResult> = {
   model: config.model,
   schema: StrategySchema,
 
-  buildSystemPrompt(): string {
+  buildSystemPrompt(domain?: AnalysisDomain): string {
+    const override = buildModuleSystemPrompt('strategy', domain);
+    if (override) {
+      return `${override}\n${ANALYSIS_CONSTRAINTS}`;
+    }
     return `당신은 정치 여론 전략 수립 전문가입니다.
 여론 분석·리스크·기회 결과를 종합하여 **실행 가능하고 구체적인 전략**을 도출합니다.
 
@@ -69,7 +74,11 @@ ${commentsSample}
 - 리스크 대응은 즉각/예방/비상 3단계로 구분하세요`;
   },
 
-  buildPromptWithContext(data: AnalysisInput, priorResults: Record<string, unknown>): string {
+  buildPromptWithContext(
+    data: AnalysisInput,
+    priorResults: Record<string, unknown>,
+    _domain?: AnalysisDomain,
+  ): string {
     const basePrompt = this.buildPrompt(data);
     const distilledContext = distillForStrategy(priorResults);
 

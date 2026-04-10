@@ -1,7 +1,14 @@
 import { FrameWarSchema, type FrameWarResult } from '../schemas/frame-war.schema';
 import type { AnalysisModule, AnalysisInput } from '../types';
+import type { AnalysisDomain } from '../domain';
 import { MODULE_MODEL_MAP } from '../types';
-import { ANALYSIS_CONSTRAINTS, FRAME_STRENGTH_ANCHOR, distillForFrameWar } from './prompt-utils';
+import {
+  ANALYSIS_CONSTRAINTS,
+  FRAME_STRENGTH_ANCHOR,
+  distillForFrameWar,
+  buildModuleSystemPrompt,
+  getFrameStrengthAnchor,
+} from './prompt-utils';
 
 const config = MODULE_MODEL_MAP['frame-war'];
 
@@ -14,7 +21,11 @@ export const frameWarModule: AnalysisModule<FrameWarResult> = {
   model: config.model,
   schema: FrameWarSchema,
 
-  buildSystemPrompt(): string {
+  buildSystemPrompt(domain?: AnalysisDomain): string {
+    const override = buildModuleSystemPrompt('frame-war', domain);
+    if (override) {
+      return `${override}\n${getFrameStrengthAnchor(domain)}\n${ANALYSIS_CONSTRAINTS}`;
+    }
     return `당신은 미디어 프레임 전쟁(frame war) 및 담론 역학 전문가입니다.
 선행 분석(sentiment-framing)에서 식별된 프레임을 출발점으로, **프레임 간 세력 역학과 전략적 전장 구조**를 심층 분석합니다.
 
@@ -76,7 +87,11 @@ ${commentsSample}
 - battlefieldSummary에 프레임 전장의 전체 구도를 3~5줄로 요약하세요`;
   },
 
-  buildPromptWithContext(data: AnalysisInput, priorResults: Record<string, unknown>): string {
+  buildPromptWithContext(
+    data: AnalysisInput,
+    priorResults: Record<string, unknown>,
+    _domain?: AnalysisDomain,
+  ): string {
     const basePrompt = this.buildPrompt(data);
     const distilledContext = distillForFrameWar(priorResults);
 

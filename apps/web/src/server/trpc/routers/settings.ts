@@ -2,7 +2,10 @@ import { z } from 'zod';
 import { eq } from 'drizzle-orm';
 import {
   getAllModelSettings,
+  getAllModelSettingsForPreset,
   upsertModelSetting,
+  upsertPresetModelSetting,
+  resetPresetModelSetting,
   modelSettings,
   MODEL_SCENARIO_PRESETS,
   applyModelScenario,
@@ -28,10 +31,12 @@ const aiProviderEnum = z.enum(AI_PROVIDER_VALUES);
 export const settingsRouter = router({
   // === 모듈별 AI 모델 설정 ===
 
-  // 12개 모듈의 AI 모델 설정 전체 조회
-  list: protectedProcedure.query(async () => {
-    return getAllModelSettings();
-  }),
+  // 모듈의 AI 모델 설정 전체 조회 (프리셋 필터 지원)
+  list: protectedProcedure
+    .input(z.object({ presetSlug: z.string().optional() }).optional())
+    .query(async ({ input }) => {
+      return getAllModelSettingsForPreset(input?.presetSlug);
+    }),
 
   // 모듈의 AI 모델 설정 변경 (시스템 관리자 전용)
   update: systemAdminProcedure
@@ -46,18 +51,62 @@ export const settingsRouter = router({
       return upsertModelSetting(input.moduleName, input.provider, input.model);
     }),
 
+  // 프리셋별 모듈 모델 설정 저장 (시스템 관리자 전용)
+  updatePreset: systemAdminProcedure
+    .input(
+      z.object({
+        presetSlug: z.string().min(1),
+        moduleName: z.string().min(1),
+        provider: aiProviderEnum,
+        model: z.string().min(1),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      return upsertPresetModelSetting(
+        input.presetSlug,
+        input.moduleName,
+        input.provider,
+        input.model,
+      );
+    }),
+
+  // 프리셋별 모듈 모델 설정 삭제 (글로벌로 폴백)
+  resetPresetModel: systemAdminProcedure
+    .input(
+      z.object({
+        presetSlug: z.string().min(1),
+        moduleName: z.string().min(1),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      await resetPresetModelSetting(input.presetSlug, input.moduleName);
+      return { success: true };
+    }),
+
   // 전체 모듈의 AI 모델을 일괄 변경 (시스템 관리자 전용)
   bulkUpdate: systemAdminProcedure
     .input(
       z.object({
         provider: aiProviderEnum,
         model: z.string().min(1),
+        presetSlug: z.string().optional(),
       }),
     )
     .mutation(async ({ input }) => {
       const currentSettings = await getAllModelSettings();
+      const { provider, model, presetSlug } = input;
+
+      if (presetSlug) {
+        const results = await Promise.all(
+          currentSettings.map((s) =>
+            upsertPresetModelSetting(presetSlug, s.moduleName, provider, model),
+          ),
+        );
+        return { updated: results.length };
+      }
+
       const results = await Promise.all(
-        currentSettings.map((s) => upsertModelSetting(s.moduleName, input.provider, input.model)),
+        currentSettings.map((s) => upsertModelSetting(s.moduleName, provider, model)),
       );
       return { updated: results.length };
     }),
@@ -80,9 +129,9 @@ export const settingsRouter = router({
 
     // 프리셋 적용 (시스템 관리자 전용)
     applyPreset: systemAdminProcedure
-      .input(z.object({ presetId: z.string().min(1) }))
+      .input(z.object({ presetId: z.string().min(1), targetPresetSlug: z.string().optional() }))
       .mutation(async ({ input }) => {
-        return applyModelScenario(input.presetId);
+        return applyModelScenario(input.presetId, input.targetPresetSlug);
       }),
   }),
 

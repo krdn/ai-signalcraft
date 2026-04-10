@@ -6,6 +6,10 @@ import { ApprovalRatingCard } from './approval-rating-card';
 import { FrameWarChart } from './frame-war-chart';
 import { CrisisScenarios } from './crisis-scenarios';
 import { WinSimulationCard } from './win-simulation-card';
+import { FanLoyaltyCard } from './fan-loyalty-card';
+import { NarrativeWarChart } from './narrative-war-chart';
+import { FandomCrisisCard } from './fandom-crisis-card';
+import { ReleasePredictionCard } from './release-prediction-card';
 import { AdvancedHelp } from './advanced-help';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -18,8 +22,20 @@ interface AdvancedViewProps {
   fetchFn?: (jobId: number) => Promise<Array<{ module: string; status: string; result?: unknown }>>;
 }
 
-// ADVN 모듈 이름 목록
-const ADVN_MODULES = ['approval-rating', 'frame-war', 'crisis-scenario', 'win-simulation'];
+// 도메인별 ADVN 모듈 이름
+const POLITICAL_ADVN_MODULES = [
+  'approval-rating',
+  'frame-war',
+  'crisis-scenario',
+  'win-simulation',
+];
+const FANDOM_ADVN_MODULES = [
+  'fan-loyalty-index',
+  'fandom-narrative-war',
+  'fandom-crisis-scenario',
+  'release-reception-prediction',
+];
+const ALL_ADVN_MODULES = [...POLITICAL_ADVN_MODULES, ...FANDOM_ADVN_MODULES];
 
 // 모듈별 결과를 파싱하는 유틸
 function parseModuleResult(
@@ -28,6 +44,13 @@ function parseModuleResult(
 ) {
   const found = results.find((r) => r.module === moduleName);
   return found?.result as Record<string, unknown> | undefined;
+}
+
+// 모듈 이름으로 도메인 감지
+function detectDomain(moduleResults: Array<{ module: string }>): 'political' | 'fandom' {
+  const modules = moduleResults.map((r) => r.module);
+  if (modules.some((m) => FANDOM_ADVN_MODULES.includes(m))) return 'fandom';
+  return 'political';
 }
 
 export function AdvancedView({ jobId, fetchFn }: AdvancedViewProps) {
@@ -94,7 +117,7 @@ export function AdvancedView({ jobId, fetchFn }: AdvancedViewProps) {
   const moduleResults = (results ?? []) as Array<{ module: string; result: unknown }>;
 
   // ADVN 결과가 있는지 확인
-  const hasAdvnResults = moduleResults.some((r) => ADVN_MODULES.includes(r.module));
+  const hasAdvnResults = moduleResults.some((r) => ALL_ADVN_MODULES.includes(r.module));
 
   if (!hasAdvnResults) {
     return (
@@ -108,10 +131,8 @@ export function AdvancedView({ jobId, fetchFn }: AdvancedViewProps) {
     );
   }
 
-  const approvalRating = parseModuleResult(moduleResults, 'approval-rating');
-  const frameWar = parseModuleResult(moduleResults, 'frame-war');
-  const crisisScenario = parseModuleResult(moduleResults, 'crisis-scenario');
-  const winSimulation = parseModuleResult(moduleResults, 'win-simulation');
+  // 도메인 자동 감지
+  const domain = detectDomain(moduleResults);
 
   return (
     <div className="space-y-4">
@@ -120,13 +141,28 @@ export function AdvancedView({ jobId, fetchFn }: AdvancedViewProps) {
         <AdvancedHelp />
       </div>
 
-      {/* 카드 그리드 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <ApprovalRatingCard data={approvalRating ?? null} />
-        <FrameWarChart data={frameWar ?? null} />
-        <CrisisScenarios data={crisisScenario ?? null} />
-        <WinSimulationCard data={winSimulation ?? null} />
-      </div>
+      {/* 도메인별 카드 그리드 */}
+      {domain === 'fandom' ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <FanLoyaltyCard data={parseModuleResult(moduleResults, 'fan-loyalty-index') ?? null} />
+          <NarrativeWarChart
+            data={parseModuleResult(moduleResults, 'fandom-narrative-war') ?? null}
+          />
+          <FandomCrisisCard
+            data={parseModuleResult(moduleResults, 'fandom-crisis-scenario') ?? null}
+          />
+          <ReleasePredictionCard
+            data={parseModuleResult(moduleResults, 'release-reception-prediction') ?? null}
+          />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <ApprovalRatingCard data={parseModuleResult(moduleResults, 'approval-rating') ?? null} />
+          <FrameWarChart data={parseModuleResult(moduleResults, 'frame-war') ?? null} />
+          <CrisisScenarios data={parseModuleResult(moduleResults, 'crisis-scenario') ?? null} />
+          <WinSimulationCard data={parseModuleResult(moduleResults, 'win-simulation') ?? null} />
+        </div>
+      )}
     </div>
   );
 }
