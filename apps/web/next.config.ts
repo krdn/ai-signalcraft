@@ -18,10 +18,9 @@ const nextConfig: NextConfig = {
   ],
   turbopack: {
     rules: {
-      // playwright-core 내부 에셋(.ttf)을 Turbopack이 무시하도록 처리
-      '*.ttf': {
-        type: 'asset',
-      },
+      // playwright-core 내부 에셋을 Turbopack이 처리하도록 설정
+      '*.ttf': { type: 'asset' },
+      '*.html': { type: 'asset' },
     },
   },
   // 네이밍 재설계 마이그레이션 (Phase 4)
