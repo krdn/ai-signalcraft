@@ -1,7 +1,12 @@
 import { OpportunitySchema, type OpportunityResult } from '../schemas/opportunity.schema';
 import type { AnalysisModule, AnalysisInput } from '../types';
+import type { AnalysisDomain } from '../domain';
 import { MODULE_MODEL_MAP } from '../types';
-import { ANALYSIS_CONSTRAINTS, distillForOpportunity } from './prompt-utils';
+import {
+  ANALYSIS_CONSTRAINTS,
+  distillForOpportunity,
+  buildModuleSystemPrompt,
+} from './prompt-utils';
 
 const config = MODULE_MODEL_MAP['opportunity'];
 
@@ -14,7 +19,11 @@ export const opportunityModule: AnalysisModule<OpportunityResult> = {
   model: config.model,
   schema: OpportunitySchema,
 
-  buildSystemPrompt(): string {
+  buildSystemPrompt(domain?: AnalysisDomain): string {
+    const override = buildModuleSystemPrompt('opportunity', domain);
+    if (override) {
+      return `${override}\n${ANALYSIS_CONSTRAINTS}`;
+    }
     return `당신은 여론 기반 기회 발굴 및 전략적 자산 분석 전문가입니다.
 부정적 여론 속에서도 **활용 가능한 긍정 자산과 미개발 영역**을 식별합니다.
 
@@ -68,7 +77,11 @@ ${commentsSample}
 - 위 분석을 종합하여 가장 ROI가 높은 기회 1개를 선정하고 구체적 실행 계획을 제시하세요`;
   },
 
-  buildPromptWithContext(data: AnalysisInput, priorResults: Record<string, unknown>): string {
+  buildPromptWithContext(
+    data: AnalysisInput,
+    priorResults: Record<string, unknown>,
+    _domain?: AnalysisDomain,
+  ): string {
     const basePrompt = this.buildPrompt(data);
     const distilledContext = distillForOpportunity(priorResults);
 

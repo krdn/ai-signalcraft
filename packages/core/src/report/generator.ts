@@ -3,11 +3,22 @@ import { analyzeText } from '@krdn/ai-analysis-kit/gateway';
 import { persistAnalysisReport } from '../analysis/persist-analysis';
 import { getModuleModelConfig } from '../analysis/model-config';
 import type { ReportGenerationInput } from '../types/report';
+import type { AnalysisDomain } from '../analysis/domain';
+import { getDomainConfig } from '../analysis/domain';
 
 export type { ReportGenerationInput } from '../types/report';
 
-// 고급 분석(ADVN) 모듈 결과가 있으면 프롬프트에 추가할 섹션 생성
-const ADVN_MODULES = ['approval-rating', 'frame-war', 'crisis-scenario', 'win-simulation'];
+// 고급 분석(ADVN) 모듈 — 정치 + 팬덤 모두 포함
+const ADVN_MODULES = [
+  'approval-rating',
+  'frame-war',
+  'crisis-scenario',
+  'win-simulation',
+  'fan-loyalty-index',
+  'fandom-narrative-war',
+  'fandom-crisis-scenario',
+  'release-reception-prediction',
+];
 
 function buildAdvancedAnalysisSection(input: ReportGenerationInput): string {
   const advnResults = Object.entries(input.results).filter(
@@ -20,13 +31,7 @@ function buildAdvancedAnalysisSection(input: ReportGenerationInput): string {
 
 ## 고급 분석 결과
 다음 고급 분석 모듈 결과도 리포트에 자연스럽게 통합하세요:
-${advnResults.map(([k, r]) => `### ${k}\n${JSON.stringify(r.result, null, 2)}`).join('\n\n')}
-
-고급 분석 섹션에서는:
-- AI 지지율 추정 결과에 면책 문구를 반드시 포함
-- 프레임 전쟁 분석의 시각적 구조(지배적 vs 위협 vs 반전 가능)
-- 위기 시나리오 3개를 표 형태로 정리
-- 승리 확률과 핵심 전략을 명확히 구분`;
+${advnResults.map(([k, r]) => `### ${k}\n${JSON.stringify(r.result, null, 2)}`).join('\n\n')}`;
 }
 
 /**
@@ -67,7 +72,11 @@ export async function generateIntegratedReport(input: ReportGenerationInput): Pr
 
   const config = await getModuleModelConfig('integrated-report');
 
-  const prompt = `당신은 정치·여론·미디어 전략 보고서를 작성하는 최고 수준의 데이터 전략가입니다.
+  // 도메인 설정 로드
+  const domain: AnalysisDomain = (input as any).domain ?? 'political';
+  const domainConfig = getDomainConfig(domain);
+
+  const prompt = `당신은 ${domainConfig.displayName} 종합 전략 보고서를 작성하는 최고 수준의 데이터 전략가입니다.
 
 아래의 분석 결과 데이터를 기반으로 **종합 전략 리포트**를 마크다운 형식으로 작성하세요.
 
@@ -81,17 +90,7 @@ ${resultsJson}
 ## 작성 지침
 1. **핵심 -> 분석 -> 전략** 순서로 작성
 2. 각 섹션에 해당하는 분석 모듈 결과를 자연어로 풀어서 설명
-3. 섹션 구조:
-   - # 종합 분석 리포트: [키워드]
-   - ## 한 줄 요약 (final-summary의 oneLiner 활용)
-   - ## 1. 전체 여론 구조 (macro-view 결과)
-   - ## 2. 집단별 반응 분석 (segmentation 결과)
-   - ## 3. 감정 및 프레임 분석 (sentiment-framing 결과)
-   - ## 4. 메시지 효과 분석 (message-impact 결과)
-   - ## 5. 리스크 분석 (risk-map 결과)
-   - ## 6. 기회 분석 (opportunity 결과)
-   - ## 7. 전략 도출 (strategy 결과)
-   - ## 8. 최종 전략 요약 (final-summary 결과)
+3. 섹션 구조:${domainConfig.reportSectionTemplate}
 4. 전략 중심으로 작성, 단순 요약 금지
 5. 근거 없는 추측 금지${failedSection}${buildAdvancedAnalysisSection(input)}`;
 
@@ -101,7 +100,8 @@ ${resultsJson}
     baseUrl: config.baseUrl,
     apiKey: config.apiKey,
     systemPrompt:
-      '당신은 정치·여론·미디어 전략을 설계하는 최고 수준의 데이터 전략가이자 선거 캠프 수석 분석관입니다. 단순 요약이 아니라, 실제 의사결정자가 즉시 전략을 실행할 수 있는 수준의 분석 보고서를 작성합니다.',
+      domainConfig.reportSystemPrompt +
+      ' 단순 요약이 아니라, 실제 의사결정자가 즉시 전략을 실행할 수 있는 수준의 분석 보고서를 작성합니다.',
     maxOutputTokens: 16384,
   });
 

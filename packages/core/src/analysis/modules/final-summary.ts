@@ -1,7 +1,12 @@
 import { FinalSummarySchema, type FinalSummaryResult } from '../schemas/final-summary.schema';
 import type { AnalysisModule, AnalysisInput } from '../types';
+import type { AnalysisDomain } from '../domain';
 import { MODULE_MODEL_MAP } from '../types';
-import { ANALYSIS_CONSTRAINTS, distillForFinalSummary } from './prompt-utils';
+import {
+  ANALYSIS_CONSTRAINTS,
+  distillForFinalSummary,
+  buildModuleSystemPrompt,
+} from './prompt-utils';
 
 const config = MODULE_MODEL_MAP['final-summary'];
 
@@ -14,7 +19,11 @@ export const finalSummaryModule: AnalysisModule<FinalSummaryResult> = {
   model: config.model,
   schema: FinalSummarySchema,
 
-  buildSystemPrompt(): string {
+  buildSystemPrompt(domain?: AnalysisDomain): string {
+    const override = buildModuleSystemPrompt('final-summary', domain);
+    if (override) {
+      return `${override}\n${ANALYSIS_CONSTRAINTS}`;
+    }
     return `당신은 정치 전략 브리핑 전문가입니다.
 복잡한 분석 결과를 **의사결정자가 3분 내에 파악하고 즉시 행동**할 수 있는 형태로 압축합니다.
 
@@ -64,7 +73,11 @@ ${articlesSummary}
 - 전망의 핵심 변수(keyVariable)를 명시하세요`;
   },
 
-  buildPromptWithContext(data: AnalysisInput, priorResults: Record<string, unknown>): string {
+  buildPromptWithContext(
+    data: AnalysisInput,
+    priorResults: Record<string, unknown>,
+    _domain?: AnalysisDomain,
+  ): string {
     const basePrompt = this.buildPrompt(data);
     const distilledContext = distillForFinalSummary(priorResults);
 

@@ -10,8 +10,16 @@ export { opportunityModule } from './opportunity';
 export { strategyModule } from './strategy';
 export { finalSummaryModule } from './final-summary';
 
-// Stage 4 분석 모듈 (ADVN 고급 분석)
+// Stage 4 분석 모듈 — 정치 도메인 (ADVN)
 export { approvalRatingModule } from './approval-rating';
 export { frameWarModule } from './frame-war';
 export { crisisScenarioModule } from './crisis-scenario';
 export { winSimulationModule } from './win-simulation';
+
+// Stage 4 분석 모듈 — 팬덤 도메인 (ADVN-F)
+export {
+  fanLoyaltyIndexModule,
+  fandomNarrativeWarModule,
+  fandomCrisisScenarioModule,
+  releaseReceptionPredictionModule,
+} from './fandom';

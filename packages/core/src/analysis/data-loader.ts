@@ -12,6 +12,7 @@ import {
   commentJobs,
 } from '../db/schema/collections';
 import type { AnalysisInput } from './types';
+import type { AnalysisDomain } from './domain';
 
 // 토큰 절약 상수 (Pitfall 1 대응)
 const MAX_ARTICLE_CONTENT_LENGTH = 500;
@@ -92,5 +93,6 @@ export async function loadAnalysisInput(jobId: number): Promise<AnalysisInput> {
       start: job.startDate,
       end: job.endDate,
     },
+    domain: (job.domain as AnalysisDomain) || undefined,
   };
 }

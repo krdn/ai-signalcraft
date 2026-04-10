@@ -3,9 +3,11 @@
 // AnalysisModule/AnalysisInput/MODULE_MODEL_MAP/MODULE_NAMES는 본 프로젝트 도메인이므로 로컬 정의.
 import { z } from 'zod';
 import type { AIProvider } from '@krdn/ai-analysis-kit/gateway';
+import type { AnalysisDomain } from './domain';
 
 export type { AIProvider };
 export type ProviderType = AIProvider;
+export type { AnalysisDomain };
 
 // 분석 모듈 공통 인터페이스 (D-01)
 export interface AnalysisModule<T = unknown> {
@@ -16,9 +18,13 @@ export interface AnalysisModule<T = unknown> {
   readonly schema: z.ZodType<T, z.ZodTypeDef, unknown>;
 
   buildPrompt(data: AnalysisInput): string;
-  buildSystemPrompt(): string;
+  buildSystemPrompt(domain?: AnalysisDomain): string;
   // 선행 분석 결과가 필요한 모듈용 (Stage 2+)
-  buildPromptWithContext?(data: AnalysisInput, priorResults: Record<string, unknown>): string;
+  buildPromptWithContext?(
+    data: AnalysisInput,
+    priorResults: Record<string, unknown>,
+    domain?: AnalysisDomain,
+  ): string;
 }
 
 // 분석 입력 데이터 (DB에서 로드)
@@ -49,6 +55,7 @@ export interface AnalysisInput {
     publishedAt: Date | null;
   }>;
   dateRange: { start: Date; end: Date };
+  domain?: AnalysisDomain;
 }
 
 // 분석 모듈 실행 결과
@@ -79,11 +86,16 @@ export const MODULE_MODEL_MAP: Record<string, { provider: AIProvider; model: str
   strategy: { provider: 'anthropic', model: 'claude-sonnet-4-6' },
   'final-summary': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
   'integrated-report': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
-  // Stage 4: ADVN 고급 분석 모듈
+  // Stage 4: ADVN 고급 분석 모듈 (정치 도메인)
   'approval-rating': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
   'frame-war': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
   'crisis-scenario': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
   'win-simulation': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
+  // Stage 4: ADVN 고급 분석 모듈 (팬덤 도메인)
+  'fan-loyalty-index': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
+  'fandom-narrative-war': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
+  'fandom-crisis-scenario': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
+  'release-reception-prediction': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
 };
 
 // 모듈 이름 상수
@@ -100,4 +112,9 @@ export const MODULE_NAMES = {
   FRAME_WAR: 'frame-war',
   CRISIS_SCENARIO: 'crisis-scenario',
   WIN_SIMULATION: 'win-simulation',
+  // 팬덤 도메인 모듈
+  FAN_LOYALTY_INDEX: 'fan-loyalty-index',
+  FANDOM_NARRATIVE_WAR: 'fandom-narrative-war',
+  FANDOM_CRISIS_SCENARIO: 'fandom-crisis-scenario',
+  RELEASE_RECEPTION_PREDICTION: 'release-reception-prediction',
 } as const;

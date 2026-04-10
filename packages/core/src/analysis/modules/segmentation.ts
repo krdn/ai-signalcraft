@@ -1,7 +1,13 @@
 import type { AnalysisModule, AnalysisInput } from '../types';
+import type { AnalysisDomain } from '../domain';
 import { MODULE_MODEL_MAP } from '../types';
 import { SegmentationSchema, type SegmentationResult } from '../schemas/segmentation.schema';
-import { formatInputData, PLATFORM_KNOWLEDGE, ANALYSIS_CONSTRAINTS } from './prompt-utils';
+import {
+  formatInputData,
+  ANALYSIS_CONSTRAINTS,
+  getPlatformKnowledge,
+  buildModuleSystemPrompt,
+} from './prompt-utils';
 
 // 모듈2: 집단별 반응 분석 (ANLZ-04)
 export const segmentationModule: AnalysisModule<SegmentationResult> = {
@@ -11,7 +17,11 @@ export const segmentationModule: AnalysisModule<SegmentationResult> = {
   model: MODULE_MODEL_MAP['segmentation'].model,
   schema: SegmentationSchema,
 
-  buildSystemPrompt(): string {
+  buildSystemPrompt(domain?: AnalysisDomain): string {
+    const override = buildModuleSystemPrompt('segmentation', domain);
+    if (override) {
+      return `${override}\n${getPlatformKnowledge(domain)}\n${ANALYSIS_CONSTRAINTS}`;
+    }
     return `당신은 정치 여론의 집단 역학(group dynamics) 분석 전문가입니다.
 온라인 여론 데이터에서 **누가, 어떤 플랫폼에서, 어떤 반응**을 보이는지 세분화합니다.
 
@@ -25,7 +35,7 @@ export const segmentationModule: AnalysisModule<SegmentationResult> = {
 - **Core**: 일관되게 옹호/지지하는 댓글, 출처 불문 긍정 반응, 반론에도 입장 유지
 - **Opposition**: 일관되게 비판/반대하는 댓글, 부정 프레임 적극 확산, 대안 제시
 - **Swing**: 이슈에 따라 입장 변동, 조건부 지지/반대, "~하면 좋겠는데" 형태의 유보적 표현
-${PLATFORM_KNOWLEDGE}
+${getPlatformKnowledge(domain)}
 ${ANALYSIS_CONSTRAINTS}`;
   },
 

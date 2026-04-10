@@ -1,7 +1,13 @@
 import { WinSimulationSchema, type WinSimulationResult } from '../schemas/win-simulation.schema';
 import type { AnalysisModule, AnalysisInput } from '../types';
+import type { AnalysisDomain } from '../domain';
 import { MODULE_MODEL_MAP } from '../types';
-import { ANALYSIS_CONSTRAINTS, PROBABILITY_ANCHOR, distillForWinSimulation } from './prompt-utils';
+import {
+  ANALYSIS_CONSTRAINTS,
+  distillForWinSimulation,
+  buildModuleSystemPrompt,
+  getProbabilityAnchor,
+} from './prompt-utils';
 
 const config = MODULE_MODEL_MAP['win-simulation'];
 
@@ -14,7 +20,11 @@ export const winSimulationModule: AnalysisModule<WinSimulationResult> = {
   model: config.model,
   schema: WinSimulationSchema,
 
-  buildSystemPrompt(): string {
+  buildSystemPrompt(domain?: AnalysisDomain): string {
+    const override = buildModuleSystemPrompt('win-simulation', domain);
+    if (override) {
+      return `${override}\n${getProbabilityAnchor(domain)}\n${ANALYSIS_CONSTRAINTS}`;
+    }
     return `당신은 선거/여론 전략 시뮬레이션 전문가입니다.
 11개 선행 분석 결과를 종합하여 **승리 확률, 승패 조건, 핵심 전략**을 도출합니다.
 
@@ -42,7 +52,7 @@ export const winSimulationModule: AnalysisModule<WinSimulationResult> = {
 - strategy의 기존 전략을 그대로 반복하지 말고, 시뮬레이션 결과를 반영하여 우선순위를 재배치
 - expectedImpact는 정량적 표현 (예: "Swing 5%p 전환", "지지율 2~3%p 상승 기대")
 
-${PROBABILITY_ANCHOR}
+${getProbabilityAnchor(domain)}
 ${ANALYSIS_CONSTRAINTS}`;
   },
 
@@ -90,7 +100,11 @@ ${commentsSample}
 - simulationSummary에 전체 시뮬레이션 결과를 3~5줄로 요약하세요`;
   },
 
-  buildPromptWithContext(data: AnalysisInput, priorResults: Record<string, unknown>): string {
+  buildPromptWithContext(
+    data: AnalysisInput,
+    priorResults: Record<string, unknown>,
+    _domain?: AnalysisDomain,
+  ): string {
     const basePrompt = this.buildPrompt(data);
     const distilledContext = distillForWinSimulation(priorResults);
 

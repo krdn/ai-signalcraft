@@ -15,6 +15,7 @@ export const analysisPresets = pgTable(
     id: uuid('id').defaultRandom().primaryKey(),
     slug: text('slug').unique().notNull(),
     category: text('category').notNull(),
+    domain: text('domain').notNull().default('political'),
     title: text('title').notNull(),
     description: text('description').notNull(),
     icon: text('icon').notNull(),

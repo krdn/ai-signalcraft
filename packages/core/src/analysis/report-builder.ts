@@ -31,6 +31,7 @@ export async function buildResult(
         results: allResults,
         completedModules,
         failedModules,
+        domain: input.domain,
       });
       await updateJobProgress(input.jobId, { report: { status: 'completed' } });
     } catch {
@@ -80,6 +81,7 @@ export async function generateFinalReport(
       results: allResults,
       completedModules,
       failedModules,
+      domain: input.domain,
     });
     await updateJobProgress(input.jobId, { report: { status: 'completed' } });
     return report;

@@ -1,7 +1,12 @@
 import { ApprovalRatingSchema, type ApprovalRatingResult } from '../schemas/approval-rating.schema';
 import type { AnalysisModule, AnalysisInput } from '../types';
+import type { AnalysisDomain } from '../domain';
 import { MODULE_MODEL_MAP } from '../types';
-import { ANALYSIS_CONSTRAINTS, distillForApprovalRating } from './prompt-utils';
+import {
+  ANALYSIS_CONSTRAINTS,
+  distillForApprovalRating,
+  buildModuleSystemPrompt,
+} from './prompt-utils';
 
 const config = MODULE_MODEL_MAP['approval-rating'];
 
@@ -14,7 +19,11 @@ export const approvalRatingModule: AnalysisModule<ApprovalRatingResult> = {
   model: config.model,
   schema: ApprovalRatingSchema,
 
-  buildSystemPrompt(): string {
+  buildSystemPrompt(domain?: AnalysisDomain): string {
+    const override = buildModuleSystemPrompt('approval-rating', domain);
+    if (override) {
+      return `${override}\n${ANALYSIS_CONSTRAINTS}`;
+    }
     return `당신은 온라인 여론 데이터 기반 지지율 추정 전문가입니다.
 댓글·기사·영상 데이터에서 **플랫폼별 편향을 보정하여** AI 기반 지지율 범위를 추정합니다.
 
@@ -88,7 +97,11 @@ ${platformSummary}
 - 면책 문구를 반드시 포함하세요`;
   },
 
-  buildPromptWithContext(data: AnalysisInput, priorResults: Record<string, unknown>): string {
+  buildPromptWithContext(
+    data: AnalysisInput,
+    priorResults: Record<string, unknown>,
+    _domain?: AnalysisDomain,
+  ): string {
     const basePrompt = this.buildPrompt(data);
     const distilledContext = distillForApprovalRating(priorResults);
 

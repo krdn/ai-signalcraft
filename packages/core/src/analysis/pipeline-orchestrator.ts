@@ -12,13 +12,7 @@ import { getDb } from '../db';
 import { collectionJobs } from '../db/schema/collections';
 import { analysisResults as analysisResultsTable } from '../db/schema/analysis';
 import { finalSummaryModule } from './modules';
-import {
-  runModule,
-  STAGE1_MODULES,
-  STAGE2_MODULES,
-  STAGE4_PARALLEL,
-  STAGE4_SEQUENTIAL,
-} from './runner';
+import { runModule, STAGE1_MODULES, STAGE2_MODULES, getStage4Modules } from './runner';
 import { runModuleMapReduce } from './map-reduce';
 import { loadAnalysisInput } from './data-loader';
 import { preprocessAnalysisInput, type OptimizationPreset } from './preprocessing';
@@ -373,12 +367,15 @@ export async function runAnalysisPipeline(
     return buildResult(allResults, cancelledByUser, costLimitExceeded, input);
   }
 
-  // Stage 4: 고급 분석
+  // Stage 4: 고급 분석 (도메인별 모듈 라우팅)
   if (await preRunCheck()) {
-    const stage4aActive = STAGE4_PARALLEL.filter(
+    const { parallel: stage4Parallel, sequential: stage4Sequential } = getStage4Modules(
+      input.domain,
+    );
+    const stage4aActive = stage4Parallel.filter(
       (m) => !isSkipped(m.name) && !isAlreadyCompleted(m.name),
     );
-    for (const m of STAGE4_PARALLEL.filter((m) => isSkipped(m.name))) await markSkipped(m.name);
+    for (const m of stage4Parallel.filter((m) => isSkipped(m.name))) await markSkipped(m.name);
 
     collectResults(
       await runWithProviderGrouping(
@@ -392,7 +389,7 @@ export async function runAnalysisPipeline(
       return buildResult(allResults, cancelledByUser, costLimitExceeded, input);
     }
 
-    for (const module of STAGE4_SEQUENTIAL) {
+    for (const module of stage4Sequential) {
       if (!(await preRunCheck())) break;
       if (isSkipped(module.name)) {
         await markSkipped(module.name);

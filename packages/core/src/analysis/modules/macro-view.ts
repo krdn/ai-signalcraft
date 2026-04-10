@@ -1,7 +1,13 @@
 import type { AnalysisModule, AnalysisInput } from '../types';
+import type { AnalysisDomain } from '../domain';
 import { MODULE_MODEL_MAP } from '../types';
 import { MacroViewSchema, type MacroViewResult } from '../schemas/macro-view.schema';
-import { formatInputData, PLATFORM_KNOWLEDGE, ANALYSIS_CONSTRAINTS } from './prompt-utils';
+import {
+  formatInputData,
+  ANALYSIS_CONSTRAINTS,
+  getPlatformKnowledge,
+  buildModuleSystemPrompt,
+} from './prompt-utils';
 
 // 모듈1: 전체 여론 구조 분석 (ANLZ-01, ANLZ-03)
 export const macroViewModule: AnalysisModule<MacroViewResult> = {
@@ -11,7 +17,11 @@ export const macroViewModule: AnalysisModule<MacroViewResult> = {
   model: MODULE_MODEL_MAP['macro-view'].model,
   schema: MacroViewSchema,
 
-  buildSystemPrompt(): string {
+  buildSystemPrompt(domain?: AnalysisDomain): string {
+    const override = buildModuleSystemPrompt('macro-view', domain);
+    if (override) {
+      return `${override}\n${getPlatformKnowledge(domain)}\n${ANALYSIS_CONSTRAINTS}`;
+    }
     return `당신은 15년 경력의 정치 여론 동향 분석가입니다.
 한국 온라인 여론 데이터(뉴스, 유튜브, 커뮤니티 댓글)를 종합하여 **시간축 기반 여론 구조**를 파악합니다.
 
@@ -20,7 +30,7 @@ export const macroViewModule: AnalysisModule<MacroViewResult> = {
 - 이벤트-반응 간 인과관계를 추론하여 타임라인 구성
 - 플랫폼별 데이터 편향을 보정한 종합 방향성 판단
 - 단순 감정 집계가 아닌, 여론의 **구조적 흐름**(상승→정체→반전 등)을 서사로 구성
-${PLATFORM_KNOWLEDGE}
+${getPlatformKnowledge(domain)}
 ${ANALYSIS_CONSTRAINTS}`;
   },
 
