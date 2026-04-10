@@ -62,6 +62,7 @@ const PRESET_SEEDS = [
   {
     slug: 'entertainment',
     category: '핵심 활용',
+    domain: 'fandom',
     title: '연예인 / 기획사',
     description: '아티스트·배우의 온라인 반응을 실시간 추적하고, 팬덤 동향과 리스크를 분석합니다.',
     icon: 'Sparkles',
@@ -71,7 +72,7 @@ const PRESET_SEEDS = [
     customSourceIds: [],
     limits: { naverArticles: 300, youtubeVideos: 100, communityPosts: 100, commentsPerItem: 500 },
     optimization: 'standard' as const,
-    skippedModules: ['approvalRating', 'winSimulation'],
+    skippedModules: [],
     enableItemAnalysis: true,
   },
   // 산업 특화
@@ -157,6 +158,7 @@ const PRESET_SEEDS = [
   {
     slug: 'sports',
     category: '확장 영역',
+    domain: 'fandom',
     title: '스포츠 / e스포츠',
     description: '선수 이적, 팀 성적에 따른 팬 반응을 실시간 추적합니다.',
     icon: 'Dumbbell',
