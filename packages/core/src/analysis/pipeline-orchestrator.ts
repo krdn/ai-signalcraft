@@ -12,7 +12,13 @@ import { getDb } from '../db';
 import { collectionJobs } from '../db/schema/collections';
 import { analysisResults as analysisResultsTable } from '../db/schema/analysis';
 import { finalSummaryModule } from './modules';
-import { runModule, STAGE1_MODULES, STAGE2_MODULES, getStage4Modules } from './runner';
+import {
+  runModule,
+  STAGE1_MODULES,
+  STAGE2_MODULES,
+  getStage4Modules,
+  createModelConfigAdapter,
+} from './runner';
 import { runModuleMapReduce } from './map-reduce';
 import { loadAnalysisInput } from './data-loader';
 import { preprocessAnalysisInput, type OptimizationPreset } from './preprocessing';
@@ -219,12 +225,16 @@ export async function runAnalysisPipeline(
     }
   }
 
-  // jobRow 조회 (옵션 확인용)
+  // jobRow 조회 (옵션 + 프리셋 slug 확인용)
   const [jobRow] = await getDb()
-    .select({ options: collectionJobs.options })
+    .select({ options: collectionJobs.options, keywordType: collectionJobs.keywordType })
     .from(collectionJobs)
     .where(eq(collectionJobs.id, jobId))
     .limit(1);
+
+  // 프리셋별 모델 설정 어댑터 생성
+  const presetSlug = jobRow?.keywordType ?? undefined;
+  const modelAdapter = createModelConfigAdapter(presetSlug);
 
   // 토큰 최적화 전처리
   const tokenOptimization = (jobRow?.options?.tokenOptimization ?? 'none') as OptimizationPreset;
@@ -295,7 +305,7 @@ export async function runAnalysisPipeline(
 
   const stage1Results = await runWithProviderGrouping(
     stage1Active,
-    (m) => runModuleMapReduce(m, input),
+    (m) => runModuleMapReduce(m, input, undefined, modelAdapter),
     providerConcurrency,
   );
   collectResults(stage1Results);
@@ -322,7 +332,7 @@ export async function runAnalysisPipeline(
 
     const stage2Results = await runWithProviderGrouping(
       stage2Parallel,
-      (m) => runModule(m, input, priorResults),
+      (m) => runModule(m, input, priorResults, modelAdapter),
       providerConcurrency,
     );
     collectResults(stage2Results);
@@ -331,7 +341,7 @@ export async function runAnalysisPipeline(
       if (isSkipped(strategyMod.name)) {
         await markSkipped(strategyMod.name);
       } else if (!isAlreadyCompleted(strategyMod.name)) {
-        const result = await runModule(strategyMod, input, priorResults);
+        const result = await runModule(strategyMod, input, priorResults, modelAdapter);
         allResults[result.module] = result;
         if (result.status === 'completed') priorResults[result.module] = result.result;
       }
@@ -352,7 +362,7 @@ export async function runAnalysisPipeline(
   if (isSkipped(finalSummaryModule.name)) {
     await markSkipped(finalSummaryModule.name);
   } else if (!isAlreadyCompleted(finalSummaryModule.name)) {
-    const finalResult = await runModule(finalSummaryModule, input, priorResults);
+    const finalResult = await runModule(finalSummaryModule, input, priorResults, modelAdapter);
     allResults[finalResult.module] = finalResult;
     if (finalResult.status === 'completed') priorResults[finalResult.module] = finalResult.result;
   }
@@ -380,7 +390,7 @@ export async function runAnalysisPipeline(
     collectResults(
       await runWithProviderGrouping(
         stage4aActive,
-        (m) => runModule(m, input, priorResults),
+        (m) => runModule(m, input, priorResults, modelAdapter),
         providerConcurrency,
       ),
     );
@@ -397,7 +407,7 @@ export async function runAnalysisPipeline(
       }
       if (isAlreadyCompleted(module.name)) continue;
 
-      const result = await runModule(module, input, priorResults);
+      const result = await runModule(module, input, priorResults, modelAdapter);
       allResults[result.module] = result;
       if (result.status === 'completed') priorResults[result.module] = result.result;
       if (checkFailAndAbort('Stage 4b')) {

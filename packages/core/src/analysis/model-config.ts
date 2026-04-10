@@ -1,7 +1,7 @@
 // 모듈별 AI 모델 설정 조회/저장 (DB 기반 동적 설정)
 import { eq, and } from 'drizzle-orm';
 import { getDb } from '../db';
-import { modelSettings, providerKeys } from '../db/schema/settings';
+import { modelSettings, providerKeys, presetModelSettings } from '../db/schema/settings';
 import { decrypt } from '../utils/crypto';
 import type { ModuleModelConfig } from '../types/analysis';
 import type { AIProvider } from './types';
@@ -39,6 +39,11 @@ export const MODEL_SCENARIO_PRESETS: ModelScenarioPreset[] = [
       'frame-war': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
       'crisis-scenario': { provider: 'anthropic', model: 'claude-opus-4-6' },
       'win-simulation': { provider: 'anthropic', model: 'claude-opus-4-6' },
+      // 팬덤 전용 모듈
+      'fan-loyalty-index': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
+      'fandom-narrative-war': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
+      'fandom-crisis-scenario': { provider: 'anthropic', model: 'claude-opus-4-6' },
+      'release-reception-prediction': { provider: 'anthropic', model: 'claude-opus-4-6' },
     },
   },
   {
@@ -60,6 +65,11 @@ export const MODEL_SCENARIO_PRESETS: ModelScenarioPreset[] = [
       'frame-war': { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
       'crisis-scenario': { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
       'win-simulation': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
+      // 팬덤 전용 모듈
+      'fan-loyalty-index': { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
+      'fandom-narrative-war': { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
+      'fandom-crisis-scenario': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
+      'release-reception-prediction': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
     },
   },
   {
@@ -80,6 +90,11 @@ export const MODEL_SCENARIO_PRESETS: ModelScenarioPreset[] = [
       'frame-war': { provider: 'gemini', model: 'gemini-2.5-flash' },
       'crisis-scenario': { provider: 'gemini', model: 'gemini-2.5-flash' },
       'win-simulation': { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
+      // 팬덤 전용 모듈
+      'fan-loyalty-index': { provider: 'gemini', model: 'gemini-2.5-flash' },
+      'fandom-narrative-war': { provider: 'gemini', model: 'gemini-2.5-flash' },
+      'fandom-crisis-scenario': { provider: 'gemini', model: 'gemini-2.5-flash' },
+      'release-reception-prediction': { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
     },
   },
   {
@@ -101,6 +116,11 @@ export const MODEL_SCENARIO_PRESETS: ModelScenarioPreset[] = [
       'frame-war': { provider: 'gemini-cli', model: 'gemini-2.5-pro' },
       'crisis-scenario': { provider: 'gemini-cli', model: 'gemini-2.5-flash' },
       'win-simulation': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
+      // 팬덤 전용 모듈
+      'fan-loyalty-index': { provider: 'gemini-cli', model: 'gemini-2.5-pro' },
+      'fandom-narrative-war': { provider: 'gemini-cli', model: 'gemini-2.5-pro' },
+      'fandom-crisis-scenario': { provider: 'gemini-cli', model: 'gemini-2.5-flash' },
+      'release-reception-prediction': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
     },
   },
   {
@@ -121,6 +141,11 @@ export const MODEL_SCENARIO_PRESETS: ModelScenarioPreset[] = [
       'frame-war': { provider: 'gemini-cli', model: 'gemini-2.5-pro' },
       'crisis-scenario': { provider: 'gemini-cli', model: 'gemini-2.5-flash' },
       'win-simulation': { provider: 'gemini-cli', model: 'gemini-2.5-pro' },
+      // 팬덤 전용 모듈
+      'fan-loyalty-index': { provider: 'gemini-cli', model: 'gemini-2.5-pro' },
+      'fandom-narrative-war': { provider: 'gemini-cli', model: 'gemini-2.5-pro' },
+      'fandom-crisis-scenario': { provider: 'gemini-cli', model: 'gemini-2.5-flash' },
+      'release-reception-prediction': { provider: 'gemini-cli', model: 'gemini-2.5-pro' },
     },
   },
   {
@@ -142,6 +167,11 @@ export const MODEL_SCENARIO_PRESETS: ModelScenarioPreset[] = [
       'frame-war': { provider: 'claude-cli', model: 'claude-sonnet-4-6' },
       'crisis-scenario': { provider: 'claude-cli', model: 'claude-sonnet-4-6' },
       'win-simulation': { provider: 'claude-cli', model: 'claude-sonnet-4-6' },
+      // 팬덤 전용 모듈
+      'fan-loyalty-index': { provider: 'claude-cli', model: 'claude-sonnet-4-6' },
+      'fandom-narrative-war': { provider: 'claude-cli', model: 'claude-sonnet-4-6' },
+      'fandom-crisis-scenario': { provider: 'claude-cli', model: 'claude-sonnet-4-6' },
+      'release-reception-prediction': { provider: 'claude-cli', model: 'claude-sonnet-4-6' },
     },
   },
   {
@@ -163,15 +193,22 @@ export const MODEL_SCENARIO_PRESETS: ModelScenarioPreset[] = [
       'frame-war': { provider: 'deepseek', model: 'deepseek-reasoner' },
       'crisis-scenario': { provider: 'deepseek', model: 'deepseek-reasoner' },
       'win-simulation': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
+      // 팬덤 전용 모듈
+      'fan-loyalty-index': { provider: 'deepseek', model: 'deepseek-reasoner' },
+      'fandom-narrative-war': { provider: 'deepseek', model: 'deepseek-reasoner' },
+      'fandom-crisis-scenario': { provider: 'deepseek', model: 'deepseek-reasoner' },
+      'release-reception-prediction': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
     },
   },
 ];
 
 /**
  * 시나리오 프리셋을 적용하여 전체 모듈의 모델 설정을 일괄 변경
+ * targetPresetSlug가 제공되면 프리셋별 설정에 기록, 없으면 글로벌 설정에 기록
  */
 export async function applyModelScenario(
   presetId: string,
+  targetPresetSlug?: string,
 ): Promise<{ updated: number; presetName: string }> {
   const preset = MODEL_SCENARIO_PRESETS.find((p) => p.id === presetId);
   if (!preset) {
@@ -179,11 +216,20 @@ export async function applyModelScenario(
   }
 
   const entries = Object.entries(preset.modules);
-  await Promise.all(
-    entries.map(([moduleName, config]) =>
-      upsertModelSetting(moduleName, config.provider, config.model),
-    ),
-  );
+
+  if (targetPresetSlug) {
+    await Promise.all(
+      entries.map(([moduleName, config]) =>
+        upsertPresetModelSetting(targetPresetSlug, moduleName, config.provider, config.model),
+      ),
+    );
+  } else {
+    await Promise.all(
+      entries.map(([moduleName, config]) =>
+        upsertModelSetting(moduleName, config.provider, config.model),
+      ),
+    );
+  }
 
   return { updated: entries.length, presetName: preset.name };
 }
@@ -340,4 +386,132 @@ export async function upsertModelSetting(
     provider: result.provider as AIProvider,
     model: result.model,
   };
+}
+
+// --- 프리셋별 모델 설정 (오버라이드) ---
+
+/**
+ * 프리셋별 모델 설정 조회 (프리셋 → 글로벌 → 기본값 순서)
+ */
+export async function getModuleModelConfigForPreset(
+  moduleName: string,
+  presetSlug?: string,
+): Promise<ModuleModelConfig> {
+  // 1) 프리셋 오버라이드 확인
+  if (presetSlug) {
+    const db = getDb();
+    const [presetSetting] = await db
+      .select({
+        provider: presetModelSettings.provider,
+        model: presetModelSettings.model,
+      })
+      .from(presetModelSettings)
+      .where(
+        and(
+          eq(presetModelSettings.presetSlug, presetSlug),
+          eq(presetModelSettings.moduleName, moduleName),
+        ),
+      )
+      .limit(1);
+
+    if (presetSetting) {
+      const keyInfo = await getProviderKeyInfo(presetSetting.provider, presetSetting.model);
+      return {
+        provider: presetSetting.provider as AIProvider,
+        model: presetSetting.model,
+        baseUrl: keyInfo?.baseUrl ?? undefined,
+        apiKey: keyInfo?.apiKey ?? undefined,
+      };
+    }
+  }
+
+  // 2) 글로벌 설정으로 폴백
+  return getModuleModelConfig(moduleName);
+}
+
+/**
+ * 프리셋 범위의 모든 모듈 설정 반환
+ * source: 'preset' | 'global' | 'default'
+ */
+export async function getAllModelSettingsForPreset(presetSlug?: string): Promise<
+  Array<{
+    moduleName: string;
+    provider: AIProvider;
+    model: string;
+    isCustom: boolean;
+    source: 'preset' | 'global' | 'default';
+  }>
+> {
+  const globalSettings = await getAllModelSettings();
+
+  if (!presetSlug) {
+    return globalSettings.map((s) => ({
+      ...s,
+      source: (s.isCustom ? 'global' : 'default') as 'global' | 'default',
+    }));
+  }
+
+  // 프리셋 오버라이드 조회
+  const db = getDb();
+  const presetRows = await db
+    .select()
+    .from(presetModelSettings)
+    .where(eq(presetModelSettings.presetSlug, presetSlug));
+
+  const presetMap = new Map(
+    presetRows.map((r) => [r.moduleName, { provider: r.provider as AIProvider, model: r.model }]),
+  );
+
+  return globalSettings.map((s) => {
+    const presetOverride = presetMap.get(s.moduleName);
+    if (presetOverride) {
+      return { ...s, ...presetOverride, isCustom: true, source: 'preset' as const };
+    }
+    return { ...s, source: (s.isCustom ? 'global' : 'default') as 'global' | 'default' };
+  });
+}
+
+/**
+ * 프리셋별 모델 설정 저장 (upsert)
+ */
+export async function upsertPresetModelSetting(
+  presetSlug: string,
+  moduleName: string,
+  provider: AIProvider,
+  model: string,
+): Promise<{ presetSlug: string; moduleName: string; provider: AIProvider; model: string }> {
+  const db = getDb();
+  const [result] = await db
+    .insert(presetModelSettings)
+    .values({ presetSlug, moduleName, provider, model, updatedAt: new Date() })
+    .onConflictDoUpdate({
+      target: [presetModelSettings.presetSlug, presetModelSettings.moduleName],
+      set: { provider, model, updatedAt: new Date() },
+    })
+    .returning({
+      presetSlug: presetModelSettings.presetSlug,
+      moduleName: presetModelSettings.moduleName,
+      provider: presetModelSettings.provider,
+      model: presetModelSettings.model,
+    });
+
+  return { ...result, provider: result.provider as AIProvider };
+}
+
+/**
+ * 프리셋별 모델 설정 삭제 (오버라이드 제거 → 글로벌로 폴백)
+ */
+export async function resetPresetModelSetting(
+  presetSlug: string,
+  moduleName: string,
+): Promise<void> {
+  const db = getDb();
+  await db
+    .delete(presetModelSettings)
+    .where(
+      and(
+        eq(presetModelSettings.presetSlug, presetSlug),
+        eq(presetModelSettings.moduleName, moduleName),
+      ),
+    );
 }

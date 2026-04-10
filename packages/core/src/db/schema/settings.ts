@@ -4,6 +4,7 @@ import {
   timestamp,
   integer,
   uniqueIndex,
+  index,
   boolean,
   jsonb,
 } from 'drizzle-orm/pg-core';
@@ -19,6 +20,23 @@ export const modelSettings = pgTable(
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },
   (table) => [uniqueIndex('model_settings_module_name_idx').on(table.moduleName)],
+);
+
+// 프리셋별 모델 설정 오버라이드 (기본 + 프리셋 오버라이드 패턴)
+export const presetModelSettings = pgTable(
+  'preset_model_settings',
+  {
+    id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+    presetSlug: text('preset_slug').notNull(), // 'politics', 'entertainment', etc.
+    moduleName: text('module_name').notNull(), // 'macro-view', 'fan-loyalty-index', etc.
+    provider: text('provider').notNull(),
+    model: text('model').notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex('preset_model_settings_preset_module_idx').on(table.presetSlug, table.moduleName),
+    index('preset_model_settings_preset_slug_idx').on(table.presetSlug),
+  ],
 );
 
 // 병렬처리 동시성 설정 (singleton row)

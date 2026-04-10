@@ -13,7 +13,7 @@ import {
 } from '@krdn/ai-analysis-kit';
 import { isPipelineCancelled, waitIfPaused } from '../pipeline/control';
 import { appendJobEvent } from '../pipeline/persist';
-import { getModuleModelConfig } from './model-config';
+import { getModuleModelConfig, getModuleModelConfigForPreset } from './model-config';
 import { persistAnalysisResult } from './persist-analysis';
 import type { AnalysisModule, AnalysisInput, AnalysisModuleResult } from './types';
 import type { AnalysisDomain } from './domain';
@@ -92,6 +92,21 @@ const dbModelConfigAdapter: ModelConfigAdapter = {
   },
 };
 
+/** 프리셋 인식 ModelConfigAdapter 팩토리 */
+export function createModelConfigAdapter(presetSlug?: string): ModelConfigAdapter {
+  return {
+    async resolve(moduleName: string) {
+      const cfg = await getModuleModelConfigForPreset(moduleName, presetSlug);
+      return {
+        provider: cfg.provider,
+        model: cfg.model,
+        ...(cfg.baseUrl ? { baseUrl: cfg.baseUrl } : {}),
+        ...(cfg.apiKey ? { apiKey: cfg.apiKey } : {}),
+      };
+    },
+  };
+}
+
 /** DB 기반 PipelineControlAdapter */
 const dbPipelineControl: PipelineControlAdapter = {
   async isCancelled(jobId) {
@@ -152,12 +167,13 @@ export async function runModule<T>(
   module: AnalysisModule<T>,
   input: AnalysisInput,
   priorResults?: Record<string, unknown>,
+  configAdapter?: ModelConfigAdapter,
 ): Promise<AnalysisModuleResult<T>> {
   const result = await kitRunModule<AnalysisInput, T>(
     module as unknown as KitAnalysisModule<AnalysisInput, T>,
     input,
     {
-      configAdapter: dbModelConfigAdapter,
+      configAdapter: configAdapter ?? dbModelConfigAdapter,
       pipelineControl: dbPipelineControl,
       onPersist: persistCallback,
       extractMeta,

@@ -222,13 +222,14 @@ export async function runModuleMapReduce<T>(
   module: AnalysisModule<T>,
   input: AnalysisInput,
   priorResults?: Record<string, unknown>,
+  configAdapter?: Parameters<typeof runModule>[3],
 ): Promise<AnalysisModuleResult<T>> {
   const cfg = DEFAULT_CONFIG;
   const chunks = chunkAnalysisInput(input);
 
   // 청크 1개 = 소규모 데이터 → 기존 단일 패스
   if (chunks.length === 1) {
-    return runModule(module, input, priorResults);
+    return runModule(module, input, priorResults, configAdapter);
   }
 
   console.log(
