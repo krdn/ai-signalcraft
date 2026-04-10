@@ -1,0 +1,30 @@
+diff --git a/es6/cartesian/CartesianAxis.js b/es6/cartesian/CartesianAxis.js
+index 583562beb7fcca27300d85321536b52a73758738..3495747e01e06f1265e22588e84a93ca48a07111 100644
+--- a/es6/cartesian/CartesianAxis.js
++++ b/es6/cartesian/CartesianAxis.js
+@@ -307,14 +307,14 @@ var Ticks = /*#__PURE__*/forwardRef((props, ref) => {
+   var tickLineCoords = finalTicks.map(entry => _objectSpread({
+     entry
+   }, getTickLineCoord(entry, x, y, width, height, orientation, tickSize, mirror, tickMargin)));
+-  var tickLines = tickLineCoords.map(_ref2 => {
++  var tickLines = tickLineCoords.map((_ref2, i) => {
+     var {
+       entry,
+       line: lineCoord
+     } = _ref2;
+     return /*#__PURE__*/React.createElement(Layer, {
+       className: "recharts-cartesian-axis-tick",
+-      key: "tick-".concat(entry.value, "-").concat(entry.coordinate, "-").concat(entry.tickCoord)
++      key: "tick-".concat(i, "-").concat(entry.value, "-").concat(entry.coordinate, "-").concat(entry.tickCoord)
+     }, tickLine && /*#__PURE__*/React.createElement("line", _extends({}, tickLineProps, lineCoord, {
+       className: clsx('recharts-cartesian-axis-tick-line', get(tickLine, 'className'))
+     })));
+@@ -346,7 +346,7 @@ var Ticks = /*#__PURE__*/forwardRef((props, ref) => {
+     var finalTickProps = _objectSpread(_objectSpread({}, tickProps), customTickProps);
+     return /*#__PURE__*/React.createElement(Layer, _extends({
+       className: "recharts-cartesian-axis-tick-label",
+-      key: "tick-label-".concat(entry.value, "-").concat(entry.coordinate, "-").concat(entry.tickCoord)
++      key: "tick-label-".concat(i, "-").concat(entry.value, "-").concat(entry.coordinate, "-").concat(entry.tickCoord)
+     }, adaptEventsOfChild(events, entry, i)), tick && /*#__PURE__*/React.createElement(TickItem, {
+       option: tick,
+       tickProps: finalTickProps,

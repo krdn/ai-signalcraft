@@ -243,7 +243,11 @@ export function CompareView({ baseJobId, compareJobId }: CompareViewProps) {
                 >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                  <YAxis tick={{ fontSize: 12, fontFamily: 'Geist Mono, monospace' }} unit="%" />
+                  <YAxis
+                    tick={{ fontSize: 12, fontFamily: 'Geist Mono, monospace' }}
+                    unit="%"
+                    allowDuplicatedCategory={false}
+                  />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Bar dataKey="base" fill="var(--color-base)" radius={[4, 4, 0, 0]} />
                   <Bar dataKey="compare" fill="var(--color-compare)" radius={[4, 4, 0, 0]} />

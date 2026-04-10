@@ -78,7 +78,10 @@ export function PlatformCompare({ data }: PlatformCompareProps) {
             <BarChart data={chartData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="platform" tick={{ fontSize: 12 }} />
-              <YAxis tick={{ fontSize: 12, fontFamily: 'Geist Mono, monospace' }} />
+              <YAxis
+                tick={{ fontSize: 12, fontFamily: 'Geist Mono, monospace' }}
+                allowDuplicatedCategory={false}
+              />
               <ChartTooltip content={<ChartTooltipContent />} />
               <Bar dataKey="positive" stackId="a" fill="var(--color-positive)" />
               <Bar dataKey="negative" stackId="a" fill="var(--color-negative)" />

@@ -83,7 +83,10 @@ export function TrendChart({ data, events }: TrendChartProps) {
                   return parts.length >= 3 ? `${parts[1]}-${parts[2]}` : value;
                 }}
               />
-              <YAxis tick={{ fontSize: 12, fontFamily: 'Geist Mono, monospace' }} />
+              <YAxis
+                tick={{ fontSize: 12, fontFamily: 'Geist Mono, monospace' }}
+                allowDuplicatedCategory={false}
+              />
               <ChartTooltip content={<ChartTooltipContent />} />
               <Line
                 type="monotone"
