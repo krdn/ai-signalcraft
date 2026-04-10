@@ -19,6 +19,7 @@ const exploreInput = z.object({
   sentiments: z.array(z.enum(['positive', 'negative', 'neutral'])).optional(),
   minScore: z.number().min(0).max(1).optional(),
   itemType: z.enum(['articles', 'comments', 'both']).default('both'),
+  dateScope: z.enum(['job', 'all']).default('job'),
 });
 
 type ExploreInput = z.infer<typeof exploreInput>;
@@ -53,7 +54,7 @@ async function verifyJobAccess(
 /**
  * 기사 공통 조건 빌더
  */
-function buildArticleFilters(input: ExploreInput): SQL[] {
+function buildArticleFilters(input: ExploreInput, jobStartDate?: Date): SQL[] {
   const filters: SQL[] = [eq(articleJobs.jobId, input.jobId)];
   if (input.sources && input.sources.length > 0) {
     filters.push(inArray(articles.source, input.sources));
@@ -64,13 +65,16 @@ function buildArticleFilters(input: ExploreInput): SQL[] {
   if (input.minScore != null && input.minScore > 0) {
     filters.push(gte(articles.sentimentScore, input.minScore));
   }
+  if (input.dateScope === 'job' && jobStartDate) {
+    filters.push(gte(articles.publishedAt, jobStartDate));
+  }
   return filters;
 }
 
 /**
  * 댓글 공통 조건 빌더
  */
-function buildCommentFilters(input: ExploreInput): SQL[] {
+function buildCommentFilters(input: ExploreInput, jobStartDate?: Date): SQL[] {
   const filters: SQL[] = [eq(commentJobs.jobId, input.jobId)];
   if (input.sources && input.sources.length > 0) {
     filters.push(inArray(comments.source, input.sources));
@@ -80,6 +84,9 @@ function buildCommentFilters(input: ExploreInput): SQL[] {
   }
   if (input.minScore != null && input.minScore > 0) {
     filters.push(gte(comments.sentimentScore, input.minScore));
+  }
+  if (input.dateScope === 'job' && jobStartDate) {
+    filters.push(gte(comments.publishedAt, jobStartDate));
   }
   return filters;
 }
@@ -98,7 +105,8 @@ export const exploreRouter = router({
    * 반환: [{ date: 'YYYY-MM-DD', positive, negative, neutral, total }]
    */
   getSentimentTimeSeries: protectedProcedure.input(exploreInput).query(async ({ input, ctx }) => {
-    await verifyJobAccess(ctx, input.jobId);
+    const job = await verifyJobAccess(ctx, input.jobId);
+    const jobStartDate = input.dateScope === 'job' ? (job.startDate as Date) : undefined;
 
     const needArticles = input.itemType === 'articles' || input.itemType === 'both';
     const needComments = input.itemType === 'comments' || input.itemType === 'both';
@@ -132,7 +140,7 @@ export const exploreRouter = router({
         })
         .from(articles)
         .innerJoin(articleJobs, eq(articles.id, articleJobs.articleId))
-        .where(and(...buildArticleFilters(input), isNotNull(articles.publishedAt)))
+        .where(and(...buildArticleFilters(input, jobStartDate), isNotNull(articles.publishedAt)))
         .groupBy(sql`date_trunc('day', ${articles.publishedAt})`, articles.sentiment);
       for (const r of rows) addRow(r.date, r.sentiment, Number(r.count));
     }
@@ -148,7 +156,7 @@ export const exploreRouter = router({
         })
         .from(comments)
         .innerJoin(commentJobs, eq(comments.id, commentJobs.commentId))
-        .where(and(...buildCommentFilters(input), isNotNull(comments.publishedAt)))
+        .where(and(...buildCommentFilters(input, jobStartDate), isNotNull(comments.publishedAt)))
         .groupBy(sql`date_trunc('day', ${comments.publishedAt})`, comments.sentiment);
       for (const r of rows) addRow(r.date, r.sentiment, Number(r.count));
     }
@@ -161,7 +169,8 @@ export const exploreRouter = router({
    * 반환: [{ source, sentiment, count }]
    */
   getSentimentBySource: protectedProcedure.input(exploreInput).query(async ({ input, ctx }) => {
-    await verifyJobAccess(ctx, input.jobId);
+    const job = await verifyJobAccess(ctx, input.jobId);
+    const jobStartDate = input.dateScope === 'job' ? (job.startDate as Date) : undefined;
 
     const needArticles = input.itemType === 'articles' || input.itemType === 'both';
     const needComments = input.itemType === 'comments' || input.itemType === 'both';
@@ -184,7 +193,7 @@ export const exploreRouter = router({
         })
         .from(articles)
         .innerJoin(articleJobs, eq(articles.id, articleJobs.articleId))
-        .where(and(...buildArticleFilters(input)))
+        .where(and(...buildArticleFilters(input, jobStartDate)))
         .groupBy(articles.source, articles.sentiment);
       for (const r of rows) merge(r.source, r.sentiment, Number(r.count));
     }
@@ -198,7 +207,7 @@ export const exploreRouter = router({
         })
         .from(comments)
         .innerJoin(commentJobs, eq(comments.id, commentJobs.commentId))
-        .where(and(...buildCommentFilters(input)))
+        .where(and(...buildCommentFilters(input, jobStartDate)))
         .groupBy(comments.source, comments.sentiment);
       for (const r of rows) merge(r.source, r.sentiment, Number(r.count));
     }
@@ -211,7 +220,8 @@ export const exploreRouter = router({
    * 반환: [{ bin: 0..19, binStart, binEnd, positive, negative, neutral }]
    */
   getScoreDistribution: protectedProcedure.input(exploreInput).query(async ({ input, ctx }) => {
-    await verifyJobAccess(ctx, input.jobId);
+    const job = await verifyJobAccess(ctx, input.jobId);
+    const jobStartDate = input.dateScope === 'job' ? (job.startDate as Date) : undefined;
 
     const BIN_COUNT = 20;
     const needArticles = input.itemType === 'articles' || input.itemType === 'both';
@@ -253,7 +263,7 @@ export const exploreRouter = router({
         })
         .from(articles)
         .innerJoin(articleJobs, eq(articles.id, articleJobs.articleId))
-        .where(and(...buildArticleFilters(input), isNotNull(articles.sentimentScore)))
+        .where(and(...buildArticleFilters(input, jobStartDate), isNotNull(articles.sentimentScore)))
         .groupBy(articles.sentimentScore, articles.sentiment);
       for (const r of rows) addToBin(r.score, r.sentiment, Number(r.count));
     }
@@ -267,7 +277,7 @@ export const exploreRouter = router({
         })
         .from(comments)
         .innerJoin(commentJobs, eq(comments.id, commentJobs.commentId))
-        .where(and(...buildCommentFilters(input), isNotNull(comments.sentimentScore)))
+        .where(and(...buildCommentFilters(input, jobStartDate), isNotNull(comments.sentimentScore)))
         .groupBy(comments.sentimentScore, comments.sentiment);
       for (const r of rows) addToBin(r.score, r.sentiment, Number(r.count));
     }
@@ -279,7 +289,8 @@ export const exploreRouter = router({
    * V3 — 인게이지먼트 × 감정 산점도 (댓글 전용, 상위 500개)
    */
   getEngagementScatter: protectedProcedure.input(exploreInput).query(async ({ input, ctx }) => {
-    await verifyJobAccess(ctx, input.jobId);
+    const job = await verifyJobAccess(ctx, input.jobId);
+    const jobStartDate = input.dateScope === 'job' ? (job.startDate as Date) : undefined;
 
     const rows = await ctx.db
       .select({
@@ -296,7 +307,7 @@ export const exploreRouter = router({
       .innerJoin(commentJobs, eq(comments.id, commentJobs.commentId))
       .where(
         and(
-          ...buildCommentFilters(input),
+          ...buildCommentFilters(input, jobStartDate),
           isNotNull(comments.sentiment),
           isNotNull(comments.sentimentScore),
         ),
