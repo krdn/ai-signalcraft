@@ -6,6 +6,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends git ca-certific
 RUN corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY patches/ ./patches/
 COPY apps/web/package.json ./apps/web/
 COPY packages/core/package.json ./packages/core/
 COPY packages/collectors/package.json ./packages/collectors/
@@ -18,6 +19,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends git ca-certific
 RUN corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY patches/ ./patches/
 COPY apps/web/package.json ./apps/web/
 COPY packages/core/package.json ./packages/core/
 COPY packages/collectors/package.json ./packages/collectors/
