@@ -13,6 +13,7 @@ import {
 import { EXPLORE_HELP, SENTIMENT_COLORS } from './explore-help';
 import { CardHelp } from '@/components/dashboard/card-help';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { ChartContainer, type ChartConfig } from '@/components/ui/chart';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -39,6 +40,12 @@ interface ScatterEngagementProps {
   data: ScatterRow[] | undefined;
   isLoading: boolean;
 }
+
+const scatterChartConfig = {
+  positive: { label: '긍정', color: SENTIMENT_COLORS.positive },
+  negative: { label: '부정', color: SENTIMENT_COLORS.negative },
+  neutral: { label: '중립', color: SENTIMENT_COLORS.neutral },
+} satisfies ChartConfig;
 
 export function ScatterEngagement({ data, isLoading }: ScatterEngagementProps) {
   const [logScale, setLogScale] = useState(true);
@@ -85,12 +92,8 @@ export function ScatterEngagement({ data, isLoading }: ScatterEngagementProps) {
             댓글 데이터 없음
           </div>
         ) : (
-          <div className="h-[260px] w-full">
-            <ScatterChart
-              width={undefined as unknown as number}
-              height={260}
-              margin={{ top: 10, right: 20, left: 0, bottom: 20 }}
-            >
+          <ChartContainer config={scatterChartConfig} className="h-[260px] w-full">
+            <ScatterChart margin={{ top: 10, right: 20, left: 0, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
               <XAxis
                 type="number"
@@ -156,7 +159,7 @@ export function ScatterEngagement({ data, isLoading }: ScatterEngagementProps) {
                 }
               />
             </ScatterChart>
-          </div>
+          </ChartContainer>
         )}
       </CardContent>
 

@@ -5,7 +5,14 @@ import { Treemap } from 'recharts';
 import { EXPLORE_HELP, SENTIMENT_COLORS, type SentimentKey } from './explore-help';
 import { CardHelp } from '@/components/dashboard/card-help';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { ChartContainer, type ChartConfig } from '@/components/ui/chart';
 import { Skeleton } from '@/components/ui/skeleton';
+
+const treemapChartConfig = {
+  positive: { label: '긍정', color: SENTIMENT_COLORS.positive },
+  negative: { label: '부정', color: SENTIMENT_COLORS.negative },
+  neutral: { label: '중립', color: SENTIMENT_COLORS.neutral },
+} satisfies ChartConfig;
 
 interface KeywordTreemapProps {
   data: Array<{ keyword: string; count: number; sentiment: string }> | undefined;
@@ -59,17 +66,15 @@ export function KeywordTreemap({ data, isLoading }: KeywordTreemapProps) {
             키워드 데이터 없음 (sentiment-framing 모듈 미완료)
           </div>
         ) : (
-          <div className="h-[260px] w-full">
+          <ChartContainer config={treemapChartConfig} className="h-[260px] w-full">
             <Treemap
-              width={undefined as unknown as number}
-              height={260}
               data={items as unknown as readonly never[]}
               dataKey="size"
               aspectRatio={4 / 3}
               stroke="#fff"
               content={(<KeywordCell />) as unknown as ReactElement}
             />
-          </div>
+          </ChartContainer>
         )}
       </CardContent>
     </Card>
