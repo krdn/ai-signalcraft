@@ -45,6 +45,12 @@
       "esbuild",
       "msgpackr-extract",
       "sharp"
-    ]
+    ],
+    "patchedDependencies": {
+      "recharts@3.8.0": "patches/recharts@3.8.0.patch"
+    }
+  },
+  "dependencies": {
+    "ollama-ai-provider-v2": "^3.5.0"
   }
 }

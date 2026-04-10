@@ -76,7 +76,10 @@ export function ScoreHistogram({ data, isLoading }: ScoreHistogramProps) {
                   fontSize: 11,
                 }}
               />
-              <YAxis tick={{ fontSize: 10, fontFamily: 'Geist Mono, monospace' }} />
+              <YAxis
+                tick={{ fontSize: 10, fontFamily: 'Geist Mono, monospace' }}
+                allowDuplicatedCategory={false}
+              />
               <ChartTooltip content={<ChartTooltipContent />} />
               <ReferenceArea
                 x1={`${(AMBIGUOUS_START * 100).toFixed(0)}`}

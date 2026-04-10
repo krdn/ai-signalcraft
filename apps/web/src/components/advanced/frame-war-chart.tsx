@@ -111,7 +111,13 @@ export function FrameWarChart({ data }: FrameWarChartProps) {
                 >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 11 }} />
-                  <YAxis dataKey="name" type="category" width={80} tick={{ fontSize: 11 }} />
+                  <YAxis
+                    dataKey="name"
+                    type="category"
+                    width={80}
+                    tick={{ fontSize: 11 }}
+                    allowDuplicatedCategory={false}
+                  />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Bar dataKey="strength" fill="var(--color-strength)" radius={[0, 4, 4, 0]} />
                 </BarChart>
