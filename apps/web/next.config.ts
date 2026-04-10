@@ -16,6 +16,14 @@ const nextConfig: NextConfig = {
     'ai-sdk-provider-gemini-cli',
     '@google/gemini-cli-core',
   ],
+  turbopack: {
+    rules: {
+      // playwright-core 내부 에셋(.ttf)을 Turbopack이 무시하도록 처리
+      '*.ttf': {
+        type: 'asset',
+      },
+    },
+  },
   // 네이밍 재설계 마이그레이션 (Phase 4)
   // 레거시 경로 → 신규 경로로 permanent=false (301 아닌 302)
   // Phase 6에서 구 페이지 파일 제거 후 permanent=true로 승격
