@@ -96,6 +96,7 @@ export function ScatterEngagement({ data, isLoading }: ScatterEngagementProps) {
             <ScatterChart margin={{ top: 10, right: 20, left: 0, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
               <XAxis
+                xAxisId="engagement"
                 type="number"
                 dataKey="x"
                 name="좋아요"
@@ -110,6 +111,7 @@ export function ScatterEngagement({ data, isLoading }: ScatterEngagementProps) {
                 }}
               />
               <YAxis
+                yAxisId="sentiment"
                 type="number"
                 dataKey="y"
                 name="확신도"
@@ -138,6 +140,8 @@ export function ScatterEngagement({ data, isLoading }: ScatterEngagementProps) {
                 name="긍정"
                 data={positive}
                 fill={SENTIMENT_COLORS.positive}
+                xAxisId="engagement"
+                yAxisId="sentiment"
                 onClick={(e: unknown) =>
                   setSelected((e as { payload?: ScatterRow }).payload ?? null)
                 }
@@ -146,6 +150,8 @@ export function ScatterEngagement({ data, isLoading }: ScatterEngagementProps) {
                 name="부정"
                 data={negative}
                 fill={SENTIMENT_COLORS.negative}
+                xAxisId="engagement"
+                yAxisId="sentiment"
                 onClick={(e: unknown) =>
                   setSelected((e as { payload?: ScatterRow }).payload ?? null)
                 }
@@ -154,6 +160,8 @@ export function ScatterEngagement({ data, isLoading }: ScatterEngagementProps) {
                 name="중립"
                 data={neutral}
                 fill={SENTIMENT_COLORS.neutral}
+                xAxisId="engagement"
+                yAxisId="sentiment"
                 onClick={(e: unknown) =>
                   setSelected((e as { payload?: ScatterRow }).payload ?? null)
                 }
