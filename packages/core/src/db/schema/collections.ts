@@ -10,6 +10,7 @@ import {
   boolean,
   uuid,
 } from 'drizzle-orm/pg-core';
+import { vector384 } from '../types/vector';
 import { teams, users } from './auth';
 import { dataSources } from './sources';
 
@@ -103,6 +104,7 @@ export const articles = pgTable(
     sentimentScore: real('sentiment_score'), // 감정 확신도 (0~1)
     summary: text('summary'), // AI 한 줄 요약
     rawData: jsonb('raw_data'),
+    embedding: vector384('embedding'), // pgvector 임베딩 (multilingual-e5-small, 384차원)
     collectedAt: timestamp('collected_at').defaultNow().notNull(),
   },
   (table) => [uniqueIndex('articles_source_id_idx').on(table.source, table.sourceId)],
@@ -156,6 +158,7 @@ export const comments = pgTable(
     sentiment: text('sentiment'), // 개별 감정 분석 결과: positive | negative | neutral
     sentimentScore: real('sentiment_score'), // 감정 확신도 (0~1)
     rawData: jsonb('raw_data'),
+    embedding: vector384('embedding'), // pgvector 임베딩 (multilingual-e5-small, 384차원)
     collectedAt: timestamp('collected_at').defaultNow().notNull(),
   },
   (table) => [uniqueIndex('comments_source_id_idx').on(table.source, table.sourceId)],

@@ -26,6 +26,10 @@ import { dataSources } from '../db/schema/sources';
 import { isPipelineCancelled } from '../pipeline/control';
 import { awaitStageGate } from '../pipeline/pipeline-checks';
 import { createLogger } from '../utils/logger';
+import {
+  persistArticleEmbeddings,
+  persistCommentEmbeddings,
+} from '../analysis/preprocessing/embedding-persist';
 import { triggerAnalysis } from './flows';
 import { COMMUNITY_SOURCES } from './worker-config';
 
@@ -411,6 +415,38 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
             logger.warn(`[persist] data_sources.lastCollectedAt 갱신 실패 (${snapshot.id}):`, err);
           }
         }
+      }
+
+      // 임베딩 생성 (비차단 — 실패해도 수집 파이프라인에 영향 없음)
+      // persist 단계에서 저장된 기사/댓글의 embedding이 NULL인 것을 백그라운드에서 처리
+      try {
+        const db = getDb();
+        // jobId에 해당하는 임베딩 미생성 기사/댓글을 직접 DB에서 찾아 처리
+        const { articleJobs, commentJobs } = await import('../db/schema/collections');
+        const articleRows = await db
+          .select({ articleId: articleJobs.articleId })
+          .from(articleJobs)
+          .where(eq(articleJobs.jobId, dbJobId));
+        const commentRows = await db
+          .select({ commentId: commentJobs.commentId })
+          .from(commentJobs)
+          .where(eq(commentJobs.jobId, dbJobId));
+
+        const articleIds = articleRows.map((r) => r.articleId);
+        const commentIds = commentRows.map((r) => r.commentId);
+
+        if (articleIds.length > 0) {
+          persistArticleEmbeddings(articleIds).catch((err) =>
+            logger.warn(`[persist] 기사 임베딩 생성 실패:`, err),
+          );
+        }
+        if (commentIds.length > 0) {
+          persistCommentEmbeddings(commentIds).catch((err) =>
+            logger.warn(`[persist] 댓글 임베딩 생성 실패:`, err),
+          );
+        }
+      } catch (err) {
+        logger.warn(`[persist] 임베딩 생성 스킵:`, err);
       }
 
       // D-06: 최종 상태 업데이트 -- dbJobId는 number이므로 parseInt 불필요
