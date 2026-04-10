@@ -1,6 +1,6 @@
 'use client';
 
-import { Newspaper, MessageSquare, Layers } from 'lucide-react';
+import { CalendarDays, Clock, Layers, MessageSquare, Newspaper } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Slider } from '@/components/ui/slider';
@@ -11,11 +11,14 @@ import { cn } from '@/lib/utils';
 export type SentimentKey = 'positive' | 'negative' | 'neutral';
 export type ItemType = 'articles' | 'comments' | 'both';
 
+export type DateScope = 'job' | 'all';
+
 export interface ExploreFilterState {
   sources: string[];
   sentiments: SentimentKey[];
   minScore: number;
   itemType: ItemType;
+  dateScope: DateScope;
 }
 
 export const DEFAULT_FILTERS: ExploreFilterState = {
@@ -23,6 +26,7 @@ export const DEFAULT_FILTERS: ExploreFilterState = {
   sentiments: [],
   minScore: 0,
   itemType: 'both',
+  dateScope: 'job',
 };
 
 interface ExploreFiltersProps {
@@ -56,7 +60,8 @@ export function ExploreFilters({ value, onChange }: ExploreFiltersProps) {
     value.sources.length > 0 ||
     value.sentiments.length > 0 ||
     value.minScore > 0 ||
-    value.itemType !== 'both';
+    value.itemType !== 'both' ||
+    value.dateScope !== 'job';
 
   return (
     <Card className="sticky top-14 z-10 border-border/60 bg-card/95 backdrop-blur">
@@ -141,6 +146,27 @@ export function ExploreFilters({ value, onChange }: ExploreFiltersProps) {
                 onClick={() => setItemType('comments')}
                 icon={<MessageSquare className="h-3 w-3" />}
                 label="댓글"
+              />
+            </div>
+          </div>
+
+          {/* 기간 범위 */}
+          <div className="flex flex-col gap-1.5 min-w-0">
+            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+              기간
+            </span>
+            <div className="flex items-center gap-1">
+              <ItemTypeButton
+                active={value.dateScope === 'job'}
+                onClick={() => onChange({ ...value, dateScope: 'job' })}
+                icon={<Clock className="h-3 w-3" />}
+                label="수집 기간"
+              />
+              <ItemTypeButton
+                active={value.dateScope === 'all'}
+                onClick={() => onChange({ ...value, dateScope: 'all' })}
+                icon={<CalendarDays className="h-3 w-3" />}
+                label="전체 기간"
               />
             </div>
           </div>

@@ -78,13 +78,21 @@ export function StreamChart({ data, isLoading }: StreamChartProps) {
               <XAxis
                 dataKey="date"
                 tick={{ fontSize: 11 }}
-                tickFormatter={(v: string) => v.slice(5)}
+                tickFormatter={(v: string) => {
+                  const d = new Date(v);
+                  const m = d.getMonth() + 1;
+                  const day = d.getDate();
+                  const y = d.getFullYear() % 100;
+                  const now = new Date();
+                  return d.getFullYear() === now.getFullYear() ? `${m}/${day}` : `${y}/${m}/${day}`;
+                }}
               />
               <YAxis
                 tick={{ fontSize: 11, fontFamily: 'Geist Mono, monospace' }}
                 tickFormatter={(v: number) =>
                   mode === 'percent' ? `${Math.round(v * 100)}%` : `${v}`
                 }
+                allowDuplicatedCategory={false}
               />
               <ChartTooltip content={<ChartTooltipContent />} />
               <Area

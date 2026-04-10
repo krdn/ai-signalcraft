@@ -24,14 +24,19 @@ export function ExploreView({ jobId }: ExploreViewProps) {
   // 각 차트의 useQuery queryKey에 필터가 포함되어 자동 재요청
   const baseKey = ['explore', jobId, filters] as const;
 
+  const filterParams = {
+    jobId: jobId!,
+    sources: filters.sources.length > 0 ? filters.sources : undefined,
+    sentiments: filters.sentiments.length > 0 ? filters.sentiments : undefined,
+    minScore: filters.minScore > 0 ? filters.minScore : undefined,
+    dateScope: filters.dateScope,
+  } as const;
+
   const timeSeries = useQuery({
     queryKey: [...baseKey, 'timeSeries'],
     queryFn: () =>
       trpcClient.explore.getSentimentTimeSeries.query({
-        jobId: jobId!,
-        sources: filters.sources.length > 0 ? filters.sources : undefined,
-        sentiments: filters.sentiments.length > 0 ? filters.sentiments : undefined,
-        minScore: filters.minScore > 0 ? filters.minScore : undefined,
+        ...filterParams,
         itemType: filters.itemType,
       }),
     enabled: jobId != null,
@@ -41,10 +46,7 @@ export function ExploreView({ jobId }: ExploreViewProps) {
     queryKey: [...baseKey, 'bySource'],
     queryFn: () =>
       trpcClient.explore.getSentimentBySource.query({
-        jobId: jobId!,
-        sources: filters.sources.length > 0 ? filters.sources : undefined,
-        sentiments: filters.sentiments.length > 0 ? filters.sentiments : undefined,
-        minScore: filters.minScore > 0 ? filters.minScore : undefined,
+        ...filterParams,
         itemType: filters.itemType,
       }),
     enabled: jobId != null,
@@ -54,10 +56,7 @@ export function ExploreView({ jobId }: ExploreViewProps) {
     queryKey: [...baseKey, 'scoreDist'],
     queryFn: () =>
       trpcClient.explore.getScoreDistribution.query({
-        jobId: jobId!,
-        sources: filters.sources.length > 0 ? filters.sources : undefined,
-        sentiments: filters.sentiments.length > 0 ? filters.sentiments : undefined,
-        minScore: filters.minScore > 0 ? filters.minScore : undefined,
+        ...filterParams,
         itemType: filters.itemType,
       }),
     enabled: jobId != null,
@@ -67,10 +66,7 @@ export function ExploreView({ jobId }: ExploreViewProps) {
     queryKey: [...baseKey, 'scatter'],
     queryFn: () =>
       trpcClient.explore.getEngagementScatter.query({
-        jobId: jobId!,
-        sources: filters.sources.length > 0 ? filters.sources : undefined,
-        sentiments: filters.sentiments.length > 0 ? filters.sentiments : undefined,
-        minScore: filters.minScore > 0 ? filters.minScore : undefined,
+        ...filterParams,
         itemType: 'comments',
       }),
     enabled: jobId != null,
