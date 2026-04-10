@@ -2,12 +2,14 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { buildKeywordNetwork } from '@ai-signalcraft/core/client';
 import { AlertCircle } from 'lucide-react';
 import { KpiCards } from './kpi-cards';
 import { InsightSummary } from './insight-summary';
 import { SentimentChart } from './sentiment-chart';
 import { TrendChart } from './trend-chart';
 import { WordCloud } from './word-cloud';
+import { KeywordNetworkGraph } from './keyword-network-graph';
 import { PlatformCompare } from './platform-compare';
 import { RiskCards } from './risk-cards';
 import { OpportunityCards } from './opportunity-cards';
@@ -141,9 +143,9 @@ export function DashboardView({ jobId, fetchFn, readOnly }: DashboardViewProps) 
     rawTrend?.map((t) => ({
       date: t.date,
       mentions: t.count,
-      positive: Math.round(t.count * (t.sentimentRatio?.positive ?? 0)),
-      negative: Math.round(t.count * (t.sentimentRatio?.negative ?? 0)),
-      neutral: Math.round(t.count * (t.sentimentRatio?.neutral ?? 0)),
+      positive: Math.round(t.count * (t.sentimentRatio?.positive || 0)),
+      negative: Math.round(t.count * (t.sentimentRatio?.negative || 0)),
+      neutral: Math.round(t.count * (t.sentimentRatio?.neutral || 0)),
     })) ?? null;
 
   // 키워드 데이터 — sentiment-framing.topKeywords (수정: macro-view.keyTopics → sentiment-framing.topKeywords)
@@ -155,6 +157,9 @@ export function DashboardView({ jobId, fetchFn, readOnly }: DashboardViewProps) 
       }>
     | undefined;
   const wordCloudData = topKeywords?.map((t) => ({ text: t.keyword, value: t.count })) ?? null;
+
+  // 키워드 네트워크 데이터 — sentiment-framing의 topKeywords + relatedKeywords
+  const keywordNetworkData = sentimentFraming ? buildKeywordNetwork(sentimentFraming as any) : null;
 
   // 플랫폼 비교 데이터 — segmentation.platformSegments (수정: sentimentByPlatform → platformSegments)
   const platformSegments = segmentation?.platformSegments as
@@ -287,6 +292,14 @@ export function DashboardView({ jobId, fetchFn, readOnly }: DashboardViewProps) 
         <SentimentChart data={sentimentData ?? null} />
         <TrendChart data={trendData} events={trendEvents} />
         <WordCloud words={wordCloudData} />
+        {keywordNetworkData && keywordNetworkData.nodes.length > 0 && (
+          <Card>
+            <CardContent className="p-4">
+              <h3 className="text-sm font-semibold mb-2">키워드 네트워크</h3>
+              <KeywordNetworkGraph data={keywordNetworkData} />
+            </CardContent>
+          </Card>
+        )}
         <PlatformCompare data={platformData} />
         <RiskCards risks={risks} />
         <OpportunityCards opportunities={opportunities} />
