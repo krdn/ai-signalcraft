@@ -2,17 +2,21 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { buildKeywordNetwork } from '@ai-signalcraft/core/client';
 import { AlertCircle } from 'lucide-react';
 import { KpiCards } from './kpi-cards';
 import { InsightSummary } from './insight-summary';
 import { SentimentChart } from './sentiment-chart';
 import { TrendChart } from './trend-chart';
 import { WordCloud } from './word-cloud';
+import { KeywordNetworkGraph } from './keyword-network-graph';
 import { PlatformCompare } from './platform-compare';
 import { RiskCards } from './risk-cards';
 import { OpportunityCards } from './opportunity-cards';
 import { CompareSelector } from './compare-selector';
 import { CompareView } from './compare-view';
+import { KnowledgeGraphView } from './knowledge-graph-view';
+import { CardHelp, DASHBOARD_HELP } from './card-help';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -33,6 +37,19 @@ function parseModuleResult(
 ) {
   const found = results.find((r) => r.module === moduleName);
   return found?.result as Record<string, unknown> | undefined;
+}
+
+// 지식 그래프 섹션 (별도 컴포넌트로 분리하여 독립 쿼리)
+function KnowledgeGraphSection({ jobId }: { jobId: number }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ['ontology', 'getEntityGraph', jobId],
+    queryFn: () => trpcClient.ontology.getEntityGraph.query({ jobId }),
+    enabled: !!jobId,
+  });
+
+  if (!data || (data.nodes.length === 0 && !isLoading)) return null;
+
+  return <KnowledgeGraphView data={data} isLoading={isLoading} />;
 }
 
 export function DashboardView({ jobId, fetchFn, readOnly }: DashboardViewProps) {
@@ -141,9 +158,9 @@ export function DashboardView({ jobId, fetchFn, readOnly }: DashboardViewProps) 
     rawTrend?.map((t) => ({
       date: t.date,
       mentions: t.count,
-      positive: Math.round(t.count * (t.sentimentRatio?.positive ?? 0)),
-      negative: Math.round(t.count * (t.sentimentRatio?.negative ?? 0)),
-      neutral: Math.round(t.count * (t.sentimentRatio?.neutral ?? 0)),
+      positive: Math.round(t.count * (t.sentimentRatio?.positive || 0)),
+      negative: Math.round(t.count * (t.sentimentRatio?.negative || 0)),
+      neutral: Math.round(t.count * (t.sentimentRatio?.neutral || 0)),
     })) ?? null;
 
   // 키워드 데이터 — sentiment-framing.topKeywords (수정: macro-view.keyTopics → sentiment-framing.topKeywords)
@@ -155,6 +172,9 @@ export function DashboardView({ jobId, fetchFn, readOnly }: DashboardViewProps) 
       }>
     | undefined;
   const wordCloudData = topKeywords?.map((t) => ({ text: t.keyword, value: t.count })) ?? null;
+
+  // 키워드 네트워크 데이터 — sentiment-framing의 topKeywords + relatedKeywords
+  const keywordNetworkData = sentimentFraming ? buildKeywordNetwork(sentimentFraming as any) : null;
 
   // 플랫폼 비교 데이터 — segmentation.platformSegments (수정: sentimentByPlatform → platformSegments)
   const platformSegments = segmentation?.platformSegments as
@@ -287,10 +307,24 @@ export function DashboardView({ jobId, fetchFn, readOnly }: DashboardViewProps) 
         <SentimentChart data={sentimentData ?? null} />
         <TrendChart data={trendData} events={trendEvents} />
         <WordCloud words={wordCloudData} />
+        {keywordNetworkData && keywordNetworkData.nodes.length > 0 && (
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-semibold">키워드 네트워크</h3>
+                <CardHelp {...DASHBOARD_HELP.keywordNetwork} />
+              </div>
+              <KeywordNetworkGraph data={keywordNetworkData} />
+            </CardContent>
+          </Card>
+        )}
         <PlatformCompare data={platformData} />
         <RiskCards risks={risks} />
         <OpportunityCards opportunities={opportunities} />
       </div>
+
+      {/* 지식 그래프 — 온톨로지 엔티티/관계 시각화 */}
+      <KnowledgeGraphSection jobId={jobId} />
     </div>
   );
 }

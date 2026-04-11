@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Newspaper, FileText, BarChart3, Video, MessageSquare } from 'lucide-react';
+import { Newspaper, FileText, BarChart3, Video, MessageSquare, Search } from 'lucide-react';
 import { SummaryView } from './collected-data-summary';
 import { ArticlesView, VideosView, CommentsView } from './collected-data-table';
+import { SemanticSearchPanel } from './semantic-search-panel';
 import { SOURCE_LABELS } from './collected-data-shared';
 import { trpcClient } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
@@ -14,7 +15,9 @@ interface CollectedDataViewProps {
 }
 
 export function CollectedDataView({ jobId }: CollectedDataViewProps) {
-  const [view, setView] = useState<'summary' | 'articles' | 'videos' | 'comments'>('summary');
+  const [view, setView] = useState<'summary' | 'articles' | 'videos' | 'comments' | 'search'>(
+    'summary',
+  );
   const [articlePage, setArticlePage] = useState(1);
   const [videoPage, setVideoPage] = useState(1);
   const [commentPage, setCommentPage] = useState(1);
@@ -98,10 +101,18 @@ export function CollectedDataView({ jobId }: CollectedDataViewProps) {
           <MessageSquare className="h-4 w-4 mr-1" />
           댓글
         </Button>
+        <Button
+          variant={view === 'search' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setView('search')}
+        >
+          <Search className="h-4 w-4 mr-1" />
+          의미 검색
+        </Button>
       </div>
 
-      {/* 데이터 소스 필터 (요약 뷰 제외) */}
-      {view !== 'summary' && availableSources.length > 0 && (
+      {/* 데이터 소스 필터 (요약/검색 뷰 제외) */}
+      {view !== 'summary' && view !== 'search' && availableSources.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs text-muted-foreground">소스:</span>
           <Button
@@ -163,6 +174,7 @@ export function CollectedDataView({ jobId }: CollectedDataViewProps) {
           }}
         />
       )}
+      {view === 'search' && <SemanticSearchPanel jobId={jobId} />}
     </div>
   );
 }

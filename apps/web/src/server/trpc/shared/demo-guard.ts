@@ -12,7 +12,14 @@ type CollectionLimits = {
 
 type TriggerOptions = {
   enableItemAnalysis?: boolean;
-  tokenOptimization?: 'none' | 'light' | 'standard' | 'aggressive';
+  tokenOptimization?:
+    | 'none'
+    | 'light'
+    | 'standard'
+    | 'aggressive'
+    | 'rag-light'
+    | 'rag-standard'
+    | 'rag-aggressive';
 };
 
 export type DemoGuardResult = {

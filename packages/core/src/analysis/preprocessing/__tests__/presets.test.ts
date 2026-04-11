@@ -2,12 +2,15 @@ import { describe, it, expect } from 'vitest';
 import { OPTIMIZATION_PRESETS, type OptimizationPreset } from '../presets';
 
 describe('OPTIMIZATION_PRESETS', () => {
-  it('4개 프리셋이 정의되어 있어야 한다', () => {
-    expect(Object.keys(OPTIMIZATION_PRESETS)).toHaveLength(4);
+  it('7개 프리셋이 정의되어 있어야 한다 (기본 4개 + RAG 3개)', () => {
+    expect(Object.keys(OPTIMIZATION_PRESETS)).toHaveLength(7);
     expect(OPTIMIZATION_PRESETS).toHaveProperty('none');
     expect(OPTIMIZATION_PRESETS).toHaveProperty('light');
     expect(OPTIMIZATION_PRESETS).toHaveProperty('standard');
     expect(OPTIMIZATION_PRESETS).toHaveProperty('aggressive');
+    expect(OPTIMIZATION_PRESETS).toHaveProperty('rag-light');
+    expect(OPTIMIZATION_PRESETS).toHaveProperty('rag-standard');
+    expect(OPTIMIZATION_PRESETS).toHaveProperty('rag-aggressive');
   });
 
   it('none 프리셋은 모든 최적화가 비활성이다', () => {

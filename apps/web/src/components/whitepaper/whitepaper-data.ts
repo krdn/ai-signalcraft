@@ -143,4 +143,9 @@ export const DIFFERENTIATORS: Differentiator[] = [
     title: '소규모 팀 최적화',
     desc: '3~10명 팀이 즉시 도입 가능 — 엔터프라이즈 도구 대비 학습 곡선 낮음',
   },
+  {
+    icon: 'Network',
+    title: '지식 그래프',
+    desc: '분석 결과에서 인물·조직·이슈·프레임 간 관계를 자동 추출해 여론의 구조적 지도를 생성',
+  },
 ];

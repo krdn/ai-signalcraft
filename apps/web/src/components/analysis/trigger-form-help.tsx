@@ -747,7 +747,78 @@ export function TriggerFormHelp({
                       • <span className="text-foreground">소스 수 조절:</span> 네이버 뉴스만으로도
                       기본적인 여론 파악이 가능
                     </li>
+                    <li>
+                      • <span className="text-foreground">RAG 모드 사용:</span> 토큰 최적화에서 RAG
+                      경량/표준/강력 모드를 선택하면 AI가 분석에 필요한 핵심 문서만 선별하여 토큰
+                      사용량을 40~80% 절감할 수 있습니다 (아래 &quot;토큰 최적화&quot; 참고)
+                    </li>
                   </ul>
+                </div>
+
+                <Separator />
+
+                <div className="rounded-lg border p-3 space-y-2">
+                  <p className="font-medium text-foreground text-xs">
+                    토큰 최적화 — 기존 모드 vs RAG 모드
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    토큰 최적화는 AI가 분석할 데이터의 양을 줄여 비용과 시간을 절약합니다.
+                  </p>
+                  <div className="overflow-hidden rounded-lg border">
+                    <table className="w-full text-xs">
+                      <thead className="bg-muted/50">
+                        <tr>
+                          <th className="px-2 py-1.5 text-left font-medium text-muted-foreground">
+                            모드
+                          </th>
+                          <th className="px-2 py-1.5 text-left font-medium text-muted-foreground">
+                            방식
+                          </th>
+                          <th className="px-2 py-1.5 text-left font-medium text-muted-foreground">
+                            절감
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="text-muted-foreground">
+                        <tr className="border-t">
+                          <td className="px-2 py-1.5 text-foreground">경량</td>
+                          <td className="px-2 py-1.5">중복 기사 제거 (임베딩 재계산)</td>
+                          <td className="px-2 py-1.5">~30%</td>
+                        </tr>
+                        <tr className="border-t">
+                          <td className="px-2 py-1.5 text-foreground">표준</td>
+                          <td className="px-2 py-1.5">중복 제거 + 댓글 상위 100건</td>
+                          <td className="px-2 py-1.5">~60%</td>
+                        </tr>
+                        <tr className="border-t">
+                          <td className="px-2 py-1.5 text-foreground">강력</td>
+                          <td className="px-2 py-1.5">클러스터링 + 댓글 상위 50건</td>
+                          <td className="px-2 py-1.5">~80%</td>
+                        </tr>
+                        <tr className="border-t bg-cyan-500/5">
+                          <td className="px-2 py-1.5 text-cyan-600 font-medium">RAG 경량</td>
+                          <td className="px-2 py-1.5">DB 임베딩으로 의미 관련 댓글 50건</td>
+                          <td className="px-2 py-1.5">~40%</td>
+                        </tr>
+                        <tr className="border-t bg-blue-500/5">
+                          <td className="px-2 py-1.5 text-blue-600 font-medium">RAG 표준</td>
+                          <td className="px-2 py-1.5">의미 관련 기사 30+클러스터 10, 댓글 30</td>
+                          <td className="px-2 py-1.5">~65%</td>
+                        </tr>
+                        <tr className="border-t bg-violet-500/5">
+                          <td className="px-2 py-1.5 text-violet-600 font-medium">RAG 강력</td>
+                          <td className="px-2 py-1.5">의미 관련 기사 15+클러스터 5, 댓글 15</td>
+                          <td className="px-2 py-1.5">~80%</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    <span className="text-foreground font-medium">RAG 모드 차이점:</span> 기존
+                    모드는 매번 임베딩을 새로 계산하지만, RAG 모드는 DB에 이미 저장된 임베딩을
+                    활용하여 키워드와 의미적으로 관련성 높은 문서만 선별합니다. 전처리 시간도
+                    단축됩니다.
+                  </p>
                 </div>
 
                 <div className="rounded-lg border border-dashed p-3">

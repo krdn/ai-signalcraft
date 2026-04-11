@@ -6,6 +6,7 @@ import {
   ANALYSIS_CONSTRAINTS,
   distillForFinalSummary,
   buildModuleSystemPrompt,
+  formatDateRange,
 } from './prompt-utils';
 
 const config = MODULE_MODEL_MAP['final-summary'];
@@ -50,7 +51,7 @@ ${ANALYSIS_CONSTRAINTS}`;
       .join('\n');
 
     return `키워드: "${data.keyword}"
-분석 기간: ${data.dateRange.start.toISOString().split('T')[0]} ~ ${data.dateRange.end.toISOString().split('T')[0]}
+${formatDateRange(data)}
 기사 수: ${data.articles.length}건 | 댓글 수: ${data.comments.length}건 | 영상 수: ${data.videos.length}건
 
 ## 주요 기사 (상위 10건)

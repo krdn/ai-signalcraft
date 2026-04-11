@@ -118,8 +118,8 @@ async function saveFallbackReport(
       metadata: {
         keyword: input.keyword,
         dateRange: {
-          start: input.dateRange.start.toISOString(),
-          end: input.dateRange.end.toISOString(),
+          start: new Date(input.dateRange.start).toISOString(),
+          end: new Date(input.dateRange.end).toISOString(),
         },
         modulesCompleted: completedModules,
         modulesFailed: failedModules,

@@ -12,6 +12,7 @@ import {
   type OptimizationPreset,
   type SourceId,
   OPTIMIZATION_PRESETS,
+  PRESET_STYLES,
   DATE_PRESETS,
   SOURCE_OPTIONS,
   ALL_SOURCES,
@@ -39,7 +40,14 @@ interface TriggerFormProps {
       communityPosts: number;
       commentsPerItem: number;
     };
-    optimization: 'none' | 'light' | 'standard' | 'aggressive';
+    optimization:
+      | 'none'
+      | 'light'
+      | 'standard'
+      | 'aggressive'
+      | 'rag-light'
+      | 'rag-standard'
+      | 'rag-aggressive';
     skippedModules: string[];
     enableItemAnalysis: boolean;
   } | null;
@@ -521,13 +529,7 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
                 <span className="font-medium">수집 한도 & 토큰 최적화</span>
                 {optimizationPreset !== 'none' && (
                   <span
-                    className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                      optimizationPreset === 'light'
-                        ? 'bg-green-500/15 text-green-500'
-                        : optimizationPreset === 'standard'
-                          ? 'bg-yellow-500/15 text-yellow-500'
-                          : 'bg-orange-500/15 text-orange-500'
-                    }`}
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${PRESET_STYLES[optimizationPreset]?.indicator ?? 'bg-zinc-500/15 text-zinc-500'}`}
                   >
                     {OPTIMIZATION_PRESETS[optimizationPreset].label}{' '}
                     {OPTIMIZATION_PRESETS[optimizationPreset].estimatedReduction}↓
@@ -612,61 +614,92 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
                 {/* 토큰 최적화 프리셋 */}
                 <div className="space-y-2">
                   <Label className="text-xs">토큰 최적화</Label>
+                  {/* 기존 모드 */}
                   <div className="grid grid-cols-4 gap-1.5">
                     {(
-                      Object.entries(OPTIMIZATION_PRESETS) as [
+                      Object.entries(OPTIMIZATION_PRESETS).filter(
+                        ([, p]) => p.group === 'classic',
+                      ) as [OptimizationPreset, (typeof OPTIMIZATION_PRESETS)[OptimizationPreset]][]
+                    ).map(([key, preset]) => {
+                      const style = PRESET_STYLES[key];
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => setOptimizationPreset(key)}
+                          disabled={triggerMutation.isPending}
+                          className={`rounded-md border p-2 text-center transition-colors ${
+                            optimizationPreset === key
+                              ? `${style?.border ?? 'border-zinc-500'} ${style?.bg ?? 'bg-zinc-500/10'}`
+                              : 'border-border hover:bg-accent'
+                          }`}
+                        >
+                          <div
+                            className={`text-xs font-medium ${
+                              optimizationPreset === key
+                                ? (style?.text ?? 'text-zinc-400')
+                                : 'text-muted-foreground'
+                            }`}
+                          >
+                            {preset.label}
+                          </div>
+                          {key !== 'none' && (
+                            <div className="text-[10px] text-muted-foreground mt-0.5">
+                              {preset.estimatedReduction}↓
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {/* RAG 모드 */}
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {(
+                      Object.entries(OPTIMIZATION_PRESETS).filter(([, p]) => p.group === 'rag') as [
                         OptimizationPreset,
                         (typeof OPTIMIZATION_PRESETS)[OptimizationPreset],
                       ][]
-                    ).map(([key, preset]) => (
-                      <button
-                        key={key}
-                        type="button"
-                        onClick={() => setOptimizationPreset(key)}
-                        disabled={triggerMutation.isPending}
-                        className={`rounded-md border p-2 text-center transition-colors ${
-                          optimizationPreset === key
-                            ? key === 'none'
-                              ? 'border-zinc-500 bg-zinc-500/10'
-                              : key === 'light'
-                                ? 'border-green-500 bg-green-500/10'
-                                : key === 'standard'
-                                  ? 'border-yellow-500 bg-yellow-500/10'
-                                  : 'border-orange-500 bg-orange-500/10'
-                            : 'border-border hover:bg-accent'
-                        }`}
-                      >
-                        <div
-                          className={`text-xs font-medium ${
+                    ).map(([key, preset]) => {
+                      const style = PRESET_STYLES[key];
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => setOptimizationPreset(key)}
+                          disabled={triggerMutation.isPending}
+                          className={`rounded-md border p-2 text-center transition-colors ${
                             optimizationPreset === key
-                              ? key === 'none'
-                                ? 'text-zinc-400'
-                                : key === 'light'
-                                  ? 'text-green-500'
-                                  : key === 'standard'
-                                    ? 'text-yellow-500'
-                                    : 'text-orange-500'
-                              : 'text-muted-foreground'
+                              ? `${style?.border} ${style?.bg}`
+                              : 'border-border hover:bg-accent'
                           }`}
                         >
-                          {preset.label}
-                        </div>
-                        {key !== 'none' && (
+                          <div
+                            className={`text-xs font-medium ${
+                              optimizationPreset === key ? style?.text : 'text-muted-foreground'
+                            }`}
+                          >
+                            {preset.label}
+                          </div>
                           <div className="text-[10px] text-muted-foreground mt-0.5">
                             {preset.estimatedReduction}↓
                           </div>
-                        )}
-                      </button>
-                    ))}
+                        </button>
+                      );
+                    })}
                   </div>
+                  <p className="text-[10px] text-muted-foreground">
+                    RAG 모드는 DB에 저장된 임베딩을 활용하여 의미 관련 문서만 선별합니다.
+                  </p>
                   {optimizationPreset !== 'none' && (
                     <div
                       className={`rounded-md p-2 text-xs border-l-2 ${
-                        optimizationPreset === 'light'
-                          ? 'border-l-green-500 bg-green-500/5 text-green-200'
-                          : optimizationPreset === 'standard'
-                            ? 'border-l-yellow-500 bg-yellow-500/5 text-yellow-200'
-                            : 'border-l-orange-500 bg-orange-500/5 text-orange-200'
+                        PRESET_STYLES[optimizationPreset]?.border?.replace(
+                          'border-',
+                          'border-l-',
+                        ) ?? 'border-l-zinc-500'
+                      } ${
+                        PRESET_STYLES[optimizationPreset]?.bg?.replace('/10', '/5') ??
+                        'bg-zinc-500/5'
                       }`}
                     >
                       {OPTIMIZATION_PRESETS[optimizationPreset].description}

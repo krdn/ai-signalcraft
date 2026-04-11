@@ -6,6 +6,7 @@ import {
   ANALYSIS_CONSTRAINTS,
   distillForOpportunity,
   buildModuleSystemPrompt,
+  formatDateRange,
 } from './prompt-utils';
 
 const config = MODULE_MODEL_MAP['opportunity'];
@@ -51,7 +52,7 @@ ${ANALYSIS_CONSTRAINTS}`;
       .join('\n');
 
     return `키워드: "${data.keyword}"
-분석 기간: ${data.dateRange.start.toISOString().split('T')[0]} ~ ${data.dateRange.end.toISOString().split('T')[0]}
+${formatDateRange(data)}
 
 ## 주요 기사 (${data.articles.length}건 중 상위 20건)
 ${articlesSummary}

@@ -5,6 +5,13 @@ import { getDomainConfig } from '../domain';
 // 본문 최대 길이 제한 (토큰 최적화)
 const MAX_CONTENT_LENGTH = 500;
 
+/** Drizzle ORM이 timestamp를 문자열로 반환할 수 있으므로 안전하게 날짜 포맷 */
+export function formatDateRange(data: AnalysisInput): string {
+  const start = new Date(data.dateRange.start).toISOString().split('T')[0];
+  const end = new Date(data.dateRange.end).toISOString().split('T')[0];
+  return `분석 기간: ${start} ~ ${end}`;
+}
+
 // ─── 공통 프롬프트 블록 ───────────────────────────────────────────
 
 /** 한국 온라인 여론 플랫폼 특성 — 모든 모듈의 시스템 프롬프트에 공통 삽입 */
@@ -440,7 +447,9 @@ export function distillForWinSimulation(priorResults: PriorResults): string {
 
 // 입력 데이터를 프롬프트용 구조로 변환
 export function formatInputData(data: AnalysisInput) {
-  const formatDate = (d: Date | null) => (d ? d.toISOString().split('T')[0] : '날짜 미상');
+  // Drizzle ORM이 timestamp를 문자열로 반환할 수 있으므로 안전하게 변환
+  const formatDate = (d: Date | string | null) =>
+    d ? new Date(d).toISOString().split('T')[0] : '날짜 미상';
 
   const articles = data.articles.map((a) => ({
     title: a.title,

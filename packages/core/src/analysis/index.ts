@@ -14,3 +14,4 @@ export * from './concurrency-config';
 export * from './collection-limits';
 export * from './preprocessing';
 export * from './cost-calculator';
+export * from './graph-builder';

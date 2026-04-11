@@ -30,7 +30,17 @@ export const analysisRouter = router({
         options: z
           .object({
             enableItemAnalysis: z.boolean().optional(),
-            tokenOptimization: z.enum(['none', 'light', 'standard', 'aggressive']).optional(),
+            tokenOptimization: z
+              .enum([
+                'none',
+                'light',
+                'standard',
+                'aggressive',
+                'rag-light',
+                'rag-standard',
+                'rag-aggressive',
+              ])
+              .optional(),
           })
           .optional(),
         limits: z
@@ -99,7 +109,14 @@ export const analysisRouter = router({
           communityPosts: number;
           commentsPerItem: number;
         };
-        optimization: 'none' | 'light' | 'standard' | 'aggressive';
+        optimization:
+          | 'none'
+          | 'light'
+          | 'standard'
+          | 'aggressive'
+          | 'rag-light'
+          | 'rag-standard'
+          | 'rag-aggressive';
         skippedModules: string[];
         enableItemAnalysis: boolean;
         customized: boolean;
