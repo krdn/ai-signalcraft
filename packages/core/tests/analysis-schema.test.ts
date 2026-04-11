@@ -44,7 +44,7 @@ describe('AnalysisModule 인터페이스 + 타입', () => {
     expect(MODULE_MODEL_MAP).toBeDefined();
   });
 
-  it('MODULE_MODEL_MAP이 8개 기본 모듈 + 4개 ADVN 모듈 + integrated-report + 4개 팬덤 ADVN 모듈 매핑을 포함한다', async () => {
+  it('MODULE_MODEL_MAP이 기본 모듈 + 도메인별 ADVN 모듈 매핑을 포함한다', async () => {
     const { MODULE_MODEL_MAP } = await import('../src/analysis/types');
 
     const expectedModules = [
@@ -75,7 +75,7 @@ describe('AnalysisModule 인터페이스 + 타입', () => {
       expect(MODULE_MODEL_MAP[mod].model).toBeDefined();
     }
 
-    expect(Object.keys(MODULE_MODEL_MAP).length).toBe(17);
+    expect(Object.keys(MODULE_MODEL_MAP).length).toBe(29);
   });
 });
 
