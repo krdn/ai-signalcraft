@@ -223,17 +223,17 @@ function DiagnosticContent({ jobId }: { jobId: number }) {
   const hasErrors = issues.some((i) => i.severity === 'error');
   const hasWarnings = issues.some((i) => i.severity === 'warning');
 
-  // 현재 파이프라인 단계 계산
-  const pipelineStageKey =
-    dbJob.status === 'collecting'
-      ? 'collection'
-      : dbJob.status === 'normalizing'
-        ? 'normalize'
-        : dbJob.status === 'analysing'
+  // 현재 파이프라인 단계 계산 (BullMQ 큐 이름 기준)
+  const activeQueues = bullmqJobs.filter((j) => j.state === 'active').map((j) => j.queue);
+  const pipelineStageKey = activeQueues.includes('collectors')
+    ? 'collection'
+    : activeQueues.includes('pipeline')
+      ? 'normalize'
+      : activeQueues.includes('analysis')
+        ? 'analysis'
+        : dbJob.status === 'running'
           ? 'analysis'
-          : dbJob.status === 'reporting'
-            ? 'report'
-            : null;
+          : null;
 
   // 재실행 가능한 모듈
   const retriableModules = dbModules.filter(
