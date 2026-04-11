@@ -529,6 +529,83 @@ export function buildModuleSystemPrompt(
   return null;
 }
 
+/**
+ * reputation-recovery-simulation 모듈용 컨텍스트 추출
+ * 선행 6개 모듈 결과에서 핵심 데이터를 종합
+ */
+export function distillForReputationRecovery(priorResults: PriorResults): string {
+  const reputationIndex = priorResults['reputation-index'] as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  const crisisTypeClassifier = priorResults['crisis-type-classifier'] as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  const stakeholderMap = priorResults['stakeholder-map'] as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  const esgSentiment = priorResults['esg-sentiment'] as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  const crisisScenario = priorResults['crisis-scenario'] as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  const riskMap = priorResults['risk-map'] as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+
+  const lines: string[] = [];
+
+  // 기반선 점수
+  if (reputationIndex?.overallScore !== undefined) {
+    lines.push(`### 현재 평판 기반선 (reputation-index)`);
+    lines.push(`- 종합 점수: ${reputationIndex.overallScore}/100`);
+    if (reputationIndex.summary) lines.push(`- 요약: ${reputationIndex.summary}`);
+  }
+
+  // 위기 유형 (SCCT 회복 전략 가중치)
+  if (crisisTypeClassifier?.crisisType) {
+    lines.push(`\n### 위기 유형 분류 (crisis-type-classifier)`);
+    lines.push(
+      `- 위기 유형: ${crisisTypeClassifier.crisisType} (${crisisTypeClassifier.crisisTypeName ?? ''})`,
+    );
+    lines.push(`- 책임 귀속 수준: ${crisisTypeClassifier.responsibilityLevel}`);
+    if (crisisTypeClassifier.recommendedStrategies?.length) {
+      const top = crisisTypeClassifier.recommendedStrategies[0];
+      lines.push(`- 1순위 권고 전략: ${top.strategyName ?? top.strategy}`);
+    }
+  }
+
+  // 핵심 이해관계자
+  if (stakeholderMap?.criticalStakeholder ?? stakeholderMap?.stakeholders) {
+    lines.push(`\n### 핵심 이해관계자 (stakeholder-map)`);
+    const critical = stakeholderMap.criticalStakeholder ?? stakeholderMap.stakeholders?.[0];
+    if (critical)
+      lines.push(
+        `- 최우선 이해관계자: ${typeof critical === 'string' ? critical : (critical.name ?? JSON.stringify(critical))}`,
+      );
+  }
+
+  // ESG 회복 가능성
+  if (esgSentiment?.regulatoryRisk !== undefined || esgSentiment?.overallScore !== undefined) {
+    lines.push(`\n### ESG 회복 가능성 (esg-sentiment)`);
+    if (esgSentiment.overallScore !== undefined)
+      lines.push(`- ESG 종합 점수: ${esgSentiment.overallScore}`);
+    if (esgSentiment.regulatoryRisk !== undefined)
+      lines.push(`- 규제 리스크: ${esgSentiment.regulatoryRisk}`);
+  }
+
+  // 확산 리스크
+  if (crisisScenario?.scenarios?.length) {
+    lines.push(`\n### 위기 확산 리스크 (crisis-scenario)`);
+    const spread =
+      crisisScenario.scenarios.find((s: any) => s.type === 'spread') ?? crisisScenario.scenarios[0]; // eslint-disable-line @typescript-eslint/no-explicit-any
+    if (spread)
+      lines.push(
+        `- 확산 시나리오: ${spread.title ?? spread.type} — ${spread.probability ?? ''}%`,
+      );
+  }
+
+  // 회복 장애 조건
+  if (riskMap?.topRisks?.length) {
+    lines.push(`\n### 회복 장애 조건 (risk-map)`);
+    riskMap.topRisks.slice(0, 3).forEach((r: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+      lines.push(`- ${r.title}: ${r.description?.slice(0, 80) ?? ''}`);
+    });
+  }
+
+  return lines.length > 0
+    ? lines.join('\n')
+    : '선행 분석 데이터 없음 — 기사/댓글 데이터 기반으로 분석';
+}
+
 /** 집단 분류 기준 문구 반환 (segmentation 모듈용) */
 export function getSegmentationCriteria(domain?: AnalysisDomain): string {
   const d = domain ?? 'political';
