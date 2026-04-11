@@ -36,6 +36,18 @@ const STAGE_COLORS: Record<string, string> = {
   'Stage 2': 'bg-purple-500/10 text-purple-700 border-purple-500/30',
   'Stage 3': 'bg-emerald-500/10 text-emerald-700 border-emerald-500/30',
   'Stage 4': 'bg-amber-500/10 text-amber-700 border-amber-500/30',
+  System: 'bg-emerald-500/10 text-emerald-700 border-emerald-500/30',
+  'Stage 4-F': 'bg-pink-500/10 text-pink-700 border-pink-500/30',
+  'Stage 4-PR': 'bg-red-500/10 text-red-700 border-red-500/30',
+  'Stage 4-Corp': 'bg-sky-500/10 text-sky-700 border-sky-500/30',
+  'Stage 4-HC': 'bg-teal-500/10 text-teal-700 border-teal-500/30',
+  'Stage 4-SP': 'bg-orange-500/10 text-orange-700 border-orange-500/30',
+  'Stage 4-Policy': 'bg-indigo-500/10 text-indigo-700 border-indigo-500/30',
+  'Stage 4-Edu': 'bg-cyan-500/10 text-cyan-700 border-cyan-500/30',
+  'Stage 4-PS': 'bg-green-500/10 text-green-700 border-green-500/30',
+  'Stage 4-Legal': 'bg-slate-500/10 text-slate-700 border-slate-500/30',
+  'Stage 4-Retail': 'bg-rose-500/10 text-rose-700 border-rose-500/30',
+  'Stage 4-Fin': 'bg-yellow-500/10 text-yellow-700 border-yellow-500/30',
 };
 
 export function WhitepaperReport() {
