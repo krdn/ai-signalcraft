@@ -3,11 +3,13 @@ import { OPTIMIZATION_PRESETS, type OptimizationPreset } from './presets';
 import { deduplicateArticles } from './deduplicator';
 import { clusterArticles } from './clusterer';
 import { compressComments } from './comment-compressor';
+import { ragRetrieve, isRAGPreset } from './rag-retriever';
 
 export { OPTIMIZATION_PRESETS, type OptimizationPreset, type PresetConfig } from './presets';
 export { compressComments } from './comment-compressor';
 export { deduplicateArticles } from './deduplicator';
 export { clusterArticles } from './clusterer';
+export { ragRetrieve, isRAGPreset } from './rag-retriever';
 
 export interface PreprocessingResult {
   input: AnalysisInput;
@@ -26,10 +28,27 @@ export async function preprocessAnalysisInput(
   preset: OptimizationPreset,
   _jobId: number,
 ): Promise<PreprocessingResult> {
-  const config = OPTIMIZATION_PRESETS[preset];
   const originalArticles = input.articles.length;
   const originalComments = input.comments.length;
 
+  // RAG 모드: DB 임베딩 기반 의미 검색으로 선별
+  if (isRAGPreset(preset)) {
+    const ragResult = await ragRetrieve(input, preset);
+    return {
+      input: { ...input, articles: ragResult.articles, comments: ragResult.comments },
+      stats: {
+        originalArticles,
+        optimizedArticles: ragResult.stats.selectedArticles,
+        originalComments,
+        optimizedComments: ragResult.stats.selectedComments,
+        reductionPercent: ragResult.stats.reductionPercent,
+        preset,
+      },
+    };
+  }
+
+  // 기존 모드: 임베딩 재계산 기반 전처리
+  const config = OPTIMIZATION_PRESETS[preset];
   let articles = input.articles;
   let comments = input.comments;
 

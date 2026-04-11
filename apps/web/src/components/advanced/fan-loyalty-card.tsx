@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Pie, PieChart, Cell } from 'recharts';
 import { ChevronDown, ChevronUp, HeartCrack } from 'lucide-react';
+import { AdvancedCardHelp, ADVANCED_HELP } from './advanced-help';
 import {
   ChartContainer,
   ChartTooltip,
@@ -88,6 +89,7 @@ export function FanLoyaltyCard({ data }: FanLoyaltyCardProps) {
       <CardHeader>
         <CardTitle className="text-lg font-semibold flex items-center gap-1.5">
           팬덤 충성도 지수
+          <AdvancedCardHelp {...ADVANCED_HELP.fanLoyaltyIndex} />
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">

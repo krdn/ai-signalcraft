@@ -14,5 +14,6 @@ export * from './pipeline';
 export * from './analysis';
 export * from './report';
 export * from './utils';
+export * from './search';
 export { getWorkerStatus, type QueueHealth, type WorkerHealth } from './queue/worker-health';
 export { setupWorkerProcess } from './queue/worker-config';

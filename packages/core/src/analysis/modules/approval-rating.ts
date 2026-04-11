@@ -6,6 +6,7 @@ import {
   ANALYSIS_CONSTRAINTS,
   distillForApprovalRating,
   buildModuleSystemPrompt,
+  formatDateRange,
 } from './prompt-utils';
 
 const config = MODULE_MODEL_MAP['approval-rating'];
@@ -67,7 +68,7 @@ ${ANALYSIS_CONSTRAINTS}`;
       .join(', ');
 
     return `키워드: "${data.keyword}"
-분석 기간: ${data.dateRange.start.toISOString().split('T')[0]} ~ ${data.dateRange.end.toISOString().split('T')[0]}
+${formatDateRange(data)}
 
 ## 주요 기사 (${data.articles.length}건 중 상위 20건)
 ${articlesSummary}

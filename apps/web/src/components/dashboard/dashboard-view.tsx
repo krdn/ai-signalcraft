@@ -15,6 +15,8 @@ import { RiskCards } from './risk-cards';
 import { OpportunityCards } from './opportunity-cards';
 import { CompareSelector } from './compare-selector';
 import { CompareView } from './compare-view';
+import { KnowledgeGraphView } from './knowledge-graph-view';
+import { CardHelp, DASHBOARD_HELP } from './card-help';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -35,6 +37,19 @@ function parseModuleResult(
 ) {
   const found = results.find((r) => r.module === moduleName);
   return found?.result as Record<string, unknown> | undefined;
+}
+
+// 지식 그래프 섹션 (별도 컴포넌트로 분리하여 독립 쿼리)
+function KnowledgeGraphSection({ jobId }: { jobId: number }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ['ontology', 'getEntityGraph', jobId],
+    queryFn: () => trpcClient.ontology.getEntityGraph.query({ jobId }),
+    enabled: !!jobId,
+  });
+
+  if (!data || (data.nodes.length === 0 && !isLoading)) return null;
+
+  return <KnowledgeGraphView data={data} isLoading={isLoading} />;
 }
 
 export function DashboardView({ jobId, fetchFn, readOnly }: DashboardViewProps) {
@@ -295,7 +310,10 @@ export function DashboardView({ jobId, fetchFn, readOnly }: DashboardViewProps) 
         {keywordNetworkData && keywordNetworkData.nodes.length > 0 && (
           <Card>
             <CardContent className="p-4">
-              <h3 className="text-sm font-semibold mb-2">키워드 네트워크</h3>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-semibold">키워드 네트워크</h3>
+                <CardHelp {...DASHBOARD_HELP.keywordNetwork} />
+              </div>
               <KeywordNetworkGraph data={keywordNetworkData} />
             </CardContent>
           </Card>
@@ -304,6 +322,9 @@ export function DashboardView({ jobId, fetchFn, readOnly }: DashboardViewProps) 
         <RiskCards risks={risks} />
         <OpportunityCards opportunities={opportunities} />
       </div>
+
+      {/* 지식 그래프 — 온톨로지 엔티티/관계 시각화 */}
+      <KnowledgeGraphSection jobId={jobId} />
     </div>
   );
 }

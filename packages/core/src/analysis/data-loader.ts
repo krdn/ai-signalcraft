@@ -79,6 +79,9 @@ export async function loadAnalysisInput(jobId: number): Promise<AnalysisInput> {
     .orderBy(desc(comments.likeCount))
     .limit(MAX_COMMENTS);
 
+  // Drizzle ORM이 timestamp 컬럼을 문자열로 반환할 수 있으므로 Date 객체로 보장
+  const ensureDate = (d: Date | string): Date => (d instanceof Date ? d : new Date(d));
+
   return {
     jobId,
     keyword: job.keyword,
@@ -90,8 +93,8 @@ export async function loadAnalysisInput(jobId: number): Promise<AnalysisInput> {
     videos: videoRows,
     comments: commentRows,
     dateRange: {
-      start: job.startDate,
-      end: job.endDate,
+      start: ensureDate(job.startDate),
+      end: ensureDate(job.endDate),
     },
     domain: (job.domain as AnalysisDomain) || undefined,
   };

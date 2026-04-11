@@ -5,7 +5,12 @@ import {
 import type { AnalysisModule, AnalysisInput } from '../../types';
 import type { AnalysisDomain } from '../../domain';
 import { MODULE_MODEL_MAP } from '../../types';
-import { ANALYSIS_CONSTRAINTS, getFrameStrengthAnchor, distillForFrameWar } from '../prompt-utils';
+import {
+  ANALYSIS_CONSTRAINTS,
+  getFrameStrengthAnchor,
+  distillForFrameWar,
+  formatDateRange,
+} from '../prompt-utils';
 
 const config = MODULE_MODEL_MAP['fandom-narrative-war'];
 
@@ -60,7 +65,7 @@ ${ANALYSIS_CONSTRAINTS}`;
       .join('\n');
 
     return `키워드: "${data.keyword}"
-분석 기간: ${data.dateRange.start.toISOString().split('T')[0]} ~ ${data.dateRange.end.toISOString().split('T')[0]}
+${formatDateRange(data)}
 
 ## 주요 기사 (${data.articles.length}건 중 상위 20건)
 ${articlesSummary}

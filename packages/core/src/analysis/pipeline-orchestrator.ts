@@ -28,6 +28,8 @@ import type { AnalysisModuleResult } from './types';
 import { getConcurrencyConfig } from './concurrency-config';
 import { runWithProviderGrouping } from './concurrency';
 import { buildResult, generateFinalReport } from './report-builder';
+import { extractEntitiesFromResults } from './ontology-extractor';
+import { persistOntology } from './persist-ontology';
 
 /** 재시작 옵션 */
 export interface ResumeOptions {
@@ -424,6 +426,29 @@ export async function runAnalysisPipeline(
 
   // 리포트 생성
   const report = await generateFinalReport(allResults, input);
+
+  // 온톨로지 추출 (비차단 — 실패해도 파이프라인 결과에 영향 없음)
+  try {
+    const completedResultMap: Record<string, { status: string; result?: unknown }> = {};
+    for (const [key, val] of Object.entries(allResults)) {
+      if (val.status === 'completed') {
+        completedResultMap[key] = val;
+      }
+    }
+    const { entities: extractedEntities, relations: extractedRelations } =
+      extractEntitiesFromResults(completedResultMap);
+    if (extractedEntities.length > 0) {
+      const stats = await persistOntology(jobId, extractedEntities, extractedRelations);
+      await appendJobEvent(
+        jobId,
+        'info',
+        `온톨로지 추출 완료: 엔티티 ${stats.entityCount}개, 관계 ${stats.relationCount}개`,
+      );
+    }
+  } catch (e) {
+    console.error('[ontology] 추출 실패:', e);
+  }
+
   const completedModules = Object.values(allResults)
     .filter((r) => r.status === 'completed')
     .map((r) => r.module);

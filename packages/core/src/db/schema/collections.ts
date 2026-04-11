@@ -52,7 +52,14 @@ export const collectionJobs = pgTable(
     skippedModules: jsonb('skipped_modules').$type<string[]>(), // 스킵할 분석 모듈 목록
     options: jsonb('options').$type<{
       enableItemAnalysis?: boolean;
-      tokenOptimization?: 'none' | 'light' | 'standard' | 'aggressive';
+      tokenOptimization?:
+        | 'none'
+        | 'light'
+        | 'standard'
+        | 'aggressive'
+        | 'rag-light'
+        | 'rag-standard'
+        | 'rag-aggressive';
     }>(),
     keywordType: text('keyword_type'),
     domain: text('domain').notNull().default('political'),
@@ -66,7 +73,14 @@ export const collectionJobs = pgTable(
         communityPosts: number;
         commentsPerItem: number;
       };
-      optimization: 'none' | 'light' | 'standard' | 'aggressive';
+      optimization:
+        | 'none'
+        | 'light'
+        | 'standard'
+        | 'aggressive'
+        | 'rag-light'
+        | 'rag-standard'
+        | 'rag-aggressive';
       skippedModules: string[];
       enableItemAnalysis: boolean;
       customized: boolean;

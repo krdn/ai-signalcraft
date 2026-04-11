@@ -182,8 +182,26 @@ ORM: Drizzle ORM | DB: PostgreSQL 16
 | ---------------- | -------------------------- | ------------------------- |
 | `collections.ts` | collections                | 수집된 원문 데이터        |
 | `analysis.ts`    | analyses, analysis_results | AI 분석 결과 (JSONB)      |
+| `ontology.ts`    | entities, relations        | 온톨로지 엔티티/관계      |
 | `auth.ts`        | users, sessions, accounts  | NextAuth.js 5 인증        |
 | `settings.ts`    | settings                   | 팀 설정 (모델, API 키 등) |
+
+### pgvector 임베딩
+
+- **모델**: multilingual-e5-small (384차원, 로컬 추론)
+- **저장**: `articles.embedding`, `comments.embedding` (vector384 컬럼)
+- **인덱스**: HNSW (cosine distance), m=16, ef_construction=64
+- **활용**: 시맨틱 검색, RAG 기반 분석 최적화, 클러스터링/중복 제거
+
+### 온톨로지 (지식 그래프)
+
+분석 결과에서 추출한 엔티티와 관계를 저장:
+
+**entities 테이블**: 6가지 타입 (person, organization, issue, keyword, frame, claim)
+**relations 테이블**: 6가지 관계 (supports, opposes, related, causes, cooccurs, threatens)
+
+추출 소스: sentiment-framing, segmentation, frame-war, risk-map, message-impact, macro-view, strategy
+시각화: D3.js force-directed 그래프 (대시보드에 내장)
 
 ---
 

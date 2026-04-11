@@ -1,7 +1,7 @@
 'use client';
 
 import { X } from 'lucide-react';
-import type { QueueHealth } from '@ai-signalcraft/core';
+import type { QueueHealth } from '@ai-signalcraft/core/client';
 
 interface Props {
   data: QueueHealth[];

@@ -15,6 +15,7 @@ interface CardHelpProps {
   tips?: readonly string[];
   relatedModules?: readonly string[];
   limitations?: readonly string[];
+  techNotes?: readonly string[];
 }
 
 export function CardHelp({
@@ -26,10 +27,11 @@ export function CardHelp({
   tips,
   relatedModules,
   limitations,
+  techNotes,
 }: CardHelpProps) {
-  const [activeSection, setActiveSection] = useState<'info' | 'read' | 'tips'>('info');
+  const [activeSection, setActiveSection] = useState<'info' | 'read' | 'tips' | 'tech'>('info');
 
-  const hasTabs = !!(howToRead?.length || tips?.length);
+  const hasTabs = !!(howToRead?.length || tips?.length || techNotes?.length);
 
   return (
     <Popover>
@@ -83,6 +85,19 @@ export function CardHelp({
                 }`}
               >
                 활용 팁
+              </button>
+            )}
+            {techNotes?.length && (
+              <button
+                type="button"
+                onClick={() => setActiveSection('tech')}
+                className={`px-2.5 py-1.5 text-xs font-medium border-b-2 transition-colors -mb-px ${
+                  activeSection === 'tech'
+                    ? 'border-primary text-foreground'
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                기술 정보
               </button>
             )}
           </div>
@@ -143,6 +158,18 @@ export function CardHelp({
                 <li key={i} className="text-xs text-muted-foreground flex gap-1.5">
                   <span className="text-primary shrink-0">→</span>
                   <span>{tip}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {/* 기술 정보 탭 */}
+          {activeSection === 'tech' && techNotes?.length && (
+            <ul className="space-y-1.5">
+              {techNotes.map((note, i) => (
+                <li key={i} className="text-xs text-muted-foreground flex gap-1.5">
+                  <span className="text-muted-foreground/60 shrink-0">▸</span>
+                  <span>{note}</span>
                 </li>
               ))}
             </ul>
@@ -429,5 +456,101 @@ export const DASHBOARD_HELP = {
     ],
     source: '이전 분석 결과 자동 비교',
     relatedModules: ['KPI 카드', '감성 비율', '키워드'],
+  },
+  keywordNetwork: {
+    title: '키워드 네트워크',
+    description:
+      '키워드 간의 연관 관계를 인터랙티브 네트워크 그래프로 시각화합니다. 워드 클라우드에서는 볼 수 없는 키워드 간의 구조적 관계와 핵심 허브 키워드를 파악할 수 있습니다.',
+    details: [
+      '노드(원): 각 키워드를 나타냅니다',
+      '노드 크기: 키워드 출현 빈도에 비례 (클수록 자주 언급)',
+      '노드 색상: 초록=긍정, 빨강=부정, 회색=중립/관련어',
+      '선(엣지): 두 키워드의 동시출현 관계',
+      '선 굵기: 동시출현 점수(coOccurrenceScore)가 높을수록 두꺼움',
+    ],
+    howToRead: [
+      '여러 선이 연결된 노드가 여론의 "허브 키워드"입니다',
+      '선으로 연결된 키워드들은 함께 논의되는 주제 군집을 형성합니다',
+      '부정 키워드(빨강)끼리 강하게 연결되어 있으면 부정 여론의 핵심 구조를 나타냄',
+      '고립된 노드는 독립적인 이슈이거나 주변적 키워드입니다',
+    ],
+    tips: [
+      '마우스 드래그: 노드를 이동하여 관심 영역을 분리해서 볼 수 있습니다',
+      '마우스 휠: 확대/축소로 세부 관계를 확인하세요',
+      '핵심 허브 키워드를 중심으로 대응 메시지를 구성하면 효과적입니다',
+      '워드 클라우드와 네트워크 그래프를 함께 보면 빈도와 관계를 동시에 파악 가능',
+    ],
+    source: '감정 프레이밍 모듈 — topKeywords + relatedKeywords',
+    relatedModules: ['키워드 / 연관어', '프레임 전쟁(고급)'],
+  },
+  semanticSearch: {
+    title: '의미 검색',
+    description:
+      '자연어 질의로 수집된 기사와 댓글을 의미적으로 검색합니다. 키워드가 정확히 일치하지 않아도 관련 문서를 찾을 수 있어, 수집 데이터의 심층 탐색에 유용합니다.',
+    details: [
+      'pgvector 임베딩 기반 의미 검색 — 키워드가 아닌 "의미"로 검색',
+      '"물가상승" 검색 시 "인플레이션", "생활고" 관련 문서도 함께 검색됨',
+      '각 결과에 유사도 점수(%)가 표시되어 관련성 정도를 확인 가능',
+      '기사(파란 아이콘)와 댓글(주황 아이콘)을 통합 검색',
+    ],
+    howToRead: [
+      '유사도 80%+: 질의와 거의 동일한 의미의 문서',
+      '유사도 60~80%: 관련성이 높은 문서',
+      '유사도 60% 미만: 약한 관련성 — 참고용으로 활용',
+      '검색 결과가 없으면 다른 표현으로 다시 시도해 보세요',
+    ],
+    tips: [
+      '특정 관점의 의견만 보려면 감정 필터(긍정/부정/중립)를 활용하세요',
+      'AI 리포트에서 언급된 키워드를 그대로 검색어로 사용하면 관련 원문을 바로 확인 가능',
+      '"~에 대한 비판적 의견", "~의 긍정적 반응" 같은 문장 형태로 검색해 보세요',
+    ],
+    limitations: [
+      '임베딩이 생성되지 않은 문서는 검색되지 않습니다 (최초 분석 후 사용 가능)',
+      '매우 짧은 댓글(1~2단어)은 임베딩 품질이 낮을 수 있습니다',
+    ],
+    techNotes: [
+      '임베딩 모델: multilingual-e5-small (384차원 벡터) — ONNX Runtime으로 서버 사이드 추론',
+      '저장: articles.embedding / comments.embedding 컬럼 (PostgreSQL pgvector 확장, vector(384) 타입)',
+      '검색 방식: 질의 텍스트 → embedTexts() 임베딩 → pgvector 코사인 거리(<=> 연산자)로 유사도 정렬',
+      '유사도 계산: 1 - (embedding <=> query_vector) = 코사인 유사도 (0~1 범위)',
+      '임베딩 생성 시점: 분석 파이프라인 실행 시 embedding-persist.ts에서 배치 생성 + backfill 스크립트로 기존 데이터 보완',
+      '파이프라인 흐름: 검색어 입력 → tRPC search.semantic → semanticSearch() → embedTexts([query]) → pgvector SQL → 유사도 필터링(기본 0.4) → topK 반환',
+      '소스 코드: packages/core/src/search/semantic-search.ts (검색 로직), packages/core/src/analysis/preprocessing/embeddings.ts (임베딩 생성)',
+      '업그레이드 가이드: 임베딩 모델 변경 시 vector(384)→새 차원수로 마이그레이션 + 전체 backfill 재실행 필요',
+    ],
+    source: 'pgvector 임베딩 (multilingual-e5-small, 384차원)',
+    relatedModules: ['키워드 / 연관어', '수집 데이터'],
+  },
+  knowledgeGraph: {
+    title: '지식 그래프',
+    description:
+      '분석 결과에서 AI가 추출한 핵심 엔티티(인물/조직/이슈/키워드/프레임/주장)와 그들 간의 관계를 인터랙티브 네트워크 그래프로 시각화합니다. 여론의 구조적 관계를 한눈에 파악할 수 있습니다.',
+    details: [
+      '보라색 노드: 인물 엔티티',
+      '파란색 노드: 조직/집단 엔티티',
+      '빨간색 노드: 이슈/리스크 엔티티',
+      '초록색 노드: 키워드 엔티티',
+      '노란색 노드: 프레임 엔티티',
+      '하늘색 노드: 주장/메시지 엔티티',
+      '실선: 위협/대립/연쇄 관계, 점선: 동시출현/연관 관계',
+    ],
+    howToRead: [
+      '노드가 클수록 더 자주 언급된 엔티티입니다',
+      '여러 선이 연결된 노드가 여론의 핵심 허브입니다',
+      '빨간 선(위협/대립)으로 연결된 프레임은 충돌 관계를 나타냅니다',
+      '엔티티 타입 필터(Badge)를 클릭하여 관심 유형만 표시할 수 있습니다',
+      '노드를 클릭하면 상세 정보(설명, 언급 횟수)를 확인할 수 있습니다',
+    ],
+    tips: [
+      '핵심 허브 엔티티를 중심으로 커뮤니케이션 전략을 수립하세요',
+      '위협 관계(빨간 선)로 연결된 엔티티 간의 충돌 구조를 파악하면 대응 우선순위를 결정할 수 있습니다',
+      '동시출현(점선)으로 묶인 키워드 그룹은 하나의 프레임으로 인식되고 있음을 의미합니다',
+    ],
+    limitations: [
+      '엔티티는 분석 모듈의 구조화된 결과에서 자동 추출하므로, 모듈이 감지하지 못한 엔티티는 누락될 수 있습니다',
+      '동의어(예: "이재명"과 "이 대표")가 별개 노드로 표시될 수 있습니다',
+    ],
+    source: '온톨로지 추출 (분석 모듈 결과 자동 매핑)',
+    relatedModules: ['키워드 네트워크', '프레임 전쟁(고급)', '리스크 분석'],
   },
 } as const;

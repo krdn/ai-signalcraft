@@ -732,6 +732,57 @@ export const REPORT_MODULES: ReportModule[] = [
       },
     ],
   },
+  /* ─────────── 지식 인프라 ─────────── */
+  {
+    id: 'ontology',
+    no: 15,
+    displayName: '지식 그래프 (온톨로지)',
+    enName: 'Knowledge Graph / Ontology',
+    stage: 'Stage 1',
+    stageLabel: '후처리 (자동)',
+    model: '규칙 기반 매핑 (AI 모델 미사용)',
+    role: '지식 엔지니어 — 여론의 구조적 관계를 모델링하는 엔티티-관계 추출 전문가',
+    whatItDoes:
+      '분석 파이프라인 완료 후, 6개 분석 모듈(sentiment-framing, segmentation, frame-war, risk-map, message-impact, macro-view, strategy)의 구조화된 JSON 결과에서 핵심 엔티티(인물/조직/이슈/키워드/프레임/주장)와 그들 간의 관계를 자동 추출하여 지식 그래프를 구성합니다. 추출된 엔티티와 관계는 PostgreSQL에 영속화되어, 대시보드의 인터랙티브 네트워크 그래프와 엔티티 기반 검색에 활용됩니다.',
+    methodology: [
+      '분석 모듈 결과의 구조화된 필드를 온톨로지 엔티티/관계로 매핑 (LLM 재호출 없이 기존 결과 활용)',
+      '엔티티 정규화: 동일 엔티티의 mentionCount 증가 및 메타데이터 병합',
+      '6개 엔티티 타입: person(인물), organization(조직), issue(이슈), keyword(키워드), frame(프레임), claim(주장)',
+      '6개 관계 타입: supports(지지), opposes(대립), related(관련), causes(연쇄), cooccurs(공동출현), threatens(위협)',
+      '파이프라인 후처리로 비차단 실행 — 실패해도 분석 결과에 영향 없음',
+    ],
+    inputs:
+      'Stage 1~4 분석 모듈 결과 (sentiment-framing, segmentation, frame-war, risk-map, message-impact, macro-view, strategy)',
+    outputs: [
+      { field: 'entities', desc: '추출된 엔티티 목록 (name, type, mentionCount, metadata)' },
+      { field: 'relations', desc: '엔티티 간 관계 (source→target, type, weight, evidence)' },
+      { field: 'knowledgeGraph', desc: 'D3.js 네트워크 그래프 시각화 데이터 (nodes, edges)' },
+    ],
+    howToUse: [
+      '대시보드의 지식 그래프에서 여론의 구조적 관계를 한눈에 파악',
+      '엔티티 타입 필터로 관심 영역(인물/이슈/프레임 등)만 집중 분석',
+      '노드 클릭으로 엔티티 상세 정보와 관련 문서 확인',
+      '의미 검색과 결합하여 특정 엔티티가 언급된 문서 검색',
+      '시간 경과에 따른 엔티티 등장/소멸 추적으로 여론 변화 구조 파악',
+    ],
+    theory:
+      '지식 그래프(Knowledge Graph)는 정보를 엔티티와 관계의 네트워크로 구조화하는 표현 방식으로, Google Knowledge Graph(2012) 이후 산업 표준으로 자리잡았습니다. 온톨로지(Ontology)는 도메인 내 개념과 관계를 형식적으로 정의하는 철학적·컴퓨터과학적 프레임워크입니다. 본 시스템은 NLP 기반 Named Entity Recognition 대신 분석 모듈의 구조화된 출력을 직접 매핑하여, 높은 정밀도의 엔티티 추출을 zero-shot으로 달성합니다.',
+    sources: [
+      {
+        label: 'Hogan et al. (2021) "Knowledge Graphs"',
+        detail: 'ACM Computing Surveys 54(4), 1-37. 지식 그래프 종합 서베이.',
+      },
+      {
+        label:
+          'Paulheim (2017) "Knowledge Graph Refinement: A Survey of Approaches and Evaluation Methods"',
+        detail: 'Semantic Web 8(3), 489-508. 엔티티 정규화 및 관계 추출 방법론.',
+      },
+      {
+        label: 'pgvector 공식 문서',
+        detail: 'https://github.com/pgvector/pgvector — PostgreSQL 벡터 검색 확장.',
+      },
+    ],
+  },
 ];
 
 /* ─────────── 리포트 레벨 메타데이터 ─────────── */

@@ -1,5 +1,6 @@
 'use client';
 
+import { AdvancedCardHelp, ADVANCED_HELP } from './advanced-help';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
@@ -68,7 +69,10 @@ export function NarrativeWarChart({ data }: NarrativeWarChartProps) {
   return (
     <Card className="min-h-[320px]">
       <CardHeader>
-        <CardTitle className="text-lg font-semibold">내러티브 경쟁 분석</CardTitle>
+        <CardTitle className="text-lg font-semibold flex items-center gap-1.5">
+          내러티브 경쟁 분석
+          <AdvancedCardHelp {...ADVANCED_HELP.fandomNarrativeWar} />
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {!parsed ? (

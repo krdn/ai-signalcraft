@@ -1,18 +1,20 @@
 'use client';
 
+import { buildFrameWarGraph, buildRiskChainGraph } from '@ai-signalcraft/core/client';
 import { useQuery } from '@tanstack/react-query';
 import { AlertCircle, Brain } from 'lucide-react';
+import { AdvancedHelp, AdvancedCardHelp, ADVANCED_HELP } from './advanced-help';
 import { ApprovalRatingCard } from './approval-rating-card';
-import { FrameWarChart } from './frame-war-chart';
 import { CrisisScenarios } from './crisis-scenarios';
-import { WinSimulationCard } from './win-simulation-card';
 import { FanLoyaltyCard } from './fan-loyalty-card';
-import { NarrativeWarChart } from './narrative-war-chart';
 import { FandomCrisisCard } from './fandom-crisis-card';
+import { FrameWarChart } from './frame-war-chart';
+import { FrameWarGraph } from './frame-war-graph';
+import { NarrativeWarChart } from './narrative-war-chart';
 import { ReleasePredictionCard } from './release-prediction-card';
-import { AdvancedHelp } from './advanced-help';
+import { WinSimulationCard } from './win-simulation-card';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { trpcClient } from '@/lib/trpc';
 
@@ -161,6 +163,57 @@ export function AdvancedView({ jobId, fetchFn }: AdvancedViewProps) {
           <FrameWarChart data={parseModuleResult(moduleResults, 'frame-war') ?? null} />
           <CrisisScenarios data={parseModuleResult(moduleResults, 'crisis-scenario') ?? null} />
           <WinSimulationCard data={parseModuleResult(moduleResults, 'win-simulation') ?? null} />
+
+          {/* 프레임 전쟁 네트워크 그래프 */}
+          {(() => {
+            const frameWarData = parseModuleResult(moduleResults, 'frame-war');
+            const sentimentData = parseModuleResult(moduleResults, 'sentiment-framing');
+            if (!frameWarData || !sentimentData) return null;
+            try {
+              const graphData = buildFrameWarGraph(frameWarData as any, sentimentData as any);
+              if (graphData.nodes.length === 0) return null;
+              return (
+                <Card className="min-h-[320px]">
+                  <CardHeader>
+                    <CardTitle className="text-lg font-semibold flex items-center gap-1.5">
+                      프레임 전쟁 네트워크
+                      <AdvancedCardHelp {...ADVANCED_HELP.frameWarGraph} />
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <FrameWarGraph data={graphData} width={600} height={400} />
+                  </CardContent>
+                </Card>
+              );
+            } catch {
+              return null;
+            }
+          })()}
+
+          {/* 리스크 연쇄 그래프 */}
+          {(() => {
+            const riskData = parseModuleResult(moduleResults, 'risk-map');
+            if (!riskData) return null;
+            try {
+              const graphData = buildRiskChainGraph(riskData as any);
+              if (graphData.nodes.length === 0) return null;
+              return (
+                <Card className="min-h-[320px]">
+                  <CardHeader>
+                    <CardTitle className="text-lg font-semibold flex items-center gap-1.5">
+                      리스크 연쇄 다이어그램
+                      <AdvancedCardHelp {...ADVANCED_HELP.riskChainGraph} />
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <FrameWarGraph data={graphData} width={600} height={400} />
+                  </CardContent>
+                </Card>
+              );
+            } catch {
+              return null;
+            }
+          })()}
         </div>
       )}
     </div>

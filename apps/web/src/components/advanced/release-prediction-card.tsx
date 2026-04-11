@@ -1,6 +1,7 @@
 'use client';
 
 import { Music } from 'lucide-react';
+import { AdvancedCardHelp, ADVANCED_HELP } from './advanced-help';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
@@ -79,6 +80,7 @@ export function ReleasePredictionCard({ data }: ReleasePredictionCardProps) {
         <CardTitle className="text-lg font-semibold flex items-center gap-1.5">
           <Music className="h-5 w-5" />
           컴백/신곡 반응 예측
+          <AdvancedCardHelp {...ADVANCED_HELP.releaseReceptionPrediction} />
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">

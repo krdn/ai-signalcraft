@@ -1,4 +1,11 @@
-export type OptimizationPreset = 'none' | 'light' | 'standard' | 'aggressive';
+export type OptimizationPreset =
+  | 'none'
+  | 'light'
+  | 'standard'
+  | 'aggressive'
+  | 'rag-light'
+  | 'rag-standard'
+  | 'rag-aggressive';
 
 export interface PresetConfig {
   deduplication: boolean;
@@ -51,5 +58,37 @@ export const OPTIMIZATION_PRESETS: Record<OptimizationPreset, PresetConfig> = {
     description: '클러스터링으로 대표 기사만 분석, 댓글 상위 50건으로 압축합니다.',
     estimatedReduction: '~80%',
     color: 'orange',
+  },
+  // RAG 모드 — DB에 저장된 pgvector 임베딩을 활용한 의미 기반 선별
+  // 기존 모드가 "매번 임베딩 재계산"인 반면, RAG는 DB 임베딩을 직접 활용
+  'rag-light': {
+    deduplication: false, // RAG가 유사도로 필터링하므로 별도 중복 제거 불필요
+    similarityThreshold: null,
+    clustering: false,
+    commentLimit: null,
+    label: 'RAG 경량',
+    description: 'DB 임베딩으로 의미 관련 댓글 상위 50건 선별. 기사는 전체 유지.',
+    estimatedReduction: '~40%',
+    color: 'cyan',
+  },
+  'rag-standard': {
+    deduplication: false,
+    similarityThreshold: null,
+    clustering: false,
+    commentLimit: null,
+    label: 'RAG 표준',
+    description: 'DB 임베딩으로 의미 관련 기사 30+클러스터 대표 10, 댓글 30건 선별.',
+    estimatedReduction: '~65%',
+    color: 'blue',
+  },
+  'rag-aggressive': {
+    deduplication: false,
+    similarityThreshold: null,
+    clustering: false,
+    commentLimit: null,
+    label: 'RAG 강력',
+    description: 'DB 임베딩으로 의미 관련 기사 15+클러스터 대표 5, 댓글 15건 선별.',
+    estimatedReduction: '~80%',
+    color: 'violet',
   },
 };

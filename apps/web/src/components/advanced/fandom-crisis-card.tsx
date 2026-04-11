@@ -1,6 +1,7 @@
 'use client';
 
 import { AlertTriangle, Shield, TrendingUp, Mic2 } from 'lucide-react';
+import { AdvancedCardHelp, ADVANCED_HELP } from './advanced-help';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
@@ -80,6 +81,7 @@ export function FandomCrisisCard({ data }: FandomCrisisCardProps) {
           <span className="flex items-center gap-1.5">
             <Mic2 className="h-5 w-5" />
             팬덤 위기 시나리오
+            <AdvancedCardHelp {...ADVANCED_HELP.fandomCrisisScenario} />
           </span>
           {parsed && getRiskBadge(parsed.currentRiskLevel)}
         </CardTitle>

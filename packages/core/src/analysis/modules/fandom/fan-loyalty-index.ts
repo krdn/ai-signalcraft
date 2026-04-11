@@ -9,6 +9,7 @@ import {
   ANALYSIS_CONSTRAINTS,
   getPlatformKnowledge,
   distillForApprovalRating,
+  formatDateRange,
 } from '../prompt-utils';
 
 const config = MODULE_MODEL_MAP['fan-loyalty-index'];
@@ -68,7 +69,7 @@ ${ANALYSIS_CONSTRAINTS}`;
       .join('\n');
 
     return `키워드: "${data.keyword}"
-분석 기간: ${data.dateRange.start.toISOString().split('T')[0]} ~ ${data.dateRange.end.toISOString().split('T')[0]}
+${formatDateRange(data)}
 
 ## 플랫폼별 데이터 분포
 ${platformSummary}
