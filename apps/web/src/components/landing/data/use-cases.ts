@@ -60,6 +60,8 @@ export const USE_CASE_CATEGORIES = [
         description:
           '실시간 여론 추적, 지지율 추정, 프레임 전쟁 분석으로 선거 전략을 데이터 기반으로 수립합니다.',
         highlight: '의사결정 시간 수일 → 수시간',
+        domainId: 'political',
+        theoreticalHighlight: 'Framing Theory · Agenda-Setting Theory 기반',
       },
       {
         icon: Shield,
@@ -67,12 +69,16 @@ export const USE_CASE_CATEGORIES = [
         description:
           '위기 시나리오 3개와 대응 전략을 자동 생성합니다. 골든타임 안에 전략적 판단이 가능합니다.',
         highlight: '수동 클리핑 주 20시간 → 0',
+        domainId: 'pr',
+        theoreticalHighlight: 'SCCT · Image Repair Theory 기반',
       },
       {
         icon: LineChart,
         title: '기업 평판 관리',
         description: '네이버·유튜브·커뮤니티 전체를 통합 분석하여 경영진 보고서를 자동 생성합니다.',
         highlight: '보고서 작성 3일 → 자동 생성',
+        domainId: 'corporate',
+        theoreticalHighlight: 'RepTrak · Stakeholder Theory 기반',
       },
       {
         icon: Sparkles,
@@ -80,6 +86,8 @@ export const USE_CASE_CATEGORIES = [
         description:
           '아티스트·배우의 온라인 반응을 실시간 추적하고, 팬덤 동향과 리스크를 분석하여 매니지먼트 전략을 지원합니다.',
         highlight: '팬덤 여론 분석 자동화',
+        domainId: 'fandom',
+        theoreticalHighlight: 'Fan Engagement · Parasocial Relationship 기반',
       },
     ],
   },
@@ -92,6 +100,8 @@ export const USE_CASE_CATEGORIES = [
         description:
           '특정 정책에 대한 국민 여론 구조를 파악하고, 정책 보고서의 실증 근거로 활용합니다.',
         highlight: '정책 수용도 분석 자동화',
+        domainId: 'policy',
+        theoreticalHighlight: 'Advocacy Coalition Framework 기반',
       },
       {
         icon: TrendingUp,
@@ -99,6 +109,8 @@ export const USE_CASE_CATEGORIES = [
         description:
           '기업·산업·경제 정책에 대한 시장 심리를 분석합니다. 뉴스 댓글과 커뮤니티 반응에서 선행 지표를 포착합니다.',
         highlight: '시장 심리 선행 지표 포착',
+        domainId: 'finance',
+        theoreticalHighlight: 'Behavioral Finance · Information Cascade 기반',
       },
       {
         icon: Bookmark,
@@ -106,6 +118,8 @@ export const USE_CASE_CATEGORIES = [
         description:
           '신약 출시, 의료 이슈, 건강보험 정책 등에 대한 여론을 추적합니다. 약물 부작용 이슈를 조기에 감지합니다.',
         highlight: '의료 이슈 리스크 조기 감지',
+        domainId: 'healthcare',
+        theoreticalHighlight: 'Health Belief Model · Risk Perception Theory 기반',
       },
       {
         icon: Building2,
@@ -113,6 +127,8 @@ export const USE_CASE_CATEGORIES = [
         description:
           '재개발, 교통, 환경 등 지역 현안에 대한 주민 여론을 사전에 파악하여 정책 소통에 활용합니다.',
         highlight: '주민 여론 → 정책 소통 전략',
+        domainId: 'public-sector',
+        theoreticalHighlight: 'Participatory Governance · Public Trust Theory 기반',
       },
     ],
   },
@@ -125,6 +141,8 @@ export const USE_CASE_CATEGORIES = [
         description:
           '입시 정책 변경, 대학 평판, 교육 이슈에 대한 학부모·학생 여론을 추적하고 대응 전략을 도출합니다.',
         highlight: '교육 정책 여론 즉시 파악',
+        domainId: 'education',
+        theoreticalHighlight: 'Institutional Reputation · Signaling Theory 기반',
       },
       {
         icon: Dumbbell,
@@ -132,6 +150,8 @@ export const USE_CASE_CATEGORIES = [
         description:
           '선수 이적, 팀 성적에 따른 팬 반응을 실시간 추적합니다. 팬덤 관리와 스폰서 리포팅에 활용합니다.',
         highlight: '팬 반응 실시간 추적',
+        domainId: 'sports',
+        theoreticalHighlight: 'BIRGing/CORFing · Sport Consumer Motivation 기반',
       },
       {
         icon: Briefcase,
@@ -139,6 +159,8 @@ export const USE_CASE_CATEGORIES = [
         description:
           '소송 관련 여론전, 기업 분쟁 시 여론 동향을 파악하여 법적 전략 수립을 지원합니다.',
         highlight: '여론재판 리스크 모니터링',
+        domainId: 'legal',
+        theoreticalHighlight: 'Legal Reputation · Social Proof Theory 기반',
       },
       {
         icon: ExternalLink,
@@ -146,6 +168,8 @@ export const USE_CASE_CATEGORIES = [
         description:
           '가맹점 이슈, 소비자 불매운동, 제품 리콜 등 브랜드 위기를 조기 감지하고 대응 전략을 생성합니다.',
         highlight: '불매운동 조기 감지 → 대응',
+        domainId: 'retail',
+        theoreticalHighlight: 'CBBE Model · Franchise System Dynamics 기반',
       },
     ],
   },

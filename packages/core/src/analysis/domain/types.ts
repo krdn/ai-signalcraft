@@ -9,7 +9,35 @@
  */
 
 /** 지원 분석 도메인 */
-export type AnalysisDomain = 'political' | 'fandom';
+export type AnalysisDomain =
+  | 'political'
+  | 'fandom'
+  | 'pr'
+  | 'corporate'
+  | 'policy'
+  | 'finance'
+  | 'healthcare'
+  | 'public-sector'
+  | 'education'
+  | 'sports'
+  | 'legal'
+  | 'retail';
+
+/** 이론적 참조 (세계 표준 학술 이론) */
+export interface TheoreticalReference {
+  /** 이론명 (영문 원명) */
+  theory: string;
+  /** 저자 */
+  scholar: string;
+  /** 발표 연도 */
+  year: number;
+  /** 한국어 이론명 */
+  keyConceptKo: string;
+  /** 이 분석 시스템에서의 적용 지점 */
+  application: string;
+  /** 이 이론이 사용되는 모듈명 목록 */
+  applicableModules: string[];
+}
 
 /** 도메인별 집단 분류 라벨 */
 export interface SegmentationLabels {
@@ -66,4 +94,7 @@ export interface DomainConfig {
 
   /** 리포트 섹션 구조 템플릿 */
   reportSectionTemplate: string;
+
+  /** 이론적 기반 — 세계 표준 학술 이론 참조 목록 */
+  theoreticalBasis?: TheoreticalReference[];
 }

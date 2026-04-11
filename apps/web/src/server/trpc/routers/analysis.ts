@@ -65,6 +65,22 @@ export const analysisRouter = router({
           )
           .default([]),
         keywordType: z.string().optional(),
+        domain: z
+          .enum([
+            'political',
+            'fandom',
+            'pr',
+            'corporate',
+            'policy',
+            'finance',
+            'healthcare',
+            'public-sector',
+            'education',
+            'sports',
+            'legal',
+            'retail',
+          ])
+          .optional(),
       }),
     )
     .mutation(async ({ input, ctx }) => {
@@ -204,7 +220,7 @@ export const analysisRouter = router({
           breakpoints: input.breakpoints,
           keywordType,
           appliedPreset,
-          domain: (input as any).domain ?? 'political',
+          domain: input.domain ?? (input as any)._domain ?? 'political',
         })
         .returning();
 
