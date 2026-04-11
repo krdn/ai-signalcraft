@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
@@ -8,7 +9,7 @@ import { SourceBadges, extractSources, summarizeCounts, formatDuration } from '.
 import { DomainBadge } from './domain-badge';
 import { JobDiagnosticModal } from './job-diagnostic-modal';
 import { trpcClient } from '@/lib/trpc';
-import type { FilterMode } from '@/components/filter-mode-toggle';
+import { FilterScopePicker, type FilterScopeValue } from '@/components/filter-scope-picker';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -42,11 +43,24 @@ export function RecentJobs({ onSelectJob, onSelectShowcase }: RecentJobsProps) {
   const { data: session } = useSession();
   const role = session?.user?.role as string | undefined;
   const isDemo = role === 'demo';
-  const filterMode: FilterMode = role === 'admin' || role === 'leader' ? 'team' : 'mine';
+  const canUseAdvancedScope = role === 'admin' || role === 'leader';
+  const defaultScope: FilterScopeValue['scope'] = canUseAdvancedScope ? 'team' : 'mine';
+
+  const [scopeValue, setScopeValue] = useState<FilterScopeValue>({ scope: defaultScope });
 
   const { data, isLoading } = useQuery({
-    queryKey: ['history', 'list', { page: 1, perPage: 5, filterMode }],
-    queryFn: () => trpcClient.history.list.query({ page: 1, perPage: 5, filterMode }),
+    queryKey: [
+      'history',
+      'list',
+      { page: 1, perPage: 5, scope: scopeValue.scope, targetUserId: scopeValue.targetUserId },
+    ],
+    queryFn: () =>
+      trpcClient.history.list.query({
+        page: 1,
+        perPage: 5,
+        scope: scopeValue.scope,
+        targetUserId: scopeValue.targetUserId,
+      }),
   });
 
   // 데모 사용자: 쇼케이스 항목도 조회
@@ -61,9 +75,10 @@ export function RecentJobs({ onSelectJob, onSelectShowcase }: RecentJobsProps) {
 
   if (isLoading) {
     return (
-      <Card className="mx-auto max-w-xl mt-4">
-        <CardHeader>
+      <Card className="mx-auto max-w-3xl mt-4">
+        <CardHeader className="flex flex-row items-center justify-between gap-3">
           <CardTitle className="text-lg font-semibold">최근 분석</CardTitle>
+          {canUseAdvancedScope && <FilterScopePicker value={scopeValue} onChange={setScopeValue} />}
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
@@ -78,9 +93,10 @@ export function RecentJobs({ onSelectJob, onSelectShowcase }: RecentJobsProps) {
 
   if (!data?.items.length && !showShowcase) {
     return (
-      <Card className="mx-auto max-w-xl mt-4">
-        <CardHeader>
+      <Card className="mx-auto max-w-3xl mt-4">
+        <CardHeader className="flex flex-row items-center justify-between gap-3">
           <CardTitle className="text-lg font-semibold">최근 분석</CardTitle>
+          {canUseAdvancedScope && <FilterScopePicker value={scopeValue} onChange={setScopeValue} />}
         </CardHeader>
         <CardContent>
           <div className="text-center py-8 text-muted-foreground">
@@ -94,9 +110,10 @@ export function RecentJobs({ onSelectJob, onSelectShowcase }: RecentJobsProps) {
 
   return (
     <TooltipProvider>
-      <Card className="mx-auto max-w-xl mt-4">
-        <CardHeader>
+      <Card className="mx-auto max-w-3xl mt-4">
+        <CardHeader className="flex flex-row items-center justify-between gap-3">
           <CardTitle className="text-lg font-semibold">최근 분석</CardTitle>
+          {canUseAdvancedScope && <FilterScopePicker value={scopeValue} onChange={setScopeValue} />}
         </CardHeader>
         <CardContent>
           <Table>
@@ -107,6 +124,7 @@ export function RecentJobs({ onSelectJob, onSelectShowcase }: RecentJobsProps) {
                 <TableHead>소스</TableHead>
                 <TableHead>수집</TableHead>
                 <TableHead>상태</TableHead>
+                {scopeValue.scope !== 'mine' && <TableHead>실행자</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -169,6 +187,11 @@ export function RecentJobs({ onSelectJob, onSelectShowcase }: RecentJobsProps) {
                     <TableCell>
                       <Badge variant={badgeInfo.variant}>{badgeInfo.label}</Badge>
                     </TableCell>
+                    {scopeValue.scope !== 'mine' && (
+                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                        {(job as any).userName ?? '-'}
+                      </TableCell>
+                    )}
                   </TableRow>
                 );
               })}

@@ -17,7 +17,7 @@ import { toast } from 'sonner';
 import { SourceBadges, extractSources, summarizeCounts, formatDuration } from './source-icons';
 import { DomainBadge } from './domain-badge';
 import { trpcClient } from '@/lib/trpc';
-import { FilterModeToggle, type FilterMode } from '@/components/filter-mode-toggle';
+import { FilterScopePicker, type FilterScopeValue } from '@/components/filter-scope-picker';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -64,10 +64,11 @@ interface HistoryTableProps {
 export function HistoryTable({ onViewResult }: HistoryTableProps) {
   const { data: session } = useSession();
   const role = session?.user?.role as string | undefined;
-  const defaultMode: FilterMode = role === 'admin' || role === 'leader' ? 'team' : 'mine';
+  const canUseAdvancedScope = role === 'admin' || role === 'leader';
+  const defaultScope: FilterScopeValue['scope'] = canUseAdvancedScope ? 'team' : 'mine';
 
   const [page, setPage] = useState(1);
-  const [filterMode, setFilterMode] = useState<FilterMode>(defaultMode);
+  const [scopeValue, setScopeValue] = useState<FilterScopeValue>({ scope: defaultScope });
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [singleDeleteTarget, setSingleDeleteTarget] = useState<{
@@ -77,8 +78,18 @@ export function HistoryTable({ onViewResult }: HistoryTableProps) {
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
-    queryKey: ['history', 'list', { page, perPage: PER_PAGE, filterMode }],
-    queryFn: () => trpcClient.history.list.query({ page, perPage: PER_PAGE, filterMode }),
+    queryKey: [
+      'history',
+      'list',
+      { page, perPage: PER_PAGE, scope: scopeValue.scope, targetUserId: scopeValue.targetUserId },
+    ],
+    queryFn: () =>
+      trpcClient.history.list.query({
+        page,
+        perPage: PER_PAGE,
+        scope: scopeValue.scope,
+        targetUserId: scopeValue.targetUserId,
+      }),
   });
 
   const totalPages = data ? Math.ceil(data.total / PER_PAGE) : 0;
@@ -174,14 +185,16 @@ export function HistoryTable({ onViewResult }: HistoryTableProps) {
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg font-semibold">분석 히스토리</CardTitle>
           <div className="flex items-center gap-2">
-            <FilterModeToggle
-              value={filterMode}
-              onChange={(mode) => {
-                setFilterMode(mode);
-                setPage(1);
-                setSelectedIds(new Set());
-              }}
-            />
+            {canUseAdvancedScope ? (
+              <FilterScopePicker
+                value={scopeValue}
+                onChange={(next) => {
+                  setScopeValue(next);
+                  setPage(1);
+                  setSelectedIds(new Set());
+                }}
+              />
+            ) : null}
             {deletableSelected.length > 0 && (
               <>
                 <Button
@@ -234,7 +247,7 @@ export function HistoryTable({ onViewResult }: HistoryTableProps) {
                 <TableHead>소스</TableHead>
                 <TableHead>수집</TableHead>
                 <TableHead>상태</TableHead>
-                {filterMode === 'team' && <TableHead>실행자</TableHead>}
+                {scopeValue.scope !== 'mine' && <TableHead>실행자</TableHead>}
                 <TableHead className="text-right">작업</TableHead>
               </TableRow>
             </TableHeader>
@@ -300,7 +313,7 @@ export function HistoryTable({ onViewResult }: HistoryTableProps) {
                     <TableCell>
                       <Badge variant={badgeInfo.variant}>{badgeInfo.label}</Badge>
                     </TableCell>
-                    {filterMode === 'team' && (
+                    {scopeValue.scope !== 'mine' && (
                       <TableCell className="text-xs text-muted-foreground">
                         {(job as any).userName ?? '-'}
                       </TableCell>
