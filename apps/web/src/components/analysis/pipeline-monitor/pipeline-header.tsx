@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { formatElapsedCompact } from './utils';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { DomainBadge } from '@/components/analysis/domain-badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +18,7 @@ import { trpcClient } from '@/lib/trpc';
 
 interface PipelineHeaderProps {
   keyword: string;
+  domain?: string | null;
   status: string;
   overallProgress: number;
   elapsedSeconds: number;
@@ -53,6 +55,7 @@ function statusLabel(status: string): string {
 
 export const PipelineHeader = memo(function PipelineHeader({
   keyword,
+  domain,
   status,
   overallProgress,
   elapsedSeconds,
@@ -81,6 +84,7 @@ export const PipelineHeader = memo(function PipelineHeader({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h3 className="text-lg font-semibold tracking-tight">{keyword}</h3>
+          <DomainBadge domain={domain} size="sm" />
           <Badge variant={statusVariant(status)}>{statusLabel(status)}</Badge>
         </div>
         <div className="flex items-center gap-2">

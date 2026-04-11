@@ -1,13 +1,16 @@
 export interface ModuleItem {
   name: string;
+  nameEn: string;
   help: string;
   details: string[];
   output: string;
+  theory?: string; // 이론적 출처 (Scholar, Year)
 }
 
 export interface ModuleGroup {
   stage: string;
   label: string;
+  labelEn: string;
   color: string;
   items: ModuleItem[];
 }
@@ -16,10 +19,12 @@ export const MODULES: ModuleGroup[] = [
   {
     stage: 'Stage 1',
     label: '초기 분석',
+    labelEn: 'Foundation Analysis',
     color: 'bg-blue-500/10 text-blue-600',
     items: [
       {
         name: '거시 여론 구조',
+        nameEn: 'Macro Opinion Structure',
         help: '온라인 여론 데이터의 시간축 기반 흐름을 파악하여 전체적인 여론 방향성을 분석합니다.',
         details: [
           '일별/주별 여론 변곡점(전환점) 포착',
@@ -28,9 +33,11 @@ export const MODULES: ModuleGroup[] = [
           '"상승→정체→반전" 등 구조적 흐름을 서사로 구성',
         ],
         output: '여론 흐름 타임라인, 변곡점 분석, 일별 언급량·감정 변화 추이',
+        theory: 'Agenda-Setting Theory · McCombs & Shaw, 1972',
       },
       {
         name: '집단별 반응',
+        nameEn: 'Segment Reaction',
         help: '여론 참여자를 핵심 지지층, 반대층, 유동층으로 분류하여 각 집단의 특성과 움직임을 분석합니다.',
         details: [
           '핵심 지지층(Core) / 반대층(Opposition) / 유동층(Swing) 삼분법 분류',
@@ -39,9 +46,11 @@ export const MODULES: ModuleGroup[] = [
           '유동층 포섭 또는 이탈 조건 분석',
         ],
         output: '집단별 규모·영향력 평가, 플랫폼별 감정 분포, 타겟팅 인사이트',
+        theory: 'Social Identity Theory · Tajfel & Turner, 1979',
       },
       {
         name: '감정/프레임 분석',
+        nameEn: 'Sentiment & Framing',
         help: '여론의 감정 분포(긍정/부정/중립)와 미디어 프레이밍 경쟁 구조를 정량·정성 분석합니다.',
         details: [
           '플랫폼별 편향 보정한 감정 비율(긍정/부정/중립) 산출',
@@ -50,9 +59,11 @@ export const MODULES: ModuleGroup[] = [
           '프레임 강도(1~10) 평가 및 세력 비교',
         ],
         output: '감정 비율, 핵심 키워드 목록, 프레임 강도 평가, 프레임 충돌 구조',
+        theory: 'Framing Theory · Entman, 1993',
       },
       {
         name: '메시지 파급력',
+        nameEn: 'Message Impact',
         help: '여론을 실제로 움직인 성공/실패 메시지를 식별하고, 콘텐츠 확산 패턴을 분석합니다.',
         details: [
           '고반응 콘텐츠 식별 (좋아요, 조회수, 댓글 수 기준)',
@@ -61,16 +72,19 @@ export const MODULES: ModuleGroup[] = [
           '콘텐츠 확산 경로 추적 (최초 발화→플랫폼 내→교차 확산)',
         ],
         output: '성공/실패 메시지 목록(각 3~7개), 영향도 점수(1~10), 확산 패턴',
+        theory: 'Diffusion of Innovations · Rogers, 1962',
       },
     ],
   },
   {
     stage: 'Stage 2',
     label: '심화 분석',
+    labelEn: 'Deep Analysis',
     color: 'bg-purple-500/10 text-purple-600',
     items: [
       {
         name: '리스크 지도',
+        nameEn: 'Risk Map',
         help: '현재 잠재된 리스크 요인을 식별하고, 향후 폭발 가능성을 4가지 차원으로 평가합니다.',
         details: [
           '부정 신호가 집중된 토픽에서 리스크 후보 5~7개 도출',
@@ -79,9 +93,11 @@ export const MODULES: ModuleGroup[] = [
           'Top 3~5 리스크 순위화 및 전체 리스크 수준 판정',
         ],
         output: 'Top 3~5 리스크, 영향도/확산 확률, 리스크 추세(상승/유지/하락)',
+        theory: 'Risk Amplification Framework · Kasperson et al., 1988',
       },
       {
         name: '기회 분석',
+        nameEn: 'Opportunity Analysis',
         help: '부정적 여론 속에서도 활용 가능한 긍정 자산과 아직 개발되지 않은 기회 영역을 발굴합니다.',
         details: [
           '현재 자산: 이미 긍정 반응을 얻었지만 충분히 활용되지 않는 요소',
@@ -90,9 +106,11 @@ export const MODULES: ModuleGroup[] = [
           '최우선 기회 1개 선정 및 구체적 실행 계획 제시',
         ],
         output: '현재 자산·미개발 영역·전환 기회 목록, 활용 수준, 확장 가능성',
+        theory: 'Resource-Based View · Barney, 1991',
       },
       {
         name: '전략 도출',
+        nameEn: 'Strategy Derivation',
         help: '리스크와 기회 분석을 종합하여 "누가, 무엇을, 언제까지, 어떤 채널로" 수준의 구체적 전략을 도출합니다.',
         details: [
           '타겟 전략: 유동층 포섭 중심, 핵심층 유지 vs 반대층 전환 비용 비교',
@@ -101,9 +119,11 @@ export const MODULES: ModuleGroup[] = [
           '리스크 대응: 즉각(24시간 내) / 예방(1주 내) / 비상 계획 3단계',
         ],
         output: '타겟 정의, 핵심·보조 메시지, 콘텐츠 전략, 리스크 대응 3단계',
+        theory: 'Strategic Communication Theory · Hallahan et al., 2007',
       },
       {
         name: '최종 요약',
+        nameEn: 'Final Summary',
         help: '모든 분석 결과를 의사결정자가 3분 내에 파악하고 즉시 행동할 수 있도록 압축합니다.',
         details: [
           '전체 분석에서 핵심 발견 3개를 선별하여 요약',
@@ -112,16 +132,19 @@ export const MODULES: ModuleGroup[] = [
           '단기(1~2주) 및 중기(1~3개월) 전망, 핵심 변수 명시',
         ],
         output: '한 줄 요약, 핵심 발견 3개, 우선 실행 과제, 전망',
+        theory: 'Pyramid Principle · Minto, 1987',
       },
     ],
   },
   {
     stage: 'Stage 4',
     label: '고급 분석',
+    labelEn: 'Advanced Analysis',
     color: 'bg-amber-500/10 text-amber-600',
     items: [
       {
         name: '지지율 추정',
+        nameEn: 'Approval Rating Estimate',
         help: '온라인 여론 데이터를 기반으로 플랫폼별 편향을 보정한 AI 지지율 범위를 추정합니다.',
         details: [
           '플랫폼별 원시 감정 비율 산출 후 편향 보정 적용',
@@ -130,9 +153,11 @@ export const MODULES: ModuleGroup[] = [
           '신뢰도(high ±3%p / medium ±5%p / low ±8%p)에 따른 범위 폭 조정',
         ],
         output: '지지율 범위(min~max), 신뢰도, 플랫폼별 편향 보정 내역',
+        theory: 'Public Opinion Measurement · Gallup, 1935',
       },
       {
         name: '프레임 전쟁',
+        nameEn: 'Frame War',
         help: '서로 다른 진영이 사용하는 프레이밍 전략의 세력 역학과 전장 구조를 심층 분석합니다.',
         details: [
           '프레임 3분류: 지배적(dominant) / 위협적(threatening) / 반전 가능(reversible)',
@@ -141,9 +166,11 @@ export const MODULES: ModuleGroup[] = [
           '약세 프레임의 우세 전환 조건 및 대응 전략 제시',
         ],
         output: '프레임 세력 지도, 프레임 간 상호작용, 위협·반전 프레임 분석',
+        theory: 'Frame Competition Model · Chong & Druckman, 2007',
       },
       {
         name: '위기 시나리오',
+        nameEn: 'Crisis Scenario',
         help: '리스크 분석과 지지율 데이터를 결합하여 3가지 시나리오(확산/통제/역전)를 시뮬레이션합니다.',
         details: [
           '확산(Spread): 리스크가 통제 불능으로 확대되는 최악 경로',
@@ -152,9 +179,11 @@ export const MODULES: ModuleGroup[] = [
           '각 시나리오별 트리거 조건 → 예상 결과 → 대응 전략 → 타임프레임',
         ],
         output: '3개 시나리오 상세 분석, 종합 권장 조치',
+        theory: 'Scenario Planning · Schwartz, 1991',
       },
       {
         name: '승리 시뮬레이션',
+        nameEn: 'Win Simulation',
         help: 'Stage 1~4의 모든 분석을 종합하여 승리/패배 조건과 최적 전략을 도출합니다.',
         details: [
           '지지율 기반선 + 리스크 감점 + 기회 가점 + 프레임 반영으로 승리 확률 산출',
@@ -163,16 +192,19 @@ export const MODULES: ModuleGroup[] = [
           '핵심 전략(3~5개): 승리 확률을 높이기 위한 우선순위 재배치',
         ],
         output: '승리 확률(0~100%), 승리·패배 조건 목록, 핵심 전략, 종합 요약',
+        theory: 'Game Theory · Nash, 1950',
       },
     ],
   },
   {
     stage: 'System',
     label: '지식 인프라',
+    labelEn: 'Knowledge Infrastructure',
     color: 'bg-emerald-500/10 text-emerald-600',
     items: [
       {
         name: '지식 그래프',
+        nameEn: 'Knowledge Graph',
         help: '분석 결과에서 핵심 엔티티(인물/조직/이슈/키워드/프레임/주장)와 그들 간의 관계를 자동 추출하여 인터랙티브 네트워크 그래프로 시각화합니다.',
         details: [
           '6개 분석 모듈 결과에서 엔티티와 관계를 자동 매핑',
@@ -181,9 +213,11 @@ export const MODULES: ModuleGroup[] = [
           'D3.js 기반 인터랙티브 그래프 — 줌/드래그/필터/노드 상세',
         ],
         output: '지식 그래프 네트워크, 엔티티 목록, 관계 맵, 엔티티 기반 검색',
+        theory: 'Knowledge Graph · Google Research, 2012',
       },
       {
         name: '시맨틱 검색',
+        nameEn: 'Semantic Search',
         help: 'pgvector 임베딩을 활용하여 키워드가 아닌 "의미"로 기사와 댓글을 검색합니다.',
         details: [
           '384차원 임베딩(multilingual-e5-small)으로 수집 데이터 의미 벡터화',
@@ -192,9 +226,11 @@ export const MODULES: ModuleGroup[] = [
           'HNSW 인덱스로 대규모 데이터에서도 빠른 검색',
         ],
         output: '의미 기반 검색 결과, 유사도 점수, 관련 엔티티',
+        theory: 'Vector Space Model · Salton et al., 1975',
       },
       {
         name: '통합 리포트',
+        nameEn: 'Integrated Report',
         help: '모든 분석 결과를 의사결정자가 즉시 활용할 수 있는 종합 전략 리포트로 자동 생성합니다.',
         details: [
           'Stage 1~4 전체 결과를 마크다운 형식으로 자동 통합',
@@ -203,6 +239,564 @@ export const MODULES: ModuleGroup[] = [
           'PDF 인쇄 지원 — 팀 브리핑에 즉시 활용',
         ],
         output: '종합 전략 리포트(Markdown), 화이트페이퍼 슬라이드, 상세 기술 리포트',
+        theory: 'Pyramid Principle · Minto, 1987',
+      },
+    ],
+  },
+  {
+    stage: 'Stage 4-F',
+    label: '팬덤 분석',
+    labelEn: 'Fandom Analysis',
+    color: 'bg-pink-500/10 text-pink-600',
+    items: [
+      {
+        name: '팬덤 충성도 지수',
+        nameEn: 'Fandom Loyalty Index',
+        help: '댓글/게시글에서 충성도 신호, 이탈 징후, 자발적 옹호 패턴을 분석하여 팬덤의 건전도를 정량 평가합니다.',
+        details: [
+          '충성도 신호(옹호, 감정적 유대, 자발적 홍보) 추출',
+          '이탈 징후(무관심, 비판 증가, 경쟁 아티스트 관심) 조기 감지',
+          '활성·수동·위기 팬덤 비율 산출',
+          '플랫폼별 충성도 편차 분석',
+        ],
+        output: '팬덤 충성도 지수(0~100), 팬덤 세분화, 이탈 위험도, 플랫폼별 충성도',
+        theory: 'Fan Identification Scale · Wann & Branscombe, 1993',
+      },
+      {
+        name: '팬덤 내러티브 경쟁',
+        nameEn: 'Fandom Narrative War',
+        help: '팬덤 vs 안티, 소속사 vs 팬덤, 경쟁 팬덤 간 내러티브 경쟁 구조를 분석합니다.',
+        details: [
+          '지배적 vs 도전적 내러티브 식별',
+          '팬덤·안티·일반인 발화 주체별 프레임 분석',
+          '내러티브 강도 변화 추이와 전환 조건 도출',
+          '약세 내러티브의 우세 전환 전략 제시',
+        ],
+        output: '내러티브 세력 지도, 주체별 프레임 분석, 전환 전략',
+        theory: 'Narrative Transportation Theory · Green & Brock, 2000',
+      },
+      {
+        name: '팬덤 위기 시나리오',
+        nameEn: 'Fandom Crisis Scenario',
+        help: '열애 루머, 표절 의혹, 기획사 갈등 등 팬덤 특유의 위기 시나리오를 3가지 경로로 시뮬레이션합니다.',
+        details: [
+          '확산(Spread): 위기가 팬덤 이탈로 이어지는 최악 경로',
+          '통제(Control): 위기를 현 수준에서 관리하는 중도 경로',
+          '역전(Reverse): 위기를 기회로 전환하는 최선 경로',
+          '각 시나리오별 트리거 → 예상 결과 → 대응 전략',
+        ],
+        output: '3개 시나리오 상세 분석, 팬덤 이탈 위험도, 대응 전략',
+        theory: 'SCCT · Coombs, 2007',
+      },
+      {
+        name: '컴백/신곡 반응 예측',
+        nameEn: 'Release Reception Prediction',
+        help: '현재 팬덤 열기, 경쟁 환경, 플랫폼별 기대감을 종합하여 컴백/신곡 반응을 예측합니다.',
+        details: [
+          '팬덤 열기 지수(과거 반응, 현재 언급량) 기반 기대도 산출',
+          '동시기 컴백 경쟁 환경 분석',
+          '플랫폼별(유튜브·커뮤니티·SNS) 기대감 편차 분석',
+          '성공·부진 조건 식별 및 프로모션 전략 제안',
+        ],
+        output: '반응 예측 점수, 성공/부진 조건, 플랫폼별 기대감, 프로모션 전략',
+        theory: 'Expectation Confirmation Theory · Oliver, 1980',
+      },
+    ],
+  },
+  {
+    stage: 'Stage 4-PR',
+    label: 'PR/위기관리 분석',
+    labelEn: 'PR & Crisis Management',
+    color: 'bg-red-500/10 text-red-600',
+    items: [
+      {
+        name: 'SCCT 위기 유형 분류',
+        nameEn: 'SCCT Crisis Classifier',
+        help: 'Situational Crisis Communication Theory(Coombs, 2007) 기반으로 위기 유형을 분류하고 Image Repair Theory(Benoit, 1997)의 5가지 대응 전략 우선순위를 매핑합니다.',
+        details: [
+          '위기 유형 3분류: 희생자형(Victim) / 사고형(Accidental) / 예방가능형(Preventable)',
+          '책임 귀인 수준에 따른 대응 강도 결정 (낮음→사과, 높음→전면 인정)',
+          'Image Repair 전략 5유형 우선순위: 부정/책임회피/비중축소/수정행동/사과',
+          '골든타임 평가: Critical(0~24h) / High(24~48h) / Medium(48~72h)',
+        ],
+        output: 'SCCT 위기 유형, 귀속 책임 수준, 권고 대응 전략(우선순위), 골든타임 평가',
+        theory: 'SCCT · Coombs, 2007 / Image Repair Theory · Benoit, 1997',
+      },
+      {
+        name: '평판 지수 측정',
+        nameEn: 'Reputation Index',
+        help: 'RepTrak 모델(Fombrun & van Riel, 2004) 기반 7개 차원으로 브랜드·기관 평판을 정량 측정합니다.',
+        details: [
+          'RepTrak 7차원: 제품/서비스·혁신·직장환경·거버넌스·시민의식·리더십·재무',
+          '차원별 여론 점수(0~100) 및 추세(개선/유지/악화)',
+          '이해관계자 집단별(투자자/소비자/임직원 등) 인식 차이 분석',
+          '평판 취약 지점 식별 및 우선 개선 권고',
+        ],
+        output: '종합 평판 지수(0~100), 차원별 점수, 이해관계자별 인식, 취약 지점',
+        theory: 'RepTrak Model · Fombrun & van Riel, 2004',
+      },
+    ],
+  },
+  {
+    stage: 'Stage 4-Corp',
+    label: '기업 평판 분석',
+    labelEn: 'Corporate Reputation',
+    color: 'bg-sky-500/10 text-sky-600',
+    items: [
+      {
+        name: '이해관계자 영향력 지도',
+        nameEn: 'Stakeholder Salience Map',
+        help: 'Stakeholder Salience Model(Mitchell, Agle & Wood, 1997) 기반으로 권력·합법성·긴급성 3축으로 이해관계자 우선순위를 매핑합니다.',
+        details: [
+          '이해관계자 7가지 현출성 유형 분류 (Dormant/Discretionary/Demanding/Dominant/Dangerous/Dependent/Definitive)',
+          '권력(Power)·합법성(Legitimacy)·긴급성(Urgency) 3차원 평가',
+          '최우선 관리 이해관계자 및 즉시 취해야 할 조치 식별',
+          '이해관계자 간 권력 역학 및 연합 가능성 분석',
+        ],
+        output: '이해관계자별 현출성 점수, 우선순위 지도, 긴급 대응 대상 및 조치',
+        theory: 'Stakeholder Salience Model · Mitchell, Agle & Wood, 1997',
+      },
+      {
+        name: 'ESG 여론 분석',
+        nameEn: 'ESG Sentiment Analysis',
+        help: 'ESG 3차원(환경·사회·지배구조)별로 기업·기관에 대한 여론을 분리 측정하고 규제 리스크를 평가합니다.',
+        details: [
+          'E(환경): 탄소·오염·친환경 여론 / S(사회): 노사·다양성·지역사회 / G(지배구조): 투명성·반부패',
+          '각 차원 여론 점수(0~100) 및 주요 이슈·긍정·부정 요인 분리',
+          'ESG 관련 규제 기관 동향 및 규제 리스크 수준 평가',
+          '그린워싱·워싱 논란 등 ESG 허위 주장 패턴 감지',
+        ],
+        output: 'ESG 3차원별 점수, 주요 이슈, ESG 리스크 목록, 규제 리스크 수준',
+        theory: 'ESG Framework · GRI Standards, 2012',
+      },
+    ],
+  },
+  {
+    stage: 'Stage 4-HC',
+    label: '헬스케어 분석',
+    labelEn: 'Healthcare Analysis',
+    color: 'bg-teal-500/10 text-teal-600',
+    items: [
+      {
+        name: '건강 위험 인식 분석',
+        nameEn: 'Health Risk Perception',
+        help: 'Risk Perception Theory(Slovic, 1987) 기반으로 대중의 건강 위험 인식 편향을 진단하고 전문가 평가와의 간극을 측정합니다.',
+        details: [
+          '4가지 편향 유형: 공포요소(Dread) / 미지성(Unknown) / 정상화편향(Normalcy) / 가용성 휴리스틱',
+          '전문가(의학적) 평가 vs 대중 인식 간 간극 크기 측정',
+          '오정보·과장 주장 확산 패턴 식별 및 정정 우선순위 도출',
+          '집단별(환자/보호자/의료진/일반 대중) 위험 인식 차이 분석',
+        ],
+        output: '인식 편향 유형 목록, 전문가-대중 간극 크기, 오정보 패턴, 커뮤니케이션 권고',
+        theory: 'Risk Perception Theory · Slovic, 1987',
+      },
+      {
+        name: '의료 순응도 예측',
+        nameEn: 'Compliance Predictor',
+        help: 'Health Belief Model(Rosenstock, 1966) 6가지 요인과 Theory of Planned Behavior(Ajzen, 1991)로 의료 행동 순응 확률을 예측합니다.',
+        details: [
+          'HBM 6요인: 인지된 취약성·심각성·이익·장벽·행동 계기·자기효능감',
+          '집단별(환자/보호자/일반 대중) 순응 예측 확률 산출',
+          '가장 큰 장벽 요인 식별 (비용/부작용 두려움/접근성 등)',
+          '순응도 향상을 위한 개입 전략 우선순위 권고',
+        ],
+        output: '전체 순응 예측 확률(%), HBM 6요인 분석, 집단별 예측, 개입 권고',
+        theory: 'Health Belief Model · Rosenstock, 1966 / TPB · Ajzen, 1991',
+      },
+    ],
+  },
+  {
+    stage: 'Stage 4-SP',
+    label: '스포츠 분석',
+    labelEn: 'Sports Analysis',
+    color: 'bg-orange-500/10 text-orange-600',
+    items: [
+      {
+        name: '성과 내러티브 분석',
+        nameEn: 'Performance Narrative',
+        help: 'BIRGing/CORFing Theory(Cialdini et al., 1976)로 팀/선수 성적과 팬덤 여론 온도 간 상관관계를 분석하고 지배적 서사 호를 파악합니다.',
+        details: [
+          'BIRGing: 승리·성공 시 팬 정체성 적극 표출 패턴 측정',
+          'CORFing: 패배·실패 시 팬 거리 두기 패턴 측정',
+          '서사 호(Arc) 유형: 부활/몰락/영웅/악역/라이벌리 식별',
+          '미디어 프레임 vs 팬 커뮤니티 프레임 차이 분석',
+        ],
+        output: '성적-여론 상관관계, BIRGing/CORFing 패턴, 주요 서사 호, 모멘텀 안정성 지수',
+        theory: 'BIRGing/CORFing Theory · Cialdini et al., 1976',
+      },
+      {
+        name: '시즌 전망 예측',
+        nameEn: 'Season Outlook Prediction',
+        help: 'Sport Consumer Motivation Theory(Trail et al., 2003) 기반으로 팬 기대치 지수, 참여도 전망, 주요 관전 포인트를 예측합니다.',
+        details: [
+          '팬 기대치 지수(0~100): 성적 기대, 스타 선수 보유, 라이벌전 일정 등 종합',
+          '팬 참여도 예측: 증가/유지/감소 추세와 근거',
+          '주요 관전 포인트 및 팬덤 내러티브 잠재력 분석',
+          '경쟁 팀 대비 여론 포지션 비교',
+        ],
+        output: '팬 기대치 지수, 참여도 예측, 관전 포인트 목록, 리스크·기회 요인',
+        theory: 'Sport Consumer Motivation Theory · Trail et al., 2003',
+      },
+    ],
+  },
+  {
+    stage: 'Stage 4-Policy',
+    label: '정책 분석',
+    labelEn: 'Policy Research',
+    color: 'bg-indigo-500/10 text-indigo-600',
+    items: [
+      {
+        name: '정책 수용도 추정',
+        nameEn: 'Policy Acceptance Estimate',
+        help: '온라인 여론 데이터를 기반으로 정책 지지율(정치인 지지율이 아닌 정책 수용도)을 플랫폼 편향 보정 후 추정합니다.',
+        details: [
+          '전문가 집단 vs 일반 대중 의견 분리 측정',
+          '플랫폼별 편향(네이버·클리앙·커뮤니티) 보정',
+          '정책 수용도 범위(min~max) 및 신뢰도 산출',
+          'Advocacy Coalition Framework 기반 찬반 연합 세력 측정',
+        ],
+        output: '정책 수용도 범위, 신뢰도, 집단별 지지율, 편향 보정 내역',
+        theory: 'Advocacy Coalition Framework · Sabatier & Jenkins-Smith, 1993',
+      },
+      {
+        name: '프레임 전쟁 (정책)',
+        nameEn: 'Policy Frame War',
+        help: '정책을 둘러싼 지지 연합 vs 반대 연합의 프레임 경쟁 구조를 Advocacy Coalition Framework로 심층 분석합니다.',
+        details: [
+          '정책 프레임 3분류: 지배적 / 위협적 / 반전 가능',
+          '정책 찬반 연합의 핵심 신념 체계와 논거 대립 구조',
+          '전문가(기술적 논거) vs 대중(체감 효과) 프레임 차이',
+          '약세 프레임의 우세 전환 조건 및 대응 전략',
+        ],
+        output: '프레임 세력 지도, 연합별 핵심 논거, 전환 조건',
+        theory: 'Framing Theory in Policy · Entman, 1993',
+      },
+      {
+        name: '정책 위기 시나리오',
+        nameEn: 'Policy Crisis Scenario',
+        help: 'Punctuated Equilibrium Theory 기반으로 정책 여론의 안정기-급변기 전환 시나리오 3가지를 시뮬레이션합니다.',
+        details: [
+          '확산: 반대 연합 강화 → 정책 좌초·폐기 경로',
+          '통제: 현 수준 봉쇄 → 단계적 추진 경로',
+          '역전: 여론 전환 → 정책 창(window) 활용 경로',
+          '정책 변화 트리거 조건 및 타임프레임 구체화',
+        ],
+        output: '3개 시나리오 상세 분석, 정책 창 활용 타이밍, 대응 전략',
+        theory: 'Punctuated Equilibrium Theory · True et al., 2007',
+      },
+      {
+        name: '정책 승인 시뮬레이션',
+        nameEn: 'Policy Approval Simulation',
+        help: '정책 수용도·리스크·기회·프레임 분석을 종합하여 정책 통과/무산 확률과 최적 추진 전략을 도출합니다.',
+        details: [
+          '정책 통과 확률(0~100%) 산출',
+          '정책 승인 조건(3~7개): 달성 상태(met/partial/unmet)',
+          '반대 연합 설득 전략 및 정책 브로커 활용 방안',
+          'Policy Diffusion Theory 기반 확산 가능성 평가',
+        ],
+        output: '정책 통과 확률, 승인/무산 조건, 핵심 추진 전략',
+        theory: 'Policy Diffusion Theory · Berry & Berry, 1990',
+      },
+    ],
+  },
+  {
+    stage: 'Stage 4-Edu',
+    label: '교육기관 분석',
+    labelEn: 'Education Institution',
+    color: 'bg-cyan-500/10 text-cyan-600',
+    items: [
+      {
+        name: '기관 평판 지수',
+        nameEn: 'Institutional Reputation Index',
+        help: 'Institutional Reputation Theory(Fombrun, 1996) 기반으로 대학·교육기관의 온라인 평판을 측정하고 입시·취업 연계 여론을 분석합니다.',
+        details: [
+          '교육기관 평판 4차원: 교육 품질·연구력·취업률·학생 생활',
+          '지원자·재학생·졸업생·일반 대중 집단별 인식 차이',
+          '입시 키워드 반응 vs 교육 품질 키워드 반응 분리 측정',
+          '경쟁 기관 대비 상대적 평판 포지션 파악',
+        ],
+        output: '기관 평판 지수(0~100), 차원별 점수, 집단별 인식, 경쟁 포지션',
+        theory: 'Institutional Reputation Theory · Fombrun, 1996',
+      },
+      {
+        name: '교육 여론 프레임',
+        nameEn: 'Education Opinion Frame',
+        help: 'Signaling Theory(Spence, 1973) 기반으로 교육기관이 발신하는 품질 신호와 대중의 수신·해석 간 프레임 간극을 분석합니다.',
+        details: [
+          '기관 공식 메시지 프레임 vs 학생·수험생 반응 프레임 차이',
+          '취업·연봉·전공 프레임 vs 캠퍼스 생활·교수 프레임 세력 비교',
+          '부정적 프레임(전공 기피, 학과 폐과, 비리) 확산 구조 분석',
+          '약세 긍정 프레임의 강화 전략 도출',
+        ],
+        output: '프레임 세력 지도, 기관-대중 메시지 간극, 강화 전략',
+        theory: 'Signaling Theory · Spence, 1973',
+      },
+      {
+        name: '교육 위기 시나리오',
+        nameEn: 'Education Crisis Scenario',
+        help: '교육기관 특유의 위기(입결 하락, 비리 의혹, 구조조정)를 3가지 경로로 시뮬레이션합니다.',
+        details: [
+          '확산: 위기가 입시 기피·정원 미달로 이어지는 최악 경로',
+          '통제: 위기를 현 수준 봉쇄·관리하는 중도 경로',
+          '역전: 위기를 개혁 기회로 전환하는 최선 경로',
+          '각 시나리오별 트리거 조건 → 예상 결과 → 대응 전략',
+        ],
+        output: '3개 시나리오 상세 분석, 평판 회복 타임프레임, 대응 전략',
+        theory: 'SCCT · Coombs, 2007',
+      },
+      {
+        name: '교육 전략 시뮬레이션',
+        nameEn: 'Education Strategy Simulation',
+        help: '평판 지수·위기·기회를 종합하여 교육기관의 중장기 평판 관리 전략과 입시 메시지 효과를 시뮬레이션합니다.',
+        details: [
+          '평판 개선 확률(0~100%) 및 핵심 전략 우선순위',
+          '입시 지원자 타겟 메시지 vs 재학생 유지 메시지 분리 설계',
+          '온라인 채널별(유튜브·네이버·커뮤니티) 최적 콘텐츠 전략',
+          '경쟁 기관 대비 차별화 포지셔닝 제안',
+        ],
+        output: '평판 개선 확률, 채널별 전략, 차별화 포지셔닝',
+        theory: 'Competitive Positioning · Porter, 1980',
+      },
+    ],
+  },
+  {
+    stage: 'Stage 4-PS',
+    label: '공공기관 분석',
+    labelEn: 'Public Sector',
+    color: 'bg-green-500/10 text-green-600',
+    items: [
+      {
+        name: '시민 신뢰도 추정',
+        nameEn: 'Public Trust Estimate',
+        help: 'Public Trust Theory(Putnam, 2000) 기반으로 공공기관·지자체에 대한 시민 신뢰도를 온라인 여론 데이터로 추정합니다.',
+        details: [
+          '신뢰 구성 4요소: 역량 신뢰·도덕 신뢰·절차 신뢰·결과 신뢰',
+          '집단별(지지층·일반 시민·이해관계자) 신뢰도 편차 분석',
+          '신뢰 하락 트리거 사건 식별 및 회복 소요 기간 예측',
+          '플랫폼별 편향 보정 후 종합 신뢰 지수 산출',
+        ],
+        output: '시민 신뢰 지수(0~100), 신뢰 4요소 분석, 집단별 신뢰도, 회복 경로',
+        theory: 'Public Trust Theory · Putnam, 2000',
+      },
+      {
+        name: '공공 프레임 전쟁',
+        nameEn: 'Public Frame War',
+        help: 'Participatory Governance Theory 기반으로 정책·사업을 둘러싼 지지 시민·반대 시민·이해관계자 간 프레임 경쟁을 분석합니다.',
+        details: [
+          '기관 공식 프레임 vs 시민 반응 프레임 간극 측정',
+          '찬성 주민·반대 주민·전문가·미디어 프레임 세력 비교',
+          '지역 이슈 프레임의 전국 확산 가능성 평가',
+          '프레임 전환을 위한 시민 소통 전략 도출',
+        ],
+        output: '프레임 세력 지도, 기관-시민 간극, 확산 가능성, 소통 전략',
+        theory: 'Participatory Governance Theory · Fung, 2006',
+      },
+      {
+        name: '공공 위기 시나리오',
+        nameEn: 'Public Crisis Scenario',
+        help: '공공기관 특유의 위기(예산 낭비 의혹, 복지 서비스 논란, 지역 개발 갈등)를 3가지 경로로 시뮬레이션합니다.',
+        details: [
+          '확산: 위기가 감사·국감 이슈로 전국화되는 최악 경로',
+          '통제: 지역 이슈 수준에서 봉쇄·관리하는 중도 경로',
+          '역전: 위기를 투명성 제고 기회로 전환하는 최선 경로',
+          '각 시나리오별 골든타임·트리거 조건·대응 전략',
+        ],
+        output: '3개 시나리오 상세 분석, 골든타임 평가, 대응 전략',
+        theory: 'Crisis Communication · Coombs, 2007',
+      },
+      {
+        name: '주민 소통 시뮬레이션',
+        nameEn: 'Resident Communication Simulation',
+        help: '시민 신뢰도·위기·기회를 종합하여 공공기관의 최적 주민 소통 전략과 정책 수용도 향상 방안을 시뮬레이션합니다.',
+        details: [
+          '신뢰 회복 확률(0~100%) 및 핵심 소통 전략 우선순위',
+          '찬성·반대·중립 주민 타겟별 메시지 전략 분리',
+          '온라인 채널별 최적 소통 방식(공지·해명·대화)',
+          '투명성 제고를 위한 정보 공개 전략 제안',
+        ],
+        output: '신뢰 회복 확률, 주민 타겟별 전략, 채널별 소통 방식',
+        theory: 'Deliberative Democracy · Habermas, 1984',
+      },
+    ],
+  },
+  {
+    stage: 'Stage 4-Legal',
+    label: '법률 분석',
+    labelEn: 'Legal & Law Firm',
+    color: 'bg-slate-500/10 text-slate-600',
+    items: [
+      {
+        name: '법률 평판 지수',
+        nameEn: 'Legal Reputation Index',
+        help: 'Legal Reputation Theory(Heinz et al., 2005) 기반으로 법률가·로펌의 온라인 평판을 전문성·윤리성·접근성·승소율 4차원으로 측정합니다.',
+        details: [
+          '평판 4차원: 전문성(승소율·전문 분야)·윤리성(비리·과잉 청구)·접근성(응답·소통)·고객 만족',
+          '의뢰인·일반 대중·법조 전문가 집단별 인식 차이 분석',
+          'RepTrak 모델(Fombrun & van Riel, 2004) 적용 종합 지수 산출',
+          '부정 키워드(비리, 패소, 청구) 집중 모니터링',
+        ],
+        output: '법률 평판 지수(0~100), 4차원별 점수, 집단별 인식, 취약 지점',
+        theory: 'Legal Reputation Theory · Heinz et al., 2005',
+      },
+      {
+        name: '법률 프레임 전쟁',
+        nameEn: 'Legal Frame War',
+        help: '법적 이슈를 둘러싼 경쟁 프레임(피해자 프레임 vs 법리 프레임 vs 제도 불신 프레임)의 세력 역학을 분석합니다.',
+        details: [
+          '법률 프레임 3유형: 피해자 감정 / 법리 중심 / 사법 불신',
+          '미디어·커뮤니티·법조계 발화 주체별 프레임 차이',
+          '안티 프레임 확산 속도와 조직화 수준 평가',
+          '명예 회복을 위한 프레임 전환 전략 제시',
+        ],
+        output: '프레임 세력 지도, 주체별 프레임 분석, 전환 전략',
+        theory: 'Framing Theory in Legal Discourse · Entman, 1993',
+      },
+      {
+        name: '법률 위기 시나리오',
+        nameEn: 'Legal Crisis Scenario',
+        help: '법률 서비스 특유의 위기(의뢰비 분쟁, 패소 논란, 윤리 위반 의혹)를 SCCT 기반 3가지 경로로 시뮬레이션합니다.',
+        details: [
+          '확산: 위기가 변호사회 징계·언론 보도로 전국화되는 최악 경로',
+          '통제: 개별 사건 수준에서 봉쇄·합의하는 중도 경로',
+          '역전: 위기를 전문성 입증 기회로 전환하는 최선 경로',
+          'SCCT 위기 유형(희생자형/사고형/예방가능형) 연계 대응',
+        ],
+        output: '3개 시나리오 상세 분석, SCCT 위기 유형, 대응 전략',
+        theory: 'SCCT · Coombs, 2007',
+      },
+      {
+        name: '법률 승리 시뮬레이션',
+        nameEn: 'Legal Win Simulation',
+        help: '평판 지수·위기·기회를 종합하여 법률 서비스 신뢰 회복 확률과 최적 평판 관리 전략을 도출합니다.',
+        details: [
+          '평판 회복 확률(0~100%) 및 핵심 전략 우선순위',
+          'Social Proof 전략: 승소 사례·의뢰인 후기 활용 방안',
+          '온라인 채널별 신뢰 구축 콘텐츠 전략',
+          '법조계 내 평판 강화 vs 일반 대중 인지도 제고 우선순위',
+        ],
+        output: '평판 회복 확률, 채널별 신뢰 구축 전략, Social Proof 활용 방안',
+        theory: 'Social Proof Theory · Cialdini, 1984',
+      },
+    ],
+  },
+  {
+    stage: 'Stage 4-Retail',
+    label: '유통/브랜드 분석',
+    labelEn: 'Retail & Brand',
+    color: 'bg-pink-500/10 text-pink-600',
+    items: [
+      {
+        name: '브랜드 평판 지수',
+        nameEn: 'Brand Equity Index',
+        help: 'CBBE 모델(Keller, 1993) 기반으로 프랜차이즈·유통 브랜드 자산을 인지도·연상·지각된 품질·충성도 4단계로 측정합니다.',
+        details: [
+          'CBBE 4단계: 브랜드 인지(Salience)·연상(Imagery/Performance)·판단/감정(Judgments/Feelings)·공명(Resonance)',
+          '소비자·가맹점주·본사 관계자 집단별 인식 차이 분석',
+          '경쟁 브랜드 대비 상대적 포지션 측정',
+          '불매운동 리스크 조기 감지 지수 산출',
+        ],
+        output: '브랜드 자산 지수(0~100), CBBE 4단계 점수, 집단별 인식, 불매 리스크',
+        theory: 'CBBE Model · Keller, 1993',
+      },
+      {
+        name: 'ESG 브랜드 여론',
+        nameEn: 'ESG Brand Sentiment',
+        help: 'ESG 3차원(환경·사회·지배구조)별로 프랜차이즈·유통 브랜드에 대한 여론을 측정하고 불매운동 트리거를 분석합니다.',
+        details: [
+          'E: 친환경 포장·탄소 배출 여론 / S: 노무·가맹점주 처우·소비자 보호 / G: 본사 갑질·투명성',
+          '가맹점주 여론과 소비자 여론 분리 측정 (이해관계 충돌 파악)',
+          '불매운동 전조 신호(특정 키워드 급증, 조직화 게시글) 감지',
+          '그린워싱·사회공헌 허위 주장 패턴 식별',
+        ],
+        output: 'ESG 3차원별 점수, 불매운동 리스크, 전조 신호, 그린워싱 패턴',
+        theory: 'ESG Framework · GRI / Franchise System Dynamics · Kaufmann & Dant, 1996',
+      },
+      {
+        name: '유통 위기 시나리오',
+        nameEn: 'Retail Crisis Scenario',
+        help: 'Franchise System Dynamics(Kaufmann & Dant, 1996) 기반으로 가맹점주 갈등·소비자 불매·식품 안전 사고 등 유통 특유의 위기를 시뮬레이션합니다.',
+        details: [
+          '확산: 위기가 전국 불매운동·가맹점 탈퇴로 이어지는 최악 경로',
+          '통제: 위기를 특정 지역·사안으로 봉쇄하는 중도 경로',
+          '역전: 위기를 브랜드 개혁·신뢰 회복 기회로 전환하는 최선 경로',
+          '가맹점주 vs 소비자 이해관계 충돌 해결 타임프레임',
+        ],
+        output: '3개 시나리오 상세 분석, 불매운동 확산 경로, 대응 전략',
+        theory: 'Franchise System Dynamics · Kaufmann & Dant, 1996',
+      },
+      {
+        name: '브랜드 승리 시뮬레이션',
+        nameEn: 'Brand Win Simulation',
+        help: '브랜드 평판·ESG 여론·위기 시나리오를 종합하여 브랜드 자산 강화 확률과 최적 마케팅·위기관리 전략을 도출합니다.',
+        details: [
+          '브랜드 자산 강화 확률(0~100%) 및 핵심 전략 우선순위',
+          '소비자·가맹점주 동시 공략 메시지 전략 설계',
+          'SNS·커뮤니티·유튜브 채널별 브랜드 스토리 전략',
+          '불매운동 예방 vs 사후 수습 비용 비교 우선순위 제안',
+        ],
+        output: '브랜드 강화 확률, 채널별 전략, 불매운동 예방 전략',
+        theory: 'Brand Equity Theory · Aaker, 1991',
+      },
+    ],
+  },
+  {
+    stage: 'Stage 4-Fin',
+    label: '금융 여론 분석',
+    labelEn: 'Finance & Investment',
+    color: 'bg-yellow-500/10 text-yellow-600',
+    items: [
+      {
+        name: '투자 심리 지수',
+        nameEn: 'Investor Sentiment Index',
+        help: 'Baker & Wurgler(2006) 투자자 심리 지수 모델로 공포/탐욕 스펙트럼을 측정하고, Behavioral Finance Theory(Kahneman & Tversky, 1979)의 편향 패턴을 식별합니다.',
+        details: [
+          '심리 지수(0~100): 극단적 공포(0~20) → 중립(41~60) → 극단적 탐욕(81~100)',
+          '6가지 행동 재무학 편향: 손실 회피·앵커링·군집 행동·확증 편향·가용성·과신',
+          '투자자 집단별(개인/기관/외국인) 심리 방향 및 강도',
+          '⚠️ 면책 사항: 투자 자문이 아닌 여론 분석 참고 자료',
+        ],
+        output: '심리 지수(0~100), 심리 레이블, 편향 패턴, 집단별 심리, 역발상 신호',
+        theory:
+          'Investor Sentiment · Baker & Wurgler, 2006 / Behavioral Finance · Kahneman & Tversky, 1979',
+      },
+      {
+        name: '정보 비대칭 분석',
+        nameEn: 'Information Asymmetry',
+        help: 'Information Cascade Theory(Bikhchandani et al., 1992)로 온라인 군집 행동의 정보 폭포 현상과 선행 지표를 포착합니다.',
+        details: [
+          '정보 폭포: 초기 소수 신호가 군중 모방 행동으로 확산되는 패턴 식별',
+          '선행 지표: 주류 미디어 반영 전 커뮤니티에 먼저 나타나는 신호',
+          '정보 공백 영역: 공식 정보 부재로 루머가 채우는 영역 파악',
+          '스마트머니(기관) 역방향 행동 신호 감지',
+        ],
+        output: '정보 비대칭 수준, 정보 폭포 현상, 선행 지표 목록, 정보 공백 영역',
+        theory: 'Information Cascade Theory · Bikhchandani et al., 1992',
+      },
+      {
+        name: '시장 시나리오 분석',
+        nameEn: 'Market Scenario Analysis',
+        help: 'Noise Trader Theory(De Long et al., 1990)로 소음 거래자 심리 기반 강세(Bull)/기본(Base)/약세(Bear) 3가지 시나리오를 구성합니다.',
+        details: [
+          'Bull 시나리오: 긍정 신호 현실화 및 낙관 심리 확산 경로',
+          'Base 시나리오: 현 상태 유지 또는 점진적 변화 (가장 가능성 높음)',
+          'Bear 시나리오: 부정 신호 현실화 및 패닉 심리 확산 경로',
+          '노이즈(단기 과잉반응) vs 시그널(구조적 변화) 판단',
+        ],
+        output: 'Bull/Base/Bear 시나리오(확률·촉발 이벤트·전개), 가장 유력한 시나리오',
+        theory: 'Noise Trader Theory · De Long et al., 1990',
+      },
+      {
+        name: '투자 신호 종합',
+        nameEn: 'Investment Signal Synthesis',
+        help: '투자 심리·정보 비대칭·시나리오 분석을 종합하여 단기·중기 여론 기반 투자 신호를 도출합니다.',
+        details: [
+          '종합 신호: Strong Buy/Buy/Hold/Sell/Strong Sell (여론 기반)',
+          '신호 강도(0~100): 다수 지표 일치 시 강함, 혼재 시 약함',
+          '단기(1~2주) vs 중기(1~3개월) 신호 분리',
+          '⚠️ 면책 사항: 투자 자문 아님, 공식 재무 분석과 병행 필수',
+        ],
+        output: '종합 신호, 신호 강도, 단기·중기 신호, 극단적 심리 경고, 면책 사항',
+        theory: 'Efficient Market Hypothesis · Fama, 1970',
       },
     ],
   },

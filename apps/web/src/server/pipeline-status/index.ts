@@ -282,6 +282,8 @@ export async function getPipelineStatus(jobId: number) {
     pausedAt: job.pausedAt ? new Date(job.pausedAt).toISOString() : null,
     pausedAtStage: job.pausedAtStage ?? null,
     breakpoints: (job.breakpoints as string[]) ?? [],
+    domain: (job as any).domain ?? null,
+    keywordType: (job as any).keywordType ?? null,
     pipelineStages,
     analysisModuleCount: { total: analysisRows.length, completed: completedModulesCount },
     hasReport: reportDone,

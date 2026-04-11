@@ -152,6 +152,7 @@ export function PipelineMonitor({ jobId, onComplete, onRetry }: PipelineMonitorP
         {/* 헤더: 키워드 + 상태 + 진행률 바 */}
         <PipelineHeader
           keyword={data.keyword}
+          domain={(data as any).domain}
           status={data.status}
           overallProgress={statusData.overallProgress}
           elapsedSeconds={data.elapsedSeconds ?? 0}

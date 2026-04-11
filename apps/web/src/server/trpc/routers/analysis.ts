@@ -65,6 +65,22 @@ export const analysisRouter = router({
           )
           .default([]),
         keywordType: z.string().optional(),
+        domain: z
+          .enum([
+            'political',
+            'fandom',
+            'pr',
+            'corporate',
+            'policy',
+            'finance',
+            'healthcare',
+            'public-sector',
+            'education',
+            'sports',
+            'legal',
+            'retail',
+          ])
+          .optional(),
       }),
     )
     .mutation(async ({ input, ctx }) => {
@@ -99,6 +115,7 @@ export const analysisRouter = router({
 
       // 프리셋 조회 및 스냅샷 생성
       let keywordType: string | null = null;
+      let presetDomain: typeof input.domain | null = null;
       let appliedPreset: {
         slug: string;
         title: string;
@@ -152,9 +169,9 @@ export const analysisRouter = router({
             skippedModules = [...merged];
           }
 
-          // 프리셋의 domain 값을 job에 복사
+          // 프리셋의 domain 값을 별도 변수에 저장 (insert 시 참조)
           if (preset.domain) {
-            (input as any).domain = preset.domain;
+            presetDomain = preset.domain as typeof input.domain;
           }
 
           // 사용자가 프리셋 값을 변경했는지 확인
@@ -204,7 +221,7 @@ export const analysisRouter = router({
           breakpoints: input.breakpoints,
           keywordType,
           appliedPreset,
-          domain: (input as any).domain ?? 'political',
+          domain: input.domain ?? presetDomain ?? 'political',
         })
         .returning();
 

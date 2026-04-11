@@ -34,18 +34,56 @@ import {
   fandomNarrativeWarModule,
   fandomCrisisScenarioModule,
   releaseReceptionPredictionModule,
+  // PR 도메인 신규 모듈
+  crisisTypeClassifierModule,
+  reputationIndexModule,
+  // 기업 평판 도메인 신규 모듈
+  stakeholderMapModule,
+  esgSentimentModule,
+  // 헬스케어 도메인 신규 모듈
+  healthRiskPerceptionModule,
+  compliancePredictorModule,
+  // 스포츠 도메인 신규 모듈
+  performanceNarrativeModule,
+  seasonOutlookPredictionModule,
+  // 금융 도메인 신규 모듈
+  marketSentimentIndexModule,
+  informationAsymmetryModule,
+  catalystScenarioModule,
+  investmentSignalModule,
 } from './modules';
 
 /** 모듈명 → 모듈 인스턴스 매핑 (Stage 4 라우팅용) */
 const MODULE_MAP: Record<string, AnalysisModule> = {
+  // 정치/정책/지자체/교육 도메인 (공유)
   'approval-rating': approvalRatingModule,
   'frame-war': frameWarModule,
   'crisis-scenario': crisisScenarioModule,
   'win-simulation': winSimulationModule,
+  // 팬덤/스포츠 도메인 (공유)
   'fan-loyalty-index': fanLoyaltyIndexModule,
   'fandom-narrative-war': fandomNarrativeWarModule,
   'fandom-crisis-scenario': fandomCrisisScenarioModule,
   'release-reception-prediction': releaseReceptionPredictionModule,
+  // PR 도메인 신규 모듈
+  'crisis-type-classifier': crisisTypeClassifierModule,
+  'reputation-index': reputationIndexModule,
+  // 기업 평판/유통 도메인 신규 모듈
+  'stakeholder-map': stakeholderMapModule,
+  'esg-sentiment': esgSentimentModule,
+  // 헬스케어 도메인 신규 모듈
+  'health-risk-perception': healthRiskPerceptionModule,
+  'compliance-predictor': compliancePredictorModule,
+  // 스포츠 도메인 신규 모듈
+  'performance-narrative': performanceNarrativeModule,
+  'season-outlook-prediction': seasonOutlookPredictionModule,
+  // 금융 도메인 신규 모듈
+  'market-sentiment-index': marketSentimentIndexModule,
+  'information-asymmetry': informationAsymmetryModule,
+  'catalyst-scenario': catalystScenarioModule,
+  'investment-signal': investmentSignalModule,
+  // 공유 모듈 (기업/PR/법률/유통에서 재사용)
+  opportunity: opportunityModule,
 };
 
 // ---------- Stage 상수 (로컬) ----------

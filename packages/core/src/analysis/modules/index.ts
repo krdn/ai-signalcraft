@@ -23,3 +23,25 @@ export {
   fandomCrisisScenarioModule,
   releaseReceptionPredictionModule,
 } from './fandom';
+
+// Stage 4 분석 모듈 — PR 도메인
+export { crisisTypeClassifierModule } from './pr/crisis-type-classifier';
+export { reputationIndexModule } from './pr/reputation-index';
+
+// Stage 4 분석 모듈 — 기업 평판 도메인
+export { stakeholderMapModule } from './corporate/stakeholder-map';
+export { esgSentimentModule } from './corporate/esg-sentiment';
+
+// Stage 4 분석 모듈 — 헬스케어 도메인
+export { healthRiskPerceptionModule } from './healthcare/health-risk-perception';
+export { compliancePredictorModule } from './healthcare/compliance-predictor';
+
+// Stage 4 분석 모듈 — 스포츠 도메인
+export { performanceNarrativeModule } from './sports/performance-narrative';
+export { seasonOutlookPredictionModule } from './sports/season-outlook-prediction';
+
+// Stage 4 분석 모듈 — 금융 도메인
+export { marketSentimentIndexModule } from './finance/market-sentiment-index';
+export { informationAsymmetryModule } from './finance/information-asymmetry';
+export { catalystScenarioModule } from './finance/catalyst-scenario';
+export { investmentSignalModule } from './finance/investment-signal';

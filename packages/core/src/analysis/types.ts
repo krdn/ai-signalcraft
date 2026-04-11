@@ -96,6 +96,23 @@ export const MODULE_MODEL_MAP: Record<string, { provider: AIProvider; model: str
   'fandom-narrative-war': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
   'fandom-crisis-scenario': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
   'release-reception-prediction': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
+  // Stage 4: PR 도메인 신규 모듈
+  'crisis-type-classifier': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
+  'reputation-index': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
+  // Stage 4: 기업 평판 도메인 신규 모듈
+  'stakeholder-map': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
+  'esg-sentiment': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
+  // Stage 4: 헬스케어 도메인 신규 모듈
+  'health-risk-perception': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
+  'compliance-predictor': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
+  // Stage 4: 스포츠 도메인 신규 모듈
+  'performance-narrative': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
+  'season-outlook-prediction': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
+  // Stage 4: 금융 도메인 신규 모듈
+  'market-sentiment-index': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
+  'information-asymmetry': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
+  'catalyst-scenario': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
+  'investment-signal': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
 };
 
 // 모듈 이름 상수

@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { SourceBadges, extractSources, summarizeCounts, formatDuration } from './source-icons';
+import { DomainBadge } from './domain-badge';
 import { trpcClient } from '@/lib/trpc';
 import { FilterModeToggle, type FilterMode } from '@/components/filter-mode-toggle';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -271,7 +272,12 @@ export function HistoryTable({ onViewResult }: HistoryTableProps) {
                         </div>
                       )}
                     </TableCell>
-                    <TableCell className="font-medium">{job.keyword}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-medium">{job.keyword}</span>
+                        <DomainBadge domain={(job as any).domain} size="xs" />
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <SourceBadges sources={sources} />
                     </TableCell>

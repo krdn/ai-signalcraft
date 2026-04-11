@@ -50,6 +50,8 @@ export const historyRouter = router({
           options: collectionJobs.options,
           createdAt: collectionJobs.createdAt,
           updatedAt: collectionJobs.updatedAt,
+          domain: collectionJobs.domain,
+          keywordType: collectionJobs.keywordType,
           userName: users.name,
         })
         .from(collectionJobs)

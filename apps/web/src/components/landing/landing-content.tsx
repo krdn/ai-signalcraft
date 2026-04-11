@@ -15,6 +15,8 @@ import {
   HelpCircle,
   Handshake,
   Menu,
+  Network,
+  Search,
   Sparkles,
   Zap,
 } from 'lucide-react';
@@ -23,6 +25,8 @@ import { MODULES } from './data/modules';
 import { PRICING, COMPARISONS } from './data/pricing';
 import { USE_CASE_CATEGORIES, USE_CASE_DETAILS } from './data/use-cases';
 import { UseCaseDetailModal } from './use-case-detail-modal';
+import { DomainHelpModal } from './domain-help-modal';
+import { DOMAIN_HELP_DATA } from './data/domain-help';
 import { ShowcaseSection } from './showcase-section';
 import {
   Sheet,
@@ -43,6 +47,8 @@ export function LandingContent() {
   const isLoggedIn = !!session?.user;
   const [selectedUseCase, setSelectedUseCase] = useState<string | null>(null);
   const selectedDetail = selectedUseCase ? (USE_CASE_DETAILS[selectedUseCase] ?? null) : null;
+  const [selectedDomainId, setSelectedDomainId] = useState<string | null>(null);
+  const selectedDomainHelp = selectedDomainId ? (DOMAIN_HELP_DATA[selectedDomainId] ?? null) : null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -203,16 +209,16 @@ export function LandingContent() {
         <div className="relative mx-auto max-w-4xl px-4 text-center">
           <Badge variant="secondary" className="mb-6">
             <Zap className="mr-1 size-3" />
-            14개 AI 분석 모듈로 여론을 전략으로
+            AI 분석 + 지식 그래프 + 시맨틱 검색
           </Badge>
           <h1 className="mb-6 text-4xl font-bold tracking-tight md:text-6xl">
             여론 수집에서 멈추지 마세요.
             <br />
-            <span className="text-primary">전략까지 자동으로.</span>
+            <span className="text-primary">인사이트까지 자동으로.</span>
           </h1>
           <p className="mx-auto mb-10 max-w-2xl text-lg text-muted-foreground md:text-xl">
-            한국 온라인 여론을 6개 소스에서 자동 수집하고, AI가 리스크·기회·전략을 분석하여 실행
-            가능한 리포트를 생성합니다.
+            한국 온라인 여론을 6개 소스에서 자동 수집하고, 18개 AI 모듈이 분석한 뒤 지식 그래프로
+            연결하여 실행 가능한 전략 리포트를 생성합니다.
           </p>
           <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
             <Link href="/demo" className={cn(buttonVariants({ size: 'lg' }), 'gap-1.5')}>
@@ -245,16 +251,20 @@ export function LandingContent() {
               <div className="text-sm text-muted-foreground">데이터 소스</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-primary">14개</div>
+              <div className="text-2xl font-bold text-primary">18개</div>
               <div className="text-sm text-muted-foreground">AI 분석 모듈</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-primary">지식 그래프</div>
+              <div className="text-sm text-muted-foreground">온톨로지 시각화</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-primary">시맨틱</div>
+              <div className="text-sm text-muted-foreground">의미 기반 검색</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-primary">1~3시간</div>
               <div className="text-sm text-muted-foreground">분석 완료</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-primary">90%+</div>
-              <div className="text-sm text-muted-foreground">시간 절감</div>
             </div>
           </div>
         </div>
@@ -292,11 +302,13 @@ export function LandingContent() {
                 <CardTitle className="text-primary">전략 도구</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
-                <p>✓ 5개 소스 자동 수집 (클릭 한 번)</p>
-                <p>✓ 14개 모듈 심층 분석</p>
+                <p>✓ 6개 소스 자동 수집 (클릭 한 번)</p>
+                <p>✓ 18개 모듈 심층 분석</p>
                 <p>
-                  <strong>✓ 전략·리스크·시나리오까지 제시</strong>
+                  <strong>✓ 지식 그래프로 인물·이슈 관계 자동 시각화</strong>
                 </p>
+                <p>✓ 시맨틱 검색으로 의미 기반 탐색</p>
+                <p>✓ 전략·리스크·시나리오까지 제시</p>
                 <p>✓ 종합 리포트 자동 생성 (PDF)</p>
               </CardContent>
             </Card>
@@ -469,9 +481,10 @@ export function LandingContent() {
       <section className="py-20 md:py-28">
         <div className="mx-auto max-w-6xl px-4">
           <div className="mb-12 text-center">
-            <h2 className="mb-4 text-3xl font-bold md:text-4xl">14개 AI 분석 모듈</h2>
+            <h2 className="mb-4 text-3xl font-bold md:text-4xl">51개 AI 분석 모듈</h2>
             <p className="text-muted-foreground">
-              단순 감정 분석을 넘어, 전략적 인사이트를 단계별로 도출합니다.
+              단순 감정 분석을 넘어, 도메인별 전문 이론에 기반한 전략적 인사이트를 단계별로
+              도출합니다.
             </p>
           </div>
           <div className="grid gap-6 md:grid-cols-3">
@@ -481,14 +494,26 @@ export function LandingContent() {
                   <Badge variant="outline" className={group.color}>
                     {group.stage}
                   </Badge>
-                  <CardTitle>{group.label}</CardTitle>
+                  <CardTitle>
+                    {group.label}
+                    <span className="ml-2 text-xs font-normal text-muted-foreground">
+                      {group.labelEn}
+                    </span>
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-2">
                     {group.items.map((item) => (
                       <li key={item.name} className="flex items-center gap-2 text-sm">
                         <Brain className="size-4 shrink-0 text-primary" />
-                        <span className="flex-1">{item.name}</span>
+                        <span className="flex-1">
+                          {item.name}
+                          {item.nameEn && (
+                            <span className="block text-[10px] text-muted-foreground/70 leading-tight">
+                              {item.nameEn}
+                            </span>
+                          )}
+                        </span>
                         <Popover>
                           <PopoverTrigger
                             className="text-muted-foreground/50 hover:text-primary transition-colors cursor-help shrink-0"
@@ -526,6 +551,16 @@ export function LandingContent() {
                                 </p>
                                 <p className="text-xs text-muted-foreground">{item.output}</p>
                               </div>
+                              {item.theory && (
+                                <div className="pt-1.5 border-t">
+                                  <p className="text-[11px] font-medium text-muted-foreground mb-0.5">
+                                    이론적 출처
+                                  </p>
+                                  <p className="text-[11px] text-muted-foreground/80 italic">
+                                    {item.theory}
+                                  </p>
+                                </div>
+                              )}
                             </div>
                           </PopoverContent>
                         </Popover>
@@ -535,6 +570,173 @@ export function LandingContent() {
                 </CardContent>
               </Card>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Ontology & Semantic Search */}
+      <section className="py-20 md:py-28">
+        <div className="mx-auto max-w-6xl px-4">
+          <div className="mb-16 text-center">
+            <Badge variant="outline" className="mb-4 gap-1.5">
+              <Network className="size-3.5" />
+              NEW
+            </Badge>
+            <h2 className="mb-4 text-3xl font-bold md:text-4xl">
+              단순한 분석을 넘어, <span className="text-primary">지식을 연결</span>합니다
+            </h2>
+            <p className="mx-auto max-w-2xl text-muted-foreground">
+              AI 분석 결과에서 인물·조직·이슈 간의 관계를 자동 추출하고, 의미 기반 검색으로 수천
+              건의 데이터에서 즉시 원하는 인사이트를 찾습니다.
+            </p>
+          </div>
+
+          <div className="grid gap-8 md:grid-cols-2">
+            {/* Knowledge Graph */}
+            <Card className="relative overflow-hidden">
+              <div className="absolute top-0 right-0 h-32 w-32 bg-gradient-to-bl from-primary/10 to-transparent" />
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
+                    <Network className="size-5 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle>지식 그래프 (Knowledge Graph)</CardTitle>
+                    <CardDescription>온톨로지 기반 관계 시각화</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  6개 분석 모듈의 결과에서 핵심 엔티티(인물·조직·이슈·키워드·프레임·주장)와 그들
+                  간의 관계를 자동 추출합니다. 지지·대립·연쇄·위협·공동출현 등 관계 유형을
+                  인터랙티브 네트워크 그래프로 시각화합니다.
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-lg border p-3">
+                    <p className="text-xs font-medium text-muted-foreground mb-1">엔티티 타입</p>
+                    <p className="text-sm">인물·조직·이슈·키워드·프레임·주장</p>
+                  </div>
+                  <div className="rounded-lg border p-3">
+                    <p className="text-xs font-medium text-muted-foreground mb-1">관계 매핑</p>
+                    <p className="text-sm">지지·대립·연쇄·위협·공동출현</p>
+                  </div>
+                  <div className="rounded-lg border p-3">
+                    <p className="text-xs font-medium text-muted-foreground mb-1">시각화</p>
+                    <p className="text-sm">줌·드래그·필터·노드 상세</p>
+                  </div>
+                  <div className="rounded-lg border p-3">
+                    <p className="text-xs font-medium text-muted-foreground mb-1">자동 추출</p>
+                    <p className="text-sm">분석 완료 시 즉시 생성</p>
+                  </div>
+                </div>
+                <ul className="space-y-2 text-sm">
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" />
+                    <span>인물 간 지지·대립 관계를 한눈에 파악</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" />
+                    <span>이슈 확산 경로와 핵심 노드 식별</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" />
+                    <span>특정 엔티티 클릭으로 관련 문서 즉시 검색</span>
+                  </li>
+                </ul>
+              </CardContent>
+            </Card>
+
+            {/* Semantic Search */}
+            <Card className="relative overflow-hidden">
+              <div className="absolute top-0 right-0 h-32 w-32 bg-gradient-to-bl from-primary/10 to-transparent" />
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
+                    <Search className="size-5 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle>시맨틱 검색 (Semantic Search)</CardTitle>
+                    <CardDescription>의미 기반 지능형 문서 검색</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  키워드가 아닌 &quot;의미&quot;로 검색합니다. pgvector 기반 384차원 임베딩으로
+                  수집된 기사와 댓글을 벡터화하고, 자연어 질의로 관련 문서를 즉시 찾습니다. 정확한
+                  키워드를 몰라도 됩니다.
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-lg border p-3">
+                    <p className="text-xs font-medium text-muted-foreground mb-1">임베딩</p>
+                    <p className="text-sm">384차원 (multilingual-e5-small)</p>
+                  </div>
+                  <div className="rounded-lg border p-3">
+                    <p className="text-xs font-medium text-muted-foreground mb-1">검색 방식</p>
+                    <p className="text-sm">코사인 유사도 + HNSW 인덱스</p>
+                  </div>
+                  <div className="rounded-lg border p-3">
+                    <p className="text-xs font-medium text-muted-foreground mb-1">검색 대상</p>
+                    <p className="text-sm">기사·댓글·엔티티 통합</p>
+                  </div>
+                  <div className="rounded-lg border p-3">
+                    <p className="text-xs font-medium text-muted-foreground mb-1">필터링</p>
+                    <p className="text-sm">감정·소스·유사도 기준</p>
+                  </div>
+                </div>
+                <ul className="space-y-2 text-sm">
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" />
+                    <span>&quot;경제에 미치는 영향&quot; 질의로 관련 기사와 댓글 즉시 검색</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" />
+                    <span>수천 건 데이터에서도 밀리초 단위 응답</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" />
+                    <span>엔티티(인물·조직) 검색으로 관련 맥락 파악</span>
+                  </li>
+                </ul>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* How it works - compact flow */}
+          <div className="mt-12 rounded-xl border bg-muted/30 p-6 md:p-8">
+            <h3 className="mb-6 text-center text-lg font-semibold">
+              지식 그래프 + 시맨틱 검색이 만나는 방식
+            </h3>
+            <div className="mx-auto grid max-w-3xl grid-cols-1 gap-4 md:grid-cols-3">
+              <div className="flex flex-col items-center text-center">
+                <div className="mb-3 flex size-10 items-center justify-center rounded-full bg-blue-500/10">
+                  <Brain className="size-5 text-blue-600" />
+                </div>
+                <h4 className="mb-1 text-sm font-semibold">1. AI 분석 완료</h4>
+                <p className="text-xs text-muted-foreground">
+                  18개 모듈이 인물·조직·이슈·프레임·주장을 자동 식별
+                </p>
+              </div>
+              <div className="flex flex-col items-center text-center">
+                <div className="mb-3 flex size-10 items-center justify-center rounded-full bg-purple-500/10">
+                  <Network className="size-5 text-purple-600" />
+                </div>
+                <h4 className="mb-1 text-sm font-semibold">2. 그래프 자동 생성</h4>
+                <p className="text-xs text-muted-foreground">
+                  엔티티 간 관계를 매핑하고 인터랙티브 네트워크로 시각화
+                </p>
+              </div>
+              <div className="flex flex-col items-center text-center">
+                <div className="mb-3 flex size-10 items-center justify-center rounded-full bg-emerald-500/10">
+                  <Search className="size-5 text-emerald-600" />
+                </div>
+                <h4 className="mb-1 text-sm font-semibold">3. 의미 검색으로 탐색</h4>
+                <p className="text-xs text-muted-foreground">
+                  자연어로 질의하여 그래프의 특정 노드와 관련 문서를 즉시 발견
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -561,7 +763,7 @@ export function LandingContent() {
                     '분석 키워드 입력 (인물명, 정책명, 이슈 등)',
                     '수집 기간 설정 (최근 1일~30일)',
                     '분석 소스 선택 (전체 또는 개별 소스)',
-                    '분석 모듈 선택 (기본 8개 또는 전체 14개)',
+                    '분석 모듈 선택 (기본 8개 또는 전체 18개)',
                   ],
                   example: '예) "의료 개혁" 키워드 → 최근 7일 → 전체 소스 → 기본 분석',
                 },
@@ -583,8 +785,8 @@ export function LandingContent() {
                   icon: Brain,
                   step: '3',
                   title: 'AI 분석',
-                  desc: '14개 모듈 단계별 실행',
-                  help: '수집된 데이터를 4단계에 걸쳐 14개 AI 모듈이 순차·병렬로 분석합니다.',
+                  desc: '18개 모듈 단계별 실행',
+                  help: '수집된 데이터를 4단계에 걸쳐 18개 AI 모듈이 순차·병렬로 분석합니다.',
                   details: [
                     'Stage 1: 거시 여론·세분화·감정·메시지 영향력 (병렬)',
                     'Stage 2: 리스크맵 → 기회 → 전략 → 종합 요약 (순차)',
@@ -702,14 +904,37 @@ export function LandingContent() {
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <div className="flex items-center justify-between">
-                          <Badge variant="secondary" className="text-xs">
-                            <Clock className="mr-1 size-3" />
-                            {uc.highlight}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100">
-                            자세히 보기 →
-                          </span>
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <Badge variant="secondary" className="text-xs">
+                              <Clock className="mr-1 size-3" />
+                              {uc.highlight}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100">
+                              자세히 보기 →
+                            </span>
+                          </div>
+                          {'domainId' in uc && uc.domainId && DOMAIN_HELP_DATA[uc.domainId] && (
+                            <button
+                              type="button"
+                              className="flex w-full items-center gap-1 rounded-md px-1 py-0.5 text-left text-xs text-muted-foreground/70 transition-colors hover:bg-muted/50 hover:text-muted-foreground"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const ucWithDomain = uc as {
+                                  domainId?: string;
+                                  theoreticalHighlight?: string;
+                                };
+                                setSelectedDomainId(ucWithDomain.domainId ?? null);
+                              }}
+                            >
+                              <HelpCircle className="size-3 shrink-0" />
+                              <span className="truncate">
+                                {'theoreticalHighlight' in uc
+                                  ? (uc as { theoreticalHighlight?: string }).theoreticalHighlight
+                                  : '이론 기반 도움말'}
+                              </span>
+                            </button>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
@@ -877,6 +1102,13 @@ export function LandingContent() {
         open={!!selectedUseCase}
         onOpenChange={(open) => {
           if (!open) setSelectedUseCase(null);
+        }}
+      />
+      <DomainHelpModal
+        data={selectedDomainHelp}
+        open={!!selectedDomainId}
+        onOpenChange={(open) => {
+          if (!open) setSelectedDomainId(null);
         }}
       />
     </div>
