@@ -36,3 +36,29 @@ describe('ADVN 모듈 export 확인', () => {
     expect(MODULE_NAMES.WIN_SIMULATION).toBe('win-simulation');
   });
 });
+
+describe('Corporate ADVN 신규 모듈 export 확인', () => {
+  it('3개 신규 모듈이 modules/index.ts에서 export된다', async () => {
+    const mods = await import('../src/analysis/modules');
+    expect(mods.mediaFramingDominanceModule).toBeDefined();
+    expect(mods.csrCommunicationGapModule).toBeDefined();
+    expect(mods.reputationRecoverySimulationModule).toBeDefined();
+  });
+
+  it('3개 신규 스키마가 schemas/index.ts에서 export된다', async () => {
+    const schemas = await import('../src/analysis/schemas');
+    expect(schemas.MediaFramingDominanceSchema).toBeDefined();
+    expect(schemas.CsrCommunicationGapSchema).toBeDefined();
+    expect(schemas.ReputationRecoverySimulationSchema).toBeDefined();
+  });
+
+  it('MODULE_MODEL_MAP이 3개 신규 Corporate ADVN 모듈 매핑을 포함한다', async () => {
+    const { MODULE_MODEL_MAP } = await import('../src/analysis/types');
+    expect(MODULE_MODEL_MAP['media-framing-dominance']).toBeDefined();
+    expect(MODULE_MODEL_MAP['media-framing-dominance'].provider).toBe('gemini-cli');
+    expect(MODULE_MODEL_MAP['csr-communication-gap']).toBeDefined();
+    expect(MODULE_MODEL_MAP['csr-communication-gap'].provider).toBe('anthropic');
+    expect(MODULE_MODEL_MAP['reputation-recovery-simulation']).toBeDefined();
+    expect(MODULE_MODEL_MAP['reputation-recovery-simulation'].provider).toBe('anthropic');
+  });
+});

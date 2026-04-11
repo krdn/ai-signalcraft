@@ -26,6 +26,18 @@ export { ReputationIndexSchema, type ReputationIndexResult } from './reputation-
 // Stage 4 스키마 — 기업 평판 도메인
 export { StakeholderMapSchema, type StakeholderMapResult } from './stakeholder-map.schema';
 export { EsgSentimentSchema, type EsgSentimentResult } from './esg-sentiment.schema';
+export {
+  MediaFramingDominanceSchema,
+  type MediaFramingDominanceResult,
+} from './media-framing-dominance.schema';
+export {
+  CsrCommunicationGapSchema,
+  type CsrCommunicationGapResult,
+} from './csr-communication-gap.schema';
+export {
+  ReputationRecoverySimulationSchema,
+  type ReputationRecoverySimulationResult,
+} from './reputation-recovery-simulation.schema';
 
 // Stage 4 스키마 — 헬스케어 도메인
 export {
