@@ -6,6 +6,7 @@ import { format } from 'date-fns';
 import { CalendarRange, Clock, FileText, MessageSquare, Star } from 'lucide-react';
 import { SourceBadges, extractSources, summarizeCounts, formatDuration } from './source-icons';
 import { DomainBadge } from './domain-badge';
+import { JobDiagnosticModal } from './job-diagnostic-modal';
 import { trpcClient } from '@/lib/trpc';
 import type { FilterMode } from '@/components/filter-mode-toggle';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -143,6 +144,7 @@ export function RecentJobs({ onSelectJob, onSelectShowcase }: RecentJobsProps) {
                       <div className="flex items-center gap-1.5">
                         <span className="font-medium">{job.keyword}</span>
                         <DomainBadge domain={(job as any).domain} size="xs" />
+                        <JobDiagnosticModal jobId={job.id} keyword={job.keyword} />
                       </div>
                     </TableCell>
                     <TableCell>

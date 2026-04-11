@@ -18,6 +18,8 @@ export {
   getQueueStatus,
   purgeAllBullMQJobs,
   cleanupBeforeNewPipeline,
+  getJobDiagnostic,
+  forceCleanupActiveJob,
 } from './queue-management';
 
 /**

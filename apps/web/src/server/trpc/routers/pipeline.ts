@@ -6,6 +6,8 @@ import {
   setSkippedModules,
   setCostLimit,
   getQueueStatus,
+  getJobDiagnostic,
+  forceCleanupActiveJob,
 } from '@ai-signalcraft/core';
 import { TRPCError } from '@trpc/server';
 import { getPipelineStatus } from '../../pipeline-status';
@@ -66,6 +68,23 @@ export const pipelineRouter = router({
   queueStatus: systemAdminProcedure.query(async () => {
     return getQueueStatus();
   }),
+
+  // 특정 job 진단 — DB/BullMQ 상태 비교 + 문제 감지
+  jobDiagnostic: protectedProcedure
+    .input(z.object({ jobId: z.number() }))
+    .query(async ({ input, ctx }) => {
+      await verifyJobOwnership(ctx, input.jobId, ctx.defaultFilterMode);
+      return getJobDiagnostic(input.jobId);
+    }),
+
+  // 고아 active job 강제 제거 + running 모듈 pending 초기화
+  forceCleanupJob: protectedProcedure
+    .input(z.object({ jobId: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      await verifyJobOwnership(ctx, input.jobId, ctx.defaultFilterMode);
+      const cleaned = await forceCleanupActiveJob(input.jobId);
+      return { cleaned };
+    }),
 
   // 비용 한도 설정
   setCostLimit: protectedProcedure

@@ -16,6 +16,7 @@ export function createCollectorWorker(processJob: (job: Job) => Promise<any>) {
     lockDuration: 600_000, // 10분
     stalledInterval: 300_000, // 5분마다 stall check
     maxStalledCount: 2,
+    streams: { events: { maxLen: 500 } }, // event stream 무한 누적 방지
   });
 }
 
@@ -27,5 +28,6 @@ export function createPipelineWorker(processJob: (job: Job) => Promise<any>) {
     lockDuration: 600_000,
     stalledInterval: 300_000,
     maxStalledCount: 2,
+    streams: { events: { maxLen: 500 } }, // event stream 무한 누적 방지
   });
 }
