@@ -87,7 +87,14 @@ ${commentsSample}
 - 반전을 위한 구체적 조건과 행동을 기술하세요
 
 ### Step 5: 종합 권장 조치
-- 3개 시나리오를 종합하여 현재 가장 적합한 대응 방향을 제시하세요`;
+- 3개 시나리오를 종합하여 현재 가장 적합한 대응 방향을 제시하세요
+
+## 응답 길이 제한 (필수 준수)
+- 각 필드는 2~3문장 이내로 간결하게 작성하세요
+- triggerConditions: 최대 3개 항목
+- expectedOutcome: 1~2문장
+- responseStrategy: 1~2문장
+- 전체 응답이 JSON Schema 범위를 초과하지 않도록 간결하게 작성하세요`;
   },
 
   buildPromptWithContext(
