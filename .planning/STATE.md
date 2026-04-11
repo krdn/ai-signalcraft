@@ -5,7 +5,7 @@ milestone_name: 코드베이스 리팩토링
 status: executing
 stopped_at: Completed 260412-bwx-corporate quick task
 last_updated: "2026-04-11T23:52:39.543Z"
-last_activity: 2026-03-27
+last_activity: 2026-04-12
 progress:
   total_phases: 3
   completed_phases: 3
@@ -89,6 +89,6 @@ None.
 
 ## Session Continuity
 
-Last activity: 2026-03-29 - Completed quick task 260329-kmr: 하이브리드 날짜 분할 수집 구현
+Last activity: 2026-04-12 - Completed quick task 260412-bwx: Corporate 도메인 파이프라인 리팩토링
 Stopped at: Completed 260412-bwx-corporate quick task
 Resume file: None
