@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Activity, BarChart3, FileText, Home, Users } from 'lucide-react';
+import { Activity, BarChart3, Cloud, FileText, Home, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const NAV_ITEMS = [
@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { href: '/partner/customers', label: '고객사 관리', icon: Users },
   { href: '/partner/commissions', label: '수수료', icon: BarChart3 },
   { href: '/partner/contract', label: '계약 정보', icon: FileText },
+  { href: '/partner/infrastructure', label: '배포 플랫폼 분석', icon: Cloud },
 ];
 
 export default function PartnerLayout({ children }: { children: React.ReactNode }) {
