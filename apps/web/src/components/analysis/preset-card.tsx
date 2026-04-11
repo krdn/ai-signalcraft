@@ -2,8 +2,8 @@
 
 import * as LucideIcons from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { DomainBadge } from './domain-badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
 interface PresetCardProps {
@@ -33,7 +33,6 @@ export function PresetCard({
   onClick,
 }: PresetCardProps) {
   const Icon = getIcon(icon);
-  const isFandom = domain === 'fandom';
   const activeModules = totalModules ? totalModules - (skippedModules?.length ?? 0) : null;
 
   return (
@@ -46,29 +45,13 @@ export function PresetCard({
     >
       <CardContent className="p-4 space-y-2">
         <div className="flex items-start gap-3">
-          <div
-            className={cn(
-              'rounded-lg p-2 shrink-0',
-              isFandom ? 'bg-violet-500/10' : 'bg-primary/10',
-            )}
-          >
-            <Icon className={cn('h-5 w-5', isFandom ? 'text-violet-500' : 'text-primary')} />
+          <div className="rounded-lg p-2 shrink-0 bg-primary/10">
+            <Icon className="h-5 w-5 text-primary" />
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
               <h3 className="font-semibold text-sm leading-tight">{title}</h3>
-              {domain && (
-                <Badge
-                  className={cn(
-                    'text-[9px] px-1.5 py-0',
-                    isFandom
-                      ? 'bg-violet-500/15 text-violet-500 border-violet-500/20'
-                      : 'bg-blue-500/15 text-blue-500 border-blue-500/20',
-                  )}
-                >
-                  {isFandom ? '팬덤' : '정치'}
-                </Badge>
-              )}
+              <DomainBadge domain={domain} />
             </div>
             <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{description}</p>
           </div>

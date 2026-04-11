@@ -100,6 +100,8 @@ export type BreakpointStage =
 export interface PipelineStatusData {
   status: string;
   keyword: string;
+  domain?: string | null;
+  keywordType?: string | null;
   progress: unknown;
   errorDetails: unknown;
   pipelineStages: Record<string, { status: string }>;
