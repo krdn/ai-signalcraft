@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: 코드베이스 리팩토링
 status: executing
-stopped_at: Completed 09-03-PLAN.md
-last_updated: '2026-03-27T01:56:48.516Z'
+stopped_at: Completed 260412-bwx-corporate quick task
+last_updated: "2026-04-11T23:52:39.543Z"
 last_activity: 2026-03-27
 progress:
   total_phases: 3
   completed_phases: 3
   total_plans: 9
   completed_plans: 9
-  percent: 0
+  percent: 100
 ---
 
 # Project State
@@ -85,9 +85,10 @@ None.
 | 260327-0b8  | 최근 분석 UI 개선 (날짜+시분, 소스 아이콘, 수집 건수, 소요 시간) | 2026-03-27 | -       | [260327-0b8-ui](./quick/260327-0b8-ui/)                                                                       |
 | 260327-vvl  | 동일 분석실행 날짜 겹침 및 중복 기사 처리 전략 리서치            | 2026-03-27 | -       | [260327-vvl-duplicate-analysis-strategy](./quick/260327-vvl-duplicate-analysis-strategy/)                     |
 | 260329-kmr  | 하이브리드 날짜 분할 수집 (Date-Chunked Collection)              | 2026-03-29 | -       | [260329-kmr-naver-news-ts-date-chunked-collection](./quick/260329-kmr-naver-news-ts-date-chunked-collection/) |
+| 260412-bwx  | Corporate ADVN 파이프라인 리팩토링 (스킵 버그 수정, 모듈 3개, UI 카드 3개) | 2026-04-11 | 144afe2 | [260412-bwx-corporate](./quick/260412-bwx-corporate/) |
 
 ## Session Continuity
 
 Last activity: 2026-03-29 - Completed quick task 260329-kmr: 하이브리드 날짜 분할 수집 구현
-Stopped at: Completed 09-03-PLAN.md
+Stopped at: Completed 260412-bwx-corporate quick task
 Resume file: None
