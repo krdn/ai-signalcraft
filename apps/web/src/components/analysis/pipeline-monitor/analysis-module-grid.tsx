@@ -92,6 +92,10 @@ function ModuleCard({
           {moduleStatusIcon(mod.status)}
           <span className="font-medium truncate text-[11px]">{mod.label}</span>
         </div>
+        {/* 모듈 코드값 — Claude Code 검색용 */}
+        <div className="text-[9px] text-muted-foreground/40 ml-5 font-mono truncate select-all">
+          {mod.module}
+        </div>
         {/* 모델명 표시 */}
         {(displayProvider || displayModel) && mod.status !== 'pending' && (
           <div className="text-[9px] text-muted-foreground/70 ml-5 font-mono truncate">
@@ -147,17 +151,29 @@ function ModuleCard({
   return (
     <HoverCard>
       <HoverCardTrigger className="cursor-default">{card}</HoverCardTrigger>
-      <HoverCardContent className="w-72 text-xs" side="top">
+      <HoverCardContent className="w-80 text-xs" side="top">
         <div className="space-y-1.5">
-          <h4 className="font-semibold">{mod.label}</h4>
+          <div className="flex items-start justify-between gap-2">
+            <h4 className="font-semibold">{mod.label}</h4>
+            <code className="text-[10px] font-mono bg-muted px-1.5 py-0.5 rounded text-muted-foreground shrink-0 select-all">
+              {mod.module}
+            </code>
+          </div>
           <p className="text-muted-foreground leading-relaxed">{help.description}</p>
-          <div className="flex items-center gap-2 text-[10px] text-muted-foreground pt-1 border-t">
-            <Badge variant="outline" className="text-[10px] px-1.5">
-              {help.stageLabel}
-            </Badge>
-            <span>
-              {PROVIDER_DISPLAY[displayProvider] ?? displayProvider} / {displayModel}
-            </span>
+          <div className="pt-1 border-t space-y-1">
+            <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+              <Badge variant="outline" className="text-[10px] px-1.5">
+                {help.stageLabel}
+              </Badge>
+              <span>
+                {PROVIDER_DISPLAY[displayProvider] ?? displayProvider} / {displayModel}
+              </span>
+            </div>
+            {/* Claude Code 검색 힌트 */}
+            <div className="text-[10px] text-muted-foreground/60 font-mono">
+              <span className="text-muted-foreground/40">grep: </span>
+              modules/{mod.module}.ts
+            </div>
           </div>
         </div>
       </HoverCardContent>

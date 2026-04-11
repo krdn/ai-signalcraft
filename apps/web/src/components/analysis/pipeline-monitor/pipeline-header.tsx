@@ -86,6 +86,11 @@ export const PipelineHeader = memo(function PipelineHeader({
           <h3 className="text-lg font-semibold tracking-tight">{keyword}</h3>
           <DomainBadge domain={domain} size="sm" />
           <Badge variant={statusVariant(status)}>{statusLabel(status)}</Badge>
+          {jobId != null && (
+            <code className="text-[10px] font-mono text-muted-foreground/50 select-all">
+              #{jobId}
+            </code>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {elapsedSeconds != null && (
