@@ -53,8 +53,8 @@ ${ANALYSIS_CONSTRAINTS}`;
     priorResults: Record<string, unknown>,
     _domain?: AnalysisDomain,
   ): string {
-    const sentimentFraming = priorResults['sentiment-framing'] as Record<string, unknown>;
-    const macroView = priorResults['macro-view'] as Record<string, unknown>;
+    const sentimentFraming = priorResults['sentiment-framing'] as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+    const macroView = priorResults['macro-view'] as any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
     const negativeFrames = sentimentFraming?.negativeFrames
       ? sentimentFraming.negativeFrames

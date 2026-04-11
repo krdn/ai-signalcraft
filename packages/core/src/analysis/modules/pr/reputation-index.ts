@@ -50,23 +50,31 @@ ${ANALYSIS_CONSTRAINTS}`;
     priorResults: Record<string, unknown>,
     _domain?: AnalysisDomain,
   ): string {
-    const sentimentFraming = priorResults['sentiment-framing'] as Record<string, unknown>;
-    const segmentation = priorResults['segmentation'] as Record<string, unknown>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sentimentFraming = priorResults['sentiment-framing'] as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const segmentation = priorResults['segmentation'] as any;
 
     const sentimentRatio = sentimentFraming?.sentimentRatio
       ? `긍정 ${Math.round((sentimentFraming.sentimentRatio.positive ?? 0) * 100)}% / 부정 ${Math.round((sentimentFraming.sentimentRatio.negative ?? 0) * 100)}% / 중립 ${Math.round((sentimentFraming.sentimentRatio.neutral ?? 0) * 100)}%`
       : '데이터 없음';
 
     const topFrames = [
-      ...(sentimentFraming?.positiveFrames ?? []).slice(0, 2),
-      ...(sentimentFraming?.negativeFrames ?? []).slice(0, 2),
+      ...((sentimentFraming?.positiveFrames ?? []) as { frame: string; strength: number }[]).slice(
+        0,
+        2,
+      ),
+      ...((sentimentFraming?.negativeFrames ?? []) as { frame: string; strength: number }[]).slice(
+        0,
+        2,
+      ),
     ]
-      .map((f: Record<string, unknown>) => `- ${f.frame} (강도: ${f.strength})`)
+      .map((f) => `- ${f.frame} (강도: ${f.strength})`)
       .join('\n');
 
     const platformData = segmentation?.platformSegments
-      ? segmentation.platformSegments
-          .map((p: Record<string, unknown>) => `- ${p.platform}: ${p.sentiment}`)
+      ? (segmentation.platformSegments as { platform: string; sentiment: string }[])
+          .map((p) => `- ${p.platform}: ${p.sentiment}`)
           .join('\n')
       : '';
 

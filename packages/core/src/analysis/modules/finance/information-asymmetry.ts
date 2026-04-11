@@ -53,8 +53,8 @@ ${ANALYSIS_CONSTRAINTS}`;
     priorResults: Record<string, unknown>,
     _domain?: AnalysisDomain,
   ): string {
-    const macroView = priorResults['macro-view'] as Record<string, unknown>;
-    const marketSentiment = priorResults['market-sentiment-index'] as Record<string, unknown>;
+    const macroView = priorResults['macro-view'] as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+    const marketSentiment = priorResults['market-sentiment-index'] as any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
     const inflectionPoints = macroView?.inflectionPoints
       ? macroView.inflectionPoints

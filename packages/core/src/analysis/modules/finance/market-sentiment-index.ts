@@ -50,9 +50,9 @@ ${ANALYSIS_CONSTRAINTS}`;
     priorResults: Record<string, unknown>,
     _domain?: AnalysisDomain,
   ): string {
-    const sentimentFraming = priorResults['sentiment-framing'] as Record<string, unknown>;
-    const macroView = priorResults['macro-view'] as Record<string, unknown>;
-    const segmentation = priorResults['segmentation'] as Record<string, unknown>;
+    const sentimentFraming = priorResults['sentiment-framing'] as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+    const macroView = priorResults['macro-view'] as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+    const segmentation = priorResults['segmentation'] as any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
     const sentimentRatio = sentimentFraming?.sentimentRatio
       ? `긍정 ${Math.round((sentimentFraming.sentimentRatio.positive ?? 0) * 100)}% / 부정 ${Math.round((sentimentFraming.sentimentRatio.negative ?? 0) * 100)}% / 중립 ${Math.round((sentimentFraming.sentimentRatio.neutral ?? 0) * 100)}%`

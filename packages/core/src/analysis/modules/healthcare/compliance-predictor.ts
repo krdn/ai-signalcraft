@@ -47,8 +47,8 @@ ${ANALYSIS_CONSTRAINTS}`;
     priorResults: Record<string, unknown>,
     _domain?: AnalysisDomain,
   ): string {
-    const healthRiskPerception = priorResults['health-risk-perception'] as Record<string, unknown>;
-    const segmentation = priorResults['segmentation'] as Record<string, unknown>;
+    const healthRiskPerception = priorResults['health-risk-perception'] as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+    const segmentation = priorResults['segmentation'] as any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
     const perceivedRiskLevel = healthRiskPerception?.perceivedRiskLevel ?? '데이터 없음';
     const groups = segmentation?.audienceGroups

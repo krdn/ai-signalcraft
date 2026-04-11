@@ -53,8 +53,8 @@ ${ANALYSIS_CONSTRAINTS}`;
     priorResults: Record<string, unknown>,
     _domain?: AnalysisDomain,
   ): string {
-    const riskMap = priorResults['risk-map'] as Record<string, unknown>;
-    const macroView = priorResults['macro-view'] as Record<string, unknown>;
+    const riskMap = priorResults['risk-map'] as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+    const macroView = priorResults['macro-view'] as any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
     const riskContext = riskMap?.topRisks
       ? `## 식별된 주요 리스크\n${riskMap.topRisks

@@ -50,26 +50,28 @@ ${ANALYSIS_CONSTRAINTS}`;
     priorResults: Record<string, unknown>,
     _domain?: AnalysisDomain,
   ): string {
-    const macroView = priorResults['macro-view'] as Record<string, unknown>;
-    const sentimentFraming = priorResults['sentiment-framing'] as Record<string, unknown>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const macroView = priorResults['macro-view'] as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sentimentFraming = priorResults['sentiment-framing'] as any;
 
     const timeline = macroView?.timeline
-      ? macroView.timeline
+      ? (macroView.timeline as { date: string; event: string; impact: string }[])
           .slice(0, 5)
-          .map((t: Record<string, unknown>) => `- ${t.date}: ${t.event} (${t.impact})`)
+          .map((t) => `- ${t.date}: ${t.event} (${t.impact})`)
           .join('\n')
       : '';
 
     const positiveFrames = sentimentFraming?.positiveFrames
-      ? sentimentFraming.positiveFrames
+      ? (sentimentFraming.positiveFrames as { frame: string }[])
           .slice(0, 2)
-          .map((f: Record<string, unknown>) => `- ${f.frame}`)
+          .map((f) => `- ${f.frame}`)
           .join('\n')
       : '';
     const negativeFrames = sentimentFraming?.negativeFrames
-      ? sentimentFraming.negativeFrames
+      ? (sentimentFraming.negativeFrames as { frame: string }[])
           .slice(0, 2)
-          .map((f: Record<string, unknown>) => `- ${f.frame}`)
+          .map((f) => `- ${f.frame}`)
           .join('\n')
       : '';
 

@@ -50,7 +50,7 @@ ${ANALYSIS_CONSTRAINTS}`;
     priorResults: Record<string, unknown>,
     _domain?: AnalysisDomain,
   ): string {
-    const sentimentFraming = priorResults['sentiment-framing'] as Record<string, unknown>;
+    const sentimentFraming = priorResults['sentiment-framing'] as any; // eslint-disable-line @typescript-eslint/no-explicit-any
     const topKeywords = sentimentFraming?.topKeywords
       ? sentimentFraming.topKeywords
           .slice(0, 15)

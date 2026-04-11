@@ -50,16 +50,21 @@ ${ANALYSIS_CONSTRAINTS}`;
     priorResults: Record<string, unknown>,
     _domain?: AnalysisDomain,
   ): string {
-    const performanceNarrative = priorResults['performance-narrative'] as Record<string, unknown>;
-    const fanLoyalty = priorResults['fan-loyalty-index'] as Record<string, unknown>;
-    const opportunity = priorResults['opportunity'] as Record<string, unknown>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const performanceNarrative = priorResults['performance-narrative'] as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const fanLoyalty = priorResults['fan-loyalty-index'] as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const opportunity = priorResults['opportunity'] as any;
 
-    const currentMomentum = performanceNarrative?.momentumAssessment?.currentMomentum ?? '불명확';
-    const loyaltyIndex = fanLoyalty?.loyaltyIndex ?? null;
+    const currentMomentum =
+      (performanceNarrative?.momentumAssessment as { currentMomentum?: string } | undefined)
+        ?.currentMomentum ?? '불명확';
+    const loyaltyIndex = (fanLoyalty?.loyaltyIndex as number | undefined) ?? null;
     const opportunitiesText = opportunity?.untappedAreas
-      ? opportunity.untappedAreas
+      ? (opportunity.untappedAreas as { area: string }[])
           .slice(0, 2)
-          .map((a: any) => `- ${a.area}`)
+          .map((a) => `- ${a.area}`)
           .join('\n')
       : '';
 

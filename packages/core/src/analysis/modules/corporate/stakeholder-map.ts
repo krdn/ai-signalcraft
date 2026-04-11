@@ -48,8 +48,8 @@ ${ANALYSIS_CONSTRAINTS}`;
     priorResults: Record<string, unknown>,
     _domain?: AnalysisDomain,
   ): string {
-    const segmentation = priorResults['segmentation'] as Record<string, unknown>;
-    const riskMap = priorResults['risk-map'] as Record<string, unknown>;
+    const segmentation = priorResults['segmentation'] as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+    const riskMap = priorResults['risk-map'] as any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
     const audienceGroups = segmentation?.audienceGroups
       ? segmentation.audienceGroups

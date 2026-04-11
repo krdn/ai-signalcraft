@@ -54,9 +54,9 @@ ${ANALYSIS_CONSTRAINTS}`;
     priorResults: Record<string, unknown>,
     _domain?: AnalysisDomain,
   ): string {
-    const marketSentiment = priorResults['market-sentiment-index'] as Record<string, unknown>;
-    const informationAsymmetry = priorResults['information-asymmetry'] as Record<string, unknown>;
-    const riskMap = priorResults['risk-map'] as Record<string, unknown>;
+    const marketSentiment = priorResults['market-sentiment-index'] as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+    const informationAsymmetry = priorResults['information-asymmetry'] as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+    const riskMap = priorResults['risk-map'] as any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
     const sentimentIndex = marketSentiment?.sentimentIndex ?? 50;
     const sentimentLabel = marketSentiment?.sentimentLabel ?? '중립';
