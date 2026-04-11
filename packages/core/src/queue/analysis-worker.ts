@@ -92,7 +92,6 @@ export function createAnalysisWorker(): Worker {
       lockDuration: 600_000, // 10분
       stalledInterval: 300_000, // 5분마다 stall check
       maxStalledCount: 2, // stall 발생 시 2회까지 자동 재시도 (기본 0 = 즉시 failed)
-      streams: { events: { maxLen: 500 } }, // event stream 무한 누적 방지
     },
   );
 }

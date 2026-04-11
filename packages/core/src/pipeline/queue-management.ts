@@ -162,7 +162,7 @@ export async function forceCleanupActiveJob(dbJobId: number): Promise<number> {
   for (const queueName of ['collectors', 'pipeline', 'analysis']) {
     const queue = getQueue(queueName);
     try {
-      const activeJobs = await queue.getJobs(['active', 'stalled']);
+      const activeJobs = await queue.getJobs(['active', 'waiting']);
       for (const job of activeJobs) {
         if (job.data?.dbJobId !== dbJobId) continue;
         try {
@@ -218,7 +218,7 @@ export async function getJobDiagnostic(dbJobId: number) {
   for (const queueName of ['collectors', 'pipeline', 'analysis']) {
     const queue = getQueue(queueName);
     try {
-      const jobs = await queue.getJobs(['active', 'waiting', 'delayed', 'failed', 'stalled']);
+      const jobs = await queue.getJobs(['active', 'waiting', 'delayed', 'failed']);
       for (const job of jobs) {
         if (job.data?.dbJobId !== dbJobId) continue;
         let state = 'unknown';
