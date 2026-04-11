@@ -4,9 +4,10 @@ import { useState, useEffect } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
-import { Loader2, ChevronDown, Lock, Shield, Heart } from 'lucide-react';
+import { Loader2, ChevronDown, Lock } from 'lucide-react';
 import { format, subDays, addDays } from 'date-fns';
 import { TriggerFormHelp } from './trigger-form-help';
+import { DomainBadge } from './domain-badge';
 import { BreakpointSection, type BreakpointValue } from './trigger-form/breakpoint-section';
 import {
   type OptimizationPreset,
@@ -32,6 +33,7 @@ interface TriggerFormProps {
     slug: string;
     title: string;
     icon: string;
+    domain: string;
     sources: Record<string, boolean>;
     customSourceIds: string[];
     limits: {
@@ -142,6 +144,7 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
     mutationFn: (input: {
       keyword: string;
       keywordType?: string;
+      domain?: string;
       sources: SourceId[];
       customSourceIds?: string[];
       startDate: string;
@@ -154,7 +157,7 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
         commentsPerItem: number;
       };
       breakpoints?: BreakpointValue[];
-    }) => trpcClient.analysis.trigger.mutate(input),
+    }) => trpcClient.analysis.trigger.mutate(input as any),
     onSuccess: (data) => {
       toast.success('분석이 시작되었습니다');
       onJobStarted(data.jobId);
@@ -189,6 +192,7 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
     triggerMutation.mutate({
       keyword: keyword.trim(),
       ...(preset?.slug && { keywordType: preset.slug }),
+      ...(preset?.domain && { domain: preset.domain as any }),
       sources,
       customSourceIds: customSourceIds.length > 0 ? customSourceIds : undefined,
       startDate: resolvedStart.toISOString(),
@@ -264,26 +268,7 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
                 <span className="text-xs text-muted-foreground">프리셋 적용됨</span>
               </div>
               <div className="flex items-center gap-2">
-                {preset.slug &&
-                  (() => {
-                    const isFandom = ['entertainment', 'sports'].includes(preset.slug);
-                    return (
-                      <span
-                        className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-medium ${
-                          isFandom
-                            ? 'border-violet-500/30 bg-violet-500/10 text-violet-600 dark:text-violet-400'
-                            : 'border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400'
-                        }`}
-                      >
-                        {isFandom ? (
-                          <Heart className="h-2.5 w-2.5" />
-                        ) : (
-                          <Shield className="h-2.5 w-2.5" />
-                        )}
-                        {isFandom ? '팬덤' : '정치'} 분석
-                      </span>
-                    );
-                  })()}
+                {preset.domain && <DomainBadge domain={preset.domain} size="sm" />}
                 <Button
                   type="button"
                   variant="ghost"

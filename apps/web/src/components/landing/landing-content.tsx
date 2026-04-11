@@ -481,7 +481,7 @@ export function LandingContent() {
       <section className="py-20 md:py-28">
         <div className="mx-auto max-w-6xl px-4">
           <div className="mb-12 text-center">
-            <h2 className="mb-4 text-3xl font-bold md:text-4xl">30개 AI 분석 모듈</h2>
+            <h2 className="mb-4 text-3xl font-bold md:text-4xl">51개 AI 분석 모듈</h2>
             <p className="text-muted-foreground">
               단순 감정 분석을 넘어, 도메인별 전문 이론에 기반한 전략적 인사이트를 단계별로
               도출합니다.
@@ -494,14 +494,26 @@ export function LandingContent() {
                   <Badge variant="outline" className={group.color}>
                     {group.stage}
                   </Badge>
-                  <CardTitle>{group.label}</CardTitle>
+                  <CardTitle>
+                    {group.label}
+                    <span className="ml-2 text-xs font-normal text-muted-foreground">
+                      {group.labelEn}
+                    </span>
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-2">
                     {group.items.map((item) => (
                       <li key={item.name} className="flex items-center gap-2 text-sm">
                         <Brain className="size-4 shrink-0 text-primary" />
-                        <span className="flex-1">{item.name}</span>
+                        <span className="flex-1">
+                          {item.name}
+                          {item.nameEn && (
+                            <span className="block text-[10px] text-muted-foreground/70 leading-tight">
+                              {item.nameEn}
+                            </span>
+                          )}
+                        </span>
                         <Popover>
                           <PopoverTrigger
                             className="text-muted-foreground/50 hover:text-primary transition-colors cursor-help shrink-0"
@@ -539,6 +551,16 @@ export function LandingContent() {
                                 </p>
                                 <p className="text-xs text-muted-foreground">{item.output}</p>
                               </div>
+                              {item.theory && (
+                                <div className="pt-1.5 border-t">
+                                  <p className="text-[11px] font-medium text-muted-foreground mb-0.5">
+                                    이론적 출처
+                                  </p>
+                                  <p className="text-[11px] text-muted-foreground/80 italic">
+                                    {item.theory}
+                                  </p>
+                                </div>
+                              )}
                             </div>
                           </PopoverContent>
                         </Popover>
