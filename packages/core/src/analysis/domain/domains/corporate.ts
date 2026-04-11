@@ -224,31 +224,50 @@ export const CORPORATE_DOMAIN: DomainConfig = {
 - triggerConditions: 기업 관련 구체적 이벤트 (예: "경제지 1면 부정 기사", "공정거래위원회 조사 착수", "소비자 집단소송 접수" 등)
 - expectedOutcome: 이해관계자 신뢰 변화 + 비즈니스 영향 포함`,
     },
-    'win-simulation': {
-      systemPrompt: `당신은 기업 평판 회복 시뮬레이션 전문가입니다.
-선행 분석 결과를 종합하여 **기업 평판 목표치 달성 확률**과 최적 회복 전략을 도출합니다.
+    'media-framing-dominance': {
+      systemPrompt: `당신은 미디어 프레임 분석 전문가입니다.
+**Media Framing Theory (Entman, 1993)**와 **Agenda-Setting Theory (McCombs & Shaw, 1972)**를 적용하여 기업 이슈의 미디어 프레임 지배력을 분석합니다.
 
-## 시뮬레이션 프레임워크 (기업 평판 도메인)
-- winProbability: '선거 승리'가 아닌 **'평판 회복 목표 달성 확률'** (예: 핵심 이해관계자 신뢰도 회복, RepTrak 점수 목표 달성)
-- stakeholder-map의 이해관계자 영향력을 기반선으로 활용
-- esg-sentiment의 ESG 여론을 감점/가점 요인으로 반영
-- crisis-scenario의 시나리오별 확률을 토대로 최선 경로 선택
+## 분석 중점
+- 어떤 미디어가 어떤 프레임(diagnostic/prognostic/motivational)을 지배하는지 매핑
+- 기업 공식 서사와 미디어 프레임 간 간극 측정
+- 프레임 전환 위험도: 현재 프레임이 부정으로 역전될 가능성`,
+    },
+    'csr-communication-gap': {
+      systemPrompt: `당신은 CSR 커뮤니케이션 분석 전문가입니다.
+**CSR Organizational Hypocrisy (Brunsson, 1989)**를 적용하여 기업 CSR 공약과 실제 여론 인식 간 격차를 분석합니다.
 
-## 승리 조건 (기업 평판 도메인)
-- 핵심 이해관계자(투자자·소비자) 신뢰 회복 여부 (met/partial/unmet)
-- 미디어 프레임 전환 성공 여부 (부정 지배→경합 이상으로)
-- 임직원 내부 결속 회복 (내부→외부 확산 위험 차단)
-- SLO 회복 조건 충족 여부
+## 분석 중점
+- E/S/G 각 차원별 기업 주장 vs 여론 인식 격차 점수화
+- 그린워싱 리스크 수준 판단
+- CSR 위선을 촉발하는 이벤트 식별`,
+    },
+    'reputation-recovery-simulation': {
+      systemPrompt: `당신은 기업 평판 회복 전략 시뮬레이터입니다.
+**RepTrak Recovery (Fombrun, 2004)**, **SCCT (Coombs, 2007)**, **SLO (Thomson, 2000)**을 통합하여 기업 평판 회복 경로를 시뮬레이션합니다.
 
-## strategy와의 차별화
-- strategy의 전략을 반복하지 말고, 시뮬레이션 결과로 우선순위 재배치
-- expectedImpact: 정량적 표현 (예: "투자자 이탈률 5% 감소 기대", "소비자 신뢰 지수 10p 회복")`,
+## 시뮬레이션 원칙
+- recoveryProbability: 선행 전체 분석 기반 평판 회복 달성 확률 (%)
+- 위기 유형(SCCT)에 따른 회복 전략 차별화 (victim < accidental < preventable)
+- SLO 회복: 사회적 운영 허가 재획득 조건 평가
+- 회복 장애: 이전 Stage 분석에서 도출된 리스크가 회복을 방해하는 메커니즘
+
+## win-simulation과의 차별화
+- win-simulation은 정치 도메인 프레임 — 이 모듈은 기업 평판 회복에 특화
+- SCCT 위기 유형과 SLO 프레임워크 명시적 활용`,
     },
   },
 
   stage4: {
-    parallel: ['stakeholder-map', 'esg-sentiment'],
-    sequential: ['crisis-scenario', 'win-simulation'],
+    parallel: [
+      'stakeholder-map',
+      'esg-sentiment',
+      'reputation-index',
+      'crisis-type-classifier',
+      'media-framing-dominance',
+      'csr-communication-gap',
+    ],
+    sequential: ['crisis-scenario', 'reputation-recovery-simulation'],
   },
 
   reportSystemPrompt: `당신은 기업 평판 관리 분야의 최고 전략가입니다.

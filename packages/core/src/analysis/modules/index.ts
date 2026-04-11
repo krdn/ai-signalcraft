@@ -31,6 +31,9 @@ export { reputationIndexModule } from './pr/reputation-index';
 // Stage 4 분석 모듈 — 기업 평판 도메인
 export { stakeholderMapModule } from './corporate/stakeholder-map';
 export { esgSentimentModule } from './corporate/esg-sentiment';
+export { mediaFramingDominanceModule } from './corporate/media-framing-dominance';
+export { csrCommunicationGapModule } from './corporate/csr-communication-gap';
+export { reputationRecoverySimulationModule } from './corporate/reputation-recovery-simulation';
 
 // Stage 4 분석 모듈 — 헬스케어 도메인
 export { healthRiskPerceptionModule } from './healthcare/health-risk-perception';

@@ -41,7 +41,7 @@ const PRESET_SEEDS = [
     customSourceIds: [],
     limits: { naverArticles: 500, youtubeVideos: 30, communityPosts: 50, commentsPerItem: 500 },
     optimization: 'standard' as const,
-    skippedModules: ['winSimulation'],
+    skippedModules: ['win-simulation'],
     enableItemAnalysis: false,
   },
   {
@@ -56,7 +56,7 @@ const PRESET_SEEDS = [
     customSourceIds: [],
     limits: { naverArticles: 500, youtubeVideos: 50, communityPosts: 50, commentsPerItem: 300 },
     optimization: 'standard' as const,
-    skippedModules: ['frameWar', 'winSimulation'],
+    skippedModules: [],
     enableItemAnalysis: false,
   },
   {

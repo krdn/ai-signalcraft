@@ -40,6 +40,9 @@ import {
   // 기업 평판 도메인 신규 모듈
   stakeholderMapModule,
   esgSentimentModule,
+  mediaFramingDominanceModule,
+  csrCommunicationGapModule,
+  reputationRecoverySimulationModule,
   // 헬스케어 도메인 신규 모듈
   healthRiskPerceptionModule,
   compliancePredictorModule,
@@ -71,6 +74,9 @@ const MODULE_MAP: Record<string, AnalysisModule> = {
   // 기업 평판/유통 도메인 신규 모듈
   'stakeholder-map': stakeholderMapModule,
   'esg-sentiment': esgSentimentModule,
+  'media-framing-dominance': mediaFramingDominanceModule,
+  'csr-communication-gap': csrCommunicationGapModule,
+  'reputation-recovery-simulation': reputationRecoverySimulationModule,
   // 헬스케어 도메인 신규 모듈
   'health-risk-perception': healthRiskPerceptionModule,
   'compliance-predictor': compliancePredictorModule,

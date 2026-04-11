@@ -102,6 +102,9 @@ export const MODULE_MODEL_MAP: Record<string, { provider: AIProvider; model: str
   // Stage 4: 기업 평판 도메인 신규 모듈
   'stakeholder-map': { provider: 'gemini-cli', model: 'gemini-2.5-flash' },
   'esg-sentiment': { provider: 'gemini-cli', model: 'gemini-2.5-flash' },
+  'media-framing-dominance': { provider: 'gemini-cli', model: 'gemini-2.5-flash' },
+  'csr-communication-gap': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
+  'reputation-recovery-simulation': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
   // Stage 4: 헬스케어 도메인 신규 모듈
   'health-risk-perception': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
   'compliance-predictor': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
