@@ -114,10 +114,13 @@ export function KeywordNetworkGraph({
     node
       .append('text')
       .text((d) => d.label)
-      .attr('font-size', (d) => Math.max(9, Math.min(14, Math.sqrt(d.size) * 2)))
-      .attr('dx', (d) => Math.max(Math.sqrt(d.size) * 3, 5) + 4)
+      .attr('font-size', (d) => Math.max(12, Math.min(15, Math.sqrt(d.size) * 2.2)))
+      .attr('font-weight', 600)
+      .attr('dx', (d) => Math.max(Math.sqrt(d.size) * 3, 5) + 6)
       .attr('dy', 4)
-      .attr('fill', '#e4e4e7')
+      .attr('class', 'fill-foreground')
+      .attr('paint-order', 'stroke')
+      .attr('style', 'stroke: var(--color-card); stroke-width: 3.5px; stroke-linejoin: round;')
       .attr('pointer-events', 'none');
 
     // 툴팁을 위한 hover 효과

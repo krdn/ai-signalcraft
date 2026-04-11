@@ -89,16 +89,17 @@ export function KnowledgeGraphView({ data, isLoading }: KnowledgeGraphViewProps)
       legend
         .append('circle')
         .attr('cx', 6)
-        .attr('cy', i * 18)
+        .attr('cy', i * 20)
         .attr('r', 5)
         .attr('fill', TYPE_COLORS[key]);
       legend
         .append('text')
         .attr('x', 16)
-        .attr('y', i * 18 + 4)
+        .attr('y', i * 20 + 4)
         .text(label)
-        .attr('font-size', 10)
-        .attr('fill', '#a1a1aa');
+        .attr('font-size', 11)
+        .attr('font-weight', 500)
+        .attr('class', 'fill-foreground');
     });
 
     // Force 시뮬레이션
@@ -151,9 +152,12 @@ export function KnowledgeGraphView({ data, isLoading }: KnowledgeGraphViewProps)
       .data(links)
       .join('text')
       .text((d) => edgeLabels[d.type] ?? '')
-      .attr('font-size', 8)
-      .attr('fill', '#71717a')
+      .attr('font-size', 10)
+      .attr('font-weight', 500)
+      .attr('class', 'fill-muted-foreground')
       .attr('text-anchor', 'middle')
+      .attr('paint-order', 'stroke')
+      .attr('style', 'stroke: var(--color-card); stroke-width: 3px; stroke-linejoin: round;')
       .attr('pointer-events', 'none');
 
     // 노드
@@ -193,10 +197,13 @@ export function KnowledgeGraphView({ data, isLoading }: KnowledgeGraphViewProps)
     node
       .append('text')
       .text((d) => d.label)
-      .attr('font-size', (d) => Math.max(9, Math.min(12, d.size * 0.3)))
+      .attr('font-size', (d) => Math.max(12, Math.min(14, d.size * 0.35)))
+      .attr('font-weight', 600)
       .attr('text-anchor', 'middle')
-      .attr('dy', (d) => Math.max(d.size * 0.5, 8) + 14)
-      .attr('fill', '#d4d4d8')
+      .attr('dy', (d) => Math.max(d.size * 0.5, 8) + 16)
+      .attr('class', 'fill-foreground')
+      .attr('paint-order', 'stroke')
+      .attr('style', 'stroke: var(--color-card); stroke-width: 3.5px; stroke-linejoin: round;')
       .attr('pointer-events', 'none');
 
     // 노드 클릭
