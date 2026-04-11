@@ -168,9 +168,7 @@ export async function runAnalysisPipeline(
   /** 실패 감지 — 전체 실패 시에만 중단, 부분 실패는 경고 후 계속 */
   function checkFailAndAbort(stageName: string): boolean {
     const stageModules = Object.values(allResults);
-    const failed = stageModules.filter(
-      (r) => r.status === 'failed' && r.errorMessage !== '사용자에 의해 스킵됨',
-    );
+    const failed = stageModules.filter((r) => r.status === 'failed');
     if (failed.length === 0) return false;
 
     const completed = stageModules.filter((r) => r.status === 'completed');
@@ -206,13 +204,11 @@ export async function runAnalysisPipeline(
     await persistAnalysisResult({
       jobId,
       module: moduleName,
-      status: 'failed',
-      errorMessage: '사용자에 의해 스킵됨',
+      status: 'skipped',
     });
     allResults[moduleName] = {
       module: moduleName,
-      status: 'failed',
-      errorMessage: '사용자에 의해 스킵됨',
+      status: 'skipped',
     };
   }
 

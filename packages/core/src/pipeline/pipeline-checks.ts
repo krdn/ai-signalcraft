@@ -99,7 +99,12 @@ export async function checkCostLimit(
   };
 }
 
-/** 스킵 모듈 목록 조회 */
+/** camelCase → kebab-case 변환 (예: frameWar → frame-war) */
+function camelToKebab(str: string): string {
+  return str.replace(/([A-Z])/g, (c) => `-${c.toLowerCase()}`);
+}
+
+/** 스킵 모듈 목록 조회 — camelCase → kebab-case 변환 */
 export async function getSkippedModules(jobId: number): Promise<string[]> {
   const db = getDb();
   const [job] = await db
@@ -107,7 +112,7 @@ export async function getSkippedModules(jobId: number): Promise<string[]> {
     .from(collectionJobs)
     .where(eq(collectionJobs.id, jobId))
     .limit(1);
-  return (job?.skippedModules as string[]) ?? [];
+  return ((job?.skippedModules as string[]) ?? []).map(camelToKebab);
 }
 
 // step-once 메모리 플래그 — 다음 게이트 호출 시 강제 정지

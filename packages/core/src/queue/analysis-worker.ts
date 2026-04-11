@@ -65,7 +65,7 @@ export function createAnalysisWorker(): Worker {
         // 분석 완료 후 작업 상태 업데이트 (재실행 시에도 상태 반영)
         const realFailed = result.failedModules.filter((m) => {
           const r = result.results[m];
-          return r?.errorMessage !== '사용자에 의해 스킵됨';
+          return r?.status !== 'skipped';
         });
         const finalStatus = result.cancelledByUser
           ? 'cancelled'
