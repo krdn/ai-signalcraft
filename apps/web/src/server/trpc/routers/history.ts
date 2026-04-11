@@ -2,6 +2,7 @@ import { z } from 'zod';
 import {
   collectionJobs,
   users,
+  teamMembers,
   deleteJob,
   deleteJobs,
   cleanupOldJobs,
@@ -140,15 +141,22 @@ export const historyRouter = router({
       };
     }),
 
-  // 스코프 범위 내의 실행자(사용자) 목록 조회 — 필터 드롭다운용
-  // admin/leader: 팀 범위, super_admin: 전체
+  // 스코프 범위 내의 사용자 목록 조회 — 필터 드롭다운용
+  //
+  // 반환 소스 전략:
+  //   - super_admin + scope='all' → users 테이블 전체 (collection_jobs 기록 유무 무관)
+  //   - 그 외 (admin/leader, team 스코프) → 스코프 내 collection_jobs 실행자 DISTINCT
+  //
+  // 'collection_jobs 기록이 있는 사용자만'이 원칙이지만,
+  // 레거시 데이터에서 user_id가 NULL인 row가 많아 드롭다운이 비는 문제를 방지하기 위해
+  // super_admin은 users 테이블을 직접 조회해 안전망을 제공한다.
   listScopeUsers: protectedProcedure
     .input(
       z.object({
         scope: z.enum(['team', 'all']).default('team'),
       }),
     )
-    .query(async ({ input, ctx }) => {
+    .query(async ({ ctx }) => {
       const userRole = ctx.session.user.role as string | undefined;
       const [me] = await ctx.db
         .select({ systemRole: users.systemRole })
@@ -166,42 +174,91 @@ export const historyRouter = router({
         });
       }
 
-      // all 스코프는 super_admin만
-      const effectiveScope: 'team' | 'all' = input.scope === 'all' && isSuperAdmin ? 'all' : 'team';
+      // super_admin은 항상 'all' 취급 (teamId가 없는 경우가 많아 team 제한은 부적합)
+      // 입력 scope는 서버가 항상 권한에 맞게 재결정
+      const effectiveScope: 'team' | 'all' = isSuperAdmin ? 'all' : 'team';
 
-      // collection_jobs의 실행자 DISTINCT + users 조인
-      const baseQuery = ctx.db
-        .selectDistinct({
-          userId: collectionJobs.userId,
-          userName: users.name,
-          userEmail: users.email,
-          userRole: users.role,
-          userSystemRole: users.systemRole,
-        })
-        .from(collectionJobs)
-        .innerJoin(users, eq(collectionJobs.userId, users.id));
+      type UserRow = {
+        id: string;
+        name: string;
+        email: string | null;
+        role: string | null;
+        systemRole: string | null;
+      };
 
-      const rows =
-        effectiveScope === 'team' && ctx.teamId
-          ? await baseQuery.where(eq(collectionJobs.teamId, ctx.teamId))
-          : effectiveScope === 'team'
-            ? await baseQuery.where(sql`false`) // 팀 정보 없으면 빈 결과
-            : await baseQuery;
+      let rows: UserRow[] = [];
+
+      if (effectiveScope === 'all') {
+        // super_admin: users 테이블 전체 직접 조회 (비활성 포함은 이후 정책)
+        const allUsers = await ctx.db
+          .select({
+            id: users.id,
+            name: users.name,
+            email: users.email,
+            role: users.role,
+            systemRole: users.systemRole,
+          })
+          .from(users);
+        rows = allUsers.map((u) => ({
+          id: u.id,
+          name: u.name ?? u.email ?? '(이름 없음)',
+          email: u.email ?? null,
+          role: u.role ?? null,
+          systemRole: u.systemRole ?? null,
+        }));
+      } else {
+        // admin/leader: 소속 팀의 collection_jobs 실행자 DISTINCT
+        if (ctx.teamId) {
+          const teamRows = await ctx.db
+            .selectDistinct({
+              userId: collectionJobs.userId,
+              userName: users.name,
+              userEmail: users.email,
+              userRole: users.role,
+              userSystemRole: users.systemRole,
+            })
+            .from(collectionJobs)
+            .innerJoin(users, eq(collectionJobs.userId, users.id))
+            .where(eq(collectionJobs.teamId, ctx.teamId));
+          rows = teamRows
+            .filter((r): r is typeof r & { userId: string } => !!r.userId)
+            .map((r) => ({
+              id: r.userId,
+              name: r.userName ?? r.userEmail ?? '(이름 없음)',
+              email: r.userEmail ?? null,
+              role: r.userRole ?? null,
+              systemRole: r.userSystemRole ?? null,
+            }));
+        }
+
+        // 팀에 기록이 없으면 team_members에서라도 목록 확보
+        if (rows.length === 0 && ctx.teamId) {
+          const teamMates = await ctx.db
+            .select({
+              id: users.id,
+              name: users.name,
+              email: users.email,
+              role: users.role,
+              systemRole: users.systemRole,
+            })
+            .from(users)
+            .innerJoin(teamMembers, eq(teamMembers.userId, users.id))
+            .where(eq(teamMembers.teamId, ctx.teamId));
+          rows = teamMates.map((u) => ({
+            id: u.id,
+            name: u.name ?? u.email ?? '(이름 없음)',
+            email: u.email ?? null,
+            role: u.role ?? null,
+            systemRole: u.systemRole ?? null,
+          }));
+        }
+      }
 
       return {
         scope: effectiveScope,
         isSuperAdmin,
         isTeamAdmin,
-        users: rows
-          .filter((r): r is typeof r & { userId: string } => !!r.userId)
-          .map((r) => ({
-            id: r.userId,
-            name: r.userName ?? '(이름 없음)',
-            email: r.userEmail ?? null,
-            role: r.userRole ?? null,
-            systemRole: r.userSystemRole ?? null,
-          }))
-          .sort((a, b) => a.name.localeCompare(b.name, 'ko')),
+        users: rows.sort((a, b) => a.name.localeCompare(b.name, 'ko')),
       };
     }),
 
