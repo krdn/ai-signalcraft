@@ -251,7 +251,7 @@ export function LandingContent() {
               <div className="text-sm text-muted-foreground">데이터 소스</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-primary">18개</div>
+              <div className="text-2xl font-bold text-primary">57개</div>
               <div className="text-sm text-muted-foreground">AI 분석 모듈</div>
             </div>
             <div className="text-center">
@@ -481,7 +481,7 @@ export function LandingContent() {
       <section className="py-20 md:py-28">
         <div className="mx-auto max-w-6xl px-4">
           <div className="mb-12 text-center">
-            <h2 className="mb-4 text-3xl font-bold md:text-4xl">51개 AI 분석 모듈</h2>
+            <h2 className="mb-4 text-3xl font-bold md:text-4xl">57개 AI 분석 모듈</h2>
             <p className="text-muted-foreground">
               단순 감정 분석을 넘어, 도메인별 전문 이론에 기반한 전략적 인사이트를 단계별로
               도출합니다.
