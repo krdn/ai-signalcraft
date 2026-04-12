@@ -6,12 +6,17 @@ import { AlertCircle, Brain } from 'lucide-react';
 import { AdvancedHelp, AdvancedCardHelp, ADVANCED_HELP } from './advanced-help';
 import { ApprovalRatingCard } from './approval-rating-card';
 import { CrisisScenarios } from './crisis-scenarios';
+import { CrisisTypeClassifierCard } from './crisis-type-classifier-card';
+import { CsrCommunicationGapCard } from './csr-communication-gap-card';
 import { FanLoyaltyCard } from './fan-loyalty-card';
 import { FandomCrisisCard } from './fandom-crisis-card';
 import { FrameWarChart } from './frame-war-chart';
 import { FrameWarGraph } from './frame-war-graph';
+import { MediaFramingDominanceCard } from './media-framing-dominance-card';
 import { NarrativeWarChart } from './narrative-war-chart';
 import { ReleasePredictionCard } from './release-prediction-card';
+import { ReputationIndexCard } from './reputation-index-card';
+import { ReputationRecoverySimulationCard } from './reputation-recovery-simulation-card';
 import { WinSimulationCard } from './win-simulation-card';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -37,7 +42,21 @@ const FANDOM_ADVN_MODULES = [
   'fandom-crisis-scenario',
   'release-reception-prediction',
 ];
-const ALL_ADVN_MODULES = [...POLITICAL_ADVN_MODULES, ...FANDOM_ADVN_MODULES];
+const CORPORATE_ADVN_MODULES = [
+  'stakeholder-map',
+  'esg-sentiment',
+  'reputation-index',
+  'crisis-type-classifier',
+  'media-framing-dominance',
+  'csr-communication-gap',
+  'crisis-scenario',
+  'reputation-recovery-simulation',
+];
+const ALL_ADVN_MODULES = [
+  ...POLITICAL_ADVN_MODULES,
+  ...FANDOM_ADVN_MODULES,
+  ...CORPORATE_ADVN_MODULES,
+];
 
 // 모듈별 결과를 파싱하는 유틸
 function parseModuleResult(
@@ -49,9 +68,10 @@ function parseModuleResult(
 }
 
 // 모듈 이름으로 도메인 감지
-function detectDomain(moduleResults: Array<{ module: string }>): 'political' | 'fandom' {
+function detectDomain(moduleResults: Array<{ module: string }>): 'political' | 'fandom' | 'corporate' {
   const modules = moduleResults.map((r) => r.module);
   if (modules.some((m) => FANDOM_ADVN_MODULES.includes(m))) return 'fandom';
+  if (modules.some((m) => CORPORATE_ADVN_MODULES.includes(m))) return 'corporate';
   return 'political';
 }
 
@@ -156,6 +176,52 @@ export function AdvancedView({ jobId, fetchFn }: AdvancedViewProps) {
           <ReleasePredictionCard
             data={parseModuleResult(moduleResults, 'release-reception-prediction') ?? null}
           />
+        </div>
+      ) : domain === 'corporate' ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <ReputationIndexCard
+            data={parseModuleResult(moduleResults, 'reputation-index') ?? null}
+          />
+          <CrisisTypeClassifierCard
+            data={parseModuleResult(moduleResults, 'crisis-type-classifier') ?? null}
+          />
+          <MediaFramingDominanceCard
+            data={parseModuleResult(moduleResults, 'media-framing-dominance') ?? null}
+          />
+          <CsrCommunicationGapCard
+            data={parseModuleResult(moduleResults, 'csr-communication-gap') ?? null}
+          />
+          <CrisisScenarios
+            data={parseModuleResult(moduleResults, 'crisis-scenario') ?? null}
+          />
+          <ReputationRecoverySimulationCard
+            data={parseModuleResult(moduleResults, 'reputation-recovery-simulation') ?? null}
+          />
+
+          {/* 리스크 연쇄 그래프 */}
+          {(() => {
+            const riskData = parseModuleResult(moduleResults, 'risk-map');
+            if (!riskData) return null;
+            try {
+              const graphData = buildRiskChainGraph(riskData as any);
+              if (graphData.nodes.length === 0) return null;
+              return (
+                <Card className="min-h-[320px]">
+                  <CardHeader>
+                    <CardTitle className="text-lg font-semibold flex items-center gap-1.5">
+                      리스크 연쇄 다이어그램
+                      <AdvancedCardHelp {...ADVANCED_HELP.riskChainGraph} />
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <FrameWarGraph data={graphData} width={600} height={400} />
+                  </CardContent>
+                </Card>
+              );
+            } catch {
+              return null;
+            }
+          })()}
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
