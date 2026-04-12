@@ -96,7 +96,7 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
   const [maxYoutubeVideos, setMaxYoutubeVideos] = useState(50);
   const [maxCommunityPosts, setMaxCommunityPosts] = useState(50);
   const [maxCommentsPerItem, setMaxCommentsPerItem] = useState(500);
-  const [optimizationPreset, setOptimizationPreset] = useState<OptimizationPreset>('rag_standard');
+  const [optimizationPreset, setOptimizationPreset] = useState<OptimizationPreset>('rag-standard');
   const [breakpoints, setBreakpoints] = useState<BreakpointValue[]>([]);
 
   // 클라이언트 마운트 후 실제 날짜 설정 (hydration mismatch 방지)
