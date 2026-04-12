@@ -588,15 +588,14 @@ export function distillForReputationRecovery(priorResults: PriorResults): string
     const spread =
       crisisScenario.scenarios.find((s: any) => s.type === 'spread') ?? crisisScenario.scenarios[0]; // eslint-disable-line @typescript-eslint/no-explicit-any
     if (spread)
-      lines.push(
-        `- 확산 시나리오: ${spread.title ?? spread.type} — ${spread.probability ?? ''}%`,
-      );
+      lines.push(`- 확산 시나리오: ${spread.title ?? spread.type} — ${spread.probability ?? ''}%`);
   }
 
   // 회복 장애 조건
   if (riskMap?.topRisks?.length) {
     lines.push(`\n### 회복 장애 조건 (risk-map)`);
-    riskMap.topRisks.slice(0, 3).forEach((r: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+    riskMap.topRisks.slice(0, 3).forEach((r: any) => {
+      // eslint-disable-line @typescript-eslint/no-explicit-any
       lines.push(`- ${r.title}: ${r.description?.slice(0, 80) ?? ''}`);
     });
   }

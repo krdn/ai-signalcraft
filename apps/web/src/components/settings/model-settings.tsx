@@ -347,7 +347,11 @@ const MODULE_META: Record<string, ModuleMeta> = {
       '긴급 대응 필요 이해관계자 우선순위 결정',
       '2×2 권력-관심 매트릭스 구성',
     ],
-    recommended: { provider: 'gemini', model: 'gemini-2.5-flash', reason: '이해관계자 분류 작업에 비용 효율적' },
+    recommended: {
+      provider: 'gemini',
+      model: 'gemini-2.5-flash',
+      reason: '이해관계자 분류 작업에 비용 효율적',
+    },
     costTip: '구조화된 분류 작업이므로 경량 모델로도 정확합니다.',
     domain: 'corporate',
   },
@@ -361,7 +365,11 @@ const MODULE_META: Record<string, ModuleMeta> = {
       '규제기관 관련 언급 및 리스크 수준',
       'ESG 개선 기회 식별',
     ],
-    recommended: { provider: 'gemini', model: 'gemini-2.5-flash', reason: '3차원 분류 작업에 비용 효율적' },
+    recommended: {
+      provider: 'gemini',
+      model: 'gemini-2.5-flash',
+      reason: '3차원 분류 작업에 비용 효율적',
+    },
     costTip: 'ESG 언급이 없는 차원은 자동으로 중립(50점) 처리됩니다.',
     domain: 'corporate',
   },
@@ -411,7 +419,11 @@ const MODULE_META: Record<string, ModuleMeta> = {
       '기업 공식 메시지의 언론 반영도 (0~100)',
       '의제 주도권 판단 (company-led/media-led/public-led/contested)',
     ],
-    recommended: { provider: 'gemini', model: 'gemini-2.5-flash', reason: '프레임 분류에 비용 효율적' },
+    recommended: {
+      provider: 'gemini',
+      model: 'gemini-2.5-flash',
+      reason: '프레임 분류에 비용 효율적',
+    },
     costTip: '병렬 실행 모듈로 처리 속도가 빠릅니다.',
     domain: 'corporate',
   },
@@ -1004,8 +1016,18 @@ export function ModelSettings() {
               </strong>
             </span>
             <span>
-              ({({ fandom: '팬덤', policy: '정책', corporate: '기업', pr: 'PR', finance: '금융', healthcare: '헬스케어' } as Record<string, string>)[PRESET_DOMAIN_MAP[selectedPresetSlug]?.domain] ?? '정치'} 도메인
-              — {getModulesForPreset(selectedPresetSlug).length}개 모듈)
+              (
+              {(
+                {
+                  fandom: '팬덤',
+                  policy: '정책',
+                  corporate: '기업',
+                  pr: 'PR',
+                  finance: '금융',
+                  healthcare: '헬스케어',
+                } as Record<string, string>
+              )[PRESET_DOMAIN_MAP[selectedPresetSlug]?.domain] ?? '정치'}{' '}
+              도메인 — {getModulesForPreset(selectedPresetSlug).length}개 모듈)
             </span>
             <button
               onClick={() => setSelectedPresetSlug(null)}
@@ -1241,7 +1263,17 @@ export function ModelSettings() {
                       color: currentDomain === 'fandom' ? 'rgb(139,92,246)' : 'hsl(var(--primary))',
                     }}
                   >
-                    {({ fandom: '팬덤 전용', policy: '정책 전용', corporate: '기업 전용', pr: 'PR 전용', finance: '금융 전용', healthcare: '헬스케어 전용' } as Record<string, string>)[currentDomain ?? ''] ?? '정치 전용'} 모듈
+                    {(
+                      {
+                        fandom: '팬덤 전용',
+                        policy: '정책 전용',
+                        corporate: '기업 전용',
+                        pr: 'PR 전용',
+                        finance: '금융 전용',
+                        healthcare: '헬스케어 전용',
+                      } as Record<string, string>
+                    )[currentDomain ?? ''] ?? '정치 전용'}{' '}
+                    모듈
                   </p>
                   <div className="flex-1 border-t" />
                 </div>
@@ -1305,7 +1337,16 @@ function ModuleCard({
             <Badge
               className={`text-[9px] ${domain === 'fandom' ? 'bg-violet-500/15 text-violet-500 border-violet-500/20' : domain === 'corporate' ? 'bg-sky-500/15 text-sky-600 border-sky-500/20' : domain === 'pr' ? 'bg-orange-500/15 text-orange-600 border-orange-500/20' : domain === 'policy' ? 'bg-indigo-500/15 text-indigo-600 border-indigo-500/20' : 'bg-blue-500/15 text-blue-500 border-blue-500/20'}`}
             >
-              {({ fandom: '팬덤', policy: '정책', corporate: '기업', pr: 'PR', finance: '금융', healthcare: '헬스케어' } as Record<string, string>)[domain] ?? '정치'}
+              {(
+                {
+                  fandom: '팬덤',
+                  policy: '정책',
+                  corporate: '기업',
+                  pr: 'PR',
+                  finance: '금융',
+                  healthcare: '헬스케어',
+                } as Record<string, string>
+              )[domain] ?? '정치'}
             </Badge>
           )}
           <span className="text-xs font-mono text-muted-foreground">{item.moduleName}</span>

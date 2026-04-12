@@ -126,9 +126,7 @@ export function CatalystScenarioCard({ data }: CatalystScenarioCardProps) {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
                     {config.icon}
-                    <span className="text-xs font-medium">
-                      {scenario.typeName || config.label}
-                    </span>
+                    <span className="text-xs font-medium">{scenario.typeName || config.label}</span>
                     {isLikely && (
                       <Badge className="text-[10px] px-1.5 py-0 bg-primary/10 text-primary border-primary/20 border">
                         유력
@@ -169,7 +167,9 @@ export function CatalystScenarioCard({ data }: CatalystScenarioCardProps) {
                 {parsed.noiseVsSignal.isCurrentMoveNoise ? '⚡ 단기 노이즈' : '📊 구조적 시그널'}
               </span>
             </div>
-            <p className="text-muted-foreground leading-relaxed">{parsed.noiseVsSignal.reasoning}</p>
+            <p className="text-muted-foreground leading-relaxed">
+              {parsed.noiseVsSignal.reasoning}
+            </p>
           </div>
         )}
 

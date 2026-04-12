@@ -57,17 +57,18 @@ metrics:
 
 ## Commits
 
-| Hash | Message |
-|------|---------|
-| cd7fd39 | feat: AI 설정 UI에 corporate 도메인 및 신규 모듈 8개 추가 |
+| Hash    | Message                                                                 |
+| ------- | ----------------------------------------------------------------------- |
+| cd7fd39 | feat: AI 설정 UI에 corporate 도메인 및 신규 모듈 8개 추가               |
 | a2e51d7 | feat: corporate 도메인 도움말 — Stage 4 모듈 8개 및 이론 5개로 업데이트 |
-| cad047f | feat: corporate ADVN 모듈 7개 고급 도움말 추가 |
+| cad047f | feat: corporate ADVN 모듈 7개 고급 도움말 추가                          |
 
 ## Deviations from Plan
 
 ### Auto-fixed Issues
 
 **1. [Rule 1 - Bug] PRESET_DOMAIN_MAP.corporate_reputation 도메인 오류 수정**
+
 - **Found during:** Task 1
 - **Issue:** `corporate_reputation` 프리셋이 `domain: 'political'`로 잘못 매핑되어 있어, 기업 평판 프리셋 선택 시 정치 도메인 모듈이 표시되는 버그
 - **Fix:** `domain: 'corporate'`로 수정 (1-D 작업 명세와 동일)
@@ -88,17 +89,18 @@ metrics:
 
 ## Superpowers 호출 기록
 
-| # | 스킬명 | 호출 시점 | 결과 요약 |
-|---|--------|----------|----------|
-| - | - | - | - |
+| #   | 스킬명 | 호출 시점 | 결과 요약 |
+| --- | ------ | --------- | --------- |
+| -   | -      | -         | -         |
 
 ### 미호출 스킬 사유
-| 스킬명 | 미호출 사유 |
-|--------|-----------|
-| superpowers:brainstorming | 명확한 명세 제공으로 브레인스토밍 불필요 |
-| superpowers:test-driven-development | UI 데이터 파일 수정으로 TDD 적용 범위 외 |
-| superpowers:systematic-debugging | 버그 미발생 (Rule 1 수정은 명세에 포함된 작업) |
-| superpowers:requesting-code-review | 데이터 파일 수정으로 코드 리뷰 생략 |
+
+| 스킬명                              | 미호출 사유                                    |
+| ----------------------------------- | ---------------------------------------------- |
+| superpowers:brainstorming           | 명확한 명세 제공으로 브레인스토밍 불필요       |
+| superpowers:test-driven-development | UI 데이터 파일 수정으로 TDD 적용 범위 외       |
+| superpowers:systematic-debugging    | 버그 미발생 (Rule 1 수정은 명세에 포함된 작업) |
+| superpowers:requesting-code-review  | 데이터 파일 수정으로 코드 리뷰 생략            |
 
 ## Self-Check: PASSED
 

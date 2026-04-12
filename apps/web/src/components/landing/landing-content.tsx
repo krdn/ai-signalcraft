@@ -45,7 +45,10 @@ import { buttonVariants } from '@/components/ui/button';
 export function LandingContent() {
   const { data: session } = useSession();
   const isLoggedIn = !!session?.user;
-  const [selectedUseCase, setSelectedUseCase] = useState<{ title: string; domainId?: string } | null>(null);
+  const [selectedUseCase, setSelectedUseCase] = useState<{
+    title: string;
+    domainId?: string;
+  } | null>(null);
   const selectedDetail = selectedUseCase ? (USE_CASE_DETAILS[selectedUseCase.title] ?? null) : null;
   const [selectedDomainId, setSelectedDomainId] = useState<string | null>(null);
   const selectedDomainHelp = selectedDomainId ? (DOMAIN_HELP_DATA[selectedDomainId] ?? null) : null;
@@ -892,7 +895,13 @@ export function LandingContent() {
                     <Card
                       key={uc.title}
                       className="group cursor-pointer transition-all hover:border-primary/30 hover:shadow-md"
-                      onClick={() => setSelectedUseCase({ title: uc.title, domainId: 'domainId' in uc ? (uc as { domainId?: string }).domainId : undefined })}
+                      onClick={() =>
+                        setSelectedUseCase({
+                          title: uc.title,
+                          domainId:
+                            'domainId' in uc ? (uc as { domainId?: string }).domainId : undefined,
+                        })
+                      }
                     >
                       <CardHeader>
                         <div className="mb-2 flex size-10 items-center justify-center rounded-lg bg-primary/10 transition-colors group-hover:bg-primary/20">

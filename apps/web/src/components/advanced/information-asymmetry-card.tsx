@@ -103,7 +103,9 @@ export function InformationAsymmetryCard({ data }: InformationAsymmetryCardProps
               {parsed.informationCascades.slice(0, 2).map((cascade, i) => (
                 <div key={i} className="rounded border px-2.5 py-2 space-y-1 text-xs">
                   <div className="flex items-center gap-1.5">
-                    <Badge className={`text-[10px] px-1 py-0 border ${LEVEL_CONFIG[cascade.magnitude].className}`}>
+                    <Badge
+                      className={`text-[10px] px-1 py-0 border ${LEVEL_CONFIG[cascade.magnitude].className}`}
+                    >
                       {LEVEL_CONFIG[cascade.magnitude].label}
                     </Badge>
                     <span className="text-muted-foreground">발원: {cascade.origin}</span>
@@ -135,7 +137,9 @@ export function InformationAsymmetryCard({ data }: InformationAsymmetryCardProps
                       <span>선행 {ind.lagTime}</span>
                     </div>
                   </div>
-                  <Badge className={`text-[10px] px-1 py-0 border shrink-0 ${LEVEL_CONFIG[ind.significance].className}`}>
+                  <Badge
+                    className={`text-[10px] px-1 py-0 border shrink-0 ${LEVEL_CONFIG[ind.significance].className}`}
+                  >
                     {LEVEL_CONFIG[ind.significance].label}
                   </Badge>
                 </div>

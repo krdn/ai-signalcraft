@@ -138,9 +138,7 @@ export function MarketSentimentIndexCard({ data }: MarketSentimentIndexCardProps
           <div className="flex items-center justify-between">
             <span className="text-xs text-muted-foreground">공포 (0)</span>
             <div className="flex items-center gap-1.5">
-              <span className={`text-3xl font-bold tabular-nums ${config.color}`}>
-                {indexPct}
-              </span>
+              <span className={`text-3xl font-bold tabular-nums ${config.color}`}>{indexPct}</span>
               <span className="text-sm text-muted-foreground">/100</span>
             </div>
             <span className="text-xs text-muted-foreground">탐욕 (100)</span>
@@ -170,7 +168,9 @@ export function MarketSentimentIndexCard({ data }: MarketSentimentIndexCardProps
               {parsed.investorSegmentSentiment.map((seg, i) => (
                 <div key={i} className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">{seg.segment}</span>
-                  <Badge className={`text-[10px] px-1.5 py-0 border ${SEGMENT_SENTIMENT_BADGE[seg.sentiment]}`}>
+                  <Badge
+                    className={`text-[10px] px-1.5 py-0 border ${SEGMENT_SENTIMENT_BADGE[seg.sentiment]}`}
+                  >
                     {SEGMENT_SENTIMENT_LABEL[seg.sentiment]}
                   </Badge>
                 </div>

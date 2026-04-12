@@ -162,7 +162,9 @@ export function ReputationIndexCard({ data }: ReputationIndexCardProps) {
             <div className="space-y-1.5">
               {topPerceptions.map((p, i) => (
                 <div key={i} className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground w-16 shrink-0">{p.stakeholder}</span>
+                  <span className="text-xs text-muted-foreground w-16 shrink-0">
+                    {p.stakeholder}
+                  </span>
                   <Badge
                     variant="outline"
                     className={`text-[10px] px-1.5 py-0 ${SENTIMENT_COLOR[p.sentiment ?? 'neutral']}`}
@@ -191,7 +193,13 @@ export function ReputationIndexCard({ data }: ReputationIndexCardProps) {
                     variant="outline"
                     className={`text-[10px] px-1.5 py-0 shrink-0 mt-0.5 ${SEVERITY_COLOR[gap.severity ?? 'medium']}`}
                   >
-                    {gap.severity === 'critical' ? '긴급' : gap.severity === 'high' ? '높음' : gap.severity === 'medium' ? '중간' : '낮음'}
+                    {gap.severity === 'critical'
+                      ? '긴급'
+                      : gap.severity === 'high'
+                        ? '높음'
+                        : gap.severity === 'medium'
+                          ? '중간'
+                          : '낮음'}
                   </Badge>
                   <p className="text-xs text-muted-foreground leading-tight">{gap.gap}</p>
                 </div>

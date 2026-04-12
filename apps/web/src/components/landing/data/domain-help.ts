@@ -175,7 +175,8 @@ export const DOMAIN_HELP_DATA: Record<string, DomainHelpData> = {
           },
           {
             name: '미디어 프레임 의제 설정력',
-            description: 'Entman(1993) Framing Theory — 언론 vs 댓글 프레임 간극 + 기업 메시지 반영도',
+            description:
+              'Entman(1993) Framing Theory — 언론 vs 댓글 프레임 간극 + 기업 메시지 반영도',
           },
           {
             name: 'CSR 공약 진정성 간극',

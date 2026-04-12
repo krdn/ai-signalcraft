@@ -45,7 +45,10 @@ interface InvestmentSignalCardProps {
   data: Record<string, unknown> | null;
 }
 
-const SIGNAL_CONFIG: Record<SignalType, { label: string; color: string; badgeClass: string; icon: React.ReactNode }> = {
+const SIGNAL_CONFIG: Record<
+  SignalType,
+  { label: string; color: string; badgeClass: string; icon: React.ReactNode }
+> = {
   'strong-buy': {
     label: '강력 매수',
     color: 'text-green-700',
@@ -122,9 +125,7 @@ export function InvestmentSignalCard({ data }: InvestmentSignalCardProps) {
           <div className="flex items-center gap-2">
             {overallConfig.icon}
             <div>
-              <p className={`text-base font-bold ${overallConfig.color}`}>
-                {overallConfig.label}
-              </p>
+              <p className={`text-base font-bold ${overallConfig.color}`}>{overallConfig.label}</p>
               <p className="text-[10px] text-muted-foreground">여론 기반 · 투자 자문 아님</p>
             </div>
           </div>
@@ -158,7 +159,9 @@ export function InvestmentSignalCard({ data }: InvestmentSignalCardProps) {
             return (
               <div key={label} className="rounded border px-2.5 py-2 space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] text-muted-foreground">{label} ({horizon.timeframe})</span>
+                  <span className="text-[10px] text-muted-foreground">
+                    {label} ({horizon.timeframe})
+                  </span>
                   <Badge className={`text-[10px] px-1 py-0 border ${hConfig.badgeClass}`}>
                     {hConfig.label}
                   </Badge>
@@ -175,7 +178,8 @@ export function InvestmentSignalCard({ data }: InvestmentSignalCardProps) {
             <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" />
             <div>
               <p className="font-medium text-amber-700">
-                극단적 심리 경고 ({parsed.sentimentExtremeWarning.direction === 'euphoric' ? '과열' : '공황'})
+                극단적 심리 경고 (
+                {parsed.sentimentExtremeWarning.direction === 'euphoric' ? '과열' : '공황'})
               </p>
               <p className="text-muted-foreground mt-0.5 leading-relaxed">
                 {parsed.sentimentExtremeWarning.contraindicatorSignal}
@@ -191,13 +195,15 @@ export function InvestmentSignalCard({ data }: InvestmentSignalCardProps) {
             <div className="space-y-1">
               {parsed.signalComponents.slice(0, 3).map((comp, i) => (
                 <div key={i} className="flex items-center gap-2 text-xs">
-                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                    comp.signal === 'positive'
-                      ? 'bg-green-500'
-                      : comp.signal === 'negative'
-                        ? 'bg-red-500'
-                        : 'bg-gray-400'
-                  }`} />
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                      comp.signal === 'positive'
+                        ? 'bg-green-500'
+                        : comp.signal === 'negative'
+                          ? 'bg-red-500'
+                          : 'bg-gray-400'
+                    }`}
+                  />
                   <span className="flex-1 text-muted-foreground">{comp.component}</span>
                   <span className={`font-medium ${COMPONENT_SIGNAL_COLOR[comp.signal]}`}>
                     {Math.round(comp.weight * 100)}%

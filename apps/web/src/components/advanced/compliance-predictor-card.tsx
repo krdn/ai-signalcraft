@@ -79,7 +79,12 @@ export function CompliancePredictorCard({ data }: CompliancePredictorCardProps) 
 
   const prob = result.overallComplianceProbability ?? 50;
   const probColor = prob >= 70 ? 'text-green-600' : prob >= 40 ? 'text-yellow-600' : 'text-red-600';
-  const probBg = prob >= 70 ? 'bg-green-500/10 border-green-500/20' : prob >= 40 ? 'bg-yellow-500/10 border-yellow-500/20' : 'bg-red-500/10 border-red-500/20';
+  const probBg =
+    prob >= 70
+      ? 'bg-green-500/10 border-green-500/20'
+      : prob >= 40
+        ? 'bg-yellow-500/10 border-yellow-500/20'
+        : 'bg-red-500/10 border-red-500/20';
 
   const hbmFactors = result.hbmFactors;
 
@@ -109,26 +114,35 @@ export function CompliancePredictorCard({ data }: CompliancePredictorCardProps) 
           <div>
             <p className="text-xs font-medium text-muted-foreground mb-2">HBM 핵심 요인</p>
             <div className="grid grid-cols-2 gap-2">
-              {(Object.entries(HBM_FACTOR_LABELS) as [keyof typeof hbmFactors, string][]).map(([key, label]) => {
-                const factor = hbmFactors[key] as { level: 'high' | 'medium' | 'low'; evidence: string } | undefined;
-                if (!factor) return null;
-                const config = LEVEL_CONFIG[factor.level] ?? LEVEL_CONFIG.medium;
-                const LevelIcon = factor.level === 'high' ? ChevronUp : factor.level === 'low' ? ChevronDown : null;
-                return (
-                  <div key={key} className={`rounded border p-2 text-xs ${config.bgColor}`}>
-                    <div className="flex items-center justify-between mb-0.5">
-                      <span className="font-medium text-foreground">{label}</span>
-                      <span className={`font-semibold flex items-center gap-0.5 ${config.color}`}>
-                        {LevelIcon && <LevelIcon className="h-3 w-3" />}
-                        {config.label}
-                      </span>
+              {(Object.entries(HBM_FACTOR_LABELS) as [keyof typeof hbmFactors, string][]).map(
+                ([key, label]) => {
+                  const factor = hbmFactors[key] as
+                    | { level: 'high' | 'medium' | 'low'; evidence: string }
+                    | undefined;
+                  if (!factor) return null;
+                  const config = LEVEL_CONFIG[factor.level] ?? LEVEL_CONFIG.medium;
+                  const LevelIcon =
+                    factor.level === 'high'
+                      ? ChevronUp
+                      : factor.level === 'low'
+                        ? ChevronDown
+                        : null;
+                  return (
+                    <div key={key} className={`rounded border p-2 text-xs ${config.bgColor}`}>
+                      <div className="flex items-center justify-between mb-0.5">
+                        <span className="font-medium text-foreground">{label}</span>
+                        <span className={`font-semibold flex items-center gap-0.5 ${config.color}`}>
+                          {LevelIcon && <LevelIcon className="h-3 w-3" />}
+                          {config.label}
+                        </span>
+                      </div>
+                      {factor.evidence && (
+                        <p className="text-muted-foreground line-clamp-2">{factor.evidence}</p>
+                      )}
                     </div>
-                    {factor.evidence && (
-                      <p className="text-muted-foreground line-clamp-2">{factor.evidence}</p>
-                    )}
-                  </div>
-                );
-              })}
+                  );
+                },
+              )}
             </div>
           </div>
         )}

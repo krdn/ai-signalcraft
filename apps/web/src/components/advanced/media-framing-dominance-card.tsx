@@ -46,9 +46,7 @@ function getContestLevelBadge(level: string) {
         <Badge className="bg-green-500/10 text-green-500 border-green-500/20">단일 지배</Badge>
       );
     case 'contested':
-      return (
-        <Badge className="bg-amber-500/10 text-amber-500 border-amber-500/20">경합 중</Badge>
-      );
+      return <Badge className="bg-amber-500/10 text-amber-500 border-amber-500/20">경합 중</Badge>;
     case 'fragmented':
       return <Badge className="bg-red-500/10 text-red-500 border-red-500/20">분산</Badge>;
     default:

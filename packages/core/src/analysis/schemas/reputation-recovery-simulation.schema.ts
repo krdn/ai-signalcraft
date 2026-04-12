@@ -2,18 +2,8 @@ import { z } from 'zod';
 
 export const ReputationRecoverySimulationSchema = z.object({
   recoveryProbability: z.number().min(0).max(100).catch(0).describe('평판 회복 달성 확률 (%)'),
-  targetReputationScore: z
-    .number()
-    .min(0)
-    .max(100)
-    .catch(60)
-    .describe('목표 RepTrak 점수'),
-  baselineScore: z
-    .number()
-    .min(0)
-    .max(100)
-    .catch(0)
-    .describe('현재 reputation-index 기반선 점수'),
+  targetReputationScore: z.number().min(0).max(100).catch(60).describe('목표 RepTrak 점수'),
+  baselineScore: z.number().min(0).max(100).catch(0).describe('현재 reputation-index 기반선 점수'),
   recoveryTimelineMonths: z.number().min(1).catch(12).describe('목표 달성 예상 기간 (개월)'),
   recoveryPhases: z
     .array(

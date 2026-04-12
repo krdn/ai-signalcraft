@@ -64,11 +64,11 @@ const URGENCY_META: Record<string, { label: string; color: string }> = {
 };
 
 const STRATEGY_LABEL: Record<string, string> = {
-  'denial': '부정',
-  'evasion': '책임 회피',
-  'reduction': '비중 축소',
+  denial: '부정',
+  evasion: '책임 회피',
+  reduction: '비중 축소',
   'corrective-action': '수정 행동',
-  'mortification': '완전한 사과',
+  mortification: '완전한 사과',
 };
 
 export function CrisisTypeClassifierCard({ data }: CrisisTypeClassifierCardProps) {
@@ -100,14 +100,14 @@ export function CrisisTypeClassifierCard({ data }: CrisisTypeClassifierCardProps
       <CardContent className="space-y-4">
         {/* 위기 유형 + 책임 수준 */}
         <div className="flex items-start gap-3 rounded-lg border p-3">
-          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${crisisMeta.color}`}>
+          <div
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${crisisMeta.color}`}
+          >
             <CrisisIcon className="h-5 w-5" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm font-semibold">
-                {d.crisisTypeName ?? crisisMeta.label}
-              </span>
+              <span className="text-sm font-semibold">{d.crisisTypeName ?? crisisMeta.label}</span>
               <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${crisisMeta.color}`}>
                 {crisisMeta.label}
               </Badge>
@@ -149,7 +149,9 @@ export function CrisisTypeClassifierCard({ data }: CrisisTypeClassifierCardProps
         {/* 권고 대응 전략 */}
         {topStrategies.length > 0 && (
           <div>
-            <p className="text-xs font-medium text-muted-foreground mb-2">권고 대응 전략 (우선순위순)</p>
+            <p className="text-xs font-medium text-muted-foreground mb-2">
+              권고 대응 전략 (우선순위순)
+            </p>
             <div className="space-y-2">
               {topStrategies.map((s, i) => (
                 <div key={i} className="flex items-start gap-2">
@@ -161,7 +163,10 @@ export function CrisisTypeClassifierCard({ data }: CrisisTypeClassifierCardProps
                       <span className="text-xs font-medium">
                         {s.strategyName ?? STRATEGY_LABEL[s.strategy] ?? s.strategy}
                       </span>
-                      <Badge variant="outline" className="text-[9px] px-1 py-0 text-muted-foreground">
+                      <Badge
+                        variant="outline"
+                        className="text-[9px] px-1 py-0 text-muted-foreground"
+                      >
                         {STRATEGY_LABEL[s.strategy] ?? s.strategy}
                       </Badge>
                     </div>
@@ -182,7 +187,8 @@ export function CrisisTypeClassifierCard({ data }: CrisisTypeClassifierCardProps
           <div className="flex items-start gap-2 rounded-md bg-red-50/50 border border-red-200/50 p-2.5 dark:bg-red-950/20 dark:border-red-900/30">
             <AlertTriangle className="h-3.5 w-3.5 text-red-500 shrink-0 mt-0.5" />
             <p className="text-[10px] text-red-600 dark:text-red-400 leading-tight">
-              예방가능형 위기: 부정(denial) 또는 축소 전략 사용 시 신뢰도 추가 손상 — 완전한 책임 인정과 수정 행동이 최우선입니다.
+              예방가능형 위기: 부정(denial) 또는 축소 전략 사용 시 신뢰도 추가 손상 — 완전한 책임
+              인정과 수정 행동이 최우선입니다.
             </p>
           </div>
         )}

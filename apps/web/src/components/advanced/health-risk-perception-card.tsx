@@ -29,7 +29,11 @@ interface HealthRiskPerceptionData {
   };
   perceptionBiases: PerceptionBias[];
   misinformationPatterns: MisinformationPattern[];
-  communicationRecommendations: { recommendation: string; targetAudience: string; channel: string }[];
+  communicationRecommendations: {
+    recommendation: string;
+    targetAudience: string;
+    channel: string;
+  }[];
   summary: string;
 }
 

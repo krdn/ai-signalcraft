@@ -1,7 +1,7 @@
 ---
 name: add-domain
-description: "AI SignalCraft 분석 도메인 추가 또는 기존 도메인 갱신. 새 분석 유형 추가, 모듈 변경 시 코어+프론트엔드 전체 동기화."
-argument-hint: "[--id <domain-id>] [--name <표시명>] [--tier <1|2|3>] [--update <domain-id>]"
+description: 'AI SignalCraft 분석 도메인 추가 또는 기존 도메인 갱신. 새 분석 유형 추가, 모듈 변경 시 코어+프론트엔드 전체 동기화.'
+argument-hint: '[--id <domain-id>] [--name <표시명>] [--tier <1|2|3>] [--update <domain-id>]'
 allowed-tools:
   - Read
   - Write
@@ -32,10 +32,11 @@ AI SignalCraft 프로젝트에서 새로운 분석 도메인을 추가하거나,
 `sports` | `legal` | `retail`
 
 예시:
+
 - `/add-domain --update corporate` → 기업 평판 관리 도메인 갱신
 - `/add-domain --update finance` → 금융/투자 도메인 갱신
 - `/add-domain --id gaming --name "게임/e스포츠" --tier 2` → 신규 도메인 추가
-</objective>
+  </objective>
 
 <context>
 $ARGUMENTS

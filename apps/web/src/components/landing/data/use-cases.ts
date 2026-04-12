@@ -398,7 +398,12 @@ export const USE_CASE_DETAILS: Record<string, UseCaseDetail> = {
       { step: 'AI가 팬덤 감정·이슈·리스크 분석', detail: '감정 변화 곡선 생성' },
       { step: '매니지먼트 전략 리포트 생성', detail: '대응 시나리오 포함' },
     ],
-    keyModules: ['팬덤 충성도 지수', '팬덤 내러티브 경쟁', '컴백/신곡 반응 예측', '팬덤 위기 시나리오'],
+    keyModules: [
+      '팬덤 충성도 지수',
+      '팬덤 내러티브 경쟁',
+      '컴백/신곡 반응 예측',
+      '팬덤 위기 시나리오',
+    ],
     impactMetrics: [
       { label: '악플 감지', before: '팬 제보 후', after: '확산 초기 자동 감지', icon: Bell },
       { label: '팬덤 분석', before: '정성적 판단', after: '정량적 데이터', icon: BarChart2 },

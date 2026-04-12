@@ -70,10 +70,7 @@ const FINANCE_ADVN_MODULES = [
   'catalyst-scenario',
   'investment-signal',
 ];
-const HEALTHCARE_ADVN_MODULES = [
-  'health-risk-perception',
-  'compliance-predictor',
-];
+const HEALTHCARE_ADVN_MODULES = ['health-risk-perception', 'compliance-predictor'];
 const ALL_ADVN_MODULES = [
   ...POLITICAL_ADVN_MODULES,
   ...FANDOM_ADVN_MODULES,
@@ -93,7 +90,9 @@ function parseModuleResult(
 }
 
 // 모듈 이름으로 도메인 감지
-function detectDomain(moduleResults: Array<{ module: string }>): 'political' | 'fandom' | 'corporate' | 'pr' | 'finance' | 'healthcare' {
+function detectDomain(
+  moduleResults: Array<{ module: string }>,
+): 'political' | 'fandom' | 'corporate' | 'pr' | 'finance' | 'healthcare' {
   const modules = moduleResults.map((r) => r.module);
   if (modules.some((m) => FINANCE_ADVN_MODULES.includes(m))) return 'finance';
   if (modules.some((m) => HEALTHCARE_ADVN_MODULES.includes(m))) return 'healthcare';
@@ -311,9 +310,7 @@ export function AdvancedView({ jobId, fetchFn }: AdvancedViewProps) {
           <CsrCommunicationGapCard
             data={parseModuleResult(moduleResults, 'csr-communication-gap') ?? null}
           />
-          <CrisisScenarios
-            data={parseModuleResult(moduleResults, 'crisis-scenario') ?? null}
-          />
+          <CrisisScenarios data={parseModuleResult(moduleResults, 'crisis-scenario') ?? null} />
           <ReputationRecoverySimulationCard
             data={parseModuleResult(moduleResults, 'reputation-recovery-simulation') ?? null}
           />

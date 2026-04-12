@@ -6,6 +6,7 @@
 ## 트리거
 
 `/add-domain` 명령어 또는 다음 키워드:
+
 - "새 분석 유형 추가"
 - "새 도메인 추가"
 - "분석 도메인 구현"
@@ -31,11 +32,11 @@
 
 ## Tier 가이드
 
-| Tier | 설명 | 공수 | 적합 상황 |
-|------|------|------|---------|
-| 1 | 기존 Stage 4 모듈 전체 재사용 + 시스템 프롬프트 오버라이드만 | 빠름 | 기존 도메인과 유사한 분석 구조 |
-| 2 | 기존 모듈 2개 재사용 + 신규 모듈 2개 | 보통 | 일부 독자적 분석 필요 |
-| 3 | 4개+ 완전 신규 Stage 4 모듈 | 느림 | 완전히 다른 분석 관점 필요 |
+| Tier | 설명                                                         | 공수 | 적합 상황                      |
+| ---- | ------------------------------------------------------------ | ---- | ------------------------------ |
+| 1    | 기존 Stage 4 모듈 전체 재사용 + 시스템 프롬프트 오버라이드만 | 빠름 | 기존 도메인과 유사한 분석 구조 |
+| 2    | 기존 모듈 2개 재사용 + 신규 모듈 2개                         | 보통 | 일부 독자적 분석 필요          |
+| 3    | 4개+ 완전 신규 Stage 4 모듈                                  | 느림 | 완전히 다른 분석 관점 필요     |
 
 ---
 
@@ -66,24 +67,17 @@
 ### Step 2: 코어 파이프라인 수정/생성 파일 목록
 
 **항상 수정 (모든 Tier)**:
+
 1. `packages/core/src/analysis/domain/types.ts` — AnalysisDomain union에 추가
 2. `packages/core/src/analysis/domain/registry.ts` — REGISTRY에 import+추가
 3. `apps/web/src/server/trpc/routers/analysis.ts` — domain enum에 추가
 4. `packages/core/src/analysis/schemas/segmentation.schema.ts` — SEGMENT_TYPES_BY_DOMAIN에 추가
 
-**항상 생성 (모든 Tier)**:
-5. `packages/core/src/analysis/domain/domains/{id}.ts` — DomainConfig 전체
+**항상 생성 (모든 Tier)**: 5. `packages/core/src/analysis/domain/domains/{id}.ts` — DomainConfig 전체
 
-**Tier 2~3 추가 생성**:
-6. `packages/core/src/analysis/schemas/{module-name}.schema.ts` — 신규 모듈 스키마
-7. `packages/core/src/analysis/modules/{id}/{module-name}.ts` — 신규 모듈 구현
-8. `packages/core/src/analysis/modules/prompt-utils.ts` — distillFor{ModuleName} 함수 (필요시)
+**Tier 2~3 추가 생성**: 6. `packages/core/src/analysis/schemas/{module-name}.schema.ts` — 신규 모듈 스키마 7. `packages/core/src/analysis/modules/{id}/{module-name}.ts` — 신규 모듈 구현 8. `packages/core/src/analysis/modules/prompt-utils.ts` — distillFor{ModuleName} 함수 (필요시)
 
-**Tier 2~3 추가 수정**:
-9. `packages/core/src/analysis/types.ts` — MODULE_MODEL_MAP에 신규 모듈 추가
-10. `packages/core/src/analysis/modules/index.ts` — 신규 모듈 export 추가
-11. `packages/core/src/analysis/runner.ts` — MODULE_MAP에 신규 모듈 추가
-12. `packages/core/src/analysis/schemas/index.ts` — 신규 스키마 export 추가
+**Tier 2~3 추가 수정**: 9. `packages/core/src/analysis/types.ts` — MODULE_MODEL_MAP에 신규 모듈 추가 10. `packages/core/src/analysis/modules/index.ts` — 신규 모듈 export 추가 11. `packages/core/src/analysis/runner.ts` — MODULE_MAP에 신규 모듈 추가 12. `packages/core/src/analysis/schemas/index.ts` — 신규 스키마 export 추가
 
 ---
 
@@ -182,7 +176,9 @@ export const {name}Module: AnalysisModule<{Name}Result> = {
 새 도메인 추가 또는 기존 도메인 모듈 변경 시 아래 6개 파일을 **모두** 갱신합니다.
 
 #### 5-A. 프리셋 시드 데이터
+
 파일: `packages/core/src/db/seed-presets.ts`
+
 ```typescript
 {
   slug: '{domain_id_underscore}',  // 예: corporate_reputation
@@ -203,7 +199,9 @@ export const {name}Module: AnalysisModule<{Name}Result> = {
 ```
 
 #### 5-B. 랜딩페이지 사용 사례 카드
+
 파일: `apps/web/src/components/landing/data/use-cases.ts`
+
 ```typescript
 // USE_CASE_CATEGORIES[해당 카테고리].cases 배열에 추가
 {
@@ -217,9 +215,11 @@ export const {name}Module: AnalysisModule<{Name}Result> = {
 ```
 
 #### 5-C. 도움말 모달 데이터
+
 파일: `apps/web/src/components/landing/data/domain-help.ts`
 
 DOMAIN_HELP_DATA 객체에 추가:
+
 ```typescript
 '{domain-id}': {
   id: '{domain-id}',
@@ -249,9 +249,11 @@ DOMAIN_HELP_DATA 객체에 추가:
 ```
 
 #### 5-D. 도메인 배지 색상
+
 파일: `apps/web/src/components/analysis/domain-badge.tsx`
 
 DOMAIN_META 객체에 추가:
+
 ```typescript
 '{domain-id}': { label: '{한글 짧은명}', color: 'bg-{색상}-500/15 text-{색상}-600 border-{색상}-500/20' },
 ```
@@ -267,14 +269,17 @@ DOMAIN_META 객체에 추가:
 | 법률/공공 | slate, gray |
 
 #### 5-E. AI 설정 > 모듈별 모델 UI
+
 파일: `apps/web/src/components/settings/model-settings.tsx`
 
 **5-E-1. ModuleMeta 타입 확장** (domain union에 새 도메인 추가):
+
 ```typescript
 domain?: 'political' | 'fandom' | 'corporate' | '{new-domain}';
 ```
 
 **5-E-2. MODULE_META에 신규 Stage 4 모듈 메타 추가**:
+
 ```typescript
 '{module-id}': {
   name: '{한글 표시명}',
@@ -296,6 +301,7 @@ domain?: 'political' | 'fandom' | 'corporate' | '{new-domain}';
 ```
 
 **5-E-3. DOMAIN_MODULES에 도메인 추가**:
+
 ```typescript
 const DOMAIN_MODULES: Record<string, string[]> = {
   political: [...],
@@ -306,6 +312,7 @@ const DOMAIN_MODULES: Record<string, string[]> = {
 ```
 
 **5-E-4. PRESET_DOMAIN_MAP에 프리셋→도메인 매핑 추가**:
+
 ```typescript
 '{preset_slug}': { domain: '{domain-id}', title: '{표시명}', category: '{카테고리}' },
 ```
@@ -313,9 +320,11 @@ const DOMAIN_MODULES: Record<string, string[]> = {
 **5-E-5. getModulesForPreset 함수 확인** — 신규 도메인이 DOMAIN_MODULES에 없으면 빈 배열 반환하므로 fallback 로직 확인
 
 #### 5-F. 고급 분석 도움말 (Stage 4 모듈별 카드 도움말)
+
 파일: `apps/web/src/components/advanced/advanced-help.tsx`
 
 ADVANCED_HELP 객체에 신규 Stage 4 모듈별 도움말 추가:
+
 ```typescript
 // camelCase로 키 작성 (예: stakeholderMap, mediaFramingDominance)
 {camelCaseModuleName}: {
@@ -435,6 +444,7 @@ pnpm lint
 ```
 
 **갱신 시 체크리스트**:
+
 - [ ] `domain/domains/{id}.ts` — stage4, modulePrompts 최신 상태 확인
 - [ ] `runner.ts` — MODULE_MAP에 신규 모듈 등록 여부
 - [ ] `model-settings.tsx` — DOMAIN_MODULES, MODULE_META 동기화
@@ -466,43 +476,43 @@ export const SEGMENT_TYPES_BY_DOMAIN = {
 
 ## 주요 참고 이론 목록
 
-| 도메인 유형 | 적합한 이론 |
-|------------|-----------|
-| 위기/평판 | SCCT (Coombs, 2007), Image Repair (Benoit, 1997) |
-| 기업/브랜드 | RepTrak (Fombrun, 2004), Stakeholder Theory (Freeman, 1984), SLO (Thomson, 2000) |
-| 정치/정책 | Framing Theory (Entman, 1993), Agenda-Setting (McCombs & Shaw, 1972), ACF (Sabatier, 1993) |
-| 소비자/유통 | Brand Equity (Keller, 1993), Consumer Complaint (Singh, 1988) |
-| 금융/투자 | Behavioral Finance (Kahneman, 1979), Information Cascade (Bikhchandani, 1992) |
-| 의료/공중보건 | HBM (Rosenstock, 1966), Risk Perception (Slovic, 1987) |
-| 스포츠/팬덤 | BIRGing/CORFing (Cialdini, 1976), Fan Engagement Ladder (Hills, 2002) |
-| 교육/공공기관 | Institutional Reputation (Fombrun, 1996), Public Trust (Levi, 2000) |
-| CSR/ESG | Organizational Hypocrisy (Brunsson, 1989), Signaling Theory (Spence, 1973) |
-| 미디어/PR | Media Framing (Entman, 1993), Agenda-Setting (McCombs & Shaw, 1972) |
+| 도메인 유형   | 적합한 이론                                                                                |
+| ------------- | ------------------------------------------------------------------------------------------ |
+| 위기/평판     | SCCT (Coombs, 2007), Image Repair (Benoit, 1997)                                           |
+| 기업/브랜드   | RepTrak (Fombrun, 2004), Stakeholder Theory (Freeman, 1984), SLO (Thomson, 2000)           |
+| 정치/정책     | Framing Theory (Entman, 1993), Agenda-Setting (McCombs & Shaw, 1972), ACF (Sabatier, 1993) |
+| 소비자/유통   | Brand Equity (Keller, 1993), Consumer Complaint (Singh, 1988)                              |
+| 금융/투자     | Behavioral Finance (Kahneman, 1979), Information Cascade (Bikhchandani, 1992)              |
+| 의료/공중보건 | HBM (Rosenstock, 1966), Risk Perception (Slovic, 1987)                                     |
+| 스포츠/팬덤   | BIRGing/CORFing (Cialdini, 1976), Fan Engagement Ladder (Hills, 2002)                      |
+| 교육/공공기관 | Institutional Reputation (Fombrun, 1996), Public Trust (Levi, 2000)                        |
+| CSR/ESG       | Organizational Hypocrisy (Brunsson, 1989), Signaling Theory (Spence, 1973)                 |
+| 미디어/PR     | Media Framing (Entman, 1993), Agenda-Setting (McCombs & Shaw, 1972)                        |
 
 ---
 
 ## 관련 파일 경로 빠른 참조
 
-| 역할 | 파일 경로 |
-|------|---------|
-| 도메인 타입 | `packages/core/src/analysis/domain/types.ts` |
-| 도메인 레지스트리 | `packages/core/src/analysis/domain/registry.ts` |
-| 도메인 설정 | `packages/core/src/analysis/domain/domains/{id}.ts` |
-| 분석 라우터 | `apps/web/src/server/trpc/routers/analysis.ts` |
-| 세그먼트 타입 | `packages/core/src/analysis/schemas/segmentation.schema.ts` |
-| MODULE_MODEL_MAP | `packages/core/src/analysis/types.ts` |
-| MODULE_MAP | `packages/core/src/analysis/runner.ts` |
-| 모듈 index | `packages/core/src/analysis/modules/index.ts` |
-| 스키마 index | `packages/core/src/analysis/schemas/index.ts` |
-| distill 함수 | `packages/core/src/analysis/modules/prompt-utils.ts` |
-| 프리셋 시드 | `packages/core/src/db/seed-presets.ts` |
-| 랜딩 use-cases | `apps/web/src/components/landing/data/use-cases.ts` |
-| 도움말 데이터 | `apps/web/src/components/landing/data/domain-help.ts` |
-| 도메인 배지 | `apps/web/src/components/analysis/domain-badge.tsx` |
-| AI 설정 UI | `apps/web/src/components/settings/model-settings.tsx` |
-| 고급 도움말 | `apps/web/src/components/advanced/advanced-help.tsx` |
-| ADVN 카드 | `apps/web/src/components/advanced/{module}-card.tsx` |
-| **고급분석 뷰 (핵심)** | `apps/web/src/components/advanced/advanced-view.tsx` |
-| 랜딩 모듈 목록 | `apps/web/src/components/landing/data/modules.ts` |
-| 랜딩 모듈 개수 | `apps/web/src/components/landing/landing-content.tsx` (h2 + 통계 배지) |
-| 화이트페이퍼 개수 | `apps/web/src/components/whitepaper/report-data.ts` (REPORT_META + REPORT_SECTIONS) |
+| 역할                   | 파일 경로                                                                           |
+| ---------------------- | ----------------------------------------------------------------------------------- |
+| 도메인 타입            | `packages/core/src/analysis/domain/types.ts`                                        |
+| 도메인 레지스트리      | `packages/core/src/analysis/domain/registry.ts`                                     |
+| 도메인 설정            | `packages/core/src/analysis/domain/domains/{id}.ts`                                 |
+| 분석 라우터            | `apps/web/src/server/trpc/routers/analysis.ts`                                      |
+| 세그먼트 타입          | `packages/core/src/analysis/schemas/segmentation.schema.ts`                         |
+| MODULE_MODEL_MAP       | `packages/core/src/analysis/types.ts`                                               |
+| MODULE_MAP             | `packages/core/src/analysis/runner.ts`                                              |
+| 모듈 index             | `packages/core/src/analysis/modules/index.ts`                                       |
+| 스키마 index           | `packages/core/src/analysis/schemas/index.ts`                                       |
+| distill 함수           | `packages/core/src/analysis/modules/prompt-utils.ts`                                |
+| 프리셋 시드            | `packages/core/src/db/seed-presets.ts`                                              |
+| 랜딩 use-cases         | `apps/web/src/components/landing/data/use-cases.ts`                                 |
+| 도움말 데이터          | `apps/web/src/components/landing/data/domain-help.ts`                               |
+| 도메인 배지            | `apps/web/src/components/analysis/domain-badge.tsx`                                 |
+| AI 설정 UI             | `apps/web/src/components/settings/model-settings.tsx`                               |
+| 고급 도움말            | `apps/web/src/components/advanced/advanced-help.tsx`                                |
+| ADVN 카드              | `apps/web/src/components/advanced/{module}-card.tsx`                                |
+| **고급분석 뷰 (핵심)** | `apps/web/src/components/advanced/advanced-view.tsx`                                |
+| 랜딩 모듈 목록         | `apps/web/src/components/landing/data/modules.ts`                                   |
+| 랜딩 모듈 개수         | `apps/web/src/components/landing/landing-content.tsx` (h2 + 통계 배지)              |
+| 화이트페이퍼 개수      | `apps/web/src/components/whitepaper/report-data.ts` (REPORT_META + REPORT_SECTIONS) |
