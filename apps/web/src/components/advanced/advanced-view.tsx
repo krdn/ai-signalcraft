@@ -24,6 +24,7 @@ import { CatalystScenarioCard } from './catalyst-scenario-card';
 import { InvestmentSignalCard } from './investment-signal-card';
 import { HealthRiskPerceptionCard } from './health-risk-perception-card';
 import { CompliancePredictorCard } from './compliance-predictor-card';
+import { OpportunityCard } from './opportunity-card';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -72,7 +73,12 @@ const FINANCE_ADVN_MODULES = [
   'catalyst-scenario',
   'investment-signal',
 ];
-const HEALTHCARE_ADVN_MODULES = ['health-risk-perception', 'compliance-predictor'];
+const HEALTHCARE_ADVN_MODULES = [
+  'health-risk-perception',
+  'compliance-predictor',
+  'crisis-scenario',
+  'opportunity',
+];
 const LEGAL_ADVN_MODULES = ['reputation-index', 'frame-war', 'crisis-scenario', 'win-simulation'];
 const ALL_ADVN_MODULES = [
   ...POLITICAL_ADVN_MODULES,
@@ -406,6 +412,8 @@ export function AdvancedView({ jobId, domain: domainProp, fetchFn }: AdvancedVie
           <CompliancePredictorCard
             data={parseModuleResult(moduleResults, 'compliance-predictor') ?? null}
           />
+          <CrisisScenarios data={parseModuleResult(moduleResults, 'crisis-scenario') ?? null} />
+          <OpportunityCard data={parseModuleResult(moduleResults, 'opportunity') ?? null} />
         </div>
       ) : domain === 'fandom' ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
