@@ -48,6 +48,7 @@ const PRESET_SEEDS = [
   {
     slug: 'corporate_reputation',
     category: '핵심 활용',
+    domain: 'corporate',
     title: '기업 평판 관리',
     description: '네이버·유튜브·커뮤니티 전체를 통합 분석하여 경영진 보고서를 자동 생성합니다.',
     icon: 'LineChart',
