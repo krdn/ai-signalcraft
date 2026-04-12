@@ -1,7 +1,6 @@
 'use client';
 
 import { BookOpen, Brain, FlaskConical, Lightbulb, Users } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -10,6 +9,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 
 export interface DomainTheory {
   theory: string;
@@ -60,7 +60,12 @@ export function DomainHelpModal({
               <Brain className="size-6 text-primary" />
             </div>
             <div>
-              <DialogTitle className="text-xl">{data.displayName}</DialogTitle>
+              <div className="flex items-center gap-2">
+                <DialogTitle className="text-xl">{data.displayName}</DialogTitle>
+                <Badge variant="outline" className="font-mono text-xs text-muted-foreground">
+                  {data.id}
+                </Badge>
+              </div>
               {data.tagline && (
                 <DialogDescription className="mt-0.5 text-sm italic">
                   {data.tagline}

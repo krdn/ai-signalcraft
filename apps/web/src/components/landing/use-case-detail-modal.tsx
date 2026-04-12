@@ -26,10 +26,12 @@ import { cn } from '@/lib/utils';
 
 export function UseCaseDetailModal({
   detail,
+  domainId,
   open,
   onOpenChange,
 }: {
   detail: UseCaseDetail | null;
+  domainId?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
@@ -46,7 +48,14 @@ export function UseCaseDetailModal({
               <detail.icon className={cn('size-6', detail.color)} />
             </div>
             <div>
-              <DialogTitle className="text-xl">{detail.title}</DialogTitle>
+              <div className="flex items-center gap-2">
+                <DialogTitle className="text-xl">{detail.title}</DialogTitle>
+                {domainId && (
+                  <Badge variant="outline" className="font-mono text-xs text-muted-foreground">
+                    {domainId}
+                  </Badge>
+                )}
+              </div>
               <DialogDescription className="mt-0.5 text-sm italic">
                 {detail.tagline}
               </DialogDescription>
