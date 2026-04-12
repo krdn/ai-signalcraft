@@ -67,6 +67,26 @@ describe('AnalysisModule 인터페이스 + 타입', () => {
       'fandom-narrative-war',
       'fandom-crisis-scenario',
       'release-reception-prediction',
+      // Stage 4: PR 도메인 모듈
+      'crisis-type-classifier',
+      'reputation-index',
+      // Stage 4: 기업 평판 도메인 모듈
+      'stakeholder-map',
+      'esg-sentiment',
+      'media-framing-dominance',
+      'csr-communication-gap',
+      'reputation-recovery-simulation',
+      // Stage 4: 헬스케어 도메인 모듈
+      'health-risk-perception',
+      'compliance-predictor',
+      // Stage 4: 스포츠 도메인 모듈
+      'performance-narrative',
+      'season-outlook-prediction',
+      // Stage 4: 금융 도메인 모듈
+      'market-sentiment-index',
+      'information-asymmetry',
+      'catalyst-scenario',
+      'investment-signal',
     ];
 
     for (const mod of expectedModules) {
@@ -75,7 +95,7 @@ describe('AnalysisModule 인터페이스 + 타입', () => {
       expect(MODULE_MODEL_MAP[mod].model).toBeDefined();
     }
 
-    expect(Object.keys(MODULE_MODEL_MAP).length).toBe(29);
+    expect(Object.keys(MODULE_MODEL_MAP).length).toBe(32);
   });
 });
 

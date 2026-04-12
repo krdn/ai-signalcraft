@@ -12,7 +12,6 @@ import {
   ClipboardList,
   Coins,
   Crosshair,
-  Crown,
   DollarSign,
   Dumbbell,
   ExternalLink,
