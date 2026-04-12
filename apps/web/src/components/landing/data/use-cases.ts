@@ -769,7 +769,7 @@ export const USE_CASE_DETAILS: Record<string, UseCaseDetail> = {
       { step: 'AI가 여론 프레임·리스크·영향 분석', detail: '여론 지배 프레임 식별' },
       { step: '소송 전략 보조 리포트 생성', detail: '여론전 분석 + 대응 방향' },
     ],
-    keyModules: ['프레임 전쟁 분석', '리스크 지도', '집단별 반응', '전략 도출'],
+    keyModules: ['평판 지수 측정', '프레임 전쟁 분석', '위기 시나리오', '신뢰 회복 시뮬레이션'],
     impactMetrics: [
       { label: '여론 모니터링', before: '수동 클리핑', after: '자동 실시간 추적', icon: Radar },
       { label: '프레임 분석', before: '주관적 판단', after: 'AI 정량 분석', icon: Brain },

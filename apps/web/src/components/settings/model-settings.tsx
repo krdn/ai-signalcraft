@@ -48,7 +48,7 @@ type ModuleMeta = {
   analyzes: string[];
   recommended: { provider: string; model: string; reason: string };
   costTip: string;
-  domain?: 'political' | 'fandom' | 'corporate' | 'pr' | 'policy' | 'finance' | 'healthcare'; // undefined = 공통
+  domain?: 'political' | 'fandom' | 'corporate' | 'pr' | 'policy' | 'finance' | 'healthcare' | 'legal'; // undefined = 공통
 };
 
 const MODULE_META: Record<string, ModuleMeta> = {
@@ -619,6 +619,7 @@ const DOMAIN_MODULES: Record<string, string[]> = {
     'investment-signal',
   ],
   healthcare: ['health-risk-perception', 'compliance-predictor'],
+  legal: ['reputation-index', 'frame-war', 'crisis-scenario', 'win-simulation'],
 };
 
 // 프리셋 → 도메인 매핑 (seed-presets와 동일)
@@ -633,7 +634,7 @@ const PRESET_DOMAIN_MAP: Record<string, { domain: string; title: string; categor
   public_sector: { domain: 'political', title: '지자체 / 공공', category: '산업 특화' },
   education: { domain: 'political', title: '대학 / 교육', category: '확장 영역' },
   sports: { domain: 'fandom', title: '스포츠 / e스포츠', category: '확장 영역' },
-  legal: { domain: 'political', title: '법률 / 로펌', category: '확장 영역' },
+  legal: { domain: 'legal', title: '법률 / 로펌', category: '확장 영역' },
   franchise_retail: { domain: 'political', title: '프랜차이즈 / 유통', category: '확장 영역' },
 };
 
@@ -650,6 +651,7 @@ function getModulesForPreset(presetSlug?: string): string[] {
       ...DOMAIN_MODULES.pr,
       ...DOMAIN_MODULES.finance,
       ...DOMAIN_MODULES.healthcare,
+      ...DOMAIN_MODULES.legal,
     ];
     return [...COMMON_MODULES, ...Array.from(new Set(allDomainModules))];
   }

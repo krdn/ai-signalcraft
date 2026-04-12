@@ -650,6 +650,20 @@ export const DOMAIN_HELP_DATA: Record<string, DomainHelpData> = {
         keyConceptKo: '사회적 증거 이론',
         application: '판례·승소 사례·의뢰인 후기의 신뢰 형성 영향 분석',
       },
+      {
+        theory: 'Framing Theory in Legal Discourse',
+        scholar: 'Entman, R.M.',
+        year: 1993,
+        keyConceptKo: '법률 담론 프레이밍 이론',
+        application: '법률 이슈를 둘러싼 의뢰인·법조계·미디어 간 경쟁 프레임 구조 분석',
+      },
+      {
+        theory: 'Situational Crisis Communication Theory (SCCT)',
+        scholar: 'Coombs, W.T.',
+        year: 2007,
+        keyConceptKo: '상황적 위기 커뮤니케이션 이론',
+        application: '법률가·로펌 윤리 위반·패소 논란 등 위기 유형별 대응 전략 분기',
+      },
     ],
     usageExamples: [
       {

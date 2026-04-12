@@ -184,7 +184,7 @@ const PRESET_SEEDS = [
     customSourceIds: [],
     limits: { naverArticles: 500, youtubeVideos: 20, communityPosts: 50, commentsPerItem: 300 },
     optimization: 'standard' as const,
-    skippedModules: ['winSimulation', 'approvalRating'],
+    skippedModules: ['approvalRating'],
     enableItemAnalysis: false,
   },
   {

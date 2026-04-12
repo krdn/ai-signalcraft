@@ -71,6 +71,12 @@ const FINANCE_ADVN_MODULES = [
   'investment-signal',
 ];
 const HEALTHCARE_ADVN_MODULES = ['health-risk-perception', 'compliance-predictor'];
+const LEGAL_ADVN_MODULES = [
+  'reputation-index',
+  'frame-war',
+  'crisis-scenario',
+  'win-simulation',
+];
 const ALL_ADVN_MODULES = [
   ...POLITICAL_ADVN_MODULES,
   ...FANDOM_ADVN_MODULES,
@@ -78,6 +84,7 @@ const ALL_ADVN_MODULES = [
   ...PR_ADVN_MODULES,
   ...FINANCE_ADVN_MODULES,
   ...HEALTHCARE_ADVN_MODULES,
+  ...LEGAL_ADVN_MODULES,
 ];
 
 // 모듈별 결과를 파싱하는 유틸
@@ -92,11 +99,19 @@ function parseModuleResult(
 // 모듈 이름으로 도메인 감지
 function detectDomain(
   moduleResults: Array<{ module: string }>,
-): 'political' | 'fandom' | 'corporate' | 'pr' | 'finance' | 'healthcare' {
+): 'political' | 'fandom' | 'corporate' | 'pr' | 'finance' | 'healthcare' | 'legal' {
   const modules = moduleResults.map((r) => r.module);
   if (modules.some((m) => FINANCE_ADVN_MODULES.includes(m))) return 'finance';
   if (modules.some((m) => HEALTHCARE_ADVN_MODULES.includes(m))) return 'healthcare';
   if (modules.some((m) => FANDOM_ADVN_MODULES.includes(m))) return 'fandom';
+  // Legal 판별: reputation-index + frame-war + win-simulation (PR과 구분 — PR은 win-simulation 없음)
+  if (
+    modules.includes('reputation-index') &&
+    modules.includes('frame-war') &&
+    modules.includes('win-simulation') &&
+    !modules.includes('stakeholder-map')
+  )
+    return 'legal';
   // PR 판별: crisis-type-classifier + frame-war 조합 (corporate와 구분)
   if (
     modules.includes('crisis-type-classifier') &&
@@ -211,6 +226,66 @@ export function AdvancedView({ jobId, fetchFn }: AdvancedViewProps) {
           <InvestmentSignalCard
             data={parseModuleResult(moduleResults, 'investment-signal') ?? null}
           />
+        </div>
+      ) : domain === 'legal' ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <ReputationIndexCard
+            data={parseModuleResult(moduleResults, 'reputation-index') ?? null}
+          />
+          <FrameWarChart data={parseModuleResult(moduleResults, 'frame-war') ?? null} />
+          <CrisisScenarios data={parseModuleResult(moduleResults, 'crisis-scenario') ?? null} />
+          <WinSimulationCard data={parseModuleResult(moduleResults, 'win-simulation') ?? null} />
+
+          {/* 프레임 전쟁 네트워크 그래프 */}
+          {(() => {
+            const frameWarData = parseModuleResult(moduleResults, 'frame-war');
+            const sentimentData = parseModuleResult(moduleResults, 'sentiment-framing');
+            if (!frameWarData || !sentimentData) return null;
+            try {
+              const graphData = buildFrameWarGraph(frameWarData as any, sentimentData as any);
+              if (graphData.nodes.length === 0) return null;
+              return (
+                <Card className="min-h-[320px]">
+                  <CardHeader>
+                    <CardTitle className="text-lg font-semibold flex items-center gap-1.5">
+                      프레임 전쟁 네트워크
+                      <AdvancedCardHelp {...ADVANCED_HELP.frameWarGraph} />
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <FrameWarGraph data={graphData} width={600} height={400} />
+                  </CardContent>
+                </Card>
+              );
+            } catch {
+              return null;
+            }
+          })()}
+
+          {/* 리스크 연쇄 그래프 */}
+          {(() => {
+            const riskData = parseModuleResult(moduleResults, 'risk-map');
+            if (!riskData) return null;
+            try {
+              const graphData = buildRiskChainGraph(riskData as any);
+              if (graphData.nodes.length === 0) return null;
+              return (
+                <Card className="min-h-[320px]">
+                  <CardHeader>
+                    <CardTitle className="text-lg font-semibold flex items-center gap-1.5">
+                      리스크 연쇄 다이어그램
+                      <AdvancedCardHelp {...ADVANCED_HELP.riskChainGraph} />
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <FrameWarGraph data={graphData} width={600} height={400} />
+                  </CardContent>
+                </Card>
+              );
+            } catch {
+              return null;
+            }
+          })()}
         </div>
       ) : domain === 'pr' ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
