@@ -2642,7 +2642,7 @@ export const REPORT_SECTIONS = [
   { id: 'overview', no: '0', title: '제품 개요' },
   { id: 'pipeline', no: '1', title: '4단계 파이프라인' },
   { id: 'sources', no: '2', title: '5개 데이터 소스' },
-  { id: 'modules', no: '3', title: '57개 분석 모듈 상세' },
+  { id: 'modules', no: '3', title: '59개 분석 모듈 상세' },
   { id: 'model-strategy', no: '4', title: '멀티 LLM 모델 전략' },
   { id: 'theory', no: '5', title: '이론적 기반 종합' },
   { id: 'comparison', no: '6', title: '경쟁 접근과의 차이' },

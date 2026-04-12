@@ -556,12 +556,32 @@ export const DOMAIN_HELP_DATA: Record<string, DomainHelpData> = {
         keyConceptKo: '신호 이론 (고등교육 적용)',
         application: '대학 순위·취업률이 외부에 발송하는 신호 분석',
       },
+      {
+        theory: 'Rankings and Reputation Dynamics',
+        scholar: 'Espeland, W.N. & Sauder, M.',
+        year: 2007,
+        keyConceptKo: '순위와 평판 역학',
+        application: '대학 순위 변동이 온라인 여론에 미치는 영향 및 이해관계자별 반응 차이 측정',
+      },
+      {
+        theory: 'Social Contract Theory in Education',
+        scholar: 'Rawls, J.',
+        year: 1971,
+        keyConceptKo: '교육 사회계약론',
+        application: '교육기관과 학생·사회 간 암묵적 계약 이행 여부에 대한 여론 분석',
+      },
     ],
     usageExamples: [
       {
         scenario: '신입생 모집 전략 수립',
         context: '경쟁 대학 대비 인지도 약화, 지원자 감소 우려',
         outcome: '잠재 지원자 집단(수험생·학부모)이 인식하는 평판 차원 파악 + 강조 메시지 개발',
+      },
+      {
+        scenario: '대학 위기 대응 전략',
+        context: '학사 비리 의혹 보도, 재학생 불만 확산, 언론 집중 조명',
+        outcome:
+          '위기 시나리오 분석으로 이슈 확산 경로 예측 + 교육부·언론·재학생 대상 맞춤 대응 메시지 수립',
       },
     ],
   },
