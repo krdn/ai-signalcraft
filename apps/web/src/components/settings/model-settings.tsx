@@ -48,7 +48,7 @@ type ModuleMeta = {
   analyzes: string[];
   recommended: { provider: string; model: string; reason: string };
   costTip: string;
-  domain?: 'political' | 'fandom'; // undefined = 공통
+  domain?: 'political' | 'fandom' | 'corporate'; // undefined = 공통
 };
 
 const MODULE_META: Record<string, ModuleMeta> = {
@@ -336,6 +336,122 @@ const MODULE_META: Record<string, ModuleMeta> = {
     costTip: '예측의 정확도가 비즈니스에 직접 영향을 미치므로 최고 품질 모델을 추천합니다.',
     domain: 'fandom',
   },
+  // 기업 평판 전용 (Stage 4)
+  'stakeholder-map': {
+    name: '이해관계자 영향력 지도',
+    description:
+      'Stakeholder Salience Model 기반으로 투자자·소비자·임직원·규제기관·미디어의 권력·합법성·긴급성을 매핑합니다.',
+    analyzes: [
+      '7가지 이해관계자 유형 분류 (Dormant→Definitive)',
+      '이해관계자별 현출성(Salience) 점수 산출',
+      '긴급 대응 필요 이해관계자 우선순위 결정',
+      '2×2 권력-관심 매트릭스 구성',
+    ],
+    recommended: { provider: 'gemini', model: 'gemini-2.5-flash', reason: '이해관계자 분류 작업에 비용 효율적' },
+    costTip: '구조화된 분류 작업이므로 경량 모델로도 정확합니다.',
+    domain: 'corporate',
+  },
+  'esg-sentiment': {
+    name: 'ESG 여론 분석',
+    description:
+      '환경(E)·사회(S)·지배구조(G) 3차원별로 온라인 여론을 분리 측정하고 규제 리스크를 평가합니다.',
+    analyzes: [
+      'E·S·G 차원별 여론 점수 (0~100)',
+      '그린워싱 논란 감지',
+      '규제기관 관련 언급 및 리스크 수준',
+      'ESG 개선 기회 식별',
+    ],
+    recommended: { provider: 'gemini', model: 'gemini-2.5-flash', reason: '3차원 분류 작업에 비용 효율적' },
+    costTip: 'ESG 언급이 없는 차원은 자동으로 중립(50점) 처리됩니다.',
+    domain: 'corporate',
+  },
+  'reputation-index': {
+    name: '평판 지수 측정 (RepTrak)',
+    description:
+      'RepTrak 7차원 모델(제품·혁신·직장·거버넌스·시민의식·리더십·재무)로 종합 평판 점수를 산출합니다.',
+    analyzes: [
+      'RepTrak 7차원별 점수 및 추세 (improving/stable/declining)',
+      '이해관계자별 평판 인식 차이',
+      '평판 취약 지점 및 개선 권고',
+      '업계 평균 대비 위치 추정',
+    ],
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      reason: '7차원 통합 평가에 깊은 추론 필요',
+    },
+    costTip: '선행 분석 결과를 종합하므로 입력 토큰이 많을 수 있습니다.',
+    domain: 'corporate',
+  },
+  'crisis-type-classifier': {
+    name: 'SCCT 위기 유형 분류',
+    description:
+      'Situational Crisis Communication Theory로 위기 유형(희생자형/사고형/예방가능형)을 분류하고 Image Repair 전략을 매핑합니다.',
+    analyzes: [
+      'SCCT 3가지 위기 유형 분류 및 귀속 책임 수준',
+      'Image Repair Theory 5가지 대응 전략 우선순위',
+      '골든타임 잔여 시간 평가 (critical/high/medium/low)',
+      '과거 유사 위기 이력 추출',
+    ],
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      reason: '위기 유형 판단에 미묘한 컨텍스트 이해 필요',
+    },
+    costTip: '위기 대응의 골든타임을 다루므로 정확도 우선 고급 모델 권장.',
+    domain: 'corporate',
+  },
+  'media-framing-dominance': {
+    name: '미디어 프레임 의제 설정력',
+    description:
+      '언론 기사 프레임 vs 댓글 여론 프레임의 간극을 분석하고, 기업 공식 메시지의 의제 설정력을 측정합니다.',
+    analyzes: [
+      '언론 지배 프레임과 강도 (0~100)',
+      '기사 프레임 vs 댓글 여론 간 괴리 (frameMismatch)',
+      '기업 공식 메시지의 언론 반영도 (0~100)',
+      '의제 주도권 판단 (company-led/media-led/public-led/contested)',
+    ],
+    recommended: { provider: 'gemini', model: 'gemini-2.5-flash', reason: '프레임 분류에 비용 효율적' },
+    costTip: '병렬 실행 모듈로 처리 속도가 빠릅니다.',
+    domain: 'corporate',
+  },
+  'csr-communication-gap': {
+    name: 'CSR 공약 진정성 간극',
+    description:
+      'ESG/CSR 공약과 실제 온라인 여론 평가의 간극을 측정하고 그린워싱 위험을 진단합니다.',
+    analyzes: [
+      'E·S·G 차원별 기업 공약 vs 온라인 여론 신뢰도',
+      '그린워싱(Greenwashing) 위험 수준',
+      'CSR 이니셔티브별 평판 ROI',
+      '전반적 CSR 신뢰도 점수 (0~100)',
+    ],
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      reason: '진정성 판단에 Claude 언어 이해력 활용',
+    },
+    costTip: 'ESG 공시 문서 컨텍스트가 많을수록 정확도가 높아집니다.',
+    domain: 'corporate',
+  },
+  'reputation-recovery-simulation': {
+    name: '평판 회복 시뮬레이션',
+    description:
+      'RepTrak·SCCT·SLO 이론을 종합하여 평판 회복 목표 달성 확률과 최적 회복 전략을 도출합니다.',
+    analyzes: [
+      '평판 회복 목표 달성 확률 (0~100%)',
+      '회복 조건 met/partial/unmet 상태 진단',
+      '회복 장애 요인 및 이해관계자별 완화 방안',
+      '우선순위별 회복 전략 (immediate/short-term/long-term)',
+    ],
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      reason: '전략적 종합 추론에 최고 성능 필요',
+    },
+    costTip:
+      '모든 선행 모듈 결과를 종합하므로 입력 토큰이 가장 많습니다. 최고 품질 모델 강력 권장.',
+    domain: 'corporate',
+  },
 };
 
 // ── 모듈 분류 상수 ──
@@ -359,13 +475,23 @@ const DOMAIN_MODULES: Record<string, string[]> = {
     'fandom-crisis-scenario',
     'release-reception-prediction',
   ],
+  corporate: [
+    'stakeholder-map',
+    'esg-sentiment',
+    'reputation-index',
+    'crisis-type-classifier',
+    'media-framing-dominance',
+    'csr-communication-gap',
+    'crisis-scenario',
+    'reputation-recovery-simulation',
+  ],
 };
 
 // 프리셋 → 도메인 매핑 (seed-presets와 동일)
 const PRESET_DOMAIN_MAP: Record<string, { domain: string; title: string; category: string }> = {
   politics: { domain: 'political', title: '정치 캠프', category: '핵심 활용' },
   pr_crisis: { domain: 'political', title: 'PR / 위기관리', category: '핵심 활용' },
-  corporate_reputation: { domain: 'political', title: '기업 평판 관리', category: '핵심 활용' },
+  corporate_reputation: { domain: 'corporate', title: '기업 평판 관리', category: '핵심 활용' },
   entertainment: { domain: 'fandom', title: '연예인 / 기획사', category: '핵심 활용' },
   policy_research: { domain: 'political', title: '정책 연구', category: '산업 특화' },
   finance: { domain: 'political', title: '금융 / 투자', category: '산업 특화' },
@@ -381,9 +507,9 @@ const CATEGORY_ORDER = ['핵심 활용', '산업 특화', '확장 영역'];
 
 function getModulesForPreset(presetSlug?: string): string[] {
   if (!presetSlug)
-    return [...COMMON_MODULES, ...DOMAIN_MODULES.political, ...DOMAIN_MODULES.fandom];
+    return [...COMMON_MODULES, ...DOMAIN_MODULES.political, ...DOMAIN_MODULES.fandom, ...DOMAIN_MODULES.corporate];
   const domain = PRESET_DOMAIN_MAP[presetSlug]?.domain ?? 'political';
-  return [...COMMON_MODULES, ...DOMAIN_MODULES[domain]];
+  return [...COMMON_MODULES, ...(DOMAIN_MODULES[domain] ?? DOMAIN_MODULES.political)];
 }
 
 // ── 프로바이더 표시명 ──
