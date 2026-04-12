@@ -73,12 +73,7 @@ const FINANCE_ADVN_MODULES = [
   'investment-signal',
 ];
 const HEALTHCARE_ADVN_MODULES = ['health-risk-perception', 'compliance-predictor'];
-const LEGAL_ADVN_MODULES = [
-  'reputation-index',
-  'frame-war',
-  'crisis-scenario',
-  'win-simulation',
-];
+const LEGAL_ADVN_MODULES = ['reputation-index', 'frame-war', 'crisis-scenario', 'win-simulation'];
 const ALL_ADVN_MODULES = [
   ...POLITICAL_ADVN_MODULES,
   ...FANDOM_ADVN_MODULES,
@@ -229,7 +224,9 @@ export function AdvancedView({ jobId, domain: domainProp, fetchFn }: AdvancedVie
   }
 
   // domain 결정: prop > DB 조회 > 모듈명 역추론
-  const domain = (domainProp ?? jobDomain ?? detectDomain(moduleResults)) as ReturnType<typeof detectDomain>;
+  const domain = (domainProp ?? jobDomain ?? detectDomain(moduleResults)) as ReturnType<
+    typeof detectDomain
+  >;
 
   return (
     <div className="space-y-4">

@@ -48,7 +48,15 @@ type ModuleMeta = {
   analyzes: string[];
   recommended: { provider: string; model: string; reason: string };
   costTip: string;
-  domain?: 'political' | 'fandom' | 'corporate' | 'pr' | 'policy' | 'finance' | 'healthcare' | 'legal'; // undefined = 공통
+  domain?:
+    | 'political'
+    | 'fandom'
+    | 'corporate'
+    | 'pr'
+    | 'policy'
+    | 'finance'
+    | 'healthcare'
+    | 'legal'; // undefined = 공통
 };
 
 const MODULE_META: Record<string, ModuleMeta> = {
