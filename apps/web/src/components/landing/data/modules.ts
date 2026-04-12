@@ -335,6 +335,32 @@ export const MODULES: ModuleGroup[] = [
         output: '종합 평판 지수(0~100), 차원별 점수, 이해관계자별 인식, 취약 지점',
         theory: 'RepTrak Model · Fombrun & van Riel, 2004',
       },
+      {
+        name: '프레임 전쟁 분석 (PR)',
+        nameEn: 'Frame War (PR)',
+        help: '기업·브랜드를 둘러싼 지지 프레임 vs 비판 프레임의 세력 역학을 분석합니다. Framing Theory(Entman, 1993) 기반.',
+        details: [
+          '지배적 프레임 / 위협 프레임 / 반전 가능 프레임 3분류',
+          '프레임별 강도(0~100) 및 미디어·온라인 커뮤니티 점유율',
+          '기업 공식 메시지가 어떤 프레임으로 수신되는지 분석',
+          '약세 프레임의 우세 전환 조건 및 대응 전략',
+        ],
+        output: '프레임 세력 지도, 지배 프레임, 위협 프레임, 전환 조건',
+        theory: 'Framing Theory · Entman, 1993',
+      },
+      {
+        name: '위기 시나리오 (PR)',
+        nameEn: 'Crisis Scenario (PR)',
+        help: 'SCCT 분류 결과를 바탕으로 PR 위기의 확산·통제·역전 3가지 시나리오를 시뮬레이션합니다.',
+        details: [
+          '확산(Spread): 이해관계자 연쇄 이탈 → SLO 철회 경로',
+          '통제(Control): 골든타임 내 대응 → 현 수준 봉쇄 경로',
+          '역전(Reverse): 위기 대응이 신뢰 회복의 계기가 되는 경로',
+          '시나리오별 트리거 조건, 예상 결과, 대응 우선순위',
+        ],
+        output: '3개 시나리오 상세, 발생 확률, 트리거 조건, 단계별 대응',
+        theory: 'SCCT · Coombs, 2007',
+      },
     ],
   },
   {
