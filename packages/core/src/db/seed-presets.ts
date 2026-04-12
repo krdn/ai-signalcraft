@@ -144,6 +144,7 @@ const PRESET_SEEDS = [
   {
     slug: 'education',
     category: '확장 영역',
+    domain: 'education',
     title: '대학 / 교육기관',
     description: '입시 정책 변경, 대학 평판, 교육 이슈에 대한 학부모·학생 여론을 추적합니다.',
     icon: 'GraduationCap',
