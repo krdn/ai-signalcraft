@@ -507,8 +507,16 @@ const PRESET_DOMAIN_MAP: Record<string, { domain: string; title: string; categor
 const CATEGORY_ORDER = ['핵심 활용', '산업 특화', '확장 영역'];
 
 function getModulesForPreset(presetSlug?: string): string[] {
-  if (!presetSlug)
-    return [...COMMON_MODULES, ...DOMAIN_MODULES.political, ...DOMAIN_MODULES.fandom, ...DOMAIN_MODULES.corporate];
+  if (!presetSlug) {
+    // 전체 목록: 중복 제거 (crisis-scenario 등이 여러 도메인에 존재)
+    const allDomainModules = [
+      ...DOMAIN_MODULES.political,
+      ...DOMAIN_MODULES.fandom,
+      ...DOMAIN_MODULES.corporate,
+      ...DOMAIN_MODULES.pr,
+    ];
+    return [...COMMON_MODULES, ...Array.from(new Set(allDomainModules))];
+  }
   const domain = PRESET_DOMAIN_MAP[presetSlug]?.domain ?? 'political';
   return [...COMMON_MODULES, ...(DOMAIN_MODULES[domain] ?? DOMAIN_MODULES.political)];
 }
