@@ -674,6 +674,7 @@ const DOMAIN_MODULES: Record<string, string[]> = {
     'fandom-crisis-scenario',
     'frame-war',
   ],
+  retail: ['reputation-index', 'esg-sentiment', 'crisis-scenario', 'win-simulation'],
 };
 
 // 프리셋 → 도메인 매핑 (seed-presets와 동일)
@@ -689,7 +690,7 @@ const PRESET_DOMAIN_MAP: Record<string, { domain: string; title: string; categor
   education: { domain: 'education', title: '대학 / 교육', category: '확장 영역' },
   sports: { domain: 'sports', title: '스포츠 / e스포츠', category: '확장 영역' },
   legal: { domain: 'legal', title: '법률 / 로펌', category: '확장 영역' },
-  franchise_retail: { domain: 'political', title: '프랜차이즈 / 유통', category: '확장 영역' },
+  franchise_retail: { domain: 'retail', title: '프랜차이즈 / 유통', category: '확장 영역' },
 };
 
 const CATEGORY_ORDER = ['핵심 활용', '산업 특화', '확장 영역'];
@@ -709,6 +710,7 @@ function getModulesForPreset(presetSlug?: string): string[] {
       ...DOMAIN_MODULES.education,
       ...DOMAIN_MODULES['public-sector'],
       ...DOMAIN_MODULES.sports,
+      ...DOMAIN_MODULES.retail,
     ];
     return [...COMMON_MODULES, ...Array.from(new Set(allDomainModules))];
   }

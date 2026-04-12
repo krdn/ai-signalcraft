@@ -26,6 +26,7 @@ import { HealthRiskPerceptionCard } from './health-risk-perception-card';
 import { CompliancePredictorCard } from './compliance-predictor-card';
 import { PerformanceNarrativeCard } from './performance-narrative-card';
 import { SeasonOutlookPredictionCard } from './season-outlook-prediction-card';
+import { EsgSentimentCard } from './esg-sentiment-card';
 import { OpportunityCard } from './opportunity-card';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -100,6 +101,12 @@ const SPORTS_ADVN_MODULES = [
   'fandom-crisis-scenario',
   'frame-war',
 ];
+const RETAIL_ADVN_MODULES = [
+  'reputation-index',
+  'esg-sentiment',
+  'crisis-scenario',
+  'win-simulation',
+];
 const ALL_ADVN_MODULES = [
   ...POLITICAL_ADVN_MODULES,
   ...FANDOM_ADVN_MODULES,
@@ -111,6 +118,7 @@ const ALL_ADVN_MODULES = [
   ...EDUCATION_ADVN_MODULES,
   ...PUBLIC_SECTOR_ADVN_MODULES,
   ...SPORTS_ADVN_MODULES,
+  ...RETAIL_ADVN_MODULES,
 ];
 
 // 모듈별 결과를 파싱하는 유틸
@@ -135,13 +143,21 @@ function detectDomain(
   | 'legal'
   | 'education'
   | 'public-sector'
-  | 'sports' {
+  | 'sports'
+  | 'retail' {
   const modules = moduleResults.map((r) => r.module);
   if (modules.some((m) => FINANCE_ADVN_MODULES.includes(m))) return 'finance';
   if (modules.some((m) => HEALTHCARE_ADVN_MODULES.includes(m))) return 'healthcare';
   // Sports 판별: performance-narrative는 스포츠 전용 (fandom보다 먼저 확인)
   if (modules.includes('performance-narrative')) return 'sports';
   if (modules.some((m) => FANDOM_ADVN_MODULES.includes(m))) return 'fandom';
+  // Retail 판별: esg-sentiment + win-simulation 조합 (corporate와 구분 — corporate는 stakeholder-map 포함)
+  if (
+    modules.includes('esg-sentiment') &&
+    modules.includes('win-simulation') &&
+    !modules.includes('stakeholder-map')
+  )
+    return 'retail';
   // Legal 판별: reputation-index + frame-war + win-simulation (PR과 구분 — PR은 win-simulation 없음)
   if (
     modules.includes('reputation-index') &&
@@ -265,9 +281,9 @@ export function AdvancedView({ jobId, domain: domainProp, fetchFn }: AdvancedVie
   }
 
   // domain 결정: prop > DB 조회 > 모듈명 역추론
-  const domain = (domainProp ?? jobDomain ?? detectDomain(moduleResults)) as ReturnType<
-    typeof detectDomain
-  >;
+  const domain = (domainProp ?? jobDomain ?? detectDomain(moduleResults)) as
+    | ReturnType<typeof detectDomain>
+    | string;
 
   return (
     <div className="space-y-4">
@@ -475,6 +491,40 @@ export function AdvancedView({ jobId, domain: domainProp, fetchFn }: AdvancedVie
           <ReleasePredictionCard
             data={parseModuleResult(moduleResults, 'release-reception-prediction') ?? null}
           />
+        </div>
+      ) : domain === 'retail' ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <ReputationIndexCard
+            data={parseModuleResult(moduleResults, 'reputation-index') ?? null}
+          />
+          <EsgSentimentCard data={parseModuleResult(moduleResults, 'esg-sentiment') ?? null} />
+          <CrisisScenarios data={parseModuleResult(moduleResults, 'crisis-scenario') ?? null} />
+          <WinSimulationCard data={parseModuleResult(moduleResults, 'win-simulation') ?? null} />
+
+          {/* 리스크 연쇄 그래프 */}
+          {(() => {
+            const riskData = parseModuleResult(moduleResults, 'risk-map');
+            if (!riskData) return null;
+            try {
+              const graphData = buildRiskChainGraph(riskData as any);
+              if (graphData.nodes.length === 0) return null;
+              return (
+                <Card className="min-h-[320px]">
+                  <CardHeader>
+                    <CardTitle className="text-lg font-semibold flex items-center gap-1.5">
+                      리스크 연쇄 다이어그램
+                      <AdvancedCardHelp {...ADVANCED_HELP.riskChainGraph} />
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <FrameWarGraph data={graphData} width={600} height={400} />
+                  </CardContent>
+                </Card>
+              );
+            } catch {
+              return null;
+            }
+          })()}
         </div>
       ) : domain === 'corporate' ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

@@ -191,6 +191,7 @@ const PRESET_SEEDS = [
   {
     slug: 'franchise_retail',
     category: '확장 영역',
+    domain: 'retail',
     title: '프랜차이즈 / 유통',
     description:
       '가맹점 이슈, 소비자 불매운동, 제품 리콜 등 브랜드 위기를 조기 감지하고 대응합니다.',
@@ -201,7 +202,7 @@ const PRESET_SEEDS = [
     customSourceIds: [],
     limits: { naverArticles: 500, youtubeVideos: 30, communityPosts: 100, commentsPerItem: 500 },
     optimization: 'standard' as const,
-    skippedModules: ['winSimulation', 'approvalRating'],
+    skippedModules: ['approval-rating'],
     enableItemAnalysis: false,
   },
 ];
