@@ -421,6 +421,155 @@ export const ADVANCED_HELP = {
     source: 'risk-map 모듈 (클라이언트 그래프 빌더)',
   },
 
+  // ─── 금융 도메인 (Stage 4) ───
+
+  marketSentimentIndex: {
+    title: '투자 심리 지수',
+    description:
+      'Baker & Wurgler(2006) Investor Sentiment Index와 Kahneman & Tversky(1979) 행동 재무학을 적용하여 온라인 여론에서 공포/탐욕 스펙트럼과 투자자 심리 편향을 정량 측정합니다. ⚠️ 이 분석은 투자 자문이 아닙니다.',
+    details: [
+      'sentimentIndex(0~100): 0=극단적 공포, 50=중립, 100=극단적 탐욕',
+      'sentimentLabel: extreme-fear / fear / neutral / greed / extreme-greed',
+      'trend: improving / stable / deteriorating — 심리 방향성',
+      'investorSegmentSentiment: 투자자 집단(개인/기관/외국인)별 bullish/bearish/neutral 심리',
+      'behavioralBiases: 손실 회피·앵커링·군집 행동·확증 편향·과신 편향 식별',
+      'sentimentSignals: 역발상 신호(contraindicators) vs 추세 추종 신호(momentumIndicators)',
+    ],
+    howToRead: [
+      'sentimentIndex 80 이상이면 극단적 탐욕 — 역발상 매도 경고 신호 가능 (자문 아님)',
+      'sentimentIndex 20 이하이면 극단적 공포 — 역발상 매수 고려 구간 가능 (자문 아님)',
+      'behavioralBiases에서 herding(군집 행동)이 강하면 개인투자자 쏠림 위험',
+      'trend가 deteriorating이면 심리가 낙관에서 비관으로 전환 중',
+      'contraindicators가 많을수록 현재 심리가 극단적이라는 역발상 신호',
+    ],
+    tips: [
+      '극단적 탐욕(80+) 구간에서는 리스크 관리를 강화하는 것이 일반적 전략',
+      '집단별 심리(investorSegmentSentiment)에서 기관과 개인의 방향이 반대이면 정보 비대칭 가능성',
+      '반드시 공식 금융 데이터 및 전문 투자 자문과 병행하여 활용하세요',
+    ],
+    limitations: [
+      '온라인 여론 기반 추정 — 실제 시장 데이터(거래량, 가격)와 다를 수 있음',
+      '투자 자문이 아닙니다 — 실제 투자 결정은 공식 재무 분석 기반으로 하세요',
+      '개인투자자 발화가 많은 플랫폼(DC갤러리, FM코리아) 특성에 따른 편향 가능',
+      '단기 심리만 측정 — 펀더멘털 가치와 다를 수 있음',
+    ],
+    technicalDetails: [
+      '입력: 기사 상위 20건(제목) + 댓글 상위 50건(120자 절단)',
+      '선행 의존: macro-view(여론 추이), segmentation(투자자 집단), sentiment-framing(감정·프레임)',
+      '분석 알고리즘: 공포/탐욕 지수 0~100 산출 → 집단별 심리 분리 → 행동 재무학 편향 패턴 식별 → 역발상/모멘텀 신호 도출',
+      '출력 스키마: sentimentIndex(0~100), sentimentLabel, trend, investorSegmentSentiment[], behavioralBiases[], sentimentSignals(contraindicators[], momentumIndicators[]), disclaimer, summary',
+    ],
+    source: 'market-sentiment-index 모듈 (Claude Sonnet 4.6)',
+  },
+  informationAsymmetry: {
+    title: '정보 비대칭 분석',
+    description:
+      'Bikhchandani, Hirshleifer & Welch(1992) Information Cascade Theory를 적용하여 온라인 여론에서 정보 폭포 현상, 기관-개인 간 정보 격차, 선행 지표, 루머 위험 영역을 식별합니다. ⚠️ 투자 자문 아님.',
+    details: [
+      'asymmetryLevel: high / medium / low — 기관 vs 개인 정보 격차 수준',
+      'informationCascades: 정보 폭포 현상 — 발화 플랫폼, 확산 경로, 강도',
+      'leadingIndicators: 주류 미디어 반영 전 커뮤니티에서 나타난 선행 신호',
+      'informationVacuums: 정보 공백 영역 — 루머가 채우는 영역과 루머 위험도',
+      'smartMoneySignals: 기관 투자자의 역방향 포지션 행동 신호',
+    ],
+    howToRead: [
+      'asymmetryLevel high이면 기관과 개인 간 정보 격차가 크다는 의미 — 개인 불리',
+      'leadingIndicators에서 lagTime이 짧을수록 더 즉각적인 선행 지표',
+      'informationVacuums에서 rumorRisk high이면 해당 영역 공식 정보 공개 시급',
+      'smartMoneySignals가 개인 심리와 반대 방향이면 기관이 역방향 포지션 가능성',
+      'informationCascades의 origin 플랫폼이 커뮤니티면 바텀업 신호, 뉴스면 탑다운 신호',
+    ],
+    tips: [
+      'leadingIndicators를 추적하면 뉴스 보도 전 선행 대응 가능',
+      'informationVacuums의 fillRecommendation을 IR 커뮤니케이션에 활용하세요',
+      '반드시 공식 금융 데이터와 병행하여 해석하세요',
+    ],
+    limitations: [
+      '정보 폭포의 원인(내부 정보 유출 vs 루머)을 여론 데이터로 구분하기 어려움',
+      '투자 자문이 아닙니다',
+      '수집 소스 제약으로 폐쇄 커뮤니티(카카오톡, 텔레그램)의 정보는 미반영',
+    ],
+    technicalDetails: [
+      '입력: 기사 상위 20건(제목) + 댓글 상위 40건(100자 절단)',
+      '선행 의존: macro-view(여론 추이·변곡점), segmentation(투자자 집단), market-sentiment-index(심리 지수)',
+      '분석 알고리즘: 정보 폭포 패턴 탐지 → 선행 지표 추출 → 정보 공백 영역 매핑 → 스마트머니 신호 식별',
+      '출력 스키마: asymmetryLevel, informationCascades[](cascade, origin, spreadPath, magnitude), leadingIndicators[](indicator, platform, significance, lagTime), informationVacuums[](vacuum, rumorRisk, fillRecommendation), smartMoneySignals[], disclaimer, summary',
+    ],
+    source: 'information-asymmetry 모듈 (Claude Sonnet 4.6)',
+  },
+  catalystScenario: {
+    title: '시장 시나리오',
+    description:
+      'Noise Trader Theory(De Long et al., 1990)를 적용하여 현재 시장 여론을 바탕으로 강세(Bull) / 기본(Base) / 약세(Bear) 3개 시나리오와 각 시나리오를 촉발할 이벤트를 분석합니다. ⚠️ 투자 자문 아님.',
+    details: [
+      'scenarios[]: bull / base / bear 3개 시나리오 (probability, catalysts, sentimentImpact, marketNarrative, keyWatchPoints, timeframe)',
+      'mostLikelyScenario: 현재 여론 기반 가장 가능성 높은 시나리오',
+      'sentimentMomentum: accelerating-bull / decelerating-bull / stable / decelerating-bear / accelerating-bear',
+      'noiseVsSignal: 현재 여론 움직임이 단기 과잉반응(Noise) vs 구조적 변화(Signal) 판단',
+    ],
+    howToRead: [
+      'mostLikelyScenario가 bull이면 강세론이 우세, bear면 약세론이 우세',
+      'sentimentMomentum이 accelerating-bull이면 낙관 심리가 가속 중',
+      'noiseVsSignal.isCurrentMoveNoise가 true이면 단기 과잉반응 — 역방향 포지션 가능',
+      'catalysts 목록에서 실제로 발생 여부를 모니터링하면 시나리오 진행 확인 가능',
+      'probability 합계는 1.0 — 각 시나리오의 상대적 가능성 비교',
+    ],
+    tips: [
+      'keyWatchPoints를 모니터링 지표로 활용하세요',
+      'timeframe이 짧은 시나리오일수록 즉각적 대응 필요',
+      '반드시 공식 재무 데이터 및 전문 투자 자문과 병행하세요',
+    ],
+    limitations: [
+      '시나리오 확률은 여론 기반 추정 — 실제 시장 예측이 아님',
+      '투자 자문이 아닙니다',
+      '매크로 이벤트(미국 금리, 지정학 리스크)는 수집 소스 제약으로 미반영',
+    ],
+    technicalDetails: [
+      '입력: 기사 상위 20건(제목) + 댓글 상위 40건(100자 절단)',
+      '선행 의존: market-sentiment-index(심리 지수), information-asymmetry(정보 폭포), risk-map(리스크 목록), opportunity(기회 목록)',
+      '분석 알고리즘: 여론 모멘텀 방향 측정 → 3시나리오 조건 설정 → 확률 배분 → 촉발 이벤트 식별 → 노이즈/시그널 판단',
+      '출력 스키마: scenarios[3](type, probability, catalysts[], sentimentImpact, marketNarrative, keyWatchPoints[], timeframe), mostLikelyScenario, sentimentMomentum, noiseVsSignal(isCurrentMoveNoise, reasoning), disclaimer, summary',
+    ],
+    source: 'catalyst-scenario 모듈 (Claude Sonnet 4.6)',
+  },
+  investmentSignal: {
+    title: '투자 신호 종합',
+    description:
+      '앞선 금융 Stage 4 분석을 종합하여 여론 기반 단기(1~2주) / 중기(1~3개월) 투자 심리 신호를 도출합니다. ⚠️ 이 신호는 여론 참고 자료이며 투자 자문이 아닙니다.',
+    details: [
+      'overallSignal: strong-buy / buy / hold / sell / strong-sell (여론 기반 — 투자 자문 아님)',
+      'signalStrength: 0~100 — 신호의 강도 (높을수록 확신도 높음)',
+      'signalComponents: 신호를 구성하는 요소와 각 가중치',
+      'timeHorizon: 단기(shortTerm) / 중기(mediumTerm) 신호 구분',
+      'keyRisks / keyOpportunities: 현재 신호의 주요 리스크와 기회',
+      'sentimentExtremeWarning: 극단적 심리 경고 및 역발상 신호',
+    ],
+    howToRead: [
+      'overallSignal은 여론 기반 — 실제 투자 결정에 직접 사용하면 안 됨',
+      'signalStrength가 70 이상이면 현재 여론의 방향이 강하게 일관된 상태',
+      'sentimentExtremeWarning.isExtreme이 true이면 역발상 신호 — 극단적 탐욕은 매도, 극단적 공포는 매수 시사 (자문 아님)',
+      '단기 신호와 중기 신호가 다르면 단기 과잉반응이 있는 상태',
+      'keyRisks가 많을수록 현재 신호의 신뢰도에 제약이 있음',
+    ],
+    tips: [
+      '공식 증권사 보고서, 재무제표와 병행하여 교차 검증하세요',
+      '극단적 경고(sentimentExtremeWarning) 발생 시 포지션 재검토 신호로 활용',
+      '이 신호만으로 투자 결정을 하지 마세요 — 항상 전문 투자 자문을 받으세요',
+    ],
+    limitations: [
+      '여론 데이터 기반 — 내부 정보, 기술적 분석, 펀더멘털은 미반영',
+      '투자 자문이 아닙니다 — 실제 투자 손실에 대한 책임을 지지 않음',
+      '단기 여론 변동에 민감하여 노이즈가 포함될 수 있음',
+    ],
+    technicalDetails: [
+      '입력: 기사 상위 20건(제목) + 댓글 상위 30건(100자 절단)',
+      '선행 의존: market-sentiment-index(심리 지수), information-asymmetry(정보 폭포), catalyst-scenario(시나리오), risk-map(리스크), opportunity(기회)',
+      '분석 알고리즘: 선행 Stage 4 결과 통합 → 신호 구성 요소 가중 합산 → 시간 지평 분리 → 극단 경고 발동',
+      '출력 스키마: overallSignal, signalStrength(0~100), signalComponents[], timeHorizon(shortTerm, mediumTerm), keyRisks[], keyOpportunities[], sentimentExtremeWarning(isExtreme, direction, contraindicatorSignal), disclaimer, summary',
+    ],
+    source: 'investment-signal 모듈 (Claude Sonnet 4.6)',
+  },
+
   // ─── 팬덤 도메인 (Stage 4) ───
 
   fanLoyaltyIndex: {

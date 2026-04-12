@@ -48,7 +48,7 @@ type ModuleMeta = {
   analyzes: string[];
   recommended: { provider: string; model: string; reason: string };
   costTip: string;
-  domain?: 'political' | 'fandom' | 'corporate' | 'pr' | 'policy'; // undefined = 공통
+  domain?: 'political' | 'fandom' | 'corporate' | 'pr' | 'policy' | 'finance'; // undefined = 공통
 };
 
 const MODULE_META: Record<string, ModuleMeta> = {
@@ -452,6 +452,81 @@ const MODULE_META: Record<string, ModuleMeta> = {
       '모든 선행 모듈 결과를 종합하므로 입력 토큰이 가장 많습니다. 최고 품질 모델 강력 권장.',
     domain: 'corporate',
   },
+
+  // ── 금융 도메인 Stage 4 ──
+  'market-sentiment-index': {
+    name: '투자 심리 지수',
+    description:
+      'Baker & Wurgler(2006) 투자자 심리 지수와 Kahneman & Tversky(1979) 행동 재무학으로 공포/탐욕 스펙트럼과 투자자 편향을 측정합니다. ⚠️ 투자 자문 아님.',
+    analyzes: [
+      '투자 심리 지수 (0=극단적 공포 ~ 100=극단적 탐욕)',
+      '투자자 집단별 (개인/기관/외국인) bullish/bearish 심리',
+      '행동 재무학 편향 패턴 (손실 회피·앵커링·군집 행동·확증 편향)',
+      '역발상 신호 vs 추세 추종 신호 분류',
+    ],
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      reason: '투자자 심리 편향 패턴 분류에 정교한 언어 이해 필요',
+    },
+    costTip: '심리 지수 산출은 댓글 분석 집중형 — 댓글 수집량이 많을수록 정확도 향상.',
+    domain: 'finance',
+  },
+  'information-asymmetry': {
+    name: '정보 비대칭 분석',
+    description:
+      'Bikhchandani et al.(1992) Information Cascade Theory로 정보 폭포 현상, 선행 지표, 루머 위험 영역을 식별합니다. ⚠️ 투자 자문 아님.',
+    analyzes: [
+      '기관-개인 정보 격차 수준 (high/medium/low)',
+      '정보 폭포 시작점 및 확산 경로',
+      '주류 미디어 반영 전 선행 지표 (커뮤니티 선행 신호)',
+      '정보 공백 영역과 루머 위험도 및 공식 정보 권고',
+    ],
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      reason: '정보 폭포 패턴의 맥락적 이해와 선행/후행 신호 구분에 Claude 추론 필요',
+    },
+    costTip: '선행 의존 모듈이 많아 컨텍스트가 큼 — 경량 토큰 최적화 설정 권장.',
+    domain: 'finance',
+  },
+  'catalyst-scenario': {
+    name: '시장 시나리오',
+    description:
+      'De Long et al.(1990) Noise Trader Theory로 여론 기반 강세(Bull)/기본(Base)/약세(Bear) 3개 시나리오와 촉발 이벤트를 분석합니다. ⚠️ 투자 자문 아님.',
+    analyzes: [
+      'Bull / Base / Bear 3개 시나리오별 확률·촉발 이벤트·시장 내러티브',
+      '현재 가장 가능성 높은 시나리오 선정',
+      '심리 모멘텀 방향 (accelerating-bull / stable / accelerating-bear)',
+      '현재 여론이 단기 노이즈인지 구조적 시그널인지 판단',
+    ],
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      reason: '복수 시나리오 분기 추론과 확률 배분에 Claude 추론 능력 활용',
+    },
+    costTip: '시나리오 생성은 창의적 추론 집중형 — 모델 품질이 결과 다양성에 직결됨.',
+    domain: 'finance',
+  },
+  'investment-signal': {
+    name: '투자 신호 종합',
+    description:
+      '금융 Stage 4 분석을 종합하여 여론 기반 단기(1~2주) / 중기(1~3개월) 투자 심리 신호를 도출합니다. ⚠️ 투자 자문 아님.',
+    analyzes: [
+      '종합 투자 신호 (strong-buy / buy / hold / sell / strong-sell) — 여론 기반',
+      '신호 강도 (0~100) 및 구성 요소 가중치 분해',
+      '단기 / 중기 신호 구분 및 근거',
+      '극단적 심리 경고 및 역발상 신호 발동 조건',
+    ],
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      reason: '전체 금융 Stage 4 결과 종합 — 가장 많은 선행 컨텍스트를 처리하는 최종 모듈',
+    },
+    costTip:
+      '모든 금융 Stage 4 선행 결과를 입력으로 받아 토큰이 가장 많습니다. 최고 품질 모델 강력 권장.',
+    domain: 'finance',
+  },
 };
 
 // ── 모듈 분류 상수 ──
@@ -487,6 +562,12 @@ const DOMAIN_MODULES: Record<string, string[]> = {
     'reputation-recovery-simulation',
   ],
   pr: ['crisis-type-classifier', 'reputation-index', 'crisis-scenario', 'frame-war'],
+  finance: [
+    'market-sentiment-index',
+    'information-asymmetry',
+    'catalyst-scenario',
+    'investment-signal',
+  ],
 };
 
 // 프리셋 → 도메인 매핑 (seed-presets와 동일)
@@ -496,7 +577,7 @@ const PRESET_DOMAIN_MAP: Record<string, { domain: string; title: string; categor
   corporate_reputation: { domain: 'corporate', title: '기업 평판 관리', category: '핵심 활용' },
   entertainment: { domain: 'fandom', title: '연예인 / 기획사', category: '핵심 활용' },
   policy_research: { domain: 'policy', title: '정책 연구', category: '산업 특화' },
-  finance: { domain: 'political', title: '금융 / 투자', category: '산업 특화' },
+  finance: { domain: 'finance', title: '금융 / 투자', category: '산업 특화' },
   pharma_healthcare: { domain: 'political', title: '제약 / 헬스케어', category: '산업 특화' },
   public_sector: { domain: 'political', title: '지자체 / 공공', category: '산업 특화' },
   education: { domain: 'political', title: '대학 / 교육', category: '확장 영역' },
@@ -516,6 +597,7 @@ function getModulesForPreset(presetSlug?: string): string[] {
       ...DOMAIN_MODULES.fandom,
       ...DOMAIN_MODULES.corporate,
       ...DOMAIN_MODULES.pr,
+      ...DOMAIN_MODULES.finance,
     ];
     return [...COMMON_MODULES, ...Array.from(new Set(allDomainModules))];
   }
