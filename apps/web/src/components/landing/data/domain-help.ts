@@ -155,18 +155,40 @@ export const DOMAIN_HELP_DATA: Record<string, DomainHelpData> = {
       ...COMMON_MODULES,
       {
         stage: 'Stage 4',
-        label: '기업 평판 고급 분석',
+        label: '기업 평판 고급 분석 (ADVN)',
         modules: [
           {
             name: '이해관계자 영향력 지도',
-            description: 'Stakeholder Salience Model 기반 권력·합법성·긴급성 매핑',
+            description: 'Stakeholder Salience Model 기반 권력·합법성·긴급성 3축 현출성 매핑',
           },
           {
             name: 'ESG 여론 분석',
-            description: '환경(E)·사회(S)·지배구조(G) 차원별 여론 점수 분리 측정',
+            description: '환경(E)·사회(S)·지배구조(G) 차원별 여론 점수 및 규제 리스크 측정',
           },
-          { name: '위기 시나리오', description: '기업 맥락의 위기 확산/통제/역전 시나리오' },
-          { name: '승리 시뮬레이션', description: '평판 회복 전략의 성공 확률 종합 평가' },
+          {
+            name: '평판 지수 측정',
+            description: 'RepTrak 7차원(제품·혁신·직장·거버넌스·시민의식·리더십·재무) 평판 점수',
+          },
+          {
+            name: 'SCCT 위기 유형 분류',
+            description: 'Coombs(2007) SCCT로 위기 책임도 분류 + Image Repair 전략 매핑',
+          },
+          {
+            name: '미디어 프레임 의제 설정력',
+            description: 'Entman(1993) Framing Theory — 언론 vs 댓글 프레임 간극 + 기업 메시지 반영도',
+          },
+          {
+            name: 'CSR 공약 진정성 간극',
+            description: 'Brunsson(1989) 조직 위선 이론 — ESG 공약 신뢰도 + 그린워싱 위험 진단',
+          },
+          {
+            name: '위기 시나리오 (기업)',
+            description: 'SCCT 기반 기업 위기 확산/통제/역전 3가지 시나리오 플래닝',
+          },
+          {
+            name: '평판 회복 시뮬레이션',
+            description: 'RepTrak·SCCT·SLO 종합 — 평판 회복 목표 달성 확률 + 우선순위 전략',
+          },
         ],
       },
     ],
@@ -191,6 +213,27 @@ export const DOMAIN_HELP_DATA: Record<string, DomainHelpData> = {
         year: 2000,
         keyConceptKo: '사회적 운영 허가권',
         application: '여론 악화 시 사회적 허가 철회 위험 측정',
+      },
+      {
+        theory: 'Signaling Theory',
+        scholar: 'Spence, A.M.',
+        year: 1973,
+        keyConceptKo: '신호 이론',
+        application: '기업 공식 메시지가 이해관계자에게 어떤 신호로 수신되는지 분석',
+      },
+      {
+        theory: 'Media Framing Theory',
+        scholar: 'Entman, R.M.',
+        year: 1993,
+        keyConceptKo: '미디어 프레이밍 이론',
+        application: '언론 프레임 vs 온라인 여론 프레임 간극 측정 (media-framing-dominance 모듈)',
+      },
+      {
+        theory: 'Situational Crisis Communication Theory (SCCT)',
+        scholar: 'Coombs, W.T.',
+        year: 2007,
+        keyConceptKo: 'SCCT 위기 커뮤니케이션 이론',
+        application: '기업 위기 유형 분류 및 Image Repair 전략 매핑 (crisis-type-classifier 모듈)',
       },
     ],
     usageExamples: [
