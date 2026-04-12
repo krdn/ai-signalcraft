@@ -299,54 +299,63 @@ export const USE_CASE_DETAILS: Record<string, UseCaseDetail> = {
   },
   '기업 평판 관리': {
     title: '기업 평판 관리',
-    tagline: '기업의 온라인 평판을 360도로 관리합니다',
+    tagline: 'RepTrak·SCCT·ESG 이론으로 기업 평판을 360도 관리합니다',
     icon: LineChart,
     color: 'text-blue-500',
     painPoints: [
       { icon: PieChart, text: '채널별 여론을 통합해서 보는 뷰가 없음' },
-      { icon: FileBarChart, text: '경영진 리포트 작성에 전담 인력 필요' },
-      { icon: Signal, text: '평판 변화의 원인 파악이 주관적 판단에 의존' },
+      { icon: FileBarChart, text: '경영진 리포트 작성에 전담 인력 + 3일 소요' },
+      { icon: Signal, text: 'ESG·CSR 공약이 실제로 여론에 긍정적으로 작용하는지 검증 불가' },
     ],
     recommendedSources: {
       active: ['네이버 뉴스', '네이버 댓글', '유튜브', 'DC갤러리', 'FM코리아', '클리앙'],
       upcoming: ['네이버 블로그', '네이버 카페', 'LinkedIn', 'Google News', '앱 리뷰'],
       reason:
-        '기업 평판은 뉴스 보도와 커뮤니티 반응의 교차 분석이 중요합니다. 클리앙·FM코리아의 소비자 반응과 네이버 뉴스 댓글의 일반 여론을 통합해야 전체 그림이 보입니다.',
+        '기업 평판은 뉴스 보도(투자자·미디어)와 커뮤니티 반응(소비자·임직원)의 교차 분석이 중요합니다. 클리앙·FM코리아의 소비자 반응과 네이버 뉴스 댓글의 일반 여론을 통합해야 전체 이해관계자 지도가 완성됩니다.',
     },
     scenarios: [
       {
-        title: '통합 평판 대시보드',
+        title: '이해관계자별 평판 지도 자동 생성',
         description:
-          '뉴스·댓글·유튜브·커뮤니티를 하나의 대시보드에서 통합 모니터링합니다. 채널별 감정 비율, 핵심 키워드 변화, 인플루언서 반응을 한눈에 파악하고 주간/월간 트렌드를 자동 추적합니다.',
-        icon: BarChart2,
+          'Stakeholder Salience Model로 투자자·소비자·임직원·규제기관·미디어의 영향력과 긴급성을 자동 매핑합니다. "지금 당장 대응해야 할 이해관계자"와 "즉시 취해야 할 조치"를 AI가 명확히 식별합니다.',
+        icon: Network,
       },
       {
-        title: '경영진 자동 리포트',
+        title: 'ESG·CSR 진정성 간극 진단',
         description:
-          '주간/월간 단위로 경영진용 종합 리포트를 자동 생성합니다. "이번 주 핵심 이슈 3가지", "평판 리스크 등급 변화", "경쟁사 대비 포지션" 등 C-Level이 바로 의사결정에 활용할 수 있는 형태로 제공합니다.',
-        icon: Crown,
-      },
-      {
-        title: 'ESG·CSR 여론 트래킹',
-        description:
-          '기업의 ESG 활동, 사회공헌, 환경 이슈에 대한 여론을 별도 트래킹합니다. 긍정 여론 확산에 성공한 캠페인과 백래시를 받은 캠페인의 차이를 분석하여 다음 CSR 전략에 반영합니다.',
+          '기업이 발표한 ESG 공약과 온라인 여론의 실제 평가를 E·S·G 3차원으로 분리 측정합니다. 그린워싱 위험 수준을 자동 진단하고, CSR 이니셔티브별 평판 ROI를 수치로 제시합니다.',
         icon: Heart,
+      },
+      {
+        title: '평판 위기 골든타임 대응',
+        description:
+          'SCCT 이론으로 위기 유형(희생자형·사고형·예방가능형)을 분류하고 Image Repair Theory 5가지 전략 중 최적안을 즉시 제시합니다. 골든타임(0~24시간) 안에 경영진이 실행 가능한 대응 시나리오 3개를 자동 생성합니다.',
+        icon: ShieldAlert,
       },
     ],
     workflow: [
-      { step: '기업명 + 경쟁사 입력', detail: '비교 분석 모드로 수집 시작' },
+      { step: '기업명 입력', detail: 'corporate 도메인 자동 활성화' },
       { step: '6개 채널 통합 여론 수집', detail: '뉴스·댓글·커뮤니티·유튜브 병렬 수집' },
-      { step: 'AI가 평판 점수·리스크·기회 분석', detail: '14개 모듈 종합 분석' },
-      { step: '경영진 리포트 자동 생성', detail: 'PDF 다운로드 + 대시보드 업데이트' },
+      { step: 'AI가 평판·이해관계자·ESG·위기 분석', detail: '공통 8개 + ADVN 8개 = 총 16개 모듈' },
+      { step: '경영진 리포트 자동 생성', detail: 'PDF 다운로드 + 평판 회복 시뮬레이션' },
     ],
-    keyModules: ['거시 여론 구조', '집단별 반응', '리스크 지도', '기회 분석'],
+    keyModules: [
+      '이해관계자 영향력 지도',
+      'ESG 여론 분석',
+      '평판 지수 (RepTrak 7차원)',
+      'SCCT 위기 유형 분류',
+      '미디어 프레임 의제 설정력',
+      'CSR 공약 진정성 간극',
+      '위기 시나리오',
+      '평판 회복 시뮬레이션',
+    ],
     impactMetrics: [
       { label: '리포트 작성', before: '3일', after: '자동 생성', icon: FileBarChart },
       { label: '채널 커버리지', before: '뉴스 위주', after: '6개 소스 통합', icon: Network },
-      { label: '인사이트 품질', before: '주관적 판단', after: 'AI 데이터 기반', icon: Brain },
+      { label: 'ESG 진정성 검증', before: '불가능', after: '공약 vs 여론 자동 분석', icon: Brain },
     ],
     insightQuote:
-      '평판은 쌓는 데 10년, 무너지는 데 10초입니다. 데이터로 평판의 미세한 변화를 포착하세요.',
+      '평판은 쌓는 데 10년, 무너지는 데 10초입니다. RepTrak·SCCT·ESG 이론으로 평판의 미세한 변화를 포착하세요.',
   },
   '연예인 / 기획사': {
     title: '연예인 / 기획사',
