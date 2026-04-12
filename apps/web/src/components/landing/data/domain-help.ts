@@ -290,6 +290,14 @@ export const DOMAIN_HELP_DATA: Record<string, DomainHelpData> = {
         keyConceptKo: '준사회적 관계 이론',
         application: '팬과 아티스트 간 감정적 유대 측정, 충성도 지수 이론적 기반',
       },
+      {
+        theory: 'BIRGing/CORFing',
+        scholar: 'Cialdini, R.B.',
+        year: 1976,
+        keyConceptKo: '영광 반사 / 실패 분리 이론',
+        application:
+          '성공 시 팬덤 결집(BIRGing), 논란 시 거리두기(CORFing) 행동 예측 — 내러티브 경쟁과 컴백 반응 예측 모듈에 반영',
+      },
     ],
     usageExamples: [
       {

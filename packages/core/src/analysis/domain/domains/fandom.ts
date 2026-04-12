@@ -10,6 +10,36 @@ export const FANDOM_DOMAIN: DomainConfig = {
   id: 'fandom',
   displayName: '연예인/기획사 팬덤 여론 분석',
 
+  theoreticalBasis: [
+    {
+      theory: 'Fan Engagement Ladder',
+      scholar: 'Hills, M.',
+      year: 2002,
+      keyConceptKo: '팬 참여 사다리 모델',
+      application:
+        'Core-Fan/Casual-Fan/Anti-Fan/General-Public 4단계 집단 분류 기반. 팬덤 세분화(segmentation) 모듈과 충성도 지수(fan-loyalty-index)의 집단 분류 체계에 적용',
+      applicableModules: ['fan-loyalty-index', 'segmentation'],
+    },
+    {
+      theory: 'Parasocial Relationship Theory',
+      scholar: 'Horton, D. & Wohl, R.R.',
+      year: 1956,
+      keyConceptKo: '준사회적 관계 이론',
+      application:
+        '팬과 아티스트 간 일방향적 감정 유대의 형성·강도·단절 패턴 측정. 충성도 지수의 emotional bond 차원 및 이탈 징후(churn signal) 해석에 적용',
+      applicableModules: ['fan-loyalty-index', 'fandom-crisis-scenario'],
+    },
+    {
+      theory: 'BIRGing/CORFing',
+      scholar: 'Cialdini, R.B.',
+      year: 1976,
+      keyConceptKo: '영광 반사 / 실패 분리 이론',
+      application:
+        '성공 시 팬덤의 집단 동일시 강화(BIRGing)와 실패/논란 시 거리두기(CORFing) 행동 예측. 팬덤 내러티브 경쟁의 팬·안티 진영 이동 패턴 및 컴백 반응 예측 모델에 반영',
+      applicableModules: ['fandom-narrative-war', 'release-reception-prediction'],
+    },
+  ],
+
   platformKnowledge: `
 ## 한국 온라인 팬덤 플랫폼 특성 (분석 시 반드시 반영)
 
