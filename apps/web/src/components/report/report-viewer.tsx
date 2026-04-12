@@ -41,7 +41,7 @@ export function ReportViewer({ markdownContent, onActiveSectionChange }: ReportV
   const setupObserver = useCallback(() => {
     if (!contentRef.current || !onActiveSectionChange) return;
 
-    const headings = contentRef.current.querySelectorAll('h2[id]');
+    const headings = contentRef.current.querySelectorAll('h2[id], h3[id]');
     if (headings.length === 0) return;
 
     const observer = new IntersectionObserver(
@@ -90,11 +90,19 @@ export function ReportViewer({ markdownContent, onActiveSectionChange }: ReportV
                 </h2>
               );
             },
-            h3: ({ children, ...props }) => (
-              <h3 className="text-base font-semibold leading-snug mt-6 mb-3" {...props}>
-                {children}
-              </h3>
-            ),
+            h3: ({ children, ...props }) => {
+              const text = String(children);
+              const id = generateSectionId(text);
+              return (
+                <h3
+                  id={id}
+                  className="text-base font-semibold leading-snug mt-6 mb-3 scroll-mt-16"
+                  {...props}
+                >
+                  {children}
+                </h3>
+              );
+            },
             p: ({ children, ...props }) => (
               <p className="text-sm leading-relaxed mb-3" {...props}>
                 {children}

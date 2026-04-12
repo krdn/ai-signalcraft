@@ -250,6 +250,31 @@ export function AdvancedView({ jobId, domain: domainProp, fetchFn }: AdvancedVie
           <InvestmentSignalCard
             data={parseModuleResult(moduleResults, 'investment-signal') ?? null}
           />
+
+          {/* 리스크 연쇄 그래프 */}
+          {(() => {
+            const riskData = parseModuleResult(moduleResults, 'risk-map');
+            if (!riskData) return null;
+            try {
+              const graphData = buildRiskChainGraph(riskData as any);
+              if (graphData.nodes.length === 0) return null;
+              return (
+                <Card className="min-h-[320px]">
+                  <CardHeader>
+                    <CardTitle className="text-lg font-semibold flex items-center gap-1.5">
+                      리스크 연쇄 다이어그램
+                      <AdvancedCardHelp {...ADVANCED_HELP.riskChainGraph} />
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <FrameWarGraph data={graphData} width={600} height={400} />
+                  </CardContent>
+                </Card>
+              );
+            } catch {
+              return null;
+            }
+          })()}
         </div>
       ) : domain === 'legal' ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

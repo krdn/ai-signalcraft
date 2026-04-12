@@ -22,10 +22,13 @@ interface ReportViewProps {
 }
 
 /**
- * 마크다운에서 `## N. 제목` 패턴을 파싱하여 섹션 배열 생성
+ * 마크다운에서 `## N. 제목` 또는 `### N. 제목` 패턴을 파싱하여 섹션 배열 생성
+ * AI 모델에 따라 ## 또는 ### 로 섹션을 생성하는 경우가 있어 둘 다 지원
  */
 function parseSections(markdown: string): Section[] {
-  const regex = /^## (.+)$/gm;
+  // ## 섹션이 2개 이상이면 ## 기준, 아니면 ### 기준으로 파싱
+  const h2Matches = markdown.match(/^## .+$/gm) ?? [];
+  const regex = h2Matches.length >= 2 ? /^## (.+)$/gm : /^### (.+)$/gm;
   const sections: Section[] = [];
   let match;
   while ((match = regex.exec(markdown)) !== null) {

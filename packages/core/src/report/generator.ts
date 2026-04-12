@@ -93,7 +93,8 @@ ${resultsJson}
 2. 각 섹션에 해당하는 분석 모듈 결과를 자연어로 풀어서 설명
 3. 섹션 구조:${domainConfig.reportSectionTemplate}
 4. 전략 중심으로 작성, 단순 요약 금지
-5. 근거 없는 추측 금지${failedSection}${buildAdvancedAnalysisSection(input)}`;
+5. 근거 없는 추측 금지
+6. **헤딩 규칙 (반드시 준수)**: 각 섹션 제목은 반드시 ## (h2) 레벨로 작성하세요. ### (h3) 레벨은 섹션 내부 소제목에만 사용합니다.${failedSection}${buildAdvancedAnalysisSection(input)}`;
 
   const result = await analyzeText(prompt, {
     provider: config.provider,
