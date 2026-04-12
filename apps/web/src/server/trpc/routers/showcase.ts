@@ -125,6 +125,7 @@ export const showcaseRouter = router({
         .select({
           id: collectionJobs.id,
           keyword: collectionJobs.keyword,
+          domain: collectionJobs.domain,
           progress: collectionJobs.progress,
           createdAt: collectionJobs.createdAt,
           updatedAt: collectionJobs.updatedAt,
@@ -279,6 +280,7 @@ export const showcaseRouter = router({
 
       return {
         keyword: job.keyword,
+        domain: job.domain,
         stats: {
           totalArticles,
           totalComments,

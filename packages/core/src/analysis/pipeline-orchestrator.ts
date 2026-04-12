@@ -128,6 +128,7 @@ export async function runAnalysisPipeline(
       results: allResults,
       completedModules,
       failedModules,
+      domain: input.domain,
     });
     await updateJobProgress(input.jobId, { report: { status: 'completed' } });
     return { results: allResults, completedModules, failedModules, report };

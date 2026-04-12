@@ -414,6 +414,25 @@ export const analysisRouter = router({
       return report ?? null;
     }),
 
+  // 작업 도메인 조회 — AdvancedView 렌더링에 사용
+  getJobDomain: protectedProcedure
+    .input(z.object({ jobId: z.number() }))
+    .query(async ({ input, ctx }) => {
+      const [job] = await ctx.db
+        .select({ domain: collectionJobs.domain })
+        .from(collectionJobs)
+        .where(
+          buildJobCondition({
+            jobId: input.jobId,
+            teamId: ctx.teamId,
+            userId: ctx.userId,
+            filterMode: ctx.defaultFilterMode,
+          }),
+        )
+        .limit(1);
+      return job?.domain ?? 'political';
+    }),
+
   resume: protectedProcedure
     .input(
       z.object({

@@ -31,6 +31,8 @@ import { trpcClient } from '@/lib/trpc';
 
 interface AdvancedViewProps {
   jobId: number | null;
+  /** DB의 collectionJobs.domain 값 — 없으면 DB 조회 후 모듈명으로 역추론 */
+  domain?: string;
   /** 공개 페이지에서 사용할 대체 데이터 페칭 함수 */
   fetchFn?: (jobId: number) => Promise<Array<{ module: string; status: string; result?: unknown }>>;
 }
@@ -123,7 +125,7 @@ function detectDomain(
   return 'political';
 }
 
-export function AdvancedView({ jobId, fetchFn }: AdvancedViewProps) {
+export function AdvancedView({ jobId, domain: domainProp, fetchFn }: AdvancedViewProps) {
   const defaultFetch = (id: number) => trpcClient.analysis.getResults.query({ jobId: id });
   const queryFnToUse = fetchFn ?? defaultFetch;
 
@@ -137,6 +139,15 @@ export function AdvancedView({ jobId, fetchFn }: AdvancedViewProps) {
     queryFn: () => queryFnToUse(jobId!),
     enabled: !!jobId,
     staleTime: fetchFn ? Infinity : undefined,
+  });
+
+  // domain prop이 없을 때 DB에서 직접 조회 (로그인 사용자 대시보드)
+  const needsDomainQuery = !!jobId && !domainProp && !fetchFn;
+  const { data: jobDomain, isLoading: isDomainLoading } = useQuery({
+    queryKey: ['analysis', 'getJobDomain', jobId],
+    queryFn: () => trpcClient.analysis.getJobDomain.query({ jobId: jobId! }),
+    enabled: needsDomainQuery,
+    staleTime: Infinity,
   });
 
   // jobId 없음 -- 빈 상태
@@ -201,8 +212,24 @@ export function AdvancedView({ jobId, fetchFn }: AdvancedViewProps) {
     );
   }
 
-  // 도메인 자동 감지
-  const domain = detectDomain(moduleResults);
+  // domain prop이 없고 DB 조회 중이면 대기
+  if (needsDomainQuery && isDomainLoading) {
+    return (
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Card key={i} className="min-h-[320px]">
+            <CardContent className="p-6">
+              <Skeleton className="h-6 w-40 mb-4" />
+              <Skeleton className="h-[260px] w-full rounded" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
+  // domain 결정: prop > DB 조회 > 모듈명 역추론
+  const domain = (domainProp ?? jobDomain ?? detectDomain(moduleResults)) as ReturnType<typeof detectDomain>;
 
   return (
     <div className="space-y-4">

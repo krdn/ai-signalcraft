@@ -118,7 +118,9 @@ export default function ShowcaseDetailPage() {
         {activeTab === 4 && <ShowcaseHistoryTab currentJobId={jobId} />}
 
         {/* 탭 5: 고급 분석 */}
-        {activeTab === 5 && <AdvancedView jobId={jobId} fetchFn={showcaseFetchResults} />}
+        {activeTab === 5 && (
+          <AdvancedView jobId={jobId} domain={detail?.domain} fetchFn={showcaseFetchResults} />
+        )}
       </div>
 
       {/* 하단 CTA */}

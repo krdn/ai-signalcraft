@@ -4,25 +4,26 @@ import { persistAnalysisReport } from '../analysis/persist-analysis';
 import { getModuleModelConfig } from '../analysis/model-config';
 import type { ReportGenerationInput } from '../types/report';
 import type { AnalysisDomain } from '../analysis/domain';
-import { getDomainConfig } from '../analysis/domain';
+import { getDomainConfig, getSupportedDomains } from '../analysis/domain';
 
 export type { ReportGenerationInput } from '../types/report';
 
-// 고급 분석(ADVN) 모듈 — 정치 + 팬덤 모두 포함
-const ADVN_MODULES = [
-  'approval-rating',
-  'frame-war',
-  'crisis-scenario',
-  'win-simulation',
-  'fan-loyalty-index',
-  'fandom-narrative-war',
-  'fandom-crisis-scenario',
-  'release-reception-prediction',
-];
+/** 모든 도메인의 Stage 4 모듈명을 동적으로 수집 */
+function getAllAdvnModuleNames(): Set<string> {
+  const names = new Set<string>();
+  for (const domain of getSupportedDomains()) {
+    const config = getDomainConfig(domain);
+    for (const m of [...config.stage4.parallel, ...config.stage4.sequential]) {
+      names.add(m);
+    }
+  }
+  return names;
+}
 
 function buildAdvancedAnalysisSection(input: ReportGenerationInput): string {
+  const advnModuleNames = getAllAdvnModuleNames();
   const advnResults = Object.entries(input.results).filter(
-    ([k, r]) => ADVN_MODULES.includes(k) && r.status === 'completed',
+    ([k, r]) => advnModuleNames.has(k) && r.status === 'completed',
   );
 
   if (advnResults.length === 0) return '';
