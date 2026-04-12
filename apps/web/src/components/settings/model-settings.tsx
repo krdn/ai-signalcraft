@@ -667,6 +667,7 @@ const DOMAIN_MODULES: Record<string, string[]> = {
   healthcare: ['health-risk-perception', 'compliance-predictor'],
   legal: ['reputation-index', 'frame-war', 'crisis-scenario', 'win-simulation'],
   education: ['approval-rating', 'frame-war', 'crisis-scenario', 'win-simulation'],
+  'public-sector': ['approval-rating', 'frame-war', 'crisis-scenario', 'win-simulation'],
   sports: [
     'performance-narrative',
     'season-outlook-prediction',
@@ -684,7 +685,7 @@ const PRESET_DOMAIN_MAP: Record<string, { domain: string; title: string; categor
   policy_research: { domain: 'policy', title: '정책 연구', category: '산업 특화' },
   finance: { domain: 'finance', title: '금융 / 투자', category: '산업 특화' },
   pharma_healthcare: { domain: 'healthcare', title: '제약 / 헬스케어', category: '산업 특화' },
-  public_sector: { domain: 'political', title: '지자체 / 공공', category: '산업 특화' },
+  public_sector: { domain: 'public-sector', title: '지자체 / 공공기관', category: '산업 특화' },
   education: { domain: 'education', title: '대학 / 교육', category: '확장 영역' },
   sports: { domain: 'sports', title: '스포츠 / e스포츠', category: '확장 영역' },
   legal: { domain: 'legal', title: '법률 / 로펌', category: '확장 영역' },
@@ -706,6 +707,8 @@ function getModulesForPreset(presetSlug?: string): string[] {
       ...DOMAIN_MODULES.healthcare,
       ...DOMAIN_MODULES.legal,
       ...DOMAIN_MODULES.education,
+      ...DOMAIN_MODULES['public-sector'],
+      ...DOMAIN_MODULES.sports,
     ];
     return [...COMMON_MODULES, ...Array.from(new Set(allDomainModules))];
   }

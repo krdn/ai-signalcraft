@@ -88,6 +88,12 @@ const EDUCATION_ADVN_MODULES = [
   'crisis-scenario',
   'win-simulation',
 ];
+const PUBLIC_SECTOR_ADVN_MODULES = [
+  'approval-rating',
+  'frame-war',
+  'crisis-scenario',
+  'win-simulation',
+];
 const SPORTS_ADVN_MODULES = [
   'performance-narrative',
   'season-outlook-prediction',
@@ -103,6 +109,7 @@ const ALL_ADVN_MODULES = [
   ...HEALTHCARE_ADVN_MODULES,
   ...LEGAL_ADVN_MODULES,
   ...EDUCATION_ADVN_MODULES,
+  ...PUBLIC_SECTOR_ADVN_MODULES,
   ...SPORTS_ADVN_MODULES,
 ];
 
@@ -127,6 +134,7 @@ function detectDomain(
   | 'healthcare'
   | 'legal'
   | 'education'
+  | 'public-sector'
   | 'sports' {
   const modules = moduleResults.map((r) => r.module);
   if (modules.some((m) => FINANCE_ADVN_MODULES.includes(m))) return 'finance';
@@ -512,7 +520,7 @@ export function AdvancedView({ jobId, domain: domainProp, fetchFn }: AdvancedVie
             }
           })()}
         </div>
-      ) : domain === 'education' ? (
+      ) : domain === 'education' || domain === 'public-sector' ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <ApprovalRatingCard data={parseModuleResult(moduleResults, 'approval-rating') ?? null} />
           <FrameWarChart data={parseModuleResult(moduleResults, 'frame-war') ?? null} />

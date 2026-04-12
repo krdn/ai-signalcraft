@@ -512,6 +512,21 @@ export const DOMAIN_HELP_DATA: Record<string, DomainHelpData> = {
         keyConceptKo: '공공 신뢰 이론',
         application: '역량·정직성·가치 공유 3요소로 기관 신뢰도 결정 요인 분석',
       },
+      {
+        theory: 'New Public Management',
+        scholar: 'Hood, C.',
+        year: 1991,
+        keyConceptKo: '신공공관리론',
+        application: '공공서비스 효율성·성과 중심 평가 및 민영화·외주화 논란 여론 분석',
+      },
+      {
+        theory: 'Agenda-Setting Theory',
+        scholar: 'McCombs, M.E. & Shaw, D.L.',
+        year: 1972,
+        keyConceptKo: '의제 설정 이론',
+        application:
+          '지역 미디어 의제 형성 메커니즘 및 지자체 이슈가 국가 의제로 격상되는 경로 분석',
+      },
     ],
     usageExamples: [
       {

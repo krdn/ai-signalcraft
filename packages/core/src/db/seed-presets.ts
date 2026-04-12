@@ -137,7 +137,7 @@ const PRESET_SEEDS = [
     customSourceIds: [],
     limits: { naverArticles: 500, youtubeVideos: 30, communityPosts: 50, commentsPerItem: 300 },
     optimization: 'standard' as const,
-    skippedModules: ['frameWar', 'winSimulation'],
+    skippedModules: ['frame-war', 'win-simulation'],
     enableItemAnalysis: false,
   },
   // 확장 영역
