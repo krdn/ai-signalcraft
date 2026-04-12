@@ -966,6 +966,81 @@ export const ADVANCED_HELP = {
     ],
     source: 'reputation-recovery-simulation 모듈 (Claude Sonnet 4.6)',
   },
+
+  // ─── 헬스케어 도메인 (Stage 4) ───
+
+  healthRiskPerception: {
+    title: '건강 위험 인식 분석',
+    description:
+      'Risk Perception Theory(Slovic, 1987)를 적용하여 건강 위험에 대한 대중의 인식 편향을 분석합니다. 전문가(의학적) 평가와 대중 인식 간 간극을 측정하고 오정보 확산 패턴을 식별합니다.',
+    details: [
+      'perceivedRiskLevel: 대중 위험 인식 수준 (overestimated/accurate/underestimated)',
+      'expertRiskVsPublicPerception: 전문가 평가 vs 대중 인식 비교 + 간극 크기(large/moderate/small)',
+      'perceptionBiases: dread-factor(공포요소)·unknown-risk(미지성)·normalcy-bias(정상화편향)·availability-heuristic(가용성휴리스틱) 유형별 편향',
+      'misinformationPatterns: 확산 중인 오정보/과장 주장 목록 + 확산 수준 + 정정 우선순위',
+      'communicationRecommendations: 위험 인식 격차 해소 커뮤니케이션 권고 (대상·채널 포함)',
+    ],
+    howToRead: [
+      'perceivedRiskLevel "overestimated"이면 공포 기반 과대 인식 — 팩트 기반 정정 커뮤니케이션 필요',
+      'perceivedRiskLevel "underestimated"이면 정상화 편향 또는 무관심 — 위험 가시화 메시지 필요',
+      'gapMagnitude "large"이면 전문가와 대중 간 인식 괴리가 심각 — 의료 불신 위험 상승',
+      'misinformationPatterns에서 correctionPriority "urgent"인 항목은 즉시 공식 대응 필요',
+      'dread-factor 편향이 강하면 통제 가능성을 강조하는 메시지가 효과적',
+    ],
+    tips: [
+      '오정보 정정 시 공포 자극 회피 — 구체적 수치와 행동 방안을 함께 제시하세요',
+      '미지성 편향이 강한 경우 전문가 설명 영상·인포그래픽이 텍스트보다 효과적',
+      'communicationRecommendations의 channel을 확인하여 집단별 최적 채널 선택',
+    ],
+    limitations: [
+      '전문가 위험 평가는 수집된 뉴스 기사 기반으로, 최신 의학 가이드라인과 차이가 있을 수 있음',
+      '오정보 판별은 여론 데이터 패턴 기반으로, 사실 확인(fact-check)을 반드시 병행하세요',
+      '위험 인식 편향 강도는 수집 기간과 이벤트 발생 여부에 크게 의존함',
+    ],
+    technicalDetails: [
+      '입력: 기사 상위 20건(제목) + 댓글 상위 30건(120자 절단)',
+      '선행 의존: sentiment-framing(negativeFrames), macro-view(overallDirection)',
+      '알고리즘: Risk Perception Theory 4편향 유형별 데이터 패턴 매핑 → 전문가-대중 간극 측정',
+      '출력 스키마: perceivedRiskLevel, expertRiskVsPublicPerception, perceptionBiases[], misinformationPatterns[], communicationRecommendations[], summary',
+    ],
+    source: 'health-risk-perception 모듈 (Claude Sonnet 4.6)',
+  },
+
+  compliancePredictor: {
+    title: '의료 순응도 예측',
+    description:
+      'Health Belief Model(Rosenstock, 1966)의 6요인(취약성·심각성·이익·장벽·행동유발계기·자기효능감)과 Theory of Planned Behavior(Ajzen, 1991)를 적용하여 집단별 의료 순응 예측 확률과 장벽을 도출합니다.',
+    details: [
+      'overallComplianceProbability: 전체 의료 순응 예측 확률 (0~100%)',
+      'hbmFactors: HBM 6요인(취약성/심각성/이익/장벽/행동유발계기/자기효능감) 각 수준 + 여론 근거',
+      'segmentCompliance: 집단별(환자/보호자/의료진/일반대중) 순응 예측 확률 + 핵심 장벽 + 동기 요인',
+      'interventionRecommendations: 순응도 향상 개입 권고 + 타겟 HBM 요인 + 기대 효과 + 우선순위',
+    ],
+    howToRead: [
+      'overallComplianceProbability 70% 이상이면 대체로 순응 의도가 형성된 상태',
+      'overallComplianceProbability 40% 미만이면 장벽이 이익을 압도 — 장벽 해소 전략 우선',
+      'perceivedBarriers severity "high" 항목이 가장 먼저 해소해야 할 개입 대상',
+      'segmentCompliance에서 집단별 확률 차이가 크면 맞춤형 메시지 전략 필요',
+      'cuesToAction이 비어있으면 행동 유발 계기가 없음 — 캠페인·의료진 권고 강화 필요',
+    ],
+    tips: [
+      'interventionRecommendations priority "high" 항목부터 자원을 집중하세요',
+      '자기효능감(selfEfficacy)이 낮은 경우 "나도 할 수 있다"는 성공 사례 공유가 효과적',
+      'HBM 장벽 중 비용 장벽은 지원 제도 안내, 접근성 장벽은 원격/방문 서비스로 해소',
+    ],
+    limitations: [
+      '순응도 예측은 여론 데이터 기반으로 실제 행동과 의도 간 간극이 존재할 수 있음',
+      '집단 분류는 segmentation 모듈 선행 결과에 의존하므로 세분화 정확도에 영향 받음',
+      '개입 전략의 효과는 지역·문화·의료 시스템 맥락에 따라 달라질 수 있음',
+    ],
+    technicalDetails: [
+      '입력: 기사 상위 20건(제목) + 댓글 상위 30건(120자 절단)',
+      '선행 의존: health-risk-perception(perceivedRiskLevel), segmentation(audienceGroups)',
+      '알고리즘: HBM 6요인 여론 신호 추출 → 집단별 순응 확률 도출 → 개입 전략 우선순위 산출',
+      '출력 스키마: overallComplianceProbability, hbmFactors, segmentCompliance[], interventionRecommendations[], summary',
+    ],
+    source: 'compliance-predictor 모듈 (Claude Sonnet 4.6)',
+  },
 } as const;
 
 // ─── 전체 가이드 버튼 ───

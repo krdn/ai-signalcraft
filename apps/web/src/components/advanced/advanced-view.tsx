@@ -22,6 +22,8 @@ import { MarketSentimentIndexCard } from './market-sentiment-index-card';
 import { InformationAsymmetryCard } from './information-asymmetry-card';
 import { CatalystScenarioCard } from './catalyst-scenario-card';
 import { InvestmentSignalCard } from './investment-signal-card';
+import { HealthRiskPerceptionCard } from './health-risk-perception-card';
+import { CompliancePredictorCard } from './compliance-predictor-card';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -68,12 +70,17 @@ const FINANCE_ADVN_MODULES = [
   'catalyst-scenario',
   'investment-signal',
 ];
+const HEALTHCARE_ADVN_MODULES = [
+  'health-risk-perception',
+  'compliance-predictor',
+];
 const ALL_ADVN_MODULES = [
   ...POLITICAL_ADVN_MODULES,
   ...FANDOM_ADVN_MODULES,
   ...CORPORATE_ADVN_MODULES,
   ...PR_ADVN_MODULES,
   ...FINANCE_ADVN_MODULES,
+  ...HEALTHCARE_ADVN_MODULES,
 ];
 
 // 모듈별 결과를 파싱하는 유틸
@@ -86,9 +93,10 @@ function parseModuleResult(
 }
 
 // 모듈 이름으로 도메인 감지
-function detectDomain(moduleResults: Array<{ module: string }>): 'political' | 'fandom' | 'corporate' | 'pr' | 'finance' {
+function detectDomain(moduleResults: Array<{ module: string }>): 'political' | 'fandom' | 'corporate' | 'pr' | 'finance' | 'healthcare' {
   const modules = moduleResults.map((r) => r.module);
   if (modules.some((m) => FINANCE_ADVN_MODULES.includes(m))) return 'finance';
+  if (modules.some((m) => HEALTHCARE_ADVN_MODULES.includes(m))) return 'healthcare';
   if (modules.some((m) => FANDOM_ADVN_MODULES.includes(m))) return 'fandom';
   // PR 판별: crisis-type-classifier + frame-war 조합 (corporate와 구분)
   if (
@@ -266,6 +274,15 @@ export function AdvancedView({ jobId, fetchFn }: AdvancedViewProps) {
               return null;
             }
           })()}
+        </div>
+      ) : domain === 'healthcare' ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <HealthRiskPerceptionCard
+            data={parseModuleResult(moduleResults, 'health-risk-perception') ?? null}
+          />
+          <CompliancePredictorCard
+            data={parseModuleResult(moduleResults, 'compliance-predictor') ?? null}
+          />
         </div>
       ) : domain === 'fandom' ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

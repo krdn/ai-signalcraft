@@ -48,7 +48,7 @@ type ModuleMeta = {
   analyzes: string[];
   recommended: { provider: string; model: string; reason: string };
   costTip: string;
-  domain?: 'political' | 'fandom' | 'corporate' | 'pr' | 'policy' | 'finance'; // undefined = 공통
+  domain?: 'political' | 'fandom' | 'corporate' | 'pr' | 'policy' | 'finance' | 'healthcare'; // undefined = 공통
 };
 
 const MODULE_META: Record<string, ModuleMeta> = {
@@ -453,6 +453,44 @@ const MODULE_META: Record<string, ModuleMeta> = {
     domain: 'corporate',
   },
 
+  // ── 헬스케어 도메인 Stage 4 ──
+  'health-risk-perception': {
+    name: '건강 위험 인식 분석',
+    description:
+      'Risk Perception Theory(Slovic, 1987)로 대중의 건강 위험 인식 편향(공포요소·미지성·정상화편향·가용성휴리스틱)을 분석하고, 전문가 평가와 대중 인식 간 간극을 측정합니다.',
+    analyzes: [
+      '대중 위험 인식 수준 (overestimated/accurate/underestimated)',
+      '전문가 vs 대중 인식 간극 + 간극 크기 평가',
+      '편향 유형별(dread-factor/unknown-risk/normalcy-bias) 데이터 패턴 식별',
+      '확산 중인 오정보 목록 + 정정 우선순위',
+    ],
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      reason: '미묘한 위험 인식 편향 패턴 식별에 Claude 언어 이해력 필요',
+    },
+    costTip: '선행 sentiment-framing 결과를 활용하므로 독립 실행 시보다 정확도가 높습니다.',
+    domain: 'healthcare',
+  },
+  'compliance-predictor': {
+    name: '의료 순응도 예측',
+    description:
+      'Health Belief Model(Rosenstock, 1966) 6요인(취약성·심각성·이익·장벽·계기·자기효능감)으로 집단별 의료 순응 예측 확률과 장벽을 도출하고 개입 전략을 제안합니다.',
+    analyzes: [
+      '전체 의료 순응 예측 확률 (0~100%)',
+      'HBM 6요인별 여론 신호 강도 및 근거',
+      '집단별(환자/보호자/의료진/일반대중) 순응 확률 + 핵심 장벽',
+      '순응도 향상 개입 전략 우선순위',
+    ],
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      reason: '행동 심리 모델 적용과 집단별 차별화 분석에 고급 추론 필요',
+    },
+    costTip: '선행 health-risk-perception 결과를 활용하여 더 정확한 집단별 예측이 가능합니다.',
+    domain: 'healthcare',
+  },
+
   // ── 금융 도메인 Stage 4 ──
   'market-sentiment-index': {
     name: '투자 심리 지수',
@@ -568,6 +606,7 @@ const DOMAIN_MODULES: Record<string, string[]> = {
     'catalyst-scenario',
     'investment-signal',
   ],
+  healthcare: ['health-risk-perception', 'compliance-predictor'],
 };
 
 // 프리셋 → 도메인 매핑 (seed-presets와 동일)
@@ -578,7 +617,7 @@ const PRESET_DOMAIN_MAP: Record<string, { domain: string; title: string; categor
   entertainment: { domain: 'fandom', title: '연예인 / 기획사', category: '핵심 활용' },
   policy_research: { domain: 'policy', title: '정책 연구', category: '산업 특화' },
   finance: { domain: 'finance', title: '금융 / 투자', category: '산업 특화' },
-  pharma_healthcare: { domain: 'political', title: '제약 / 헬스케어', category: '산업 특화' },
+  pharma_healthcare: { domain: 'healthcare', title: '제약 / 헬스케어', category: '산업 특화' },
   public_sector: { domain: 'political', title: '지자체 / 공공', category: '산업 특화' },
   education: { domain: 'political', title: '대학 / 교육', category: '확장 영역' },
   sports: { domain: 'fandom', title: '스포츠 / e스포츠', category: '확장 영역' },
@@ -598,6 +637,7 @@ function getModulesForPreset(presetSlug?: string): string[] {
       ...DOMAIN_MODULES.corporate,
       ...DOMAIN_MODULES.pr,
       ...DOMAIN_MODULES.finance,
+      ...DOMAIN_MODULES.healthcare,
     ];
     return [...COMMON_MODULES, ...Array.from(new Set(allDomainModules))];
   }
@@ -964,7 +1004,7 @@ export function ModelSettings() {
               </strong>
             </span>
             <span>
-              ({({ fandom: '팬덤', policy: '정책', corporate: '기업', pr: 'PR' } as Record<string, string>)[PRESET_DOMAIN_MAP[selectedPresetSlug]?.domain] ?? '정치'} 도메인
+              ({({ fandom: '팬덤', policy: '정책', corporate: '기업', pr: 'PR', finance: '금융', healthcare: '헬스케어' } as Record<string, string>)[PRESET_DOMAIN_MAP[selectedPresetSlug]?.domain] ?? '정치'} 도메인
               — {getModulesForPreset(selectedPresetSlug).length}개 모듈)
             </span>
             <button
@@ -1201,7 +1241,7 @@ export function ModelSettings() {
                       color: currentDomain === 'fandom' ? 'rgb(139,92,246)' : 'hsl(var(--primary))',
                     }}
                   >
-                    {({ fandom: '팬덤 전용', policy: '정책 전용', corporate: '기업 전용', pr: 'PR 전용' } as Record<string, string>)[currentDomain ?? ''] ?? '정치 전용'} 모듈
+                    {({ fandom: '팬덤 전용', policy: '정책 전용', corporate: '기업 전용', pr: 'PR 전용', finance: '금융 전용', healthcare: '헬스케어 전용' } as Record<string, string>)[currentDomain ?? ''] ?? '정치 전용'} 모듈
                   </p>
                   <div className="flex-1 border-t" />
                 </div>
@@ -1265,7 +1305,7 @@ function ModuleCard({
             <Badge
               className={`text-[9px] ${domain === 'fandom' ? 'bg-violet-500/15 text-violet-500 border-violet-500/20' : domain === 'corporate' ? 'bg-sky-500/15 text-sky-600 border-sky-500/20' : domain === 'pr' ? 'bg-orange-500/15 text-orange-600 border-orange-500/20' : domain === 'policy' ? 'bg-indigo-500/15 text-indigo-600 border-indigo-500/20' : 'bg-blue-500/15 text-blue-500 border-blue-500/20'}`}
             >
-              {({ fandom: '팬덤', policy: '정책', corporate: '기업', pr: 'PR' } as Record<string, string>)[domain] ?? '정치'}
+              {({ fandom: '팬덤', policy: '정책', corporate: '기업', pr: 'PR', finance: '금융', healthcare: '헬스케어' } as Record<string, string>)[domain] ?? '정치'}
             </Badge>
           )}
           <span className="text-xs font-mono text-muted-foreground">{item.moduleName}</span>
