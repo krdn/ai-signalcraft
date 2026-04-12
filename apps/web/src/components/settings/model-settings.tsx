@@ -56,7 +56,8 @@ type ModuleMeta = {
     | 'policy'
     | 'finance'
     | 'healthcare'
-    | 'legal'; // undefined = 공통
+    | 'legal'
+    | 'sports'; // undefined = 공통
 };
 
 const MODULE_META: Record<string, ModuleMeta> = {
@@ -585,6 +586,43 @@ const MODULE_META: Record<string, ModuleMeta> = {
       '모든 금융 Stage 4 선행 결과를 입력으로 받아 토큰이 가장 많습니다. 최고 품질 모델 강력 권장.',
     domain: 'finance',
   },
+  // 스포츠 전용 (Stage 4)
+  'performance-narrative': {
+    name: '성과 내러티브 분석',
+    description:
+      'BIRGing/CORFing Theory(Cialdini et al., 1976)로 팀/선수 성적과 팬덤 여론 온도 간 상관관계를 분석하고, 지배적 서사 호(Arc)를 파악합니다.',
+    analyzes: [
+      'BIRGing/CORFing 패턴 측정 — 승/패 시 팬 반응 강도 변화',
+      '서사 호 유형 식별: 부활/몰락/영웅/악역/라이벌리',
+      '미디어 프레임 vs 팬 커뮤니티 프레임 차이 분석',
+      '팬덤 여론 안정성 지수 및 모멘텀 방향',
+    ],
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      reason: '팬덤 심리 미묘한 뉘앙스 분석과 서사 호 식별에 고급 추론 필요',
+    },
+    costTip: '선행 macro-view·sentiment-framing 결과를 컨텍스트로 받아 토큰이 증가합니다.',
+    domain: 'sports',
+  },
+  'season-outlook-prediction': {
+    name: '시즌 전망 예측',
+    description:
+      'Sport Consumer Motivation Theory(Trail et al., 2003) 기반으로 팬 기대치 지수(0~100), 팬 참여도 예측, 주요 관전 포인트와 리스크·기회 요인을 종합합니다.',
+    analyzes: [
+      '팬 기대치 지수(0~100) — 성적 기대·스타 선수·라이벌전 종합',
+      '팬 참여도 예측: 증가/유지/감소 추세 및 근거',
+      '주요 관전 포인트 및 팬덤 내러티브 잠재력',
+      '리스크 요인(확률·영향도) 및 기회 요인 목록',
+    ],
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      reason: '복합 예측 시나리오 생성과 선행 분석 결과 종합에 Claude 추론 활용',
+    },
+    costTip: '성과 내러티브 선행 결과를 포함하여 컨텍스트가 큽니다. 경량 토큰 최적화 권장.',
+    domain: 'sports',
+  },
 };
 
 // ── 모듈 분류 상수 ──
@@ -629,6 +667,12 @@ const DOMAIN_MODULES: Record<string, string[]> = {
   healthcare: ['health-risk-perception', 'compliance-predictor'],
   legal: ['reputation-index', 'frame-war', 'crisis-scenario', 'win-simulation'],
   education: ['approval-rating', 'frame-war', 'crisis-scenario', 'win-simulation'],
+  sports: [
+    'performance-narrative',
+    'season-outlook-prediction',
+    'fandom-crisis-scenario',
+    'frame-war',
+  ],
 };
 
 // 프리셋 → 도메인 매핑 (seed-presets와 동일)
@@ -642,7 +686,7 @@ const PRESET_DOMAIN_MAP: Record<string, { domain: string; title: string; categor
   pharma_healthcare: { domain: 'healthcare', title: '제약 / 헬스케어', category: '산업 특화' },
   public_sector: { domain: 'political', title: '지자체 / 공공', category: '산업 특화' },
   education: { domain: 'education', title: '대학 / 교육', category: '확장 영역' },
-  sports: { domain: 'fandom', title: '스포츠 / e스포츠', category: '확장 영역' },
+  sports: { domain: 'sports', title: '스포츠 / e스포츠', category: '확장 영역' },
   legal: { domain: 'legal', title: '법률 / 로펌', category: '확장 영역' },
   franchise_retail: { domain: 'political', title: '프랜차이즈 / 유통', category: '확장 영역' },
 };

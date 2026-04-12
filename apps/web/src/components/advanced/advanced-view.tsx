@@ -24,6 +24,8 @@ import { CatalystScenarioCard } from './catalyst-scenario-card';
 import { InvestmentSignalCard } from './investment-signal-card';
 import { HealthRiskPerceptionCard } from './health-risk-perception-card';
 import { CompliancePredictorCard } from './compliance-predictor-card';
+import { PerformanceNarrativeCard } from './performance-narrative-card';
+import { SeasonOutlookPredictionCard } from './season-outlook-prediction-card';
 import { OpportunityCard } from './opportunity-card';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -86,6 +88,12 @@ const EDUCATION_ADVN_MODULES = [
   'crisis-scenario',
   'win-simulation',
 ];
+const SPORTS_ADVN_MODULES = [
+  'performance-narrative',
+  'season-outlook-prediction',
+  'fandom-crisis-scenario',
+  'frame-war',
+];
 const ALL_ADVN_MODULES = [
   ...POLITICAL_ADVN_MODULES,
   ...FANDOM_ADVN_MODULES,
@@ -95,6 +103,7 @@ const ALL_ADVN_MODULES = [
   ...HEALTHCARE_ADVN_MODULES,
   ...LEGAL_ADVN_MODULES,
   ...EDUCATION_ADVN_MODULES,
+  ...SPORTS_ADVN_MODULES,
 ];
 
 // 모듈별 결과를 파싱하는 유틸
@@ -109,10 +118,21 @@ function parseModuleResult(
 // 모듈 이름으로 도메인 감지
 function detectDomain(
   moduleResults: Array<{ module: string }>,
-): 'political' | 'fandom' | 'corporate' | 'pr' | 'finance' | 'healthcare' | 'legal' | 'education' {
+):
+  | 'political'
+  | 'fandom'
+  | 'corporate'
+  | 'pr'
+  | 'finance'
+  | 'healthcare'
+  | 'legal'
+  | 'education'
+  | 'sports' {
   const modules = moduleResults.map((r) => r.module);
   if (modules.some((m) => FINANCE_ADVN_MODULES.includes(m))) return 'finance';
   if (modules.some((m) => HEALTHCARE_ADVN_MODULES.includes(m))) return 'healthcare';
+  // Sports 판별: performance-narrative는 스포츠 전용 (fandom보다 먼저 확인)
+  if (modules.includes('performance-narrative')) return 'sports';
   if (modules.some((m) => FANDOM_ADVN_MODULES.includes(m))) return 'fandom';
   // Legal 판별: reputation-index + frame-war + win-simulation (PR과 구분 — PR은 win-simulation 없음)
   if (
@@ -421,6 +441,19 @@ export function AdvancedView({ jobId, domain: domainProp, fetchFn }: AdvancedVie
           />
           <CrisisScenarios data={parseModuleResult(moduleResults, 'crisis-scenario') ?? null} />
           <OpportunityCard data={parseModuleResult(moduleResults, 'opportunity') ?? null} />
+        </div>
+      ) : domain === 'sports' ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <PerformanceNarrativeCard
+            data={parseModuleResult(moduleResults, 'performance-narrative') ?? null}
+          />
+          <SeasonOutlookPredictionCard
+            data={parseModuleResult(moduleResults, 'season-outlook-prediction') ?? null}
+          />
+          <FandomCrisisCard
+            data={parseModuleResult(moduleResults, 'fandom-crisis-scenario') ?? null}
+          />
+          <FrameWarChart data={parseModuleResult(moduleResults, 'frame-war') ?? null} />
         </div>
       ) : domain === 'fandom' ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

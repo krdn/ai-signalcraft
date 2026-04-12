@@ -159,7 +159,7 @@ const PRESET_SEEDS = [
   {
     slug: 'sports',
     category: '확장 영역',
-    domain: 'fandom',
+    domain: 'sports',
     title: '스포츠 / e스포츠',
     description: '선수 이적, 팀 성적에 따른 팬 반응을 실시간 추적합니다.',
     icon: 'Dumbbell',
@@ -169,7 +169,7 @@ const PRESET_SEEDS = [
     customSourceIds: [],
     limits: { naverArticles: 300, youtubeVideos: 50, communityPosts: 100, commentsPerItem: 300 },
     optimization: 'standard' as const,
-    skippedModules: ['approvalRating', 'winSimulation', 'crisisScenario'],
+    skippedModules: [],
     enableItemAnalysis: true,
   },
   {

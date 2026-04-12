@@ -714,7 +714,7 @@ export const USE_CASE_DETAILS: Record<string, UseCaseDetail> = {
       { step: 'AI가 팬 감정·이슈·트렌드 분석', detail: '이벤트별 감정 변화 추적' },
       { step: '팬 인사이트 리포트 생성', detail: '스폰서 보고 + 운영 전략' },
     ],
-    keyModules: ['감정/프레임 분석', '메시지 파급력', '집단별 반응', '기회 분석'],
+    keyModules: ['성과 내러티브 분석', '시즌 전망 예측', '팬덤 위기 시나리오', '프레임 전쟁'],
     impactMetrics: [
       { label: '팬 반응 파악', before: 'SNS 수동 확인', after: '실시간 자동 분석', icon: Gauge },
       {

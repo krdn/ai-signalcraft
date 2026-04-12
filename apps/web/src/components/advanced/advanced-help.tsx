@@ -1041,6 +1041,81 @@ export const ADVANCED_HELP = {
     ],
     source: 'compliance-predictor 모듈 (Claude Sonnet 4.6)',
   },
+
+  // ─── 스포츠 도메인 (Stage 4-SP) ───
+
+  performanceNarrative: {
+    title: '성과 내러티브 분석',
+    description:
+      'BIRGing/CORFing Theory(Cialdini et al., 1976)와 Sport Brand Equity Model(Ross, 2006)을 적용하여 팀/선수 성적 변화에 따른 팬덤 여론 온도 상관관계와 지배적 서사 호를 분석합니다.',
+    details: [
+      '성적-여론 상관관계: 성적 변화 후 여론 반응까지의 시간 지연 및 강도',
+      '서사 호(Arc) 유형: 부활/몰락/영웅/악역/라이벌리 — 지배적·부상·약화 상태',
+      'BIRGing/CORFing 패턴: 팬 반응이 정체성 표출(BIRGing)인지 거리 두기(CORFing)인지 분류',
+      '미디어 vs 팬 커뮤니티 프레임 차이: 언론과 팬덤이 채택한 성과 프레임 비교',
+      '모멘텀 안정성 지수(0~100): 팬덤 여론의 변동성과 방향성 종합 평가',
+    ],
+    howToRead: [
+      '서사 호 중 dominant(지배적)으로 표시된 것이 현재 팬덤을 지배하는 이야기',
+      'BIRGing: 팬들이 팀과 강하게 동일시하는 긍정 신호 / CORFing: 이탈 징후',
+      '미디어-팬 프레임 차이가 크면 공식 커뮤니케이션과 팬 인식 사이에 간극 존재',
+      '안정성 지수가 낮으면(0~40) 단기 성적에 따라 여론이 급변할 수 있음',
+    ],
+    tips: [
+      '부활 서사가 emerging(부상 중)이면 그 스토리를 공식 콘텐츠로 강화하여 BIRGing 극대화',
+      '악역 프레임(구단 운영 비판)이 dominant이면 투명한 소통으로 프레임 전환 필요',
+      '성적 부진 시 CORFing 급증 전에 선제적 팬 소통 이벤트로 이탈 방어',
+    ],
+    limitations: [
+      '성적 관련 객관 데이터(경기 결과)가 없으면 BIRGing/CORFing 판별 정확도 낮아짐',
+      '단기 이슈가 전체 서사를 왜곡할 수 있음 — 충분한 수집 기간 권장',
+      '다종목·다팀 혼재 키워드는 서사 혼선 발생 가능',
+    ],
+    technicalDetails: [
+      '입력: 기사 최근 20건(제목) + 댓글 30건(120자 절단)',
+      '선행 의존: macro-view(이벤트 타임라인), sentiment-framing(긍정·부정 프레임)',
+      '알고리즘: BIRGing/CORFing 신호어 패턴 인식 → 서사 호 분류 → 미디어/커뮤니티 프레임 비교 → 모멘텀 산출',
+      '출력 스키마: performanceSentimentCorrelation, narrativeArcs[], keyPerformanceDrivers[], mediaFraming, momentumAssessment, summary',
+    ],
+    source: 'performance-narrative 모듈 (Claude Sonnet 4.6)',
+  },
+
+  seasonOutlookPrediction: {
+    title: '시즌 전망 예측',
+    description:
+      'Sport Consumer Motivation Theory(Trail et al., 2003)와 BIRGing/CORFing Theory 기반으로 팬 기대치 지수(0~100), 팬 참여도 예측, 주요 관전 포인트와 리스크·기회 요인을 종합합니다. ⚠️ 여론 데이터 기반 예측이며 실제 성적에 따라 달라질 수 있습니다.',
+    details: [
+      '종합 전망: very-positive~very-negative 5단계 평가',
+      '팬 기대치 지수(0~100): 성적 기대·스타 선수·라이벌전 등 복합 요인 종합',
+      '팬 참여도 예측: 증가/유지/감소 추세와 신뢰도 및 근거',
+      '주요 관전 포인트: 팬덤 주목도와 내러티브 잠재력 목록',
+      '리스크 요인: 확률(0~1)·영향도·완화 방안',
+      '기회 요인: 팬 유입·여론 호전 기회와 활용 방안',
+    ],
+    howToRead: [
+      '기대치 지수 70+ → BIRGing 극대화 가능 시즌. 팬 경험 강화 투자 시점',
+      '기대치 지수 40 미만 → CORFing 위험 증가. 비성적 가치(선수 스토리·커뮤니티)로 팬심 유지 필요',
+      '참여도 예측 decreasing + 리스크 확률 0.6+ → 선제적 위기 대응 계획 수립',
+      '기회 요인의 활용 방안은 마케팅·팬 서비스 팀 실행 계획으로 직접 전환 가능',
+    ],
+    tips: [
+      '기대치가 높은 시즌 초반에 팬 멤버십·굿즈 캠페인을 집중 배치',
+      '리스크 요인의 완화 방안을 시즌 전 위기관리 매뉴얼에 반영',
+      '경쟁 팀 대비 여론 포지션을 확인하여 스폰서십·마케팅 포지셔닝에 활용',
+    ],
+    limitations: [
+      '성적 결과는 예측 불가 — 기대치 지수는 여론 기반이므로 실제 성적과 괴리 가능',
+      '시즌 개막 전 데이터가 부족하면 예측 신뢰도가 낮아짐',
+      '주요 선수 부상·이적 등 돌발 변수는 예측 범위 밖',
+    ],
+    technicalDetails: [
+      '입력: 기사 최근 20건(제목) + 댓글 30건(120자 절단)',
+      '선행 의존: performance-narrative(모멘텀 방향), fan-loyalty-index(충성도 지수), opportunity(미개발 기회 영역)',
+      '알고리즘: 팬 기대치 지수 산출 → 참여도 추세 예측 → 관전 포인트·리스크·기회 식별 → 종합 전망',
+      '출력 스키마: overallOutlook, fanExpectationLevel, fanEngagementForecast, keyWatchPoints[], riskFactors[], opportunityFactors[], competitorComparison, disclaimer, summary',
+    ],
+    source: 'season-outlook-prediction 모듈 (Claude Sonnet 4.6)',
+  },
 } as const;
 
 // ─── 전체 가이드 버튼 ───
