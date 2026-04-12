@@ -116,6 +116,11 @@ export const MODULE_MODEL_MAP: Record<string, { provider: AIProvider; model: str
   'information-asymmetry': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
   'catalyst-scenario': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
   'investment-signal': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
+  // Stage 4: 교육 도메인 신규 모듈
+  'institutional-reputation-index': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
+  'education-opinion-frame': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
+  'education-crisis-scenario': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
+  'education-outcome-simulation': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
 };
 
 // 모듈 이름 상수

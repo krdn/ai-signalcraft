@@ -70,3 +70,21 @@ export {
 } from './information-asymmetry.schema';
 export { CatalystScenarioSchema, type CatalystScenarioResult } from './catalyst-scenario.schema';
 export { InvestmentSignalSchema, type InvestmentSignalResult } from './investment-signal.schema';
+
+// Stage 4 스키마 — 교육 도메인
+export {
+  InstitutionalReputationIndexSchema,
+  type InstitutionalReputationIndexResult,
+} from './institutional-reputation-index.schema';
+export {
+  EducationOpinionFrameSchema,
+  type EducationOpinionFrameResult,
+} from './education-opinion-frame.schema';
+export {
+  EducationCrisisScenarioSchema,
+  type EducationCrisisScenarioResult,
+} from './education-crisis-scenario.schema';
+export {
+  EducationOutcomeSimulationSchema,
+  type EducationOutcomeSimulationResult,
+} from './education-outcome-simulation.schema';

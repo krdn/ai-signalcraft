@@ -54,6 +54,11 @@ import {
   informationAsymmetryModule,
   catalystScenarioModule,
   investmentSignalModule,
+  // 교육 도메인 신규 모듈
+  institutionalReputationIndexModule,
+  educationOpinionFrameModule,
+  educationCrisisScenarioModule,
+  educationOutcomeSimulationModule,
 } from './modules';
 
 /** 모듈명 → 모듈 인스턴스 매핑 (Stage 4 라우팅용) */
@@ -88,6 +93,11 @@ const MODULE_MAP: Record<string, AnalysisModule> = {
   'information-asymmetry': informationAsymmetryModule,
   'catalyst-scenario': catalystScenarioModule,
   'investment-signal': investmentSignalModule,
+  // 교육 도메인 신규 모듈
+  'institutional-reputation-index': institutionalReputationIndexModule,
+  'education-opinion-frame': educationOpinionFrameModule,
+  'education-crisis-scenario': educationCrisisScenarioModule,
+  'education-outcome-simulation': educationOutcomeSimulationModule,
   // 공유 모듈 (기업/PR/법률/유통에서 재사용)
   opportunity: opportunityModule,
 };

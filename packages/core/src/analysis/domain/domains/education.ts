@@ -231,44 +231,31 @@ export const EDUCATION_DOMAIN: DomainConfig = {
 - "리스크가 현실화되면 어떤 교육기관 평판 경로로 전개되는가"를 시나리오로 전개
 - triggerConditions: 교육기관 맥락 이벤트 (예: "교육부 감사 착수", "재학생 단체 성명 발표", "취업률 허위 보도" 등)`,
     },
-    'win-simulation': {
-      systemPrompt: `당신은 교육기관 평판 회복 시뮬레이션 전문가입니다.
-선행 분석 결과를 종합하여 **교육기관 평판 목표치 달성 확률**과 최적 회복 전략을 도출합니다.
-
-## 시뮬레이션 프레임워크 (교육기관 도메인)
-- winProbability: '선거 승리'가 아닌 **'교육기관 신뢰 회복 및 평판 목표 달성 확률'** (예: 이해관계자 만족도 회복, 입학 지원자 수 목표 달성)
-- approval-rating의 기관 만족도를 기반선으로 활용
-- frame-war의 지배 프레임 전환 가능성을 가점 요인으로 반영
-
-## 승리 조건 (교육기관 도메인)
-- 재학생·학부모 만족도 목표치 회복 (met/partial/unmet)
-- 언론·미디어 프레임 중립화 이상 달성
-- 고용주 및 잠재 입학 희망자 신뢰 회복
-- 학사 비리·이슈의 공식 해결과 재발 방지 조치 공표
-
-## strategy와의 차별화
-- strategy의 전략을 반복하지 말고, 시뮬레이션 결과로 우선순위 재배치
-- expectedImpact: 정량적 표현 (예: "입학 지원자 수 10% 회복 기대", "재학생 만족도 5p 상승")`,
+    'institutional-reputation-index': {
+      systemPrompt: `당신은 고등교육기관 평판 측정 전문가입니다.
+**Institutional Reputation Theory (Fombrun, 1996)**와 **Signaling Theory (Spence, 1973)**를 결합하여 교육기관의 온라인 평판 지수를 4차원(교육품질·연구력·취업률·학생생활)으로 측정합니다.
+4집단(지원자·재학생·졸업생·일반대중) 인식 차이와 기관 공식 신호-수신 간극을 분석합니다.`,
     },
-    'frame-war': {
+    'education-opinion-frame': {
       systemPrompt: `당신은 교육기관 담론 역학 분석 전문가입니다.
-**Rankings and Reputation Dynamics**(Espeland & Sauder, 2007)와 **Signaling Theory**(Spence, 1973)를 결합하여 교육기관 이슈의 프레임 전쟁을 분석합니다.
-
-## 교육기관 도메인 프레임 3분류
-- **지배적(dominant)**: 현재 교육기관 논의를 주도하는 프레임. 주류 언론·학부모 커뮤니티가 이 관점 사용
-- **위협적(threatening)**: 재학생 불만 집단이나 비판 세력이 확산시키는 도전 프레임. 방치 시 지배 프레임 전복 가능
-- **반전 가능(reversible)**: 현재 약세이나 특정 조건(취업률 개선 발표·연구 성과) 시 급반전 가능한 프레임
-
-## sentiment-framing과의 차별화
-- sentiment-framing이 "어떤 프레임이 있는가"를 식별했다면, 이 모듈은 "프레임 간 힘의 관계"를 분석
-- 재학생·학부모 프레임 vs 기관 공식 프레임의 세력 역학 중심으로 분석
-- 플랫폼별 프레임 우세 비교 (교육 미디어 vs 학생 커뮤니티 vs 일반 커뮤니티)`,
+**Rankings Dynamics (Espeland & Sauder, 2007)**와 **Signaling Theory (Spence, 1973)**를 결합하여 교육기관 이슈의 프레임 세력 역학을 분석합니다.
+기관 공식 프레임 vs 학생 경험 프레임 세력 균형, 순위 변동이 프레임에 미치는 영향을 분석합니다.`,
+    },
+    'education-crisis-scenario': {
+      systemPrompt: `당신은 교육기관 위기 시나리오 플래닝 전문가입니다.
+**Social Contract Theory in Education (Rawls, 1971)**과 **Institutional Reputation Theory (Fombrun, 1996)**를 적용합니다.
+교육기관-학생 간 사회계약(취업·교육품질·학비) 위반 차원을 중심으로 spread/control/reverse 3가지 시나리오를 시뮬레이션합니다.`,
+    },
+    'education-outcome-simulation': {
+      systemPrompt: `당신은 교육기관 평판 회복 시뮬레이션 전문가입니다.
+**Rankings Dynamics (Espeland & Sauder, 2007)**와 **Institutional Reputation Theory (Fombrun, 1996)**를 종합하여 교육기관 신뢰 회복 확률을 산출합니다.
+institutional-reputation-index·education-opinion-frame·education-crisis-scenario 선행 결과를 기반으로 전략 우선순위를 재배치하고 정량적 expectedImpact를 도출합니다.`,
     },
   },
 
   stage4: {
-    parallel: ['approval-rating', 'frame-war'],
-    sequential: ['crisis-scenario', 'win-simulation'],
+    parallel: ['institutional-reputation-index', 'education-opinion-frame'],
+    sequential: ['education-crisis-scenario', 'education-outcome-simulation'],
   },
 
   reportSystemPrompt: `당신은 고등교육 평판 관리 분야의 최고 전략가입니다.

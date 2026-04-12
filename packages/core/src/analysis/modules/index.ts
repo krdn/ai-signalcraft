@@ -48,3 +48,9 @@ export { marketSentimentIndexModule } from './finance/market-sentiment-index';
 export { informationAsymmetryModule } from './finance/information-asymmetry';
 export { catalystScenarioModule } from './finance/catalyst-scenario';
 export { investmentSignalModule } from './finance/investment-signal';
+
+// Stage 4 분석 모듈 — 교육 도메인
+export { institutionalReputationIndexModule } from './education/institutional-reputation-index';
+export { educationOpinionFrameModule } from './education/education-opinion-frame';
+export { educationCrisisScenarioModule } from './education/education-crisis-scenario';
+export { educationOutcomeSimulationModule } from './education/education-outcome-simulation';
