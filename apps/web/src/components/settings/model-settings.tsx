@@ -48,7 +48,7 @@ type ModuleMeta = {
   analyzes: string[];
   recommended: { provider: string; model: string; reason: string };
   costTip: string;
-  domain?: 'political' | 'fandom' | 'corporate' | 'pr'; // undefined = 공통
+  domain?: 'political' | 'fandom' | 'corporate' | 'pr' | 'policy'; // undefined = 공통
 };
 
 const MODULE_META: Record<string, ModuleMeta> = {
@@ -469,6 +469,7 @@ const COMMON_MODULES = [
 
 const DOMAIN_MODULES: Record<string, string[]> = {
   political: ['approval-rating', 'frame-war', 'crisis-scenario', 'win-simulation'],
+  policy: ['approval-rating', 'frame-war', 'crisis-scenario', 'win-simulation'],
   fandom: [
     'fan-loyalty-index',
     'fandom-narrative-war',
@@ -494,7 +495,7 @@ const PRESET_DOMAIN_MAP: Record<string, { domain: string; title: string; categor
   pr_crisis: { domain: 'pr', title: 'PR / 위기관리', category: '핵심 활용' },
   corporate_reputation: { domain: 'corporate', title: '기업 평판 관리', category: '핵심 활용' },
   entertainment: { domain: 'fandom', title: '연예인 / 기획사', category: '핵심 활용' },
-  policy_research: { domain: 'political', title: '정책 연구', category: '산업 특화' },
+  policy_research: { domain: 'policy', title: '정책 연구', category: '산업 특화' },
   finance: { domain: 'political', title: '금융 / 투자', category: '산업 특화' },
   pharma_healthcare: { domain: 'political', title: '제약 / 헬스케어', category: '산업 특화' },
   public_sector: { domain: 'political', title: '지자체 / 공공', category: '산업 특화' },
@@ -511,6 +512,7 @@ function getModulesForPreset(presetSlug?: string): string[] {
     // 전체 목록: 중복 제거 (crisis-scenario 등이 여러 도메인에 존재)
     const allDomainModules = [
       ...DOMAIN_MODULES.political,
+      ...DOMAIN_MODULES.policy,
       ...DOMAIN_MODULES.fandom,
       ...DOMAIN_MODULES.corporate,
       ...DOMAIN_MODULES.pr,
@@ -880,7 +882,7 @@ export function ModelSettings() {
               </strong>
             </span>
             <span>
-              ({PRESET_DOMAIN_MAP[selectedPresetSlug]?.domain === 'fandom' ? '팬덤' : '정치'} 도메인
+              ({({ fandom: '팬덤', policy: '정책', corporate: '기업', pr: 'PR' } as Record<string, string>)[PRESET_DOMAIN_MAP[selectedPresetSlug]?.domain] ?? '정치'} 도메인
               — {getModulesForPreset(selectedPresetSlug).length}개 모듈)
             </span>
             <button
@@ -1117,7 +1119,7 @@ export function ModelSettings() {
                       color: currentDomain === 'fandom' ? 'rgb(139,92,246)' : 'hsl(var(--primary))',
                     }}
                   >
-                    {currentDomain === 'fandom' ? '팬덤 전용' : '정치 전용'} 모듈
+                    {({ fandom: '팬덤 전용', policy: '정책 전용', corporate: '기업 전용', pr: 'PR 전용' } as Record<string, string>)[currentDomain ?? ''] ?? '정치 전용'} 모듈
                   </p>
                   <div className="flex-1 border-t" />
                 </div>
@@ -1179,9 +1181,9 @@ function ModuleCard({
           <span className="text-sm font-medium">{meta?.name ?? item.moduleName}</span>
           {domain && (
             <Badge
-              className={`text-[9px] ${domain === 'fandom' ? 'bg-violet-500/15 text-violet-500 border-violet-500/20' : 'bg-blue-500/15 text-blue-500 border-blue-500/20'}`}
+              className={`text-[9px] ${domain === 'fandom' ? 'bg-violet-500/15 text-violet-500 border-violet-500/20' : domain === 'corporate' ? 'bg-sky-500/15 text-sky-600 border-sky-500/20' : domain === 'pr' ? 'bg-orange-500/15 text-orange-600 border-orange-500/20' : domain === 'policy' ? 'bg-indigo-500/15 text-indigo-600 border-indigo-500/20' : 'bg-blue-500/15 text-blue-500 border-blue-500/20'}`}
             >
-              {domain === 'fandom' ? '팬덤' : '정치'}
+              {({ fandom: '팬덤', policy: '정책', corporate: '기업', pr: 'PR' } as Record<string, string>)[domain] ?? '정치'}
             </Badge>
           )}
           <span className="text-xs font-mono text-muted-foreground">{item.moduleName}</span>

@@ -450,7 +450,7 @@ export const USE_CASE_DETAILS: Record<string, UseCaseDetail> = {
       { step: 'AI가 수용도·집단별 반응·프레임 분석', detail: '실증 데이터 자동 생성' },
       { step: '정책 보고서용 인사이트 리포트', detail: '인용 가능한 형태로 제공' },
     ],
-    keyModules: ['거시 여론 구조', '집단별 반응', '감정/프레임 분석', '기회 분석'],
+    keyModules: ['정책 수용도 추정', '프레임 전쟁 분석', '정책 위기 시나리오', '통과 시뮬레이션'],
     impactMetrics: [
       { label: '여론 파악 주기', before: '분기별 조사', after: '실시간 모니터링', icon: Gauge },
       { label: '분석 비용', before: '건당 수백만원', after: '월정액 구독', icon: Coins },
