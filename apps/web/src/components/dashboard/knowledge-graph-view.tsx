@@ -113,12 +113,14 @@ export function KnowledgeGraphView({ data, isLoading }: KnowledgeGraphViewProps)
         d3
           .forceLink<SimNode, SimEdge>(links)
           .id((d) => d.id)
-          .distance(100)
-          .strength((d) => d.weight * 0.6),
+          .distance(120)
+          .strength((d) => Math.max(d.weight * 0.4, 0.2)),
       )
-      .force('charge', d3.forceManyBody().strength(-250))
-      .force('center', d3.forceCenter(width / 2, height / 2))
-      .force('collision', d3.forceCollide().radius(20));
+      .force('charge', d3.forceManyBody().strength(-200))
+      .force('center', d3.forceCenter(width / 2, height / 2).strength(0.08))
+      .force('collision', d3.forceCollide().radius(35))
+      .force('x', d3.forceX(width / 2).strength(0.03))
+      .force('y', d3.forceY(height / 2).strength(0.03));
 
     // 엣지
     const link = g
@@ -201,7 +203,7 @@ export function KnowledgeGraphView({ data, isLoading }: KnowledgeGraphViewProps)
       .attr('font-weight', 600)
       .attr('text-anchor', 'middle')
       .attr('dy', (d) => Math.max(d.size * 0.5, 8) + 16)
-      .attr('class', 'fill-foreground')
+      .attr('class', 'fill-muted-foreground')
       .attr('paint-order', 'stroke')
       .attr('style', 'stroke: var(--color-card); stroke-width: 3.5px; stroke-linejoin: round;')
       .attr('pointer-events', 'none');
