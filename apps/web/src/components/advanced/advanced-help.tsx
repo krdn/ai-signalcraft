@@ -578,6 +578,245 @@ export const ADVANCED_HELP = {
     ],
     source: 'release-reception-prediction 모듈 (Claude Sonnet 4.6)',
   },
+
+  // ─── 기업 평판 도메인 (Stage 4) ───
+
+  stakeholderMap: {
+    title: '이해관계자 영향력 지도',
+    description:
+      'Stakeholder Salience Model(Mitchell, Agle & Wood, 1997)을 적용하여 기업에 영향을 미치는 이해관계자를 권력·합법성·긴급성 3축으로 분류하고 대응 우선순위를 결정합니다.',
+    details: [
+      '이해관계자 목록: 유형(투자자/소비자/임직원/규제기관/미디어)과 현출성 점수',
+      'Salience Score (0~10): 권력·합법성·긴급성 3가지 속성 종합 점수',
+      'engagementPriority: critical/high/medium/low 대응 우선순위',
+      'criticalStakeholder: 가장 긴급하게 관리해야 할 이해관계자와 즉시 행동 지침',
+      '권력 역학 관계: 이해관계자 간 연합 가능성 및 권력 구도 분석',
+      '2×2 매트릭스: 고권력-고관심(Manage Closely) 등 4분면 분류',
+    ],
+    howToRead: [
+      'Salience Score가 7 이상이면 Definitive 이해관계자 — 즉각 전략적 대응 필요',
+      'engagementPriority가 critical인 이해관계자부터 우선 대응하세요',
+      'powerDynamics에서 이해관계자 연합 가능성을 파악하면 선제 대응 가능',
+      'currentSentiment가 "opposed"이면서 powerLevel이 "high"인 경우 위기 신호',
+    ],
+    tips: [
+      'criticalStakeholder의 immediateAction을 즉시 실행하여 골든타임을 확보하세요',
+      '투자자와 미디어가 동시에 "opposed" 상태이면 위기 대응 수준을 최고로 높이세요',
+      '임직원(employees)의 불만이 외부 확산 전에 내부 소통으로 선제 차단하세요',
+    ],
+    limitations: [
+      '온라인 데이터 기반이므로 오프라인 이해관계자 관계는 반영되지 않을 수 있음',
+      '규제기관의 실제 의도는 공개 발언보다 내부 검토 과정에서 형성되므로 간접 추론임',
+    ],
+    technicalDetails: [
+      '입력: 기사 15건(제목) + 댓글 30건(120자 절단)',
+      '선행 의존: segmentation(audienceGroups), risk-map(topRisks)',
+      '알고리즘: Mitchell et al.(1997) 3속성 × 3등급 조합으로 7가지 이해관계자 유형 결정',
+      '출력: stakeholders[], powerDynamics, criticalStakeholder, stakeholderMatrix',
+    ],
+    source: 'stakeholder-map 모듈 (Gemini 2.5 Flash)',
+  },
+
+  esgSentiment: {
+    title: 'ESG 여론 분석',
+    description:
+      '온라인 여론에서 E(환경)·S(사회)·G(지배구조) 3가지 차원의 기업 평판을 분리 측정하고 규제 리스크와 개선 기회를 식별합니다.',
+    details: [
+      'E·S·G 차원별 여론 점수 (0~100): 80+ 긍정, 60~79 양호, 40~59 보통, 20~39 취약, 0~19 위기',
+      '차원별 긍정 요인 / 부정 요인 목록',
+      'esgRisks: 차원(E/S/G), 심각도(critical~low), 영향 이해관계자',
+      'esgOpportunities: 개선 기회와 예상 효과',
+      'regulatoryRisk: 규제기관 개입 가능성 (high/medium/low)',
+      'greenwashing 논란 감지 — isGreenwashing 플래그',
+    ],
+    howToRead: [
+      'G(지배구조) 점수가 40 미만이면 투자자 이탈 위험 신호 — 즉각 개선 필요',
+      'regulatoryRisk가 "high"이면 규제기관 조사 전에 선제 대응해야 합니다',
+      'esgRisks에서 severity "critical"은 72시간 내 공식 입장 발표 필요 수준',
+    ],
+    tips: [
+      'E·S·G 중 가장 낮은 차원부터 집중 개선하면 전체 평판 점수가 빠르게 향상됩니다',
+      'esgOpportunities에서 S(사회) 영역 개선은 임직원 만족도와 소비자 신뢰를 동시에 개선',
+    ],
+    limitations: [
+      'ESG 관련 언급이 적은 경우 점수 신뢰도가 낮아집니다 (데이터 부족 명시)',
+      '공식 ESG 공시 데이터가 아닌 온라인 여론 기반 추정치입니다',
+    ],
+    technicalDetails: [
+      '입력: 기사 25건(제목) + 댓글 30건(120자 절단)',
+      '선행 의존: sentiment-framing(topKeywords)',
+      '언급 없는 차원: score=50(중립), "데이터 부족" 명시',
+      '출력: dimensions{E,S,G}, esgRisks[], esgOpportunities[], regulatoryRisk',
+    ],
+    source: 'esg-sentiment 모듈 (Gemini 2.5 Flash)',
+  },
+
+  reputationIndex: {
+    title: '평판 지수 측정 (RepTrak)',
+    description:
+      'RepTrak 7차원 모델(Fombrun & van Riel, 2004)로 온라인 여론에서 기업의 종합 평판 점수를 측정하고 취약 차원과 개선 방향을 제시합니다.',
+    details: [
+      '종합 평판 점수 (0~100) + 추세 (improving/stable/declining)',
+      'RepTrak 7차원별 점수: 제품·혁신·직장·거버넌스·시민의식·리더십·재무',
+      '이해관계자별 평판 인식: 투자자/소비자/임직원별 주요 우려 vs 강점',
+      'reputationGaps: 취약 지점, 심각도, 개선 권고사항',
+      'benchmarkContext: 업계 평균 또는 이전 기간 대비 위치',
+    ],
+    howToRead: [
+      '종합 점수 60 미만이면 평판 개선이 시급합니다',
+      'dimensions 중 가장 낮은 차원이 전체 평판을 끌어내리는 핵심 취약점',
+      '이해관계자별 인식 차이가 크면 타겟별 맞춤 커뮤니케이션 전략이 필요합니다',
+    ],
+    tips: [
+      'reputationGaps의 severity "critical" 항목을 우선 해결하면 점수가 빠르게 회복됩니다',
+      '리더십 점수 개선은 CEO 발언과 의사결정 투명성 강화로 효과적입니다',
+    ],
+    limitations: [
+      '온라인 여론 기반이므로 오프라인 평판(B2B, 내부 관계)은 반영 한계',
+      '업계 평균 비교는 경쟁사 데이터 없이 추정치입니다',
+    ],
+    technicalDetails: [
+      '입력: 기사 20건 + 댓글 30건(120자 절단)',
+      '선행 의존: sentiment-framing(sentimentRatio, frames), segmentation(platformSegments)',
+      '알고리즘: RepTrak 7차원 매핑 + 이해관계자별 인식 분리',
+      '출력: overallScore, trend, dimensions[], stakeholderPerceptions[], reputationGaps[]',
+    ],
+    source: 'reputation-index 모듈 (Claude Sonnet 4.6)',
+  },
+
+  crisisTypeClassifier: {
+    title: 'SCCT 위기 유형 분류',
+    description:
+      'Situational Crisis Communication Theory(Coombs, 2007)로 위기 유형을 분류하고 Image Repair Theory(Benoit, 1997) 기반 최적 대응 전략과 골든타임을 평가합니다.',
+    details: [
+      'SCCT 위기 유형: victim(희생자형)/accidental(사고형)/preventable(예방가능형)',
+      '귀속 책임 수준: low/medium/high — 대응 전략 선택의 핵심 기준',
+      'Image Repair 전략: denial/evasion/reduction/corrective-action/mortification 우선순위',
+      '골든타임 평가: 잔여 시간(시간 단위) + 긴급도 (critical/high/medium/low)',
+      '과거 유사 위기 이력 및 영향',
+    ],
+    howToRead: [
+      'crisisType이 "preventable"이면 책임 인정(mortification)이 필수 — 부정하면 역효과',
+      'goldenTimeWindow urgencyLevel이 "critical"이면 24시간 내 공식 입장 발표 필수',
+      'recommendedStrategies에서 priority 1번 전략부터 즉시 실행하세요',
+    ],
+    tips: [
+      '"victim" 유형에서 mortification 전략을 쓰면 오히려 신뢰 손상 — 유형에 맞는 전략 선택 중요',
+      'corrective-action 전략은 항상 가장 높은 공신력 — 가능하면 구체적 개선 약속과 함께 제시',
+    ],
+    limitations: [
+      '위기 유형 판단은 공개된 정보 기반으로, 내부 경위 정보가 없으면 오류 가능',
+      '골든타임은 여론 확산 속도 추정이며 실제 미디어 대응 타이밍은 다를 수 있음',
+    ],
+    technicalDetails: [
+      '입력: 기사 20건 + 댓글 30건(120자 절단)',
+      '선행 의존: risk-map(topRisks), macro-view(summary, overallDirection)',
+      '알고리즘: SCCT 3유형 분류 → 귀속 책임 수준 판단 → Image Repair 전략 매핑',
+      '출력: crisisType, responsibilityLevel, recommendedStrategies[], goldenTimeWindow',
+    ],
+    source: 'crisis-type-classifier 모듈 (Claude Sonnet 4.6)',
+  },
+
+  mediaFramingDominance: {
+    title: '미디어 프레임 의제 설정력',
+    description:
+      'Media Framing Theory(Entman, 1993)와 Agenda-Setting Theory(McCombs & Shaw, 1972)를 결합하여 언론 기사 프레임과 댓글 여론 프레임의 간극을 측정하고, 기업 공식 메시지의 의제 설정력을 평가합니다.',
+    details: [
+      'dominantMediaFrame: 현재 가장 지배적인 언론 프레임과 강도(0~100)',
+      'mediaFrames: 언론사별 프레임 목록 + 감정(positive/negative/neutral/mixed)',
+      'commentFrames: 온라인 댓글의 실제 여론 프레임 (언론 프레임과의 괴리 확인)',
+      'frameMismatch: 언론 프레임 vs 댓글 여론 괴리 항목 + 심각도',
+      'companyMessageReflection: 기업 공식 발언이 언론에 반영된 정도(0~100)',
+      'agendaLeadership: company-led/media-led/public-led/contested',
+    ],
+    howToRead: [
+      'frameMismatch severity "critical"은 언론 보도와 실제 여론이 정반대 — PR 전략 재검토 필요',
+      'companyMessageReflection이 30 미만이면 기업 메시지가 언론에 거의 반영 안 됨',
+      'agendaLeadership이 "public-led"이면 온라인 여론이 의제를 선점 — 기업이 따라가는 상황',
+    ],
+    tips: [
+      'media-led 상황에서는 언론사 접촉보다 SNS 직접 소통으로 의제 전환 시도',
+      '프레임 괴리가 크면 투명한 팩트 공개로 신뢰 회복이 우선',
+    ],
+    limitations: [
+      '기업 공식 발언 원문이 수집 데이터에 포함된 경우에만 반영도 측정 가능',
+      '언론사 정치 성향에 따른 프레임 편차가 분석에 영향을 줄 수 있음',
+    ],
+    technicalDetails: [
+      '입력: 기사 15건(제목) + 댓글 25건(150자 절단)',
+      '선행 의존: sentiment-framing(프레임 목록), macro-view(뉴스 흐름)',
+      '알고리즘: 언론 기사 프레임 추출 → 댓글 여론 프레임 추출 → 두 집합 간 유사도/괴리 측정',
+      '출력: dominantMediaFrame, mediaFrames[], commentFrames[], frameMismatch[], companyMessageReflection, agendaLeadership',
+    ],
+    source: 'media-framing-dominance 모듈 (Gemini 2.5 Flash)',
+  },
+
+  csrCommunicationGap: {
+    title: 'CSR 공약 진정성 간극',
+    description:
+      'Organizational Hypocrisy Theory(Brunsson, 1989)를 적용하여 기업이 주장하는 ESG/CSR 공약과 온라인 여론 평가의 진정성 간극을 측정하고 그린워싱 위험을 진단합니다.',
+    details: [
+      'csrClaims: E·S·G 차원별 기업 공약 + 신뢰도 점수(0~100) + 그린워싱 여부',
+      'communicationGaps: 기업 내러티브 vs 온라인 여론 내러티브 + 간극 심각도',
+      'csrInitiativeEffectiveness: CSR 활동별 평판 ROI (-100~100)',
+      'overallCsrCredibility: 전반적 CSR 신뢰도 점수(0~100)',
+      'greenwashingRisk: high/medium/low/none',
+    ],
+    howToRead: [
+      'greenwashingRisk "high"이면 즉시 구체적 실행 증거 공시 필요',
+      'overallCsrCredibility 40 미만이면 CSR 활동이 오히려 역효과를 내는 상황',
+      'csrInitiativeEffectiveness가 음수인 활동은 중단하거나 소통 방식을 바꿔야 합니다',
+    ],
+    tips: [
+      '공약보다 실적을 먼저 공개하면 그린워싱 의심을 예방할 수 있습니다',
+      '제3자 인증(ESG 평가기관)을 언급하면 신뢰도가 빠르게 상승합니다',
+    ],
+    limitations: [
+      '기업 공식 CSR 보고서나 공시가 데이터 수집에 포함된 경우에만 정확한 분석 가능',
+      '그린워싱 판단은 온라인 여론 기반이며 실제 환경 성과와는 다를 수 있음',
+    ],
+    technicalDetails: [
+      '입력: 기사 20건 + 댓글 25건(120자 절단)',
+      '선행 의존: esg-sentiment(E/S/G 여론 점수), sentiment-framing(핵심 프레임)',
+      '알고리즘: 기업 발언에서 CSR 공약 추출 → 온라인 여론 신뢰도 비교 → 간극 계산',
+      '출력: csrClaims[], communicationGaps[], csrInitiativeEffectiveness[], overallCsrCredibility, greenwashingRisk',
+    ],
+    source: 'csr-communication-gap 모듈 (Claude Sonnet 4.6)',
+  },
+
+  reputationRecoverySimulation: {
+    title: '평판 회복 시뮬레이션',
+    description:
+      'RepTrak Recovery(Fombrun, 2004)·SCCT(Coombs, 2007)·Social License to Operate(Thomson, 2000) 이론을 종합하여 평판 회복 목표 달성 확률과 최적 전략 우선순위를 도출합니다.',
+    details: [
+      'recoveryProbability: 평판 회복 목표 달성 확률 (0~100%)',
+      'targetRecoveryScore: 목표 RepTrak 점수',
+      'recoveryConditions: 회복 조건별 현재 충족 상태(met/partial/unmet) + 중요도',
+      'obstacleConditions: 회복 장애 요인 + 이해관계자별 완화 방안',
+      'recoveryStrategies: 우선순위별 전략 + 기대 효과 + 실행 시기(immediate/short-term/long-term)',
+      'sloRecoveryStatus: 사회적 운영 허가권 회복 상태 (at-risk/partial/recovering/stable)',
+    ],
+    howToRead: [
+      'recoveryProbability 40% 미만이면 현재 전략으로는 회복이 어려운 상황 — 근본적 변화 필요',
+      'recoveryConditions에서 importance "critical"이 unmet이면 즉시 해결해야 회복 경로 열림',
+      'sloRecoveryStatus "at-risk"이면 사업 영속성 위협 수준 — 경영진 직접 대응 필요',
+    ],
+    tips: [
+      'recoveryStrategies에서 immediate 항목을 48시간 내 실행하면 회복 확률이 5~15%p 상승 가능',
+      '핵심 이해관계자(Definitive) 신뢰 회복이 선결 조건 — stakeholder-map과 연계해 우선순위 확정',
+    ],
+    limitations: [
+      '회복 확률은 현재 데이터 기반 추정치이며 새로운 위기 발생 시 재산출 필요',
+      '전략 실행 실제 효과는 외부 변수(경쟁사 이슈, 거시 환경)에 따라 달라질 수 있음',
+    ],
+    technicalDetails: [
+      '입력: Stage 1~3 전체 결과 + Stage 4 병렬 6개 모듈 결과 + crisis-scenario 결과',
+      '선행 의존: reputation-index(overallScore, dimensions), crisis-type-classifier(crisisType, responsibilityLevel), stakeholder-map(criticalStakeholder), esg-sentiment(regulatoryRisk), crisis-scenario(scenarios)',
+      '알고리즘: distillForReputationRecovery()로 핵심 컨텍스트 추출 → 회복 조건/장애 도출 → 확률 산출',
+      '출력: recoveryProbability, confidenceLevel, recoveryConditions[], obstacleConditions[], recoveryStrategies[], sloRecoveryStatus',
+    ],
+    source: 'reputation-recovery-simulation 모듈 (Claude Sonnet 4.6)',
+  },
 } as const;
 
 // ─── 전체 가이드 버튼 ───
