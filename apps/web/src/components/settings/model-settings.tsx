@@ -48,7 +48,7 @@ type ModuleMeta = {
   analyzes: string[];
   recommended: { provider: string; model: string; reason: string };
   costTip: string;
-  domain?: 'political' | 'fandom' | 'corporate'; // undefined = 공통
+  domain?: 'political' | 'fandom' | 'corporate' | 'pr'; // undefined = 공통
 };
 
 const MODULE_META: Record<string, ModuleMeta> = {
@@ -485,12 +485,13 @@ const DOMAIN_MODULES: Record<string, string[]> = {
     'crisis-scenario',
     'reputation-recovery-simulation',
   ],
+  pr: ['crisis-type-classifier', 'reputation-index', 'crisis-scenario', 'frame-war'],
 };
 
 // 프리셋 → 도메인 매핑 (seed-presets와 동일)
 const PRESET_DOMAIN_MAP: Record<string, { domain: string; title: string; category: string }> = {
   politics: { domain: 'political', title: '정치 캠프', category: '핵심 활용' },
-  pr_crisis: { domain: 'political', title: 'PR / 위기관리', category: '핵심 활용' },
+  pr_crisis: { domain: 'pr', title: 'PR / 위기관리', category: '핵심 활용' },
   corporate_reputation: { domain: 'corporate', title: '기업 평판 관리', category: '핵심 활용' },
   entertainment: { domain: 'fandom', title: '연예인 / 기획사', category: '핵심 활용' },
   policy_research: { domain: 'political', title: '정책 연구', category: '산업 특화' },

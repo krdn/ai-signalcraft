@@ -31,6 +31,7 @@ const PRESET_SEEDS = [
   {
     slug: 'pr_crisis',
     category: '핵심 활용',
+    domain: 'pr',
     title: 'PR / 위기관리',
     description:
       '위기 시나리오 3개와 대응 전략을 자동 생성합니다. 골든타임 안에 전략적 판단이 가능합니다.',
@@ -41,7 +42,7 @@ const PRESET_SEEDS = [
     customSourceIds: [],
     limits: { naverArticles: 500, youtubeVideos: 30, communityPosts: 50, commentsPerItem: 500 },
     optimization: 'standard' as const,
-    skippedModules: ['win-simulation'],
+    skippedModules: [],
     enableItemAnalysis: false,
   },
   {

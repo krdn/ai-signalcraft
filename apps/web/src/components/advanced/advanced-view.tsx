@@ -52,10 +52,17 @@ const CORPORATE_ADVN_MODULES = [
   'crisis-scenario',
   'reputation-recovery-simulation',
 ];
+const PR_ADVN_MODULES = [
+  'crisis-type-classifier',
+  'reputation-index',
+  'crisis-scenario',
+  'frame-war',
+];
 const ALL_ADVN_MODULES = [
   ...POLITICAL_ADVN_MODULES,
   ...FANDOM_ADVN_MODULES,
   ...CORPORATE_ADVN_MODULES,
+  ...PR_ADVN_MODULES,
 ];
 
 // 모듈별 결과를 파싱하는 유틸
@@ -68,9 +75,16 @@ function parseModuleResult(
 }
 
 // 모듈 이름으로 도메인 감지
-function detectDomain(moduleResults: Array<{ module: string }>): 'political' | 'fandom' | 'corporate' {
+function detectDomain(moduleResults: Array<{ module: string }>): 'political' | 'fandom' | 'corporate' | 'pr' {
   const modules = moduleResults.map((r) => r.module);
   if (modules.some((m) => FANDOM_ADVN_MODULES.includes(m))) return 'fandom';
+  // PR 판별: crisis-type-classifier + frame-war 조합 (corporate와 구분)
+  if (
+    modules.includes('crisis-type-classifier') &&
+    modules.includes('frame-war') &&
+    !modules.includes('stakeholder-map')
+  )
+    return 'pr';
   if (modules.some((m) => CORPORATE_ADVN_MODULES.includes(m))) return 'corporate';
   return 'political';
 }
@@ -164,7 +178,69 @@ export function AdvancedView({ jobId, fetchFn }: AdvancedViewProps) {
       </div>
 
       {/* 도메인별 카드 그리드 */}
-      {domain === 'fandom' ? (
+      {domain === 'pr' ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <CrisisTypeClassifierCard
+            data={parseModuleResult(moduleResults, 'crisis-type-classifier') ?? null}
+          />
+          <ReputationIndexCard
+            data={parseModuleResult(moduleResults, 'reputation-index') ?? null}
+          />
+          <FrameWarChart data={parseModuleResult(moduleResults, 'frame-war') ?? null} />
+          <CrisisScenarios data={parseModuleResult(moduleResults, 'crisis-scenario') ?? null} />
+
+          {/* 프레임 전쟁 네트워크 그래프 */}
+          {(() => {
+            const frameWarData = parseModuleResult(moduleResults, 'frame-war');
+            const sentimentData = parseModuleResult(moduleResults, 'sentiment-framing');
+            if (!frameWarData || !sentimentData) return null;
+            try {
+              const graphData = buildFrameWarGraph(frameWarData as any, sentimentData as any);
+              if (graphData.nodes.length === 0) return null;
+              return (
+                <Card className="min-h-[320px]">
+                  <CardHeader>
+                    <CardTitle className="text-lg font-semibold flex items-center gap-1.5">
+                      프레임 전쟁 네트워크
+                      <AdvancedCardHelp {...ADVANCED_HELP.frameWarGraph} />
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <FrameWarGraph data={graphData} width={600} height={400} />
+                  </CardContent>
+                </Card>
+              );
+            } catch {
+              return null;
+            }
+          })()}
+
+          {/* 리스크 연쇄 그래프 */}
+          {(() => {
+            const riskData = parseModuleResult(moduleResults, 'risk-map');
+            if (!riskData) return null;
+            try {
+              const graphData = buildRiskChainGraph(riskData as any);
+              if (graphData.nodes.length === 0) return null;
+              return (
+                <Card className="min-h-[320px]">
+                  <CardHeader>
+                    <CardTitle className="text-lg font-semibold flex items-center gap-1.5">
+                      리스크 연쇄 다이어그램
+                      <AdvancedCardHelp {...ADVANCED_HELP.riskChainGraph} />
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <FrameWarGraph data={graphData} width={600} height={400} />
+                  </CardContent>
+                </Card>
+              );
+            } catch {
+              return null;
+            }
+          })()}
+        </div>
+      ) : domain === 'fandom' ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <FanLoyaltyCard data={parseModuleResult(moduleResults, 'fan-loyalty-index') ?? null} />
           <NarrativeWarChart

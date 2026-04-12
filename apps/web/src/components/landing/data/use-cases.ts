@@ -288,7 +288,7 @@ export const USE_CASE_DETAILS: Record<string, UseCaseDetail> = {
       { step: 'AI가 위기 등급·원인·확산 경로 분석', detail: '리스크 맵 자동 생성' },
       { step: '3가지 시나리오 + 대응 전략 리포트', detail: '경영진 보고용 PDF 즉시 생성' },
     ],
-    keyModules: ['리스크 지도', '위기 시나리오', '감정/프레임 분석', '최종 요약'],
+    keyModules: ['SCCT 위기 유형 분류', '평판 지수 측정', '프레임 전쟁', '위기 시나리오'],
     impactMetrics: [
       { label: '위기 감지', before: '언론 보도 후', after: '온라인 확산 초기', icon: Bell },
       { label: '대응 전략 수립', before: '24시간+', after: '2시간 이내', icon: Timer },
