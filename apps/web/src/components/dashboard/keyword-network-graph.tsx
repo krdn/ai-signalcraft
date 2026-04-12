@@ -55,12 +55,14 @@ export function KeywordNetworkGraph({
         d3
           .forceLink<SimNode, SimEdge>(links)
           .id((d) => d.id)
-          .distance(80)
-          .strength((d) => d.weight),
+          .distance(70)
+          .strength((d) => Math.max(d.weight, 0.3)),
       )
-      .force('charge', d3.forceManyBody().strength(-200))
-      .force('center', d3.forceCenter(width / 2, height / 2))
-      .force('collision', d3.forceCollide().radius(20));
+      .force('charge', d3.forceManyBody().strength(-120))
+      .force('center', d3.forceCenter(width / 2, height / 2).strength(0.12))
+      .force('collision', d3.forceCollide().radius(25))
+      .force('x', d3.forceX(width / 2).strength(0.04))
+      .force('y', d3.forceY(height / 2).strength(0.04));
 
     // 엣지
     const link = g
@@ -118,7 +120,7 @@ export function KeywordNetworkGraph({
       .attr('font-weight', 600)
       .attr('dx', (d) => Math.max(Math.sqrt(d.size) * 3, 5) + 6)
       .attr('dy', 4)
-      .attr('class', 'fill-foreground')
+      .attr('class', 'fill-muted-foreground')
       .attr('paint-order', 'stroke')
       .attr('style', 'stroke: var(--color-card); stroke-width: 3.5px; stroke-linejoin: round;')
       .attr('pointer-events', 'none');
