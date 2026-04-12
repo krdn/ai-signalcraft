@@ -28,6 +28,10 @@ import { PerformanceNarrativeCard } from './performance-narrative-card';
 import { SeasonOutlookPredictionCard } from './season-outlook-prediction-card';
 import { EsgSentimentCard } from './esg-sentiment-card';
 import { OpportunityCard } from './opportunity-card';
+import { InstitutionalReputationIndexCard } from './institutional-reputation-index-card';
+import { EducationOpinionFrameCard } from './education-opinion-frame-card';
+import { EducationCrisisScenarioCard } from './education-crisis-scenario-card';
+import { EducationOutcomeSimulationCard } from './education-outcome-simulation-card';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -84,10 +88,10 @@ const HEALTHCARE_ADVN_MODULES = [
 ];
 const LEGAL_ADVN_MODULES = ['reputation-index', 'frame-war', 'crisis-scenario', 'win-simulation'];
 const EDUCATION_ADVN_MODULES = [
-  'approval-rating',
-  'frame-war',
-  'crisis-scenario',
-  'win-simulation',
+  'institutional-reputation-index',
+  'education-opinion-frame',
+  'education-crisis-scenario',
+  'education-outcome-simulation',
 ];
 const PUBLIC_SECTOR_ADVN_MODULES = [
   'approval-rating',
@@ -570,7 +574,47 @@ export function AdvancedView({ jobId, domain: domainProp, fetchFn }: AdvancedVie
             }
           })()}
         </div>
-      ) : domain === 'education' || domain === 'public-sector' ? (
+      ) : domain === 'education' ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <InstitutionalReputationIndexCard
+            data={parseModuleResult(moduleResults, 'institutional-reputation-index') ?? null}
+          />
+          <EducationOpinionFrameCard
+            data={parseModuleResult(moduleResults, 'education-opinion-frame') ?? null}
+          />
+          <EducationCrisisScenarioCard
+            data={parseModuleResult(moduleResults, 'education-crisis-scenario') ?? null}
+          />
+          <EducationOutcomeSimulationCard
+            data={parseModuleResult(moduleResults, 'education-outcome-simulation') ?? null}
+          />
+
+          {/* 리스크 연쇄 그래프 */}
+          {(() => {
+            const riskData = parseModuleResult(moduleResults, 'risk-map');
+            if (!riskData) return null;
+            try {
+              const graphData = buildRiskChainGraph(riskData as any);
+              if (graphData.nodes.length === 0) return null;
+              return (
+                <Card className="min-h-[320px]">
+                  <CardHeader>
+                    <CardTitle className="text-lg font-semibold flex items-center gap-1.5">
+                      리스크 연쇄 다이어그램
+                      <AdvancedCardHelp {...ADVANCED_HELP.riskChainGraph} />
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <FrameWarGraph data={graphData} width={600} height={400} />
+                  </CardContent>
+                </Card>
+              );
+            } catch {
+              return null;
+            }
+          })()}
+        </div>
+      ) : domain === 'public-sector' ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <ApprovalRatingCard data={parseModuleResult(moduleResults, 'approval-rating') ?? null} />
           <FrameWarChart data={parseModuleResult(moduleResults, 'frame-war') ?? null} />

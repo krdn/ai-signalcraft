@@ -547,12 +547,27 @@ export const DOMAIN_HELP_DATA: Record<string, DomainHelpData> = {
       ...COMMON_MODULES,
       {
         stage: 'Stage 4',
-        label: '교육기관 고급 분석',
+        label: '교육기관 고급 분석 (ADVN)',
         modules: [
-          { name: '기관 만족도 추정', description: '재학생·학부모·고용주 만족도 분리 측정' },
-          { name: '프레임 전쟁', description: '기관 공식 메시지 vs 학생 경험 프레임 충돌' },
-          { name: '평판 위기 시나리오', description: '비리·순위 하락·취업률 논란 시나리오' },
-          { name: '평판 강화 전략', description: '평판 회복 및 강화 조건 시뮬레이션' },
+          {
+            name: '기관 평판 지수',
+            description:
+              'Fombrun(1996) 4차원(교육품질·연구력·취업률·학생생활) 평판 측정 + Signaling Theory 신호-수신 간극',
+          },
+          {
+            name: '교육 여론 프레임',
+            description:
+              'Rankings Dynamics(Espeland & Sauder, 2007) 기반 기관 공식 프레임 vs 학생 경험 프레임 세력 역학',
+          },
+          {
+            name: '교육 위기 시나리오',
+            description:
+              'Social Contract Theory(Rawls, 1971) 기반 확산/통제/역전 3가지 위기 경로 시뮬레이션',
+          },
+          {
+            name: '교육기관 목표 달성 시뮬레이션',
+            description: '신뢰 회복 확률 산출 + 전략 우선순위 재배치 및 정량적 효과 예측',
+          },
         ],
       },
     ],

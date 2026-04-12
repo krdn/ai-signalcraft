@@ -1116,6 +1116,160 @@ export const ADVANCED_HELP = {
     ],
     source: 'season-outlook-prediction 모듈 (Claude Sonnet 4.6)',
   },
+
+  // ─── 교육 도메인 (Stage 4) ───
+
+  institutionalReputationIndex: {
+    title: '기관 평판 지수',
+    description:
+      'Fombrun(1996) Institutional Reputation Theory와 Spence(1973) Signaling Theory를 결합하여 교육기관 평판을 4차원(교육품질·연구력·취업률·학생생활)으로 측정하고, 기관이 발신하는 공식 신호와 이해관계자가 실제 수신하는 메시지 간 간극을 분석합니다.',
+    details: [
+      'reputationIndex(0~100): 종합 기관 평판 지수 — 80 이상=우수, 40 미만=위험',
+      'dimensionScores: 4차원별 점수 (교육품질/연구력/취업률/학생생활)',
+      'groupPerceptions: 4집단별 인식 (지원자·재학생·졸업생·일반대중)',
+      'signalingGaps: 공식 신호(순위·취업률) vs 실제 수신 간극 — 간극이 클수록 평판 불안정',
+      'earlyWarnings: 비리·폐과·구조조정 관련 조기 경고 신호',
+      'competitivePosition: 경쟁 교육기관 대비 강점·약점·차별화 포인트',
+    ],
+    howToRead: [
+      '종합 지수가 60 미만이면 이해관계자 신뢰에 적극 개입이 필요한 상태',
+      'signalingGaps에서 gapSeverity가 critical인 항목을 가장 먼저 해결하세요',
+      '4집단 중 재학생(students) 인식이 부정적이면 졸업생·지원자에게도 전파될 수 있음',
+      'earlyWarnings가 있으면 위기 시나리오 모듈과 함께 즉시 대응 계획 수립 필요',
+      'competitivePosition의 strengths를 입시 홍보 메시지로 즉시 활용 가능',
+    ],
+    tips: [
+      '4차원 중 가장 낮은 차원에 집중적 개선 — 평판 총점 상승 효율이 가장 높음',
+      '지원자 집단은 순위·취업률 신호에 민감 — 이 신호가 실제 경험과 다르면 입시 리스크',
+      '재학생 만족도를 높이면 졸업생 네트워크를 통한 입소문이 3~5년 후 평판에 기여',
+    ],
+    limitations: [
+      '온라인 데이터 기반 측정 — 오프라인 평판(교수 추천서, 기업 인사담당자 인식)은 미포함',
+      '특정 이슈나 사건이 발생한 직후에는 일시적 점수 급락이 발생할 수 있음',
+      '경쟁 기관 포지션은 상대적 온라인 언급 비교 — 실제 입시 경쟁률과 차이 있을 수 있음',
+    ],
+    technicalDetails: [
+      '입력: 기사 최근 25건(제목) + 댓글 35건(150자 절단)',
+      '선행 의존: sentiment-framing(감정 비율·프레임), segmentation(집단 분류·플랫폼)',
+      '알고리즘: 4차원 키워드 매핑 → 집단별 인식 분류 → Signaling Theory 간극 측정 → 경쟁 포지션 상대 산출',
+      '출력 스키마: reputationIndex, trend, dimensionScores[], groupPerceptions[], competitivePosition, signalingGaps[], earlyWarnings[], summary',
+    ],
+    source: 'institutional-reputation-index 모듈 (Claude Sonnet 4.6)',
+  },
+
+  educationOpinionFrame: {
+    title: '교육 여론 프레임',
+    description:
+      'Espeland & Sauder(2007) Rankings Dynamics와 Spence(1973) Signaling Theory를 결합하여 교육기관 공식 프레임과 학생 경험 프레임 간 세력 역학을 분석합니다. 순위 변동이 이해관계자별 프레임 전환에 미치는 영향을 정량화합니다.',
+    details: [
+      'dominantFrame: 현재 교육기관 논의를 지배하는 프레임과 강도(0~100)',
+      'challengingFrames: 재학생·비판 세력이 확산시키는 도전 프레임과 확산 위험도',
+      'institutionOfficialFrame: 기관 공식 입장 프레임의 신뢰도 점수',
+      'frameDynamics: 세력 균형(institution_dominant/contested/student_dominant)과 방향',
+      'rankingFrameImpact: 순위 변동이 각 이해관계자 프레임에 미치는 영향',
+      'keyMessages: 입시/재학생 대상 효과적 메시지와 역효과 프레임 유형',
+    ],
+    howToRead: [
+      'frameDynamics.currentBalance가 "student_dominant"이면 기관 공식 메시지 신뢰 붕괴 상태',
+      'challengingFrames에서 spreadRisk가 "high"인 프레임은 즉시 대응 필요',
+      'institutionOfficialFrame.credibilityScore가 40 미만이면 공식 홍보가 오히려 역효과 가능',
+      'turningConditions는 기관에 유리한 프레임 전환 트리거 — 해당 이벤트 시 신속히 메시지 발신',
+      'keyMessages.framesToAvoid에 나온 메시지 패턴은 역효과 — 사용 금지',
+    ],
+    tips: [
+      '기관 공식 신호(순위·취업률)가 도전 프레임에 역공당하면 신호 자체보다 "이야기"로 전달 방식 전환',
+      '재학생 긍정 경험을 직접 발화(testimonial)로 확산시키면 기관 공식 프레임보다 신뢰도 3배 이상',
+      '순위 발표 전후를 노린 선제 메시지로 기관 유리한 프레임을 고착화하는 전략이 효과적',
+    ],
+    limitations: [
+      '프레임 강도는 온라인 언급 빈도와 감정 가중치 기반 — 오프라인 여론과 차이 가능',
+      '공식 신호(순위)의 실제 정확도는 검증하지 않음 — 데이터 출처 확인 필요',
+      '단기 이슈에 의한 일시적 프레임 편중이 구조적 문제처럼 보일 수 있음',
+    ],
+    technicalDetails: [
+      '입력: 기사 최근 20건(제목) + 댓글 30건(150자 절단)',
+      '선행 의존: sentiment-framing(프레임 목록), institutional-reputation-index(신호 간극)',
+      '알고리즘: 프레임 추출 → 세력 분류(지배/도전/기관) → Rankings Dynamics 순위 연동 → 전환 조건 도출',
+      '출력 스키마: dominantFrame, challengingFrames[], institutionOfficialFrame, frameDynamics, rankingFrameImpact, keyMessages, summary',
+    ],
+    source: 'education-opinion-frame 모듈 (Claude Sonnet 4.6)',
+  },
+
+  educationCrisisScenario: {
+    title: '교육 위기 시나리오',
+    description:
+      'Rawls(1971) Social Contract Theory와 Fombrun(1996) Institutional Reputation Theory를 적용하여 교육기관-학생 간 암묵적 사회계약(취업·교육품질·학비·비리) 위반 차원을 중심으로 위기의 3가지 전개 경로를 시뮬레이션합니다.',
+    details: [
+      'scenarios[0] (spread): 최악 — 비리·취업률 조작이 전국 이슈화, 입학 지원자 급감',
+      'scenarios[1] (control): 보통 — 내부 개선·투명 소통으로 외부 확산 차단',
+      'scenarios[2] (reverse): 최선 — 진정성 있는 개혁이 오히려 신뢰 강화',
+      'crisisRoot: 현재 가장 위험한 위기 씨앗과 사회계약 위반 차원',
+      'goldenHourActions: 72시간 내 반드시 실행해야 할 우선 조치',
+      'recoveryFramework: 단기(3개월)·중기(1년)·장기(3년) 회복 목표',
+    ],
+    howToRead: [
+      'spread 시나리오 triggerConditions를 모니터링 — 해당 이벤트 발생 시 즉각 대응 체계 가동',
+      'goldenHourActions는 최우선 실행 목록 — 72시간 지연 시 control 시나리오가 spread로 전환 위험',
+      'contractBreachDimensions에 "취업률"이 포함되면 입시 직전 시즌에 특히 위험',
+      'reverse 시나리오 probability가 30% 이상이면 위기를 기회로 전환할 수 있는 구조',
+      'recoveryFramework의 단기 목표를 즉시 실행 계획으로 전환하세요',
+    ],
+    tips: [
+      '위기 발생 전 선제적으로 분석하면 triggerConditions를 사전 차단하는 예방 전략 수립 가능',
+      '재학생 단체 성명 같은 내부 발화는 외부 확산의 강력한 트리거 — 내부 소통 채널 우선 관리',
+      '교육부 감사나 언론 단독 보도 직전 기관 자체 공개가 control 시나리오 유지의 핵심',
+    ],
+    limitations: [
+      'risk-map 결과 기반 시나리오 — 리스크 식별이 불완전하면 시나리오도 부정확할 수 있음',
+      '확률 추정은 현재 온라인 여론 기반 — 오프라인 이해관계자(이사회·교수회) 행동은 미반영',
+      '시나리오는 선형 전개를 가정 — 복합 위기 상황에서는 비선형 전개 가능성 있음',
+    ],
+    technicalDetails: [
+      '입력: 기사 최근 20건(제목) + 댓글 30건(150자 절단)',
+      '선행 의존: risk-map(상위 4개 리스크), institutional-reputation-index(평판 지수), education-opinion-frame(프레임 균형)',
+      '알고리즘: Social Contract 위반 차원 식별 → 3개 시나리오 분기 추론 → 단계별 타임라인 전개 → 복구 경로 도출',
+      '출력 스키마: scenarios[3](type/probability/triggerConditions/timeline/reputationImpact), crisisRoot, goldenHourActions[], recoveryFramework, summary',
+    ],
+    source: 'education-crisis-scenario 모듈 (Claude Sonnet 4.6)',
+  },
+
+  educationOutcomeSimulation: {
+    title: '교육기관 목표 달성 시뮬레이션',
+    description:
+      'Rankings Dynamics(Espeland & Sauder, 2007)와 Institutional Reputation Theory(Fombrun, 1996)를 종합하여 교육기관 신뢰 회복 확률을 산출하고, 교육 Stage 4 전체 분석 결과를 기반으로 전략 우선순위를 재배치합니다.',
+    details: [
+      'recoveryProbability(0~100%): 교육기관 신뢰·평판 목표 달성 확률',
+      'winConditions: 목표 달성 조건 체크리스트 (met/partial/unmet)',
+      'strategicPriorities: 우선순위별 전략 행동과 정량적 expectedImpact',
+      'differentiationOpportunities: 경쟁 기관 대비 차별화 포지셔닝 기회',
+      'riskAdjustments: 확률을 낮추는 리스크 요인과 완화 방법',
+      '낙관/비관 시나리오별 확률과 핵심 변수 분리 제시',
+    ],
+    howToRead: [
+      'recoveryProbability 70% 이상: 현재 방향 유지 + 전략 가속화',
+      'recoveryProbability 40~69%: 미충족(unmet) winConditions 집중 해결 필요',
+      'recoveryProbability 40% 미만: 근본적 전략 재검토 필요 — riskAdjustments 우선 처리',
+      'strategicPriorities[0](1순위)부터 순서대로 실행 — expectedImpact로 ROI 가늠 가능',
+      'optimisticScenario.keyDriver가 현실화되면 확률 급상승 — 해당 조건 선제 달성 전략 수립',
+    ],
+    tips: [
+      '확률이 낮더라도 differentiationOpportunities를 활용한 포지셔닝으로 경쟁 구도를 바꿀 수 있음',
+      'strategy 모듈과 함께 읽어 전략 항목의 우선순위가 어떻게 재배치됐는지 비교하세요',
+      '분기별 재분석으로 확률 변화를 추적하면 개입의 실제 효과를 측정 가능',
+    ],
+    limitations: [
+      '교육 Stage 4 선행 분석(3개 모듈) 품질에 크게 의존 — 선행 결과가 부정확하면 확률도 부정확',
+      'expectedImpact는 추정치 — 실제 효과는 기관의 실행 역량과 외부 환경에 따라 달라짐',
+      '장기(3년) 시나리오는 예측 불확실성이 높음 — 단기(3개월) 지표 모니터링 병행 필수',
+    ],
+    technicalDetails: [
+      '입력: 기사 최근 15건(제목)',
+      '선행 의존: institutional-reputation-index(지수·추세·간극), education-opinion-frame(프레임 균형·전환 조건), education-crisis-scenario(확산 확률), strategy(전략 방향)',
+      '알고리즘: 기반선(평판 지수) → 프레임 전환 가점 → 위기 확률 감점 → 조건 달성 여부 종합 → 확률 산출 → 전략 재배치',
+      '출력 스키마: recoveryProbability, probabilityBasis, winConditions[], strategicPriorities[], differentiationOpportunities[], riskAdjustments[], optimisticScenario, pessimisticScenario, summary',
+    ],
+    source: 'education-outcome-simulation 모듈 (Claude Sonnet 4.6)',
+  },
 } as const;
 
 // ─── 전체 가이드 버튼 ───

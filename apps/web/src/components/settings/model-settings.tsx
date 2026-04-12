@@ -57,7 +57,8 @@ type ModuleMeta = {
     | 'finance'
     | 'healthcare'
     | 'legal'
-    | 'sports'; // undefined = 공통
+    | 'sports'
+    | 'education'; // undefined = 공통
 };
 
 const MODULE_META: Record<string, ModuleMeta> = {
@@ -623,6 +624,82 @@ const MODULE_META: Record<string, ModuleMeta> = {
     costTip: '성과 내러티브 선행 결과를 포함하여 컨텍스트가 큽니다. 경량 토큰 최적화 권장.',
     domain: 'sports',
   },
+  // 교육 전용 (Stage 4)
+  'institutional-reputation-index': {
+    name: '기관 평판 지수',
+    description:
+      'Fombrun(1996) Institutional Reputation Theory와 Spence(1973) Signaling Theory 기반으로 4차원(교육품질·연구력·취업률·학생생활) 평판 지수와 공식 신호-수신 간극을 측정합니다.',
+    analyzes: [
+      '4차원별 평판 점수 (교육품질 / 연구력 / 취업률 / 학생생활)',
+      '4집단별 인식 차이 (지원자·재학생·졸업생·일반대중)',
+      '기관 공식 신호와 실제 수신 간 간극 (Signaling Theory)',
+      '경쟁 교육기관 대비 포지션 및 차별화 기회',
+    ],
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      reason: '4차원 동시 측정과 집단별 인식 비교에 정밀한 추론 필요',
+    },
+    costTip: 'sentiment-framing·segmentation 선행 결과를 컨텍스트로 활용하여 토큰이 증가합니다.',
+    domain: 'education',
+  },
+  'education-opinion-frame': {
+    name: '교육 여론 프레임',
+    description:
+      'Espeland & Sauder(2007) Rankings Dynamics와 Spence(1973) Signaling Theory 기반으로 기관 공식 프레임과 학생 경험 프레임 간 세력 역학 및 순위 변동의 프레임 영향을 분석합니다.',
+    analyzes: [
+      '기관 공식 프레임 vs 재학생 경험 프레임 세력 균형',
+      '순위 변동이 이해관계자별 프레임에 미치는 영향',
+      '프레임 전환 조건 및 기관에 유리한 커뮤니케이션 방향',
+      '신뢰도 저하 프레임 유형 및 역효과 메시지 패턴',
+    ],
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      reason: '교육기관 담론 역학 분석과 프레임 세력 역학 파악에 고급 언어 이해 필요',
+    },
+    costTip:
+      'sentiment-framing과 institutional-reputation-index 선행 결과를 활용하여 컨텍스트가 큽니다.',
+    domain: 'education',
+  },
+  'education-crisis-scenario': {
+    name: '교육 위기 시나리오',
+    description:
+      'Rawls(1971) Social Contract Theory와 Fombrun(1996) Institutional Reputation Theory 기반으로 교육기관-학생 간 사회계약 위반 차원을 중심으로 확산/통제/역전 3가지 위기 경로를 시뮬레이션합니다.',
+    analyzes: [
+      '교육 사회계약 위반 차원 (취업·교육품질·학비·비리)',
+      '확산(worst)/통제(moderate)/역전(best) 3가지 시나리오 경로',
+      '골든타임(72시간) 내 우선 대응 조치',
+      '단기(3개월)·중기(1년)·장기(3년) 평판 회복 프레임워크',
+    ],
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      reason: '다중 시나리오 분기와 교육기관 맥락 이벤트 추론에 Claude 추론 능력 필요',
+    },
+    costTip:
+      'risk-map·institutional-reputation-index·education-opinion-frame 선행 결과를 활용하여 토큰이 많습니다.',
+    domain: 'education',
+  },
+  'education-outcome-simulation': {
+    name: '교육기관 목표 달성 시뮬레이션',
+    description:
+      'Rankings Dynamics(Espeland & Sauder, 2007)와 Institutional Reputation Theory(Fombrun, 1996) 기반으로 교육기관 신뢰 회복 확률과 전략 우선순위를 시뮬레이션합니다.',
+    analyzes: [
+      '교육기관 신뢰 회복 확률 (0~100%) 및 산출 근거',
+      '목표 달성 조건 체크리스트 (met/partial/unmet)',
+      '전략 우선순위 재배치 (정량적 expectedImpact)',
+      '낙관/비관 시나리오별 확률과 핵심 변수',
+    ],
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      reason: '교육 Stage 4 전체 선행 결과 종합 — 가장 많은 컨텍스트를 처리하는 최종 모듈',
+    },
+    costTip:
+      '모든 교육 Stage 4 선행 결과를 입력으로 받아 토큰이 가장 많습니다. 최고 품질 모델 강력 권장.',
+    domain: 'education',
+  },
 };
 
 // ── 모듈 분류 상수 ──
@@ -666,7 +743,12 @@ const DOMAIN_MODULES: Record<string, string[]> = {
   ],
   healthcare: ['health-risk-perception', 'compliance-predictor'],
   legal: ['reputation-index', 'frame-war', 'crisis-scenario', 'win-simulation'],
-  education: ['approval-rating', 'frame-war', 'crisis-scenario', 'win-simulation'],
+  education: [
+    'institutional-reputation-index',
+    'education-opinion-frame',
+    'education-crisis-scenario',
+    'education-outcome-simulation',
+  ],
   'public-sector': ['approval-rating', 'frame-war', 'crisis-scenario', 'win-simulation'],
   sports: [
     'performance-narrative',

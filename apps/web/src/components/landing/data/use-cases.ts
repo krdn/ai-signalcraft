@@ -658,7 +658,12 @@ export const USE_CASE_DETAILS: Record<string, UseCaseDetail> = {
       { step: 'AI가 평판·이슈·리스크 분석', detail: '트렌드 변화 자동 추적' },
       { step: '대학 브랜딩 전략 리포트', detail: '입시 홍보 전략 포함' },
     ],
-    keyModules: ['기관 만족도 추정', '프레임 전쟁', '평판 위기 시나리오', '평판 강화 시뮬레이션'],
+    keyModules: [
+      '기관 평판 지수',
+      '교육 여론 프레임',
+      '교육 위기 시나리오',
+      '교육기관 목표 달성 시뮬레이션',
+    ],
     impactMetrics: [
       { label: '평판 모니터링', before: '연간 조사', after: '실시간 추적', icon: Radar },
       { label: '이슈 대응', before: '언론 보도 후', after: '확산 초기 감지', icon: Bell },
