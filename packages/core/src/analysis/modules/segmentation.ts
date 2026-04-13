@@ -59,6 +59,13 @@ ${comments.map((c, i) => `${i + 1}. [${c.source}] ${c.content} (좋아요: ${c.l
 ### Step 1: 플랫폼별 분리
 - 각 플랫폼(naver, youtube, clien, fmkorea, dcinside)의 댓글을 분리하세요
 - 플랫폼별 전체 감정 기조(긍정/부정/중립 비율)를 1차 판단하세요
+- **중요**: platformSegments의 platform 필드는 반드시 영문 ID로 작성하세요
+  - 네이버 뉴스 → "naver"
+  - 유튜브 → "youtube"
+  - DC인사이드 / DC갤러리 → "dcinside"
+  - 에펨코리아 → "fmkorea"
+  - 클리앙 → "clien"
+- 데이터가 존재하는 플랫폼은 누락 없이 모두 포함하세요
 
 ### Step 2: 집단 식별
 - 댓글 내용·어투·좋아요 패턴에서 Core/Opposition/Swing 집단을 식별하세요

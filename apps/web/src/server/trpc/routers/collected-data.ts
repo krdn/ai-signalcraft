@@ -280,45 +280,75 @@ export const collectedDataRouter = router({
         );
       if (!job) throw new TRPCError({ code: 'NOT_FOUND' });
 
-      const [articleCount, videoCount, commentCount, articleSourceBreakdown, videoSourceBreakdown] =
-        await Promise.all([
-          ctx.db
-            .select({ count: sql<number>`count(*)::int` })
-            .from(articleJobs)
-            .where(eq(articleJobs.jobId, input.jobId)),
-          ctx.db
-            .select({ count: sql<number>`count(*)::int` })
-            .from(videoJobs)
-            .where(eq(videoJobs.jobId, input.jobId)),
-          ctx.db
-            .select({ count: sql<number>`count(*)::int` })
-            .from(commentJobs)
-            .where(eq(commentJobs.jobId, input.jobId)),
-          ctx.db
-            .select({
-              source: articles.source,
-              count: sql<number>`count(*)::int`,
-            })
-            .from(articles)
-            .innerJoin(articleJobs, eq(articles.id, articleJobs.articleId))
-            .where(eq(articleJobs.jobId, input.jobId))
-            .groupBy(articles.source),
-          ctx.db
-            .select({
-              source: videos.source,
-              count: sql<number>`count(*)::int`,
-            })
-            .from(videos)
-            .innerJoin(videoJobs, eq(videos.id, videoJobs.videoId))
-            .where(eq(videoJobs.jobId, input.jobId))
-            .groupBy(videos.source),
-        ]);
+      const [
+        articleCount,
+        videoCount,
+        commentCount,
+        articleSourceBreakdown,
+        videoSourceBreakdown,
+        commentSourceBreakdown,
+      ] = await Promise.all([
+        ctx.db
+          .select({ count: sql<number>`count(*)::int` })
+          .from(articleJobs)
+          .where(eq(articleJobs.jobId, input.jobId)),
+        ctx.db
+          .select({ count: sql<number>`count(*)::int` })
+          .from(videoJobs)
+          .where(eq(videoJobs.jobId, input.jobId)),
+        ctx.db
+          .select({ count: sql<number>`count(*)::int` })
+          .from(commentJobs)
+          .where(eq(commentJobs.jobId, input.jobId)),
+        ctx.db
+          .select({
+            source: articles.source,
+            count: sql<number>`count(*)::int`,
+          })
+          .from(articles)
+          .innerJoin(articleJobs, eq(articles.id, articleJobs.articleId))
+          .where(eq(articleJobs.jobId, input.jobId))
+          .groupBy(articles.source),
+        ctx.db
+          .select({
+            source: videos.source,
+            count: sql<number>`count(*)::int`,
+          })
+          .from(videos)
+          .innerJoin(videoJobs, eq(videos.id, videoJobs.videoId))
+          .where(eq(videoJobs.jobId, input.jobId))
+          .groupBy(videos.source),
+        ctx.db
+          .select({
+            source: comments.source,
+            count: sql<number>`count(*)::int`,
+          })
+          .from(comments)
+          .innerJoin(commentJobs, eq(comments.id, commentJobs.commentId))
+          .where(eq(commentJobs.jobId, input.jobId))
+          .groupBy(comments.source),
+      ]);
+
+      // 소스별 전체 볼륨 합산 (기사 + 영상 + 댓글)
+      const volumeBySource = new Map<string, number>();
+      for (const { source, count } of [
+        ...articleSourceBreakdown,
+        ...videoSourceBreakdown,
+        ...commentSourceBreakdown,
+      ]) {
+        volumeBySource.set(source, (volumeBySource.get(source) ?? 0) + count);
+      }
+      const sourceVolume = Array.from(volumeBySource.entries()).map(([source, count]) => ({
+        source,
+        count,
+      }));
 
       return {
         totalArticles: articleCount[0]?.count ?? 0,
         totalVideos: videoCount[0]?.count ?? 0,
         totalComments: commentCount[0]?.count ?? 0,
         sourceBreakdown: [...articleSourceBreakdown, ...videoSourceBreakdown],
+        sourceVolume,
         keyword: job.keyword,
         period: {
           start: job.startDate.toISOString(),

@@ -216,6 +216,65 @@ export const exploreRouter = router({
   }),
 
   /**
+   * V4b — 소스 × 감정 매트릭스 (기사/댓글 분리 버전)
+   * 반환: { articles: [{source, sentiment, count}], comments: [{source, sentiment, count}] }
+   * 대시보드 "소스별 감성 비교" 차트에서 사용
+   */
+  getSentimentBySourceSplit: protectedProcedure
+    .input(
+      z.object({
+        jobId: z.number(),
+        dateScope: z.enum(['job', 'all']).default('job'),
+      }),
+    )
+    .query(async ({ input, ctx }) => {
+      const job = await verifyJobAccess(ctx, input.jobId);
+      const jobStartDate = input.dateScope === 'job' ? (job.startDate as Date) : undefined;
+
+      const articleFilters: SQL[] = [eq(articleJobs.jobId, input.jobId)];
+      if (jobStartDate) articleFilters.push(gte(articles.publishedAt, jobStartDate));
+
+      const commentFilters: SQL[] = [eq(commentJobs.jobId, input.jobId)];
+      if (jobStartDate) commentFilters.push(gte(comments.publishedAt, jobStartDate));
+
+      const [articleRows, commentRows] = await Promise.all([
+        ctx.db
+          .select({
+            source: articles.source,
+            sentiment: articles.sentiment,
+            count: sql<number>`count(*)::int`,
+          })
+          .from(articles)
+          .innerJoin(articleJobs, eq(articles.id, articleJobs.articleId))
+          .where(and(...articleFilters))
+          .groupBy(articles.source, articles.sentiment),
+        ctx.db
+          .select({
+            source: comments.source,
+            sentiment: comments.sentiment,
+            count: sql<number>`count(*)::int`,
+          })
+          .from(comments)
+          .innerJoin(commentJobs, eq(comments.id, commentJobs.commentId))
+          .where(and(...commentFilters))
+          .groupBy(comments.source, comments.sentiment),
+      ]);
+
+      return {
+        articles: articleRows.map((r) => ({
+          source: r.source,
+          sentiment: r.sentiment ?? 'neutral',
+          count: Number(r.count),
+        })),
+        comments: commentRows.map((r) => ({
+          source: r.source,
+          sentiment: r.sentiment ?? 'neutral',
+          count: Number(r.count),
+        })),
+      };
+    }),
+
+  /**
    * V5 — BERT 확신도 분포 (20 bins)
    * 반환: [{ bin: 0..19, binStart, binEnd, positive, negative, neutral }]
    */

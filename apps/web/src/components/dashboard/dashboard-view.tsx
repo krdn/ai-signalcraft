@@ -65,9 +65,17 @@ export function DashboardView({ jobId, fetchFn, readOnly }: DashboardViewProps) 
     refetch,
   } = useQuery({
     queryKey: fetchFn ? ['showcase', 'getResults', jobId] : ['analysis', 'getResults', jobId],
-    queryFn: () => queryFn(jobId!),
+    queryFn: () => queryFn(jobId as number),
     enabled: !!jobId,
     staleTime: fetchFn ? Infinity : undefined,
+  });
+
+  // 소스별 실제 감성 건수 (DB 실측값) — fetchFn 없는 일반 모드에서만 조회
+  const { data: sentimentBySource } = useQuery({
+    queryKey: ['explore', 'getSentimentBySourceSplit', jobId],
+    queryFn: () => trpcClient.explore.getSentimentBySourceSplit.query({ jobId: jobId as number }),
+    enabled: !!jobId && !fetchFn,
+    staleTime: Infinity,
   });
 
   // jobId 없음 -- 빈 상태
@@ -118,7 +126,6 @@ export function DashboardView({ jobId, fetchFn, readOnly }: DashboardViewProps) 
 
   const sentimentFraming = parseModuleResult(moduleResults, 'sentiment-framing');
   const macroView = parseModuleResult(moduleResults, 'macro-view');
-  const segmentation = parseModuleResult(moduleResults, 'segmentation');
   const riskMap = parseModuleResult(moduleResults, 'risk-map');
   const opportunity = parseModuleResult(moduleResults, 'opportunity');
   const finalSummary = parseModuleResult(moduleResults, 'final-summary');
@@ -176,34 +183,9 @@ export function DashboardView({ jobId, fetchFn, readOnly }: DashboardViewProps) 
   // 키워드 네트워크 데이터 — sentiment-framing의 topKeywords + relatedKeywords
   const keywordNetworkData = sentimentFraming ? buildKeywordNetwork(sentimentFraming as any) : null;
 
-  // 플랫폼 비교 데이터 — segmentation.platformSegments (수정: sentimentByPlatform → platformSegments)
-  const platformSegments = segmentation?.platformSegments as
-    | Array<{
-        platform: string;
-        sentiment: string;
-        volume: number;
-        keyTopics: string[];
-        characteristics: string;
-      }>
-    | undefined;
-  // sentiment enum을 수치로 변환
-  const platformData =
-    platformSegments?.map((seg) => ({
-      platform: seg.platform,
-      positive:
-        seg.sentiment === 'positive'
-          ? seg.volume
-          : seg.sentiment === 'mixed'
-            ? Math.round(seg.volume * 0.4)
-            : 0,
-      negative:
-        seg.sentiment === 'negative'
-          ? seg.volume
-          : seg.sentiment === 'mixed'
-            ? Math.round(seg.volume * 0.3)
-            : 0,
-      neutral: seg.sentiment === 'mixed' ? Math.round(seg.volume * 0.3) : 0,
-    })) ?? null;
+  // 소스별 감성 데이터 — DB 실측값 (sentimentBySource 쿼리)
+  const platformArticles = sentimentBySource?.articles ?? [];
+  const platformComments = sentimentBySource?.comments ?? [];
 
   // 리스크 데이터 — risk-map.topRisks (수정: risks → topRisks, 구조 변환)
   const topRisks = riskMap?.topRisks as
@@ -318,7 +300,7 @@ export function DashboardView({ jobId, fetchFn, readOnly }: DashboardViewProps) 
             </CardContent>
           </Card>
         )}
-        <PlatformCompare data={platformData} />
+        <PlatformCompare articles={platformArticles} comments={platformComments} />
         <RiskCards risks={risks} />
         <OpportunityCards opportunities={opportunities} />
       </div>
