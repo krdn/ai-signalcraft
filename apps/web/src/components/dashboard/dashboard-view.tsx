@@ -233,8 +233,22 @@ export function DashboardView({ jobId, fetchFn, readOnly }: DashboardViewProps) 
       feasibility: a.expandability,
     })) ?? null;
 
-  // KPI 데이터
-  const totalMentions = rawTrend?.reduce((sum, t) => sum + t.count, 0) ?? null;
+  // KPI 데이터 — 총 수집량: DB 실측값(sentimentBySource) 우선, 없으면 AI trend 합산
+  const dbArticleCount =
+    sentimentBySource && sentimentBySource.articles.length > 0
+      ? sentimentBySource.articles.reduce((sum, r) => sum + r.count, 0)
+      : null;
+  const dbCommentCount =
+    sentimentBySource && sentimentBySource.comments.length > 0
+      ? sentimentBySource.comments.reduce((sum, r) => sum + r.count, 0)
+      : null;
+  const dbTotalMentions =
+    dbArticleCount != null || dbCommentCount != null
+      ? (dbArticleCount ?? 0) + (dbCommentCount ?? 0)
+      : null;
+  const aiTotalMentions =
+    rawTrend && rawTrend.length > 0 ? rawTrend.reduce((sum, t) => sum + t.count, 0) : null;
+  const totalMentions = dbTotalMentions ?? aiTotalMentions;
   const topKeywordText = topKeywords?.[0]?.keyword ?? null;
   const overallDirection =
     (macroView?.overallDirection as 'positive' | 'negative' | 'mixed') ?? null;
@@ -272,6 +286,8 @@ export function DashboardView({ jobId, fetchFn, readOnly }: DashboardViewProps) 
       {/* KPI 카드 — 핵심 지표 한눈에 */}
       <KpiCards
         totalMentions={totalMentions}
+        articleCount={dbArticleCount}
+        commentCount={dbCommentCount}
         sentimentRatio={sentimentData ?? null}
         topKeyword={topKeywordText}
         overallDirection={overallDirection}

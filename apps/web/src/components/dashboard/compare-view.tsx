@@ -60,6 +60,16 @@ export function CompareView({ baseJobId, compareJobId }: CompareViewProps) {
     queryKey: ['analysis', 'getResults', compareJobId],
     queryFn: () => trpcClient.analysis.getResults.query({ jobId: compareJobId }),
   });
+  const { data: baseSentimentBySource } = useQuery({
+    queryKey: ['explore', 'getSentimentBySourceSplit', baseJobId],
+    queryFn: () => trpcClient.explore.getSentimentBySourceSplit.query({ jobId: baseJobId }),
+    staleTime: Infinity,
+  });
+  const { data: compareSentimentBySource } = useQuery({
+    queryKey: ['explore', 'getSentimentBySourceSplit', compareJobId],
+    queryFn: () => trpcClient.explore.getSentimentBySourceSplit.query({ jobId: compareJobId }),
+    staleTime: Infinity,
+  });
 
   if (baseLoading || compareLoading) {
     return (
@@ -94,15 +104,24 @@ export function CompareView({ baseJobId, compareJobId }: CompareViewProps) {
       }
     | undefined;
 
-  // 총 언급량
+  // 총 언급량 — DB 실측값 우선, 없으면 AI trend 합산
   const baseTrend = parseModule(base, 'macro-view')?.dailyMentionTrend as
     | Array<{ count: number }>
     | undefined;
   const compareTrend = parseModule(compare, 'macro-view')?.dailyMentionTrend as
     | Array<{ count: number }>
     | undefined;
-  const baseMentions = baseTrend?.reduce((s, t) => s + t.count, 0) ?? 0;
-  const compareMentions = compareTrend?.reduce((s, t) => s + t.count, 0) ?? 0;
+  const calcDbMentions = (src?: typeof baseSentimentBySource) =>
+    src && (src.articles.length > 0 || src.comments.length > 0)
+      ? src.articles.reduce((s, r) => s + r.count, 0) +
+        src.comments.reduce((s, r) => s + r.count, 0)
+      : null;
+  const baseMentions =
+    calcDbMentions(baseSentimentBySource) ??
+    (baseTrend && baseTrend.length > 0 ? baseTrend.reduce((s, t) => s + t.count, 0) : 0);
+  const compareMentions =
+    calcDbMentions(compareSentimentBySource) ??
+    (compareTrend && compareTrend.length > 0 ? compareTrend.reduce((s, t) => s + t.count, 0) : 0);
 
   // 여론 방향
   const baseDirection = parseModule(base, 'macro-view')?.overallDirection as string | undefined;

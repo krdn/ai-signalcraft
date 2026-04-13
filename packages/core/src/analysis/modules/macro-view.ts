@@ -41,18 +41,18 @@ ${ANALYSIS_CONSTRAINTS}`;
 ## 분석 기간: ${dateRange}
 
 ### 뉴스 기사 (${articles.length}건)
-${articles.map((a, i) => `${i + 1}. [${a.source}] ${a.title}\n   ${a.content}`).join('\n')}
+${articles.map((a, i) => `${i + 1}. [${a.publishedAt}][${a.source}] ${a.title}\n   ${a.content}`).join('\n')}
 
 ### 영상 (${videos.length}건)
-${videos.map((v, i) => `${i + 1}. [${v.channel}] ${v.title} (조회수: ${v.viewCount}, 좋아요: ${v.likeCount})`).join('\n')}
+${videos.map((v, i) => `${i + 1}. [${v.publishedAt}][${v.channel}] ${v.title} (조회수: ${v.viewCount}, 좋아요: ${v.likeCount})`).join('\n')}
 
 ### 댓글 (${comments.length}건)
-${comments.map((c, i) => `${i + 1}. [${c.source}] ${c.content} (좋아요: ${c.likeCount})`).join('\n')}
+${comments.map((c, i) => `${i + 1}. [${c.publishedAt}][${c.source}] ${c.content} (좋아요: ${c.likeCount})`).join('\n')}
 
 ## 분석 절차 (반드시 이 순서로 수행)
 
 ### Step 1: 시간축 스캔
-- 기사 발행일과 댓글 작성일을 기준으로 일별 언급량을 집계하세요
+- 각 기사/댓글의 발행일([YYYY-MM-DD])을 기준으로 날짜별 언급 건수를 집계하세요
 - 언급량이 급증(전일 대비 2배 이상)하거나 급감한 날짜를 표시하세요
 
 ### Step 2: 이벤트-반응 매핑
@@ -67,7 +67,10 @@ ${comments.map((c, i) => `${i + 1}. [${c.source}] ${c.content} (좋아요: ${c.l
 - 위 분석을 종합하여 전체 여론의 흐름을 3~5줄의 서사(narrative)로 요약하세요
 - 단순 나열이 아닌, "A 때문에 B가 발생했고, 이로 인해 C로 전환됨" 형태의 인과적 서사를 작성하세요
 
-### Step 5: 일별 추이 정리
-- 분석 기간 내 주요 날짜별 언급량과 감정 비율(positive/negative/neutral)을 정리하세요`;
+### Step 5: 일별 언급량 추이 (dailyMentionTrend 필드)
+- Step 1에서 집계한 날짜별 데이터를 dailyMentionTrend 배열에 반드시 채워주세요
+- 분석 기간 내 데이터가 존재하는 모든 날짜를 포함하세요 (최소 3개 이상)
+- 각 날짜의 sentimentRatio는 해당 날짜 기사/댓글의 감정 비율(합계=1.0)로 추정하세요
+- 예시: {"date": "2026-04-06", "count": 12, "sentimentRatio": {"positive": 0.4, "negative": 0.4, "neutral": 0.2}}`;
   },
 };

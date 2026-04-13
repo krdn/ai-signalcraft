@@ -14,6 +14,8 @@ import { Card, CardContent } from '@/components/ui/card';
 
 interface KpiCardsProps {
   totalMentions: number | null;
+  articleCount?: number | null;
+  commentCount?: number | null;
   sentimentRatio: { positive: number; negative: number; neutral: number } | null;
   topKeyword: string | null;
   overallDirection: 'positive' | 'negative' | 'mixed' | null;
@@ -27,6 +29,8 @@ const directionConfig = {
 
 export function KpiCards({
   totalMentions,
+  articleCount,
+  commentCount,
   sentimentRatio,
   topKeyword,
   overallDirection,
@@ -49,7 +53,10 @@ export function KpiCards({
     {
       title: '총 수집량',
       value: totalMentions !== null ? totalMentions.toLocaleString() : '—',
-      subtitle: '기사 + 댓글',
+      subtitle:
+        articleCount != null && commentCount != null
+          ? `기사 ${articleCount.toLocaleString()} · 댓글 ${commentCount.toLocaleString()}`
+          : '기사 + 댓글',
       icon: MessageSquare,
     },
     {
