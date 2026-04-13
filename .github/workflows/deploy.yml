@@ -42,13 +42,24 @@ jobs:
       - name: Build & Deploy (Docker Compose)
         working-directory: docker
         run: |
-          docker compose -f docker-compose.prod.yml --env-file ../.env.production up -d --build
+          # 이미지 빌드 (web, worker)
+          docker compose -f docker-compose.prod.yml --env-file ../.env.production build web worker
+
+          # 인프라(postgres, redis)는 건드리지 않고 web/worker만 교체
+          docker compose -f docker-compose.prod.yml --env-file ../.env.production up -d --no-deps web worker
           echo "Deploy completed at $(date)"
 
       - name: Health Check
         run: |
-          sleep 10
-          curl -sf http://localhost:3300 > /dev/null && echo "Web OK" || echo "Web FAILED"
+          sleep 15
+          if curl -sf http://localhost:3300 > /dev/null; then
+            echo "Web OK"
+          else
+            echo "Web FAILED — 컨테이너 재시작 시도"
+            docker start ais-prod-web 2>/dev/null || true
+            sleep 5
+            curl -sf http://localhost:3300 > /dev/null && echo "Web OK (재시작 후)" || echo "Web FAILED (재시작 후에도 실패)"
+          fi
 
       - name: Publish Release
         if: success()
