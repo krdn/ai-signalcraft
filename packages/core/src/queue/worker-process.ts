@@ -2,6 +2,7 @@
 // 실행: pnpm worker (루트) 또는 pnpm --filter @ai-signalcraft/core worker
 //
 // 진입점: env 로드 -> 수집기 등록 -> Worker 3개 기동 -> graceful shutdown
+import { ensureGeminiTokenFresh, startGeminiTokenAutoRefresh } from '../utils/gemini-token-refresh';
 import { initEnv, validateApiKeys, registerAllCollectors } from './worker-config';
 import { createCollectorWorker, createPipelineWorker } from './workers';
 import { createCollectorHandler } from './collector-worker';
@@ -27,6 +28,11 @@ import('../analysis/stale-recovery').then(({ recoverStaleJobs }) =>
     console.error('[stale-recovery] 복구 실패 (무시하고 계속):', err),
   ),
 );
+// c) Gemini CLI OAuth 토큰 사전 갱신 + 자동 갱신 스케줄러 시작
+ensureGeminiTokenFresh().catch((err) =>
+  console.error('[gemini-token] 시작 시 갱신 실패 (무시하고 계속):', err),
+);
+startGeminiTokenAutoRefresh();
 
 // 2. Worker 기동
 const collectorWorker = createCollectorWorker(createCollectorHandler());
