@@ -9,7 +9,7 @@ import {
   HardDrive,
   Play,
   Terminal,
-  Youtube,
+  Video,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -129,7 +129,7 @@ export default function TechDocsPage() {
       {/* YouTube 요약 섹션 */}
       <section className="space-y-4">
         <div className="flex items-center gap-2">
-          <Youtube className="h-5 w-5 text-red-500" />
+          <Video className="h-5 w-5 text-red-500" />
           <h2 className="text-xl font-semibold">YouTube 동영상 내용 요약</h2>
         </div>
         <p className="text-sm text-muted-foreground">
