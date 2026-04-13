@@ -325,14 +325,14 @@ export function extractEntitiesFromResults(
   // ─── approval-rating: 핵심 인물/조직 감지 ──────────────────
   const ar = allResults['approval-rating']?.result as Record<string, unknown> | undefined;
   if (ar) {
-    const methodology = String(ar.methodology ?? '');
-    if (methodology) {
-      // methodology에서 핵심 대상 이름 감지 (첫 문장 기준)
-      const firstSentence = methodology.split('.')[0]?.trim();
+    // methodology가 객체일 수 있으므로 문자열인 경우만 처리
+    const methodologyRaw = ar.methodology;
+    if (typeof methodologyRaw === 'string' && methodologyRaw) {
+      const firstSentence = methodologyRaw.split('.')[0]?.trim();
       if (firstSentence && firstSentence.length < 100) {
         addEntity(entityMap, firstSentence, 'person', {
           source: 'approval-rating',
-          description: methodology.slice(0, 200),
+          description: methodologyRaw.slice(0, 200),
         });
       }
     }
