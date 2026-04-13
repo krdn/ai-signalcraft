@@ -104,7 +104,21 @@ export default function ShowcaseDetailPage() {
         {activeTab === 0 && <ShowcaseDetailPanel jobId={jobId} onClose={() => {}} embedded />}
 
         {/* 탭 1: 결과 대시보드 */}
-        {activeTab === 1 && <DashboardView jobId={jobId} fetchFn={showcaseFetchResults} readOnly />}
+        {activeTab === 1 && (
+          <DashboardView
+            jobId={jobId}
+            fetchFn={showcaseFetchResults}
+            readOnly
+            collectionStats={
+              detail?.stats
+                ? {
+                    totalArticles: detail.stats.totalArticles,
+                    totalComments: detail.stats.totalComments,
+                  }
+                : null
+            }
+          />
+        )}
 
         {/* 탭 2: 수집 데이터 — 공개 요약만 */}
         {activeTab === 2 && (

@@ -28,6 +28,8 @@ interface DashboardViewProps {
   fetchFn?: (jobId: number) => Promise<Array<{ module: string; status: string; result?: unknown }>>;
   /** 읽기 전용 모드 (비교 기능 숨김) */
   readOnly?: boolean;
+  /** 외부에서 직접 제공하는 수집량 통계 (showcase 등 fetchFn 사용 시 DB 실측값 대체) */
+  collectionStats?: { totalArticles: number; totalComments: number } | null;
 }
 
 // 모듈별 결과를 파싱하는 유틸
@@ -52,7 +54,7 @@ function KnowledgeGraphSection({ jobId }: { jobId: number }) {
   return <KnowledgeGraphView data={data} isLoading={isLoading} />;
 }
 
-export function DashboardView({ jobId, fetchFn, readOnly }: DashboardViewProps) {
+export function DashboardView({ jobId, fetchFn, readOnly, collectionStats }: DashboardViewProps) {
   const [compareJobId, setCompareJobId] = useState<number | null>(null);
 
   const defaultFetch = (id: number) => trpcClient.analysis.getResults.query({ jobId: id });
@@ -233,15 +235,19 @@ export function DashboardView({ jobId, fetchFn, readOnly }: DashboardViewProps) 
       feasibility: a.expandability,
     })) ?? null;
 
-  // KPI 데이터 — 총 수집량: DB 실측값(sentimentBySource) 우선, 없으면 AI trend 합산
+  // KPI 데이터 — 총 수집량: collectionStats(외부 prop) > DB 실측값(sentimentBySource) > AI trend 합산
   const dbArticleCount =
-    sentimentBySource && sentimentBySource.articles.length > 0
-      ? sentimentBySource.articles.reduce((sum, r) => sum + r.count, 0)
-      : null;
+    collectionStats != null
+      ? collectionStats.totalArticles
+      : sentimentBySource && sentimentBySource.articles.length > 0
+        ? sentimentBySource.articles.reduce((sum, r) => sum + r.count, 0)
+        : null;
   const dbCommentCount =
-    sentimentBySource && sentimentBySource.comments.length > 0
-      ? sentimentBySource.comments.reduce((sum, r) => sum + r.count, 0)
-      : null;
+    collectionStats != null
+      ? collectionStats.totalComments
+      : sentimentBySource && sentimentBySource.comments.length > 0
+        ? sentimentBySource.comments.reduce((sum, r) => sum + r.count, 0)
+        : null;
   const dbTotalMentions =
     dbArticleCount != null || dbCommentCount != null
       ? (dbArticleCount ?? 0) + (dbCommentCount ?? 0)
