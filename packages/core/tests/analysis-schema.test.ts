@@ -87,6 +87,11 @@ describe('AnalysisModule 인터페이스 + 타입', () => {
       'information-asymmetry',
       'catalyst-scenario',
       'investment-signal',
+      // Stage 4: 교육 도메인 모듈
+      'institutional-reputation-index',
+      'education-opinion-frame',
+      'education-crisis-scenario',
+      'education-outcome-simulation',
     ];
 
     for (const mod of expectedModules) {
@@ -95,7 +100,7 @@ describe('AnalysisModule 인터페이스 + 타입', () => {
       expect(MODULE_MODEL_MAP[mod].model).toBeDefined();
     }
 
-    expect(Object.keys(MODULE_MODEL_MAP).length).toBe(32);
+    expect(Object.keys(MODULE_MODEL_MAP).length).toBe(36);
   });
 });
 
