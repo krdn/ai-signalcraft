@@ -68,19 +68,30 @@ export function FrameWarGraph({ data, width = 600, height = 400 }: FrameWarGraph
     const nodes: SimNode[] = data.nodes.map((n) => ({ ...n }));
     const links: SimEdge[] = data.edges.map((e) => ({ ...e }));
 
+    // 연결 수 기반 링크 거리: 허브 노드는 더 넓게
+    const linkForce = d3
+      .forceLink<SimNode, SimEdge>(links)
+      .id((d) => d.id)
+      .distance((d) => {
+        const s = d.source as SimNode;
+        const t = d.target as SimNode;
+        const maxSize = Math.max(s.size ?? 10, t.size ?? 10);
+        return 60 + maxSize * 0.8;
+      })
+      .strength(0.6);
+
     const simulation = d3
       .forceSimulation<SimNode>(nodes)
-      .force(
-        'link',
-        d3
-          .forceLink<SimNode, SimEdge>(links)
-          .id((d) => d.id)
-          .distance(100)
-          .strength((d) => d.weight * 0.8),
-      )
-      .force('charge', d3.forceManyBody().strength(-300))
+      .force('link', linkForce)
+      .force('charge', d3.forceManyBody().strength(-180))
       .force('center', d3.forceCenter(width / 2, height / 2))
-      .force('collision', d3.forceCollide().radius(25));
+      // 고립 노드가 화면 밖으로 나가지 않도록 약하게만 당김
+      .force('x', d3.forceX(width / 2).strength(0.02))
+      .force('y', d3.forceY(height / 2).strength(0.02))
+      .force(
+        'collision',
+        d3.forceCollide<SimNode>().radius((d) => Math.max((d.size ?? 10) * 0.5, 12) + 8),
+      );
 
     // 엣지 — type에 따라 스타일 차별화
     const link = g
@@ -175,6 +186,22 @@ export function FrameWarGraph({ data, width = 600, height = 400 }: FrameWarGraph
         .attr('y', (d) => (((d.source as SimNode).y ?? 0) + ((d.target as SimNode).y ?? 0)) / 2);
 
       node.attr('transform', (d) => `translate(${d.x ?? 0},${d.y ?? 0})`);
+    });
+
+    // 시뮬레이션 안정화 후 뷰포트에 자동 fit
+    simulation.on('end', () => {
+      const bounds = (g.node() as SVGGElement).getBBox();
+      if (bounds.width === 0 || bounds.height === 0) return;
+      const padding = 60;
+      const scaleX = (width - padding * 2) / bounds.width;
+      const scaleY = (height - padding * 2) / bounds.height;
+      const scale = Math.min(scaleX, scaleY, 1.5);
+      const tx = width / 2 - scale * (bounds.x + bounds.width / 2);
+      const ty = height / 2 - scale * (bounds.y + bounds.height / 2);
+      svg
+        .transition()
+        .duration(500)
+        .call(zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(scale));
     });
 
     return () => {
