@@ -219,7 +219,11 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-background">
-      <TopNav activeTab={activeTab} onTabChange={setActiveTab} />
+      <TopNav
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        hasActiveJob={activeJobId !== null}
+      />
       <div className="pt-14 px-4 md:px-8">
         <DemoQuotaBanner />
       </div>
