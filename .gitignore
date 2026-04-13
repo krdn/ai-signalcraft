@@ -304,6 +304,7 @@ node_modules/
 
 # Next.js
 .next/
+apps/web/next-env.d.ts
 
 # TypeScript
 *.tsbuildinfo
