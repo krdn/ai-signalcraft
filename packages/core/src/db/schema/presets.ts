@@ -30,10 +30,18 @@ export const analysisPresets = pgTable(
       commentsPerItem: number;
     }>(),
     optimization: text('optimization', {
-      enum: ['none', 'light', 'standard', 'aggressive'],
+      enum: [
+        'none',
+        'light',
+        'standard',
+        'aggressive',
+        'rag-light',
+        'rag-standard',
+        'rag-aggressive',
+      ],
     })
       .notNull()
-      .default('standard'),
+      .default('rag-standard'),
     skippedModules: jsonb('skipped_modules').notNull().$type<string[]>().default([]),
     enableItemAnalysis: boolean('enable_item_analysis').notNull().default(false),
     enabled: boolean('enabled').notNull().default(true),
