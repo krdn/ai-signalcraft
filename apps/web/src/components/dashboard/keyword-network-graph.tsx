@@ -48,6 +48,16 @@ export function KeywordNetworkGraph({
     const nodes: SimNode[] = data.nodes.map((n) => ({ ...n }));
     const links: SimEdge[] = data.edges.map((e) => ({ ...e }));
 
+    // 노드 크기 정규화: count 범위를 반지름 6~32px로 스케일링
+    const sizeExtent = d3.extent(nodes, (d) => d.size) as [number, number];
+    const radiusScale = d3
+      .scaleSqrt()
+      .domain([Math.max(sizeExtent[0], 1), Math.max(sizeExtent[1], 1)])
+      .range([6, 32])
+      .clamp(true);
+
+    const getRadius = (d: SimNode) => radiusScale(d.size);
+
     const simulation = d3
       .forceSimulation<SimNode>(nodes)
       .force(
@@ -55,14 +65,17 @@ export function KeywordNetworkGraph({
         d3
           .forceLink<SimNode, SimEdge>(links)
           .id((d) => d.id)
-          .distance(70)
-          .strength((d) => Math.max(d.weight, 0.3)),
+          .distance(80)
+          .strength((d) => Math.min(Math.max(d.weight, 0.1), 1)),
       )
-      .force('charge', d3.forceManyBody().strength(-120))
-      .force('center', d3.forceCenter(width / 2, height / 2).strength(0.12))
-      .force('collision', d3.forceCollide().radius(25))
-      .force('x', d3.forceX(width / 2).strength(0.04))
-      .force('y', d3.forceY(height / 2).strength(0.04));
+      .force('charge', d3.forceManyBody().strength(-180))
+      .force('center', d3.forceCenter(width / 2, height / 2).strength(0.15))
+      .force(
+        'collision',
+        d3.forceCollide<SimNode>().radius((d) => getRadius(d) + 8),
+      )
+      .force('x', d3.forceX(width / 2).strength(0.06))
+      .force('y', d3.forceY(height / 2).strength(0.06));
 
     // 엣지
     const link = g
@@ -72,7 +85,7 @@ export function KeywordNetworkGraph({
       .join('line')
       .attr('stroke', '#4a4a4a')
       .attr('stroke-opacity', 0.4)
-      .attr('stroke-width', (d) => Math.max(d.weight * 4, 1));
+      .attr('stroke-width', (d) => Math.max(Math.min(d.weight, 1) * 4, 1));
 
     // 노드
     const node = g
@@ -102,7 +115,7 @@ export function KeywordNetworkGraph({
     // 노드 원
     node
       .append('circle')
-      .attr('r', (d) => Math.max(Math.sqrt(d.size) * 3, 5))
+      .attr('r', getRadius)
       .attr('fill', (d) => d.color ?? '#71717a')
       .attr('fill-opacity', 0.8)
       .attr('stroke', '#fff')
@@ -116,9 +129,9 @@ export function KeywordNetworkGraph({
     node
       .append('text')
       .text((d) => d.label)
-      .attr('font-size', (d) => Math.max(12, Math.min(15, Math.sqrt(d.size) * 2.2)))
+      .attr('font-size', (d) => Math.max(11, Math.min(14, getRadius(d) * 0.7 + 8)))
       .attr('font-weight', 600)
-      .attr('dx', (d) => Math.max(Math.sqrt(d.size) * 3, 5) + 6)
+      .attr('dx', (d) => getRadius(d) + 5)
       .attr('dy', 4)
       .attr('class', 'fill-muted-foreground')
       .attr('paint-order', 'stroke')
