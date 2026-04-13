@@ -61,6 +61,7 @@ export function KnowledgeGraphView({ data, isLoading }: KnowledgeGraphViewProps)
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [selectedNode, setSelectedNode] = useState<SimNode | null>(null);
+  const [, setHoveredNode] = useState<string | null>(null);
   const [activeTypes, setActiveTypes] = useState<Set<string>>(new Set(Object.keys(TYPE_COLORS)));
 
   // 필터링된 데이터
