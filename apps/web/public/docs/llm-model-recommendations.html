@@ -1,0 +1,1289 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LLM 모델 추천 가이드 — AI SignalCraft</title>
+    <style>
+      :root {
+        --bg: #0f1117;
+        --surface: #1a1d27;
+        --border: #2a2d3a;
+        --text: #e2e8f0;
+        --muted: #8892a4;
+        --primary: #6366f1;
+        --green: #22c55e;
+        --orange: #f97316;
+        --red: #ef4444;
+        --blue: #3b82f6;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.6;
+        padding: 2rem 1rem;
+      }
+      .container {
+        max-width: 1100px;
+        margin: 0 auto;
+      }
+      header {
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 1.5rem;
+        margin-bottom: 2.5rem;
+      }
+      header .badge {
+        display: inline-block;
+        background: var(--primary);
+        color: white;
+        font-size: 0.7rem;
+        padding: 2px 8px;
+        border-radius: 999px;
+        margin-bottom: 0.5rem;
+      }
+      h1 {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin-bottom: 0.4rem;
+      }
+      .subtitle {
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+      h2 {
+        font-size: 1.3rem;
+        font-weight: 600;
+        margin: 2.5rem 0 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      h3 {
+        font-size: 1.05rem;
+        font-weight: 600;
+        margin: 1.5rem 0 0.75rem;
+        color: #a5b4fc;
+      }
+      h4 {
+        font-size: 0.95rem;
+        font-weight: 600;
+        margin: 1.2rem 0 0.5rem;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-size: 0.8rem;
+      }
+      p {
+        margin-bottom: 0.75rem;
+        color: var(--text);
+      }
+      .note {
+        background: var(--surface);
+        border-left: 3px solid var(--primary);
+        padding: 0.75rem 1rem;
+        border-radius: 0 6px 6px 0;
+        font-size: 0.875rem;
+        color: var(--muted);
+        margin: 0.75rem 0;
+      }
+      .note strong {
+        color: var(--text);
+      }
+      /* Tables */
+      .table-wrap {
+        overflow-x: auto;
+        margin: 0.75rem 0 1.5rem;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.875rem;
+      }
+      thead {
+        background: var(--surface);
+      }
+      th {
+        text-align: left;
+        padding: 0.6rem 0.9rem;
+        color: var(--muted);
+        font-weight: 600;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        white-space: nowrap;
+      }
+      td {
+        padding: 0.6rem 0.9rem;
+        border-top: 1px solid var(--border);
+        vertical-align: middle;
+      }
+      tr:hover td {
+        background: rgba(255, 255, 255, 0.02);
+      }
+      code {
+        background: rgba(99, 102, 241, 0.15);
+        color: #a5b4fc;
+        padding: 1px 5px;
+        border-radius: 4px;
+        font-size: 0.82em;
+        font-family: 'SF Mono', 'Fira Code', monospace;
+      }
+      pre {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 1rem 1.25rem;
+        overflow-x: auto;
+        font-size: 0.825rem;
+        font-family: 'SF Mono', 'Fira Code', monospace;
+        margin: 0.75rem 0 1.5rem;
+        line-height: 1.7;
+        color: #c9d1d9;
+      }
+      /* Tier badges */
+      .tier-best {
+        color: #fbbf24;
+        font-weight: 600;
+      }
+      .tier-mid {
+        color: var(--green);
+        font-weight: 600;
+      }
+      .tier-min {
+        color: var(--muted);
+      }
+      .tier-alt {
+        color: #94a3b8;
+        font-size: 0.85em;
+      }
+      /* Korean badge */
+      .ko-high {
+        color: var(--green);
+        font-weight: 700;
+      }
+      .ko-mid {
+        color: #f59e0b;
+      }
+      .ko-low {
+        color: var(--red);
+      }
+      /* Status badges */
+      .status-ok {
+        color: var(--green);
+      }
+      .status-warn {
+        color: var(--orange);
+        font-weight: 600;
+      }
+      .prio-high {
+        background: rgba(239, 68, 68, 0.15);
+        color: var(--red);
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 0.8em;
+        font-weight: 600;
+      }
+      .prio-mid {
+        color: #f59e0b;
+        font-size: 0.85em;
+      }
+      .prio-low {
+        color: var(--muted);
+        font-size: 0.85em;
+      }
+      /* Rank block */
+      .rank-block {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 1rem 1.25rem;
+        margin: 0.75rem 0 1.25rem;
+        font-size: 0.875rem;
+      }
+      .rank-block .rank-tier {
+        margin-bottom: 0.5rem;
+      }
+      .rank-block .rank-label {
+        color: var(--muted);
+        font-size: 0.78rem;
+        display: block;
+        margin-bottom: 0.15rem;
+      }
+      /* Provider groups */
+      .provider-section {
+        margin-bottom: 2rem;
+      }
+      /* Scenario cards */
+      .scenario-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1rem;
+        margin: 1rem 0;
+      }
+      .scenario-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 1rem;
+      }
+      .scenario-card h4 {
+        text-transform: none;
+        font-size: 0.9rem;
+        color: var(--text);
+        margin-bottom: 0.5rem;
+        letter-spacing: 0;
+      }
+      .scenario-card .modules {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        font-size: 0.8rem;
+      }
+      .scenario-card .mod-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 2px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      .scenario-card .mod-row:last-child {
+        border-bottom: none;
+      }
+      /* Ref links */
+      .ref-list {
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+      }
+      .ref-list a {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        color: #a5b4fc;
+        text-decoration: none;
+        font-size: 0.85rem;
+        padding: 4px 10px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: var(--surface);
+        transition: border-color 0.15s;
+      }
+      .ref-list a:hover {
+        border-color: var(--primary);
+      }
+      /* TOC */
+      .toc {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 1rem 1.25rem;
+        margin-bottom: 2.5rem;
+        font-size: 0.875rem;
+      }
+      .toc ol {
+        padding-left: 1.25rem;
+        line-height: 2;
+      }
+      .toc a {
+        color: #a5b4fc;
+        text-decoration: none;
+      }
+      .toc a:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <span class="badge">2026-04-15 기준</span>
+        <h1>🤖 LLM 모델 추천 가이드</h1>
+        <p class="subtitle">
+          분석 모듈별 LLM 모델 추천 (최고/보통/최소 티어) · 한국어 성능 비교 · 시나리오 프리셋
+          업그레이드 근거
+        </p>
+      </header>
+
+      <!-- TOC -->
+      <div class="toc">
+        <strong>목차</strong>
+        <ol>
+          <li><a href="#part1">Part 1 — 2026년 LLM 시장 분류</a></li>
+          <li><a href="#part2">Part 2 — 분석 모듈별 추천 매트릭스</a></li>
+          <li><a href="#part3">Part 3 — 시나리오 프리셋 업그레이드 제안</a></li>
+          <li><a href="#refs">참고 자료</a></li>
+        </ol>
+      </div>
+
+      <!-- ===== PART 1 ===== -->
+      <section id="part1">
+        <h2>📊 Part 1 — 2026년 LLM 시장 분류</h2>
+
+        <div class="note">
+          <strong>한국어 등급 기준</strong>: <span class="ko-high">상</span> 뉘앙스·감정·맥락
+          우수 (운영 추천) &nbsp;|&nbsp; <span class="ko-mid">중</span> 기본 분류·요약 가능 &nbsp;|&nbsp;
+          <span class="ko-low">하</span> 단순 작업만 가능
+        </div>
+
+        <h3>1.1 지원 프로바이더 (현재 시스템)</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>프로바이더</th>
+                <th>모델</th>
+                <th>입력 ($/MTok)</th>
+                <th>출력 ($/MTok)</th>
+                <th>컨텍스트</th>
+                <th>한국어</th>
+                <th>구조화 출력</th>
+                <th>비고</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Anthropic</td>
+                <td>Claude Opus 4.6</td>
+                <td>$5.00</td>
+                <td>$25.00</td>
+                <td>1M</td>
+                <td><span class="ko-high">상</span></td>
+                <td><span class="ko-high">상</span></td>
+                <td>최고 지능, 복잡한 추론 최적</td>
+              </tr>
+              <tr>
+                <td>Anthropic</td>
+                <td>Claude Sonnet 4.6</td>
+                <td>$3.00</td>
+                <td>$15.00</td>
+                <td>1M</td>
+                <td><span class="ko-high">상</span></td>
+                <td><span class="ko-high">상</span></td>
+                <td>품질·비용 균형 최상, 캐싱 효과 큼</td>
+              </tr>
+              <tr>
+                <td>Anthropic</td>
+                <td>Claude Haiku 4.5</td>
+                <td>$1.00</td>
+                <td>$5.00</td>
+                <td>200K</td>
+                <td><span class="ko-high">상</span></td>
+                <td><span class="ko-high">상</span></td>
+                <td>고속·저비용, 한국어 상급 유지</td>
+              </tr>
+              <tr>
+                <td>Google</td>
+                <td>Gemini 2.5 Pro</td>
+                <td>$1.25~$2.50</td>
+                <td>$10~$15</td>
+                <td>1M</td>
+                <td><span class="ko-high">상</span></td>
+                <td><span class="ko-high">상</span></td>
+                <td>멀티모달, 할루시네이션 0.7%</td>
+              </tr>
+              <tr>
+                <td>Google</td>
+                <td>Gemini 2.5 Flash</td>
+                <td>$0.30</td>
+                <td>$2.50</td>
+                <td>1M</td>
+                <td><span class="ko-high">상</span></td>
+                <td><span class="ko-high">상</span></td>
+                <td>속도·비용 균형, 1M 컨텍스트</td>
+              </tr>
+              <tr>
+                <td>Google</td>
+                <td>Gemini 2.5 Flash-Lite</td>
+                <td>$0.10</td>
+                <td>$0.40</td>
+                <td>1M</td>
+                <td><span class="ko-mid">중</span></td>
+                <td><span class="ko-mid">중</span></td>
+                <td>초저가, 배치 모드 $0.05/MTok</td>
+              </tr>
+              <tr>
+                <td>OpenAI</td>
+                <td>GPT-4.1</td>
+                <td>$2.00</td>
+                <td>$8.00</td>
+                <td>1M</td>
+                <td><span class="ko-high">상</span></td>
+                <td><span class="ko-high">상</span></td>
+                <td>한국어 고품질, 1M 컨텍스트</td>
+              </tr>
+              <tr>
+                <td>OpenAI</td>
+                <td>GPT-4.1 Mini</td>
+                <td>$0.40</td>
+                <td>$1.60</td>
+                <td>128K</td>
+                <td><span class="ko-high">상</span></td>
+                <td><span class="ko-high">상</span></td>
+                <td>빠른 분류·요약</td>
+              </tr>
+              <tr>
+                <td>OpenAI</td>
+                <td>GPT-4.1 Nano</td>
+                <td>$0.10</td>
+                <td>$0.40</td>
+                <td>128K</td>
+                <td><span class="ko-mid">중</span></td>
+                <td><span class="ko-mid">중</span></td>
+                <td>최저가, 단순 작업 한정</td>
+              </tr>
+              <tr>
+                <td>OpenAI</td>
+                <td>o3</td>
+                <td>$2.00</td>
+                <td>$8.00</td>
+                <td>200K</td>
+                <td><span class="ko-high">상</span></td>
+                <td><span class="ko-high">상</span></td>
+                <td>고급 추론 특화</td>
+              </tr>
+              <tr>
+                <td>OpenAI</td>
+                <td>o4-mini</td>
+                <td>$1.10</td>
+                <td>$4.40</td>
+                <td>200K</td>
+                <td><span class="ko-high">상</span></td>
+                <td><span class="ko-high">상</span></td>
+                <td>추론 모델, o3 대비 절반 가격</td>
+              </tr>
+              <tr>
+                <td>DeepSeek</td>
+                <td>DeepSeek V3 (Chat)</td>
+                <td>$0.07 (캐시) / $0.27</td>
+                <td>$1.10</td>
+                <td>128K</td>
+                <td><span class="ko-mid">중</span></td>
+                <td><span class="ko-mid">중</span></td>
+                <td>캐시 히트 90% 절감</td>
+              </tr>
+              <tr>
+                <td>DeepSeek</td>
+                <td>DeepSeek V4 (최신)</td>
+                <td>$0.03 (캐시) / $0.30</td>
+                <td>$0.50</td>
+                <td>128K</td>
+                <td><span class="ko-mid">중</span></td>
+                <td><span class="ko-mid">중</span></td>
+                <td>2026.03 출시, V3 대비 추가 절감</td>
+              </tr>
+              <tr>
+                <td>DeepSeek</td>
+                <td>DeepSeek R1 (Reasoner)</td>
+                <td>$0.14 (캐시) / $0.55</td>
+                <td>$2.19</td>
+                <td>128K</td>
+                <td><span class="ko-mid">중</span></td>
+                <td><span class="ko-mid">중</span></td>
+                <td>추론 특화 (수학·코딩 강점)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="note">
+          <strong>DeepSeek 캐싱</strong>: 공통 시스템 프롬프트 재활용 파이프라인에서 캐시 히트율
+          높으면 입력 비용 최대 90% 절감.<br />
+          <strong>o3/o4-mini 주의</strong>: 내부 chain-of-thought로 출력 토큰 증가, 실제 비용은
+          표시보다 높을 수 있음.
+        </div>
+
+        <h3>1.2 확장 프로바이더 (OpenRouter 경유)</h3>
+        <div class="note">OpenRouter를 통해 단일 API 키로 접근. <code>ai-gateway</code>에 <code>openrouter</code> 프로바이더 추가 필요.</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>프로바이더</th>
+                <th>모델</th>
+                <th>입력 ($/MTok)</th>
+                <th>출력 ($/MTok)</th>
+                <th>컨텍스트</th>
+                <th>한국어</th>
+                <th>비고</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Meta</td>
+                <td>Llama 4 Maverick</td>
+                <td>$0.15</td>
+                <td>$0.60</td>
+                <td><strong>1M</strong></td>
+                <td><span class="ko-mid">중</span></td>
+                <td>MoE 400B, 1M 컨텍스트 강점</td>
+              </tr>
+              <tr>
+                <td>Meta</td>
+                <td>Llama 3.3 70B</td>
+                <td>$0.10</td>
+                <td>$0.32</td>
+                <td>65K</td>
+                <td><span class="ko-mid">중</span></td>
+                <td>안정성·비용 균형</td>
+              </tr>
+              <tr>
+                <td>Alibaba</td>
+                <td>Qwen3.6 Plus</td>
+                <td>$0.33</td>
+                <td>$1.95</td>
+                <td>128K</td>
+                <td><span class="ko-mid">중~상</span></td>
+                <td>아시아권 모델 중 한국어 최상</td>
+              </tr>
+              <tr>
+                <td>Alibaba</td>
+                <td>Qwen2.5-72B</td>
+                <td>$0.12</td>
+                <td>$0.39</td>
+                <td>32K</td>
+                <td><span class="ko-mid">중~상</span></td>
+                <td>KMMLU 벤치마크 공식 평가됨</td>
+              </tr>
+              <tr>
+                <td>Mistral</td>
+                <td>Mistral Large 3</td>
+                <td>$0.50</td>
+                <td>$1.50</td>
+                <td>262K</td>
+                <td><span class="ko-low">하</span></td>
+                <td>유럽어 특화, 한국어 부적합</td>
+              </tr>
+              <tr>
+                <td>Mistral</td>
+                <td>Mistral Small 4</td>
+                <td>$0.15</td>
+                <td>$0.60</td>
+                <td>262K</td>
+                <td><span class="ko-low">하</span></td>
+                <td>추론+멀티모달 통합</td>
+              </tr>
+              <tr>
+                <td>xAI</td>
+                <td>Grok-3</td>
+                <td>$3.00</td>
+                <td>$15.00</td>
+                <td>131K</td>
+                <td><span class="ko-mid">중</span></td>
+                <td>X 실시간 데이터 연동 가능성</td>
+              </tr>
+              <tr>
+                <td>xAI</td>
+                <td>Grok-3 Mini</td>
+                <td>$0.30</td>
+                <td>$0.50</td>
+                <td>131K</td>
+                <td><span class="ko-mid">중</span></td>
+                <td>저비용 추론</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>1.3 기타 프로바이더 (AWS Bedrock — 장기 로드맵 참고)</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>모델</th>
+                <th>입력 ($/MTok)</th>
+                <th>출력 ($/MTok)</th>
+                <th>컨텍스트</th>
+                <th>한국어</th>
+                <th>비고</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Amazon Nova Pro</td>
+                <td>$0.80</td>
+                <td>$3.20</td>
+                <td>300K</td>
+                <td><span class="ko-mid">중~상</span></td>
+                <td>AWS Bedrock 전용, 멀티모달</td>
+              </tr>
+              <tr>
+                <td>Amazon Nova Lite</td>
+                <td>$0.06</td>
+                <td>$0.24</td>
+                <td>300K</td>
+                <td><span class="ko-mid">중</span></td>
+                <td>초저가 멀티모달</td>
+              </tr>
+              <tr>
+                <td>Amazon Nova Micro</td>
+                <td>$0.035</td>
+                <td>$0.14</td>
+                <td>128K</td>
+                <td><span class="ko-mid">중</span></td>
+                <td>텍스트 전용 최저비용</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>1.4 한국어 성능 종합 순위</h3>
+        <div class="rank-block">
+          <div class="rank-tier">
+            <span class="rank-label">🟢 상위권 (운영 추천)</span>
+            Claude Sonnet/Opus 4.6 &gt; GPT-4.1 &gt; Gemini 2.5 Pro/Flash
+          </div>
+          <div class="rank-tier">
+            <span class="rank-label">🟡 중위권 (보조 가능, 단순 분류·요약)</span>
+            Qwen3.x &gt; Amazon Nova Pro &gt; GPT-4.1 Mini &gt; Gemini Flash-Lite
+          </div>
+          <div class="rank-tier">
+            <span class="rank-label">🔴 하위권 (단순 분류만 권장)</span>
+            DeepSeek V3/V4 &gt; Grok-3 &gt; Llama 4 Maverick &gt; Mistral
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>기준</th>
+                <th>순위</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>한국어 뉘앙스 정확도</td>
+                <td>Claude 계열 &gt; GPT-4.1 &gt; Gemini (3강 외 격차 큼)</td>
+              </tr>
+              <tr>
+                <td>구조화 출력 신뢰성</td>
+                <td>Claude = GPT-4.1 = Gemini Flash/Pro &gt; 나머지</td>
+              </tr>
+              <tr>
+                <td>비용 효율 (캐싱 포함)</td>
+                <td>DeepSeek V4 &gt; Gemini Flash-Lite &gt; Haiku 4.5 &gt; Flash</td>
+              </tr>
+              <tr>
+                <td>긴 컨텍스트(32K+)</td>
+                <td>Claude 전체, Gemini 전체, GPT-4.1, Llama 4 Maverick</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===== PART 2 ===== -->
+      <section id="part2">
+        <h2>🧩 Part 2 — 분석 모듈별 추천 매트릭스</h2>
+
+        <h3>2.1 모듈 그룹 분류</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>그룹</th>
+                <th>모듈</th>
+                <th>핵심 요구 특성</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>A — 구조 분석</strong> (Stage 1, 병렬)</td>
+                <td>
+                  <code>macro-view</code>, <code>segmentation</code>,
+                  <code>sentiment-framing</code>, <code>message-impact</code>
+                </td>
+                <td>넓은 컨텍스트, 한국어 이해력</td>
+              </tr>
+              <tr>
+                <td><strong>B — 전략 심화</strong> (Stage 2/3, 순차)</td>
+                <td>
+                  <code>risk-map</code>, <code>opportunity</code>, <code>strategy</code>,
+                  <code>final-summary</code>
+                </td>
+                <td>추론 능력, 이전 결과 통합, 긴 출력 품질</td>
+              </tr>
+              <tr>
+                <td><strong>C — 고급 시뮬레이션</strong> (Stage 4)</td>
+                <td>
+                  <code>approval-rating</code>, <code>frame-war</code>,
+                  <code>crisis-scenario</code>, <code>win-simulation</code> + 도메인 모듈 전체
+                </td>
+                <td>복잡한 시나리오 추론, 창의적 생성</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>2.2 그룹별 티어 추천</h3>
+
+        <h4>그룹 A — 구조 분석 (Stage 1)</h4>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>티어</th>
+                <th>추천 모델</th>
+                <th>예상 비용</th>
+                <th>선택 이유</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="tier-best">최고</span></td>
+                <td>Gemini 2.5 Pro</td>
+                <td>~$1.25~2.50/MTok</td>
+                <td>1M 컨텍스트, 할루시네이션 0.7%, 한국어 상급</td>
+              </tr>
+              <tr>
+                <td><span class="tier-mid">보통</span></td>
+                <td>Gemini 2.5 Flash</td>
+                <td>~$0.30/MTok</td>
+                <td>속도·비용 균형, 1M 컨텍스트, 한국어 상급</td>
+              </tr>
+              <tr>
+                <td><span class="tier-min">최소</span></td>
+                <td>Gemini 2.5 Flash-Lite</td>
+                <td>~$0.10/MTok</td>
+                <td>초저가, 배치 모드 시 $0.05/MTok</td>
+              </tr>
+              <tr>
+                <td><span class="tier-alt">대안 최고</span></td>
+                <td>Claude Sonnet 4.6</td>
+                <td>~$3.00/MTok</td>
+                <td>한국어 최고 수준, JSON 신뢰성 최상</td>
+              </tr>
+              <tr>
+                <td><span class="tier-alt">대안 최소</span></td>
+                <td>GPT-4.1 Nano</td>
+                <td>~$0.10/MTok</td>
+                <td>단순 분류용, 한국어 뉘앙스 제한</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h4>그룹 B — 전략 심화 (Stage 2/3)</h4>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>티어</th>
+                <th>추천 모델</th>
+                <th>예상 비용</th>
+                <th>선택 이유</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="tier-best">최고</span></td>
+                <td>Claude Opus 4.6</td>
+                <td>~$5.00/MTok</td>
+                <td>최고 지능, 복잡한 추론, 한국어 최상</td>
+              </tr>
+              <tr>
+                <td><span class="tier-mid">보통</span></td>
+                <td>Claude Sonnet 4.6</td>
+                <td>~$3.00/MTok</td>
+                <td>품질·비용 균형 최적, 캐싱 효과 큼</td>
+              </tr>
+              <tr>
+                <td><span class="tier-min">최소</span></td>
+                <td>DeepSeek R1</td>
+                <td>~$0.14/MTok (캐시)</td>
+                <td>추론 특화, 초저가 — 한국어 뉘앙스 한계 감안</td>
+              </tr>
+              <tr>
+                <td><span class="tier-alt">대안 최고</span></td>
+                <td>GPT-4.1</td>
+                <td>~$2.00/MTok</td>
+                <td>한국어 상급, 1M 컨텍스트</td>
+              </tr>
+              <tr>
+                <td><span class="tier-alt">대안 보통</span></td>
+                <td>o4-mini</td>
+                <td>~$1.10/MTok</td>
+                <td>추론 특화, o3 대비 절반 가격</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h4>그룹 C — 고급 시뮬레이션 (Stage 4)</h4>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>티어</th>
+                <th>추천 모델</th>
+                <th>예상 비용</th>
+                <th>선택 이유</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="tier-best">최고</span></td>
+                <td>Claude Opus 4.6</td>
+                <td>~$5.00/MTok</td>
+                <td>복잡한 시나리오 최적, 한국어 최상</td>
+              </tr>
+              <tr>
+                <td><span class="tier-mid">보통</span></td>
+                <td>Claude Sonnet 4.6</td>
+                <td>~$3.00/MTok</td>
+                <td>시뮬레이션 품질 충분, 비용 합리적</td>
+              </tr>
+              <tr>
+                <td><span class="tier-min">최소</span></td>
+                <td>Claude Haiku 4.5</td>
+                <td>~$1.00/MTok</td>
+                <td>200K 컨텍스트, 한국어 상급, 고속 처리</td>
+              </tr>
+              <tr>
+                <td><span class="tier-alt">대안 최고</span></td>
+                <td>o4-mini</td>
+                <td>~$1.10/MTok</td>
+                <td>추론 특화 시뮬레이션, 상대적 저비용</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>2.3 전체 모듈 추천 매트릭스</h3>
+
+        <h4>Stage 1 — 구조 분석 모듈</h4>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>모듈</th>
+                <th>최고</th>
+                <th>보통</th>
+                <th>최소</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>macro-view</code></td>
+                <td>Gemini 2.5 Pro</td>
+                <td>Gemini 2.5 Flash</td>
+                <td>Gemini 2.5 Flash-Lite</td>
+              </tr>
+              <tr>
+                <td><code>segmentation</code></td>
+                <td>Gemini 2.5 Pro</td>
+                <td>Gemini 2.5 Flash</td>
+                <td>GPT-4.1 Nano</td>
+              </tr>
+              <tr>
+                <td><code>sentiment-framing</code></td>
+                <td>Claude Sonnet 4.6</td>
+                <td>Gemini 2.5 Flash</td>
+                <td>Gemini 2.5 Flash-Lite</td>
+              </tr>
+              <tr>
+                <td><code>message-impact</code></td>
+                <td>Claude Sonnet 4.6</td>
+                <td>GPT-4.1 Mini</td>
+                <td>Gemini 2.5 Flash-Lite</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h4>Stage 2/3 — 전략 심화 및 최종 요약 모듈</h4>
+        <div class="note"><code>final-summary</code>는 파이프라인에서 Stage 3으로 단독 실행. <code>context-distillation</code>은 LLM 호출 없는 유틸리티로 제외.</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>모듈</th>
+                <th>최고</th>
+                <th>보통</th>
+                <th>최소</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>risk-map</code></td>
+                <td>Claude Opus 4.6</td>
+                <td>Claude Sonnet 4.6</td>
+                <td>DeepSeek R1</td>
+              </tr>
+              <tr>
+                <td><code>opportunity</code></td>
+                <td>Claude Opus 4.6</td>
+                <td>Claude Sonnet 4.6</td>
+                <td>DeepSeek R1</td>
+              </tr>
+              <tr>
+                <td><code>strategy</code></td>
+                <td>Claude Opus 4.6</td>
+                <td>Claude Sonnet 4.6</td>
+                <td>DeepSeek R1</td>
+              </tr>
+              <tr>
+                <td><code>final-summary</code></td>
+                <td>Claude Opus 4.6</td>
+                <td>Claude Sonnet 4.6</td>
+                <td>Claude Haiku 4.5</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h4>Stage 4 — 고급 시뮬레이션 (공통)</h4>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>모듈</th>
+                <th>최고</th>
+                <th>보통</th>
+                <th>최소</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>approval-rating</code></td>
+                <td>Claude Opus 4.6</td>
+                <td>Claude Sonnet 4.6</td>
+                <td>Claude Haiku 4.5</td>
+              </tr>
+              <tr>
+                <td><code>frame-war</code></td>
+                <td>Claude Opus 4.6</td>
+                <td>Claude Sonnet 4.6</td>
+                <td>Claude Haiku 4.5</td>
+              </tr>
+              <tr>
+                <td><code>crisis-scenario</code></td>
+                <td>Claude Opus 4.6</td>
+                <td>o4-mini</td>
+                <td>Claude Haiku 4.5</td>
+              </tr>
+              <tr>
+                <td><code>win-simulation</code></td>
+                <td>Claude Opus 4.6</td>
+                <td>o4-mini</td>
+                <td>Claude Haiku 4.5</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h4>Stage 4 — 팬덤 도메인 모듈</h4>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>모듈</th>
+                <th>최고</th>
+                <th>보통</th>
+                <th>최소</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>fan-loyalty-index</code></td>
+                <td>Claude Sonnet 4.6</td>
+                <td>Gemini 2.5 Flash</td>
+                <td>Claude Haiku 4.5</td>
+              </tr>
+              <tr>
+                <td><code>fandom-narrative-war</code></td>
+                <td>Claude Sonnet 4.6</td>
+                <td>Gemini 2.5 Flash</td>
+                <td>Claude Haiku 4.5</td>
+              </tr>
+              <tr>
+                <td><code>fandom-crisis-scenario</code></td>
+                <td>Claude Opus 4.6</td>
+                <td>Claude Sonnet 4.6</td>
+                <td>Claude Haiku 4.5</td>
+              </tr>
+              <tr>
+                <td><code>release-reception-prediction</code></td>
+                <td>Claude Opus 4.6</td>
+                <td>Claude Sonnet 4.6</td>
+                <td>Claude Haiku 4.5</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h4>Stage 4 — 기타 도메인 (corporate, healthcare, sports, finance, education, pr)</h4>
+        <div class="note">그룹 C 기준 동일 적용. 도메인 모듈은 모듈 특성에 따라 개별 검토 가능.</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>티어</th>
+                <th>모델</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="tier-best">최고</span></td>
+                <td>Claude Opus 4.6</td>
+              </tr>
+              <tr>
+                <td><span class="tier-mid">보통</span></td>
+                <td>Claude Sonnet 4.6</td>
+              </tr>
+              <tr>
+                <td><span class="tier-min">최소</span></td>
+                <td>Claude Haiku 4.5</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===== PART 3 ===== -->
+      <section id="part3">
+        <h2>⚙️ Part 3 — 시나리오 프리셋 업그레이드 제안</h2>
+        <div class="note">현재 <code>packages/core/src/analysis/model-config.ts</code>의 <code>MODEL_SCENARIO_PRESETS</code> 기준.</div>
+
+        <h3>3.1 현재 시나리오 평가</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>시나리오</th>
+                <th>현재 구성 요약</th>
+                <th>평가</th>
+                <th>우선순위</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>A: 최고 품질</strong></td>
+                <td>Stage1=Gemini 2.5 Pro, 전략=Opus 4.6</td>
+                <td><span class="status-ok">✅ 유효 — 거의 최적</span></td>
+                <td><span class="prio-low">낮음</span></td>
+              </tr>
+              <tr>
+                <td><strong>B: 가성비 최적</strong></td>
+                <td>Stage1=Flash+Flash-Lite, 심화=Haiku, 핵심=Sonnet 4.6</td>
+                <td><span class="status-ok">✅ 유효 — Flash-Lite 이미 적용됨</span></td>
+                <td><span class="prio-mid">중간</span></td>
+              </tr>
+              <tr>
+                <td><strong>C: 초저가</strong></td>
+                <td>Stage1=GPT-4.1 Nano, Stage2=Flash</td>
+                <td><span class="status-ok">✅ 유효 — DeepSeek V4 전환으로 추가 절감 가능</span></td>
+                <td><span class="prio-mid">중간</span></td>
+              </tr>
+              <tr>
+                <td><strong>D: Gemini CLI 무료</strong></td>
+                <td>Gemini CLI OAuth 전체</td>
+                <td><span class="status-ok">✅ 유효 — 쿼터 주의</span></td>
+                <td><span class="prio-low">낮음</span></td>
+              </tr>
+              <tr>
+                <td><strong>E: 완전 무료</strong></td>
+                <td>Gemini CLI 전체</td>
+                <td><span class="status-ok">✅ 유효</span></td>
+                <td><span class="prio-low">낮음</span></td>
+              </tr>
+              <tr>
+                <td><strong>F: Claude+Gemini CLI</strong></td>
+                <td>CLI 혼합</td>
+                <td><span class="status-ok">✅ 유효</span></td>
+                <td><span class="prio-low">낮음</span></td>
+              </tr>
+              <tr>
+                <td><strong>G: DeepSeek 혼합</strong></td>
+                <td>Stage1=DeepSeek Chat, 추론=DeepSeek Reasoner, 핵심=Sonnet 4.6</td>
+                <td>
+                  <span class="status-warn">⚠️ 개선 필요 — DeepSeek V4 전환으로 캐시 히트 시 최대 57% 절감</span>
+                </td>
+                <td><span class="prio-high">높음</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>3.2 시나리오 G 즉시 업그레이드 (DeepSeek V4 전환)</h3>
+        <p>현재 G 시나리오의 <code>deepseek-chat</code>(V3)을 <code>deepseek-v4</code>로 교체 시:</p>
+        <ul style="margin: 0.5rem 0 1rem 1.5rem; color: var(--text); font-size: 0.875rem;">
+          <li>캐시 히트: $0.07/MTok → $0.03/MTok <strong>(57% 절감)</strong></li>
+          <li>캐시 미스: $0.27/MTok → $0.30/MTok (소폭 증가)</li>
+        </ul>
+        <pre><code>// packages/core/src/analysis/model-config.ts — 시나리오 G
+// 변경 전
+'macro-view':        { provider: 'deepseek', model: 'deepseek-chat' },
+'segmentation':      { provider: 'deepseek', model: 'deepseek-chat' },
+'sentiment-framing': { provider: 'deepseek', model: 'deepseek-chat' },
+'message-impact':    { provider: 'deepseek', model: 'deepseek-chat' },
+
+// 변경 후
+'macro-view':        { provider: 'deepseek', model: 'deepseek-v4' },
+'segmentation':      { provider: 'deepseek', model: 'deepseek-v4' },
+'sentiment-framing': { provider: 'deepseek', model: 'deepseek-v4' },
+'message-impact':    { provider: 'deepseek', model: 'deepseek-v4' },</code></pre>
+        <div class="note">
+          <strong>주의</strong>: DeepSeek API에서 실제 모델 ID(<code>deepseek-v4</code> 또는 다른
+          이름)를 확인 후 적용할 것.
+        </div>
+
+        <h3>3.3 신규 시나리오 제안</h3>
+
+        <h4>시나리오 H: 2026 추론 특화 (신규 권장) — ~$0.45/실행</h4>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>모듈</th>
+                <th>프로바이더</th>
+                <th>모델</th>
+                <th>선택 이유</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>macro-view</code></td>
+                <td>gemini</td>
+                <td>gemini-2.5-flash</td>
+                <td>빠른 구조 파악</td>
+              </tr>
+              <tr>
+                <td><code>segmentation</code></td>
+                <td>gemini</td>
+                <td>gemini-2.5-flash</td>
+                <td>빠른 분류</td>
+              </tr>
+              <tr>
+                <td><code>sentiment-framing</code></td>
+                <td>anthropic</td>
+                <td>claude-sonnet-4-6</td>
+                <td>한국어 감정 분석</td>
+              </tr>
+              <tr>
+                <td><code>message-impact</code></td>
+                <td>anthropic</td>
+                <td>claude-sonnet-4-6</td>
+                <td>메시지 영향 분석</td>
+              </tr>
+              <tr>
+                <td><code>risk-map</code></td>
+                <td>anthropic</td>
+                <td>claude-sonnet-4-6</td>
+                <td>리스크 맵핑</td>
+              </tr>
+              <tr>
+                <td><code>opportunity</code></td>
+                <td>anthropic</td>
+                <td>claude-sonnet-4-6</td>
+                <td>기회 분석</td>
+              </tr>
+              <tr>
+                <td><code>strategy</code></td>
+                <td>anthropic</td>
+                <td>claude-sonnet-4-6</td>
+                <td>전략 수립</td>
+              </tr>
+              <tr>
+                <td><code>final-summary</code></td>
+                <td>anthropic</td>
+                <td>claude-sonnet-4-6</td>
+                <td>최종 요약</td>
+              </tr>
+              <tr>
+                <td><code>approval-rating</code></td>
+                <td>openai</td>
+                <td>o4-mini</td>
+                <td>추론 기반 지지율 분석</td>
+              </tr>
+              <tr>
+                <td><code>frame-war</code></td>
+                <td>openai</td>
+                <td>o4-mini</td>
+                <td>추론 기반 프레임 분석</td>
+              </tr>
+              <tr>
+                <td><code>crisis-scenario</code></td>
+                <td>openai</td>
+                <td>o4-mini</td>
+                <td>추론 기반 위기 시나리오</td>
+              </tr>
+              <tr>
+                <td><code>win-simulation</code></td>
+                <td>openai</td>
+                <td>o4-mini</td>
+                <td>추론 기반 승리 시뮬레이션</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h4>시나리오 I: OpenRouter 초저가 (미래 확장) — ~$0.08/실행</h4>
+        <div class="note"><code>packages/ai-gateway</code>에 OpenRouter 프로바이더 추가 필요.</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>모듈 그룹</th>
+                <th>프로바이더</th>
+                <th>모델</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Stage 1 전체</td>
+                <td>openrouter</td>
+                <td>meta-llama/llama-4-maverick</td>
+              </tr>
+              <tr>
+                <td>Stage 2 전체</td>
+                <td>openrouter</td>
+                <td>qwen/qwen3.6-plus</td>
+              </tr>
+              <tr>
+                <td>Stage 4 전체</td>
+                <td>gemini</td>
+                <td>gemini-2.5-flash</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===== REFS ===== -->
+      <section id="refs">
+        <h2>🔗 참고 자료</h2>
+        <ul class="ref-list">
+          <li>
+            <a href="https://platform.claude.com/docs/en/about-claude/models/overview" target="_blank">Claude Models Overview</a>
+          </li>
+          <li>
+            <a href="https://ai.google.dev/gemini-api/docs/pricing" target="_blank">Gemini API Pricing</a>
+          </li>
+          <li>
+            <a href="https://openai.com/api/pricing" target="_blank">OpenAI API Pricing</a>
+          </li>
+          <li>
+            <a href="https://api-docs.deepseek.com/quick_start/pricing" target="_blank">DeepSeek API Pricing</a>
+          </li>
+          <li><a href="https://api.x.ai" target="_blank">xAI Grok API</a></li>
+          <li>
+            <a href="https://openrouter.ai/models" target="_blank">OpenRouter — Model Listings</a>
+          </li>
+          <li>
+            <a href="https://aws.amazon.com/nova/pricing/" target="_blank">Amazon Nova Pricing</a>
+          </li>
+        </ul>
+      </section>
+    </div>
+  </body>
+</html>

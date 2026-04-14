@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { BookOpen, ExternalLink, Layers, Settings, Share2, Users } from 'lucide-react';
+import { BookOpen, Bot, ExternalLink, Layers, Settings, Share2, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -104,6 +104,58 @@ export default function DocsPage() {
               </div>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* AI 모델 설정 문서 */}
+      <section className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Bot className="h-5 w-5 text-primary" />
+          <h2 className="text-xl font-semibold">AI 모델 설정 문서</h2>
+        </div>
+
+        <div className="rounded-lg border p-5 border-orange-400/40 bg-orange-500/5">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-background text-xl border">
+                🤖
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className="font-semibold">LLM 모델 추천 가이드</span>
+                  <Badge variant="secondary">2026-04-14</Badge>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  분석 모듈별 최고/보통/최소 티어 추천 · 한국어 성능 비교 · 시나리오 프리셋
+                  업그레이드 가이드
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <a
+                href="/docs/llm-model-recommendations.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-muted/50 transition-colors"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />새 탭
+              </a>
+            </div>
+          </div>
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+            <div className="rounded-md bg-background border px-3 py-2">
+              <p className="font-medium text-xs text-muted-foreground mb-1">최고 티어</p>
+              <p>Gemini 2.5 Pro · Claude Opus 4.6</p>
+            </div>
+            <div className="rounded-md bg-background border px-3 py-2">
+              <p className="font-medium text-xs text-muted-foreground mb-1">보통 티어 (권장)</p>
+              <p>Gemini 2.5 Flash · Claude Sonnet 4.6</p>
+            </div>
+            <div className="rounded-md bg-background border px-3 py-2">
+              <p className="font-medium text-xs text-muted-foreground mb-1">최소 티어</p>
+              <p>Gemini Flash-Lite · Claude Haiku 4.5</p>
+            </div>
+          </div>
         </div>
       </section>
 
