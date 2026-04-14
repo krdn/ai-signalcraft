@@ -100,7 +100,7 @@ export const USE_CASE_CATEGORIES = [
           '특정 정책에 대한 국민 여론 구조를 파악하고, 정책 보고서의 실증 근거로 활용합니다.',
         highlight: '정책 수용도 분석 자동화',
         domainId: 'policy',
-        theoreticalHighlight: 'Advocacy Coalition Framework 기반',
+        theoreticalHighlight: 'ACF · Punctuated Equilibrium · Policy Diffusion 기반',
       },
       {
         icon: TrendingUp,

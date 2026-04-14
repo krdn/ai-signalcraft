@@ -318,18 +318,34 @@ export const DOMAIN_HELP_DATA: Record<string, DomainHelpData> = {
     id: 'policy',
     displayName: '정책 연구 / 싱크탱크',
     description:
-      '옹호 연합 프레임워크(ACF)와 단절적 균형 이론을 통해 정책 수용도와 여론 연합 구조를 분석합니다.',
+      '옹호 연합 프레임워크(ACF)와 단절적 균형 이론을 통해 정책 수용도와 여론 연합 구조를 분석합니다. 정치인 지지율이 아닌 특정 정책에 대한 찬반 구조와 확산 가능성을 정량화합니다.',
     tagline: '정책 결정을 데이터로 뒷받침',
     analysisModules: [
       ...COMMON_MODULES,
       {
         stage: 'Stage 4',
-        label: '정책 고급 분석',
+        label: '정책 고급 분석 (ADVN)',
         modules: [
-          { name: '정책 수용도 추정', description: '지지/반대 연합별 수용도 범위 추정' },
-          { name: '프레임 전쟁', description: '정책 담론에서 경쟁하는 프레임 세력 분석' },
-          { name: '위기 시나리오', description: '정책 저항 확산/통제/역전 시나리오' },
-          { name: '통과 시뮬레이션', description: '정책 수용 가능성과 통과 조건 분석' },
+          {
+            name: '정책 수용도 추정',
+            description:
+              'ACF 기반 지지·반대·중립·전문가 연합별 수용도 범위와 신뢰도를 플랫폼 편향 보정 후 추정',
+          },
+          {
+            name: '프레임 전쟁 (정책)',
+            description:
+              '지지 연합과 반대 연합이 사용하는 정책 담론 프레임의 세력 역학·플랫폼별 우세 분석',
+          },
+          {
+            name: '정책 위기 시나리오',
+            description:
+              'Punctuated Equilibrium Theory 기반 정책 추진 좌초(spread) / 통제(control) / 여론 역전(reverse) 3개 시나리오',
+          },
+          {
+            name: '정책 통과 시뮬레이션',
+            description:
+              'Policy Diffusion Theory 기반 정책 수용도 목표 달성 확률 및 전문가 지지 확보 조건 분석',
+          },
         ],
       },
     ],
@@ -339,28 +355,54 @@ export const DOMAIN_HELP_DATA: Record<string, DomainHelpData> = {
         scholar: 'Sabatier, P.A. & Jenkins-Smith, H.C.',
         year: 1993,
         keyConceptKo: '옹호 연합 프레임워크',
-        application: '정책 지지·반대 연합 집단 식별 및 신념 체계 분석',
+        application:
+          '정책을 둘러싼 지지·반대 연합 집단 식별, 각 연합의 핵심 신념 체계와 정책 변화 저항 요인 분석 — segmentation, approval-rating 모듈에 적용',
       },
       {
         theory: 'Punctuated Equilibrium Theory',
         scholar: 'True, J.L., Jones, B.D. & Baumgartner, F.R.',
         year: 2007,
         keyConceptKo: '단절적 균형 이론',
-        application: '정책 여론의 급격한 변화 시점(정책 창) 포착',
+        application:
+          '정책 여론의 안정기와 급격한 변화 시점(정책 창, policy window) 포착 — macro-view, crisis-scenario 모듈에 적용',
       },
       {
-        theory: 'Framing Theory',
+        theory: 'Framing Theory in Policy',
         scholar: 'Entman, R.M.',
         year: 1993,
-        keyConceptKo: '프레이밍 이론',
-        application: '경쟁 정책 프레임 분석 및 여론 형성 메커니즘',
+        keyConceptKo: '정책 프레이밍 이론',
+        application:
+          '동일 정책을 서로 다른 관점으로 해석하는 경쟁 프레임 식별 및 지배 프레임 분석 — sentiment-framing, frame-war 모듈에 적용',
+      },
+      {
+        theory: 'Policy Diffusion Theory',
+        scholar: 'Berry, F.S. & Berry, W.D.',
+        year: 1990,
+        keyConceptKo: '정책 확산 이론',
+        application:
+          '성공 정책이 타 지역·분야로 확산되는 경로 분석, 정책 수용 가능성 예측 — opportunity, win-simulation 모듈에 적용',
       },
     ],
     usageExamples: [
       {
         scenario: '주요 정책 발표 전 여론 사전 조사',
-        context: '의료 개혁안 발표 전, 지지·반대 연합 세력 파악 필요',
-        outcome: 'ACF 기반 연합 구조 분석 + 핵심 반대 논거 선제 파악으로 소통 전략 수립',
+        context:
+          '의료 개혁안 발표 전, 지지·반대 연합 세력과 핵심 반대 논거를 선제 파악해야 하는 상황',
+        outcome:
+          'ACF 기반 연합 구조 분석으로 반대 집단의 핵심 신념 체계 파악, 전문가 지지 확보 경로 도출로 소통 전략 사전 수립',
+      },
+      {
+        scenario: '정책 시행 후 여론 모니터링',
+        context: '노동·환경·규제 정책 시행 1개월, 현장 혼란과 반발 여론이 온라인에서 확산 중',
+        outcome:
+          '프레임 전쟁 분석으로 반대 연합의 위협 프레임 식별, 위기 시나리오 시뮬레이션으로 확산 차단 최적 타이밍 포착',
+      },
+      {
+        scenario: '싱크탱크 정책 보고서 실증 데이터 수집',
+        context:
+          '특정 정책 도입 효과에 대한 국민 수용도를 정량적 근거와 함께 보고서에 포함해야 하는 상황',
+        outcome:
+          '플랫폼 편향 보정 정책 수용도 추정치 + 집단별 찬반 비율 + 핵심 반대 논거를 인용 가능한 형태로 자동 생성',
       },
     ],
   },

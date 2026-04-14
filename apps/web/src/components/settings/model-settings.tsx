@@ -208,32 +208,33 @@ const MODULE_META: Record<string, ModuleMeta> = {
     },
     costTip: '출력 토큰이 매우 많습니다. 비용에 민감하면 요약 수준을 조절하세요.',
   },
-  // 정치 전용 (Stage 4)
+  // 정치 / 정책 공유 (Stage 4) — political, policy, public-sector, legal 도메인
   'approval-rating': {
-    name: '지지율 예측',
-    description: '수집된 여론 데이터를 기반으로 지지율 변화를 예측합니다.',
+    name: '지지율 / 수용도 추정',
+    description:
+      '여론 데이터로 정치 지지율(political) 또는 정책 수용도(policy·public-sector)를 집단별로 추정합니다.',
     analyzes: [
-      '현재 여론 기반 지지율 추정치',
-      '향후 1~4주 지지율 변동 시나리오',
-      '지지율 영향 핵심 변수 식별',
-      '과거 유사 사례와의 패턴 비교',
+      '현재 여론 기반 지지율·수용도 추정 범위',
+      '집단별(지지층/반대층/전문가) 반응 분리 측정',
+      '플랫폼 편향 보정 후 신뢰도 산출',
+      '지지율 변동에 영향하는 핵심 변수 식별',
     ],
     recommended: {
       provider: 'anthropic',
       model: 'claude-sonnet-4-6',
-      reason: '수치 예측에 정밀한 추론 필요',
+      reason: '수치 추정에 정밀한 추론 필요',
     },
-    costTip: '정량적 예측의 정확도는 모델 성능에 크게 의존합니다.',
-    domain: 'political',
+    costTip: '정량적 추정의 정확도는 모델 성능에 크게 의존합니다.',
   },
   'frame-war': {
     name: '프레임 전쟁 분석',
-    description: '각 진영이 사용하는 프레이밍 전략과 그 효과를 분석합니다.',
+    description:
+      '지지/반대 진영이 사용하는 프레이밍 전략과 세력 역학을 분석합니다. 도메인에 따라 정치 프레임 또는 정책 담론 프레임으로 분석됩니다.',
     analyzes: [
-      '진영별 주요 프레임 식별 및 명명',
-      '프레임 간 충돌 구조 매핑',
-      '프레임 우세/열세 판단',
-      '역프레이밍 전략 제안',
+      '지배적/위협적/반전가능 프레임 3분류',
+      '프레임 간 세력 역학·시간 추이 분석',
+      '플랫폼별 프레임 우세/열세 비교',
+      '약세 프레임의 우세 전환 조건 도출',
     ],
     recommended: {
       provider: 'anthropic',
@@ -241,16 +242,16 @@ const MODULE_META: Record<string, ModuleMeta> = {
       reason: '미묘한 언어 전략 분석에 고급 모델 필수',
     },
     costTip: '담론 분석은 컨텍스트 이해가 핵심이므로 모델 품질이 중요합니다.',
-    domain: 'political',
   },
   'crisis-scenario': {
     name: '위기 시나리오',
-    description: '발생 가능한 위기 상황을 시나리오별로 예측하고 대응 방안을 수립합니다.',
+    description:
+      '리스크 확산/통제/역전 3가지 시나리오를 시뮬레이션합니다. 정치 도메인은 여론 위기를, 정책 도메인은 정책 추진 좌초·통제·성과 역전을 분석합니다.',
     analyzes: [
-      '최악/보통/최선 시나리오 시뮬레이션',
-      '시나리오별 발생 확률 및 트리거 조건',
-      '시나리오별 피해 규모 추정',
-      '단계별 위기 대응 매뉴얼 생성',
+      'spread(확산): 최악 시나리오 경로와 트리거 조건',
+      'control(통제): 현 수준 봉쇄 및 단계적 대응 경로',
+      'reverse(역전): 위기→기회 전환 조건과 실행 방안',
+      '각 시나리오별 확률·타임라인·대응 전략',
     ],
     recommended: {
       provider: 'anthropic',
@@ -258,24 +259,23 @@ const MODULE_META: Record<string, ModuleMeta> = {
       reason: '복합 시나리오 생성에 고급 추론 필요',
     },
     costTip: '여러 시나리오를 생성하므로 출력 토큰이 많습니다.',
-    domain: 'political',
   },
   'win-simulation': {
-    name: '승리 시뮬레이션',
-    description: '목표 달성을 위한 최적 전략 경로를 시뮬레이션합니다.',
+    name: '목표 달성 시뮬레이션',
+    description:
+      '전 단계 분석을 종합하여 목표 달성 확률과 최적 전략 경로를 시뮬레이션합니다. 정치 도메인은 선거 승리, 정책 도메인은 정책 수용도 목표 달성 확률을 산출합니다.',
     analyzes: [
-      '목표 지지율 달성을 위한 경로 모델링',
+      '목표 달성 확률(0~100%) 산출',
+      '달성 조건(3~7개): 충족/부분/미충족 상태 점검',
       '핵심 변수별 민감도 분석',
-      '경쟁 대상 전략 대응 시뮬레이션',
-      '최적 자원 배분 방안 제안',
+      '최적 자원 배분 및 우선순위 전략 제안',
     ],
     recommended: {
       provider: 'anthropic',
       model: 'claude-sonnet-4-6',
-      reason: '게임 이론 기반 전략 시뮬레이션에 최고 성능 필요',
+      reason: '전 단계 결과 종합 및 전략 시뮬레이션에 최고 성능 필요',
     },
     costTip: '가장 복잡한 분석 모듈입니다. 최고 품질 모델 사용을 강력 권장합니다.',
-    domain: 'political',
   },
   // 팬덤 전용 (Stage 4)
   'fan-loyalty-index': {
