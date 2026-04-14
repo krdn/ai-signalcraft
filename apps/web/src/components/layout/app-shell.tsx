@@ -18,7 +18,12 @@ export function AppShell({ sidebar, header, children }: AppShellProps) {
 
       {/* 모바일: 오버레이 */}
       {sidebarOpen && (
-        <div className="fixed inset-0 z-40 md:hidden">
+        <div
+          className="fixed inset-0 z-40 md:hidden"
+          role="dialog"
+          aria-modal="true"
+          onKeyDown={(e) => e.key === 'Escape' && setSidebarOpen(false)}
+        >
           <div className="absolute inset-0 bg-black/30" onClick={() => setSidebarOpen(false)} />
           <div className="relative z-50 flex h-full">
             {sidebar(true, () => setSidebarOpen(false))}

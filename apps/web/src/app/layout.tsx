@@ -42,7 +42,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
       </head>
-      <body className="bg-slate-50" suppressHydrationWarning>
+      <body className="bg-slate-50 dark:bg-background" suppressHydrationWarning>
         <Providers>{children}</Providers>
         <ServiceWorkerRegistrar />
       </body>
