@@ -417,11 +417,10 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
         }
       }
 
-      // 임베딩 생성 (비차단 — 실패해도 수집 파이프라인에 영향 없음)
-      // persist 단계에서 저장된 기사/댓글의 embedding이 NULL인 것을 백그라운드에서 처리
+      // 임베딩 생성 — 분석 트리거 전에 완료해야 RAG가 올바르게 동작
+      // 실패해도 분석은 진행 (RAG fallback이 처리)
       try {
         const db = getDb();
-        // jobId에 해당하는 임베딩 미생성 기사/댓글을 직접 DB에서 찾아 처리
         const { articleJobs, commentJobs } = await import('../db/schema/collections');
         const articleRows = await db
           .select({ articleId: articleJobs.articleId })
@@ -435,16 +434,14 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
         const articleIds = articleRows.map((r) => r.articleId);
         const commentIds = commentRows.map((r) => r.commentId);
 
-        if (articleIds.length > 0) {
-          persistArticleEmbeddings(articleIds).catch((err) =>
-            logger.warn(`[persist] 기사 임베딩 생성 실패:`, err),
-          );
-        }
-        if (commentIds.length > 0) {
-          persistCommentEmbeddings(commentIds).catch((err) =>
-            logger.warn(`[persist] 댓글 임베딩 생성 실패:`, err),
-          );
-        }
+        // 분석 트리거 전에 임베딩 완료를 기다림 (race condition 방지)
+        await Promise.allSettled([
+          articleIds.length > 0 ? persistArticleEmbeddings(articleIds) : Promise.resolve(),
+          commentIds.length > 0 ? persistCommentEmbeddings(commentIds) : Promise.resolve(),
+        ]);
+        logger.info(
+          `[persist] 임베딩 생성 완료 (기사=${articleIds.length}, 댓글=${commentIds.length})`,
+        );
       } catch (err) {
         logger.warn(`[persist] 임베딩 생성 스킵:`, err);
       }

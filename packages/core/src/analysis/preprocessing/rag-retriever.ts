@@ -68,7 +68,7 @@ export async function ragRetrieve(
   const [queryEmbedding] = await embedTexts([input.keyword]);
   const queryVector = `[${queryEmbedding.join(',')}]`;
 
-  // ─── 기사: pgvector 코사인 유사도로 정렬 ──────────────────────
+  // ─── 기사: pgvector 코사인 유사도로 정렬 (임베딩 없으면 최신순 fallback) ───
   let selectedArticles = input.articles;
 
   if (config.articleTopK > 0) {
@@ -89,39 +89,50 @@ export async function ragRetrieve(
       (row: any) => parseFloat(row.similarity) >= config.minSimilarity,
     );
 
-    let articleRows = filteredRows.slice(0, config.articleTopK);
+    if (filteredRows.length > 0) {
+      let articleRows = filteredRows.slice(0, config.articleTopK);
 
-    // 2차: 클러스터 대표 기사 추가 (다양성 확보)
-    if (config.clusterRepresentatives > 0 && filteredRows.length > 0) {
-      const excludeIds = filteredRows.map((r: any) => Number(r.id));
-      const idList = excludeIds.length > 0 ? excludeIds.join(',') : '0';
+      // 2차: 클러스터 대표 기사 추가 (다양성 확보)
+      if (config.clusterRepresentatives > 0) {
+        const excludeIds = filteredRows.map((r: any) => Number(r.id));
+        const idList = excludeIds.length > 0 ? excludeIds.join(',') : '0';
 
-      const additionalResult = await db.execute(sql`
-        SELECT a.id, a.title, a.content, a.publisher, a.published_at, a.source,
-               1 - (a.embedding <=> ${queryVector}::vector) AS similarity
-        FROM articles a
-        INNER JOIN article_jobs aj ON a.id = aj.article_id
-        WHERE aj.job_id = ${jobId}
-          AND a.embedding IS NOT NULL
-          AND a.id NOT IN (${sql.raw(idList)})
-        ORDER BY a.embedding <=> ${queryVector}::vector
-        LIMIT ${config.clusterRepresentatives}
-      `);
+        const additionalResult = await db.execute(sql`
+          SELECT a.id, a.title, a.content, a.publisher, a.published_at, a.source,
+                 1 - (a.embedding <=> ${queryVector}::vector) AS similarity
+          FROM articles a
+          INNER JOIN article_jobs aj ON a.id = aj.article_id
+          WHERE aj.job_id = ${jobId}
+            AND a.embedding IS NOT NULL
+            AND a.id NOT IN (${sql.raw(idList)})
+          ORDER BY a.embedding <=> ${queryVector}::vector
+          LIMIT ${config.clusterRepresentatives}
+        `);
 
-      articleRows = [...articleRows, ...additionalResult.rows];
+        articleRows = [...articleRows, ...additionalResult.rows];
+      }
+
+      selectedArticles = articleRows.map((row: any) => ({
+        title: row.title as string,
+        content: row.content ? String(row.content).slice(0, 500) : null,
+        publisher: row.publisher as string | null,
+        publishedAt: row.published_at as Date | null,
+        source: row.source as string,
+      }));
+    } else {
+      // fallback: 임베딩 없거나 유사도 미달 → 최신순 상위 N개
+      selectedArticles = input.articles
+        .slice()
+        .sort((a, b) => {
+          const ta = a.publishedAt ? new Date(a.publishedAt).getTime() : 0;
+          const tb = b.publishedAt ? new Date(b.publishedAt).getTime() : 0;
+          return tb - ta;
+        })
+        .slice(0, config.articleTopK + config.clusterRepresentatives);
     }
-
-    // AnalysisInput 형식으로 변환
-    selectedArticles = articleRows.map((row: any) => ({
-      title: row.title as string,
-      content: row.content ? String(row.content).slice(0, 500) : null,
-      publisher: row.publisher as string | null,
-      publishedAt: row.published_at as Date | null,
-      source: row.source as string,
-    }));
   }
 
-  // ─── 댓글: pgvector 코사인 유사도로 정렬 ──────────────────────
+  // ─── 댓글: pgvector 코사인 유사도로 정렬 (임베딩 없으면 좋아요순 fallback) ──
   let selectedComments = input.comments;
 
   if (config.commentTopK > 0) {
@@ -136,7 +147,7 @@ export async function ragRetrieve(
       LIMIT ${config.commentTopK}
     `);
 
-    selectedComments = rankedCommentResult.rows
+    const ragComments = rankedCommentResult.rows
       .filter((row: any) => parseFloat(row.similarity) >= config.minSimilarity)
       .map((row: any) => ({
         content: row.content as string,
@@ -146,6 +157,16 @@ export async function ragRetrieve(
         dislikeCount: row.dislike_count as number | null,
         publishedAt: row.published_at as Date | null,
       }));
+
+    if (ragComments.length > 0) {
+      selectedComments = ragComments;
+    } else {
+      // fallback: 임베딩 없거나 유사도 미달 → 좋아요순 상위 N개
+      selectedComments = input.comments
+        .slice()
+        .sort((a, b) => (b.likeCount ?? 0) - (a.likeCount ?? 0))
+        .slice(0, config.commentTopK);
+    }
   }
 
   // 통계 계산
