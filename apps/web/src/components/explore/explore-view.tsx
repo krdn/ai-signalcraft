@@ -79,6 +79,16 @@ export function ExploreView({ jobId }: ExploreViewProps) {
     staleTime: Infinity, // 모듈 결과는 분석 완료 후 변경 없음
   });
 
+  const bySourceSplit = useQuery({
+    queryKey: ['explore', jobId, filters.dateScope, 'bySourceSplit'],
+    queryFn: () =>
+      trpcClient.explore.getSentimentBySourceSplit.query({
+        jobId: jobId!,
+        dateScope: filters.dateScope,
+      }),
+    enabled: jobId != null,
+  });
+
   if (!jobId) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
@@ -96,7 +106,8 @@ export function ExploreView({ jobId }: ExploreViewProps) {
     bySource.isError ||
     scoreDist.isError ||
     scatter.isError ||
-    keywords.isError;
+    keywords.isError ||
+    bySourceSplit.isError;
 
   if (anyError) {
     return (
@@ -112,6 +123,7 @@ export function ExploreView({ jobId }: ExploreViewProps) {
               scoreDist.refetch();
               scatter.refetch();
               keywords.refetch();
+              bySourceSplit.refetch();
             }}
           >
             다시 시도
@@ -138,7 +150,8 @@ export function ExploreView({ jobId }: ExploreViewProps) {
         <ScatterEngagement data={scatter.data} isLoading={scatter.isLoading} />
         <SourceSentimentMatrix
           data={bySource.data}
-          isLoading={bySource.isLoading}
+          splitData={bySourceSplit.data}
+          isLoading={bySource.isLoading || bySourceSplit.isLoading}
           onSelectSource={handleSelectSource}
         />
         <ScoreHistogram data={scoreDist.data} isLoading={scoreDist.isLoading} />

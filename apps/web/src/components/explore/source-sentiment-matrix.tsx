@@ -1,17 +1,27 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { EXPLORE_HELP, SENTIMENT_COLORS } from './explore-help';
 import { CardHelp } from '@/components/dashboard/card-help';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { SOURCE_LABELS } from '@/components/dashboard/collected-data-shared';
+import { cn } from '@/lib/utils';
+
+type SentimentRow = { source: string; sentiment: string; count: number };
+type SplitData = {
+  articles: SentimentRow[];
+  comments: SentimentRow[];
+};
 
 interface SourceSentimentMatrixProps {
-  data: Array<{ source: string; sentiment: string; count: number }> | undefined;
+  data: SentimentRow[] | undefined;
+  splitData: SplitData | undefined;
   isLoading: boolean;
   onSelectSource?: (source: string) => void;
 }
+
+type ViewMode = 'both' | 'articles' | 'comments';
 
 const SENTIMENT_ORDER = ['positive', 'negative', 'neutral'] as const;
 const SENTIMENT_LABEL: Record<string, string> = {
@@ -20,35 +30,63 @@ const SENTIMENT_LABEL: Record<string, string> = {
   neutral: '중립',
 };
 
+function buildRows(rows: SentimentRow[]) {
+  const bySource = new Map<string, { positive: number; negative: number; neutral: number }>();
+  for (const r of rows) {
+    const entry = bySource.get(r.source) ?? { positive: 0, negative: 0, neutral: 0 };
+    if (r.sentiment === 'positive') entry.positive += r.count;
+    else if (r.sentiment === 'negative') entry.negative += r.count;
+    else entry.neutral += r.count;
+    bySource.set(r.source, entry);
+  }
+  return Array.from(bySource.entries())
+    .map(([source, c]) => {
+      const total = c.positive + c.negative + c.neutral;
+      return { source, ...c, total };
+    })
+    .sort((a, b) => b.total - a.total);
+}
+
 export function SourceSentimentMatrix({
   data,
+  splitData,
   isLoading,
   onSelectSource,
 }: SourceSentimentMatrixProps) {
+  const [viewMode, setViewMode] = useState<ViewMode>('both');
+
   const rows = useMemo(() => {
-    if (!data) return [];
-    const bySource = new Map<string, { positive: number; negative: number; neutral: number }>();
-    for (const r of data) {
-      const entry = bySource.get(r.source) ?? { positive: 0, negative: 0, neutral: 0 };
-      if (r.sentiment === 'positive') entry.positive += r.count;
-      else if (r.sentiment === 'negative') entry.negative += r.count;
-      else entry.neutral += r.count;
-      bySource.set(r.source, entry);
-    }
-    return Array.from(bySource.entries())
-      .map(([source, c]) => {
-        const total = c.positive + c.negative + c.neutral;
-        return { source, ...c, total };
-      })
-      .sort((a, b) => b.total - a.total);
-  }, [data]);
+    if (viewMode === 'articles' && splitData) return buildRows(splitData.articles);
+    if (viewMode === 'comments' && splitData) return buildRows(splitData.comments);
+    return buildRows(data ?? []);
+  }, [viewMode, data, splitData]);
 
   return (
     <Card className="min-h-[320px]">
       <CardHeader>
-        <div className="flex items-center gap-2">
-          <CardTitle className="text-base font-semibold">소스 × 감정</CardTitle>
-          <CardHelp {...EXPLORE_HELP.matrix} />
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-base font-semibold">소스 × 감정</CardTitle>
+            <CardHelp {...EXPLORE_HELP.matrix} />
+          </div>
+          <div className="flex items-center gap-1">
+            {(['both', 'articles', 'comments'] as ViewMode[]).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setViewMode(mode)}
+                className={cn(
+                  'px-2 py-1 rounded-md text-xs font-medium transition-colors border',
+                  viewMode === mode
+                    ? 'bg-primary/10 text-primary border-primary/30'
+                    : 'border-border text-muted-foreground hover:text-foreground',
+                )}
+                aria-pressed={viewMode === mode}
+              >
+                {mode === 'both' ? '전체' : mode === 'articles' ? '기사' : '댓글'}
+              </button>
+            ))}
+          </div>
         </div>
       </CardHeader>
       <CardContent>

@@ -22,6 +22,7 @@ describe('DEFAULT_FILTERS', () => {
       sentiments: ['positive', 'negative'],
       minScore: 0.7,
       itemType: 'comments',
+      dateScope: 'job',
     };
     expect(valid.sources).toHaveLength(2);
   });
