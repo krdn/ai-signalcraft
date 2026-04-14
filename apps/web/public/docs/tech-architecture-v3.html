@@ -103,7 +103,8 @@ pre{background:var(--surface2);border:1px solid var(--border);border-radius:8px;
 @keyframes flowDot{0%{opacity:0;transform:translateX(-6px)}50%{opacity:1}100%{opacity:0;transform:translateX(6px)}}
 
 /* THEME TOGGLE */
-.theme-btn{position:fixed;top:12px;right:12px;width:34px;height:34px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);color:var(--text);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;z-index:200}
+.theme-btn{position:fixed;top:12px;right:12px;width:34px;height:34px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);color:var(--text);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;z-index:140;transition:right .32s cubic-bezier(.4,0,.2,1)}
+.help-panel.open~* .theme-btn,.theme-btn.panel-open{right:420px}
 
 /* WORKER CARD */
 .worker-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;border-left:4px solid var(--accent)}
@@ -141,6 +142,62 @@ pre{background:var(--surface2);border:1px solid var(--border);border-radius:8px;
 .embed-step{min-width:120px;text-align:center;padding:10px 12px;border-radius:10px}
 
 small{font-size:.77rem;color:var(--text-dim)}
+
+/* ── HELP BUTTON & PANEL ── */
+.help-btn{display:inline-flex;align-items:center;gap:5px;padding:4px 11px;background:var(--purple-bg);border:1px solid rgba(167,139,250,.3);border-radius:20px;color:var(--purple);cursor:pointer;font-size:.74rem;font-weight:700;transition:all .2s;vertical-align:middle;margin-left:10px}
+.help-btn:hover{background:var(--purple);color:#fff;border-color:var(--purple)}
+.help-panel{position:fixed;right:0;top:0;width:400px;max-width:95vw;height:100vh;background:var(--surface);border-left:1px solid var(--border);z-index:160;transform:translateX(100%);transition:transform .32s cubic-bezier(.4,0,.2,1);overflow-y:auto;display:flex;flex-direction:column}
+.help-panel.open{transform:translateX(0);box-shadow:-8px 0 32px rgba(0,0,0,.35)}
+.help-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:150;opacity:0;pointer-events:none;transition:opacity .3s}
+.help-overlay.show{opacity:1;pointer-events:all}
+.help-header{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);z-index:1}
+.help-header h3{font-size:.95rem;font-weight:700;margin:0}
+.help-close{background:var(--surface2);border:1px solid var(--border);border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:14px;color:var(--text-dim);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.help-close:hover{background:var(--red);color:#fff;border-color:var(--red)}
+.help-body{padding:16px 18px;flex:1;font-size:.82rem;line-height:1.7}
+.help-section{margin-bottom:16px}
+.help-section-title{font-size:.76rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:8px}
+.help-ctx{background:var(--accent-bg);border:1px solid rgba(56,189,248,.2);border-radius:8px;padding:10px 13px;color:var(--text-dim);font-size:.82rem;line-height:1.7}
+.help-file{display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--surface2);border-radius:6px;margin-bottom:4px;font-family:monospace;font-size:.75rem;color:var(--accent);border:1px solid var(--border)}
+.help-file::before{content:'📁';font-size:.8rem;font-style:normal}
+.help-tip{display:flex;gap:8px;padding:7px 10px;background:var(--surface2);border-radius:6px;margin-bottom:4px;font-size:.8rem;color:var(--text)}
+.help-tip::before{content:'✓';color:var(--green);font-weight:700;flex-shrink:0}
+.help-warn{display:flex;gap:8px;padding:7px 10px;background:var(--red-bg);border:1px solid rgba(248,113,113,.2);border-radius:6px;margin-bottom:4px;font-size:.8rem;color:var(--text)}
+.help-warn::before{content:'⚠';color:var(--red);flex-shrink:0}
+
+/* ── SEARCH BAR ── */
+.search-wrap{background:var(--surface);border-bottom:1px solid var(--border);padding:8px 16px;position:sticky;top:51px;z-index:90;display:flex;align-items:center;gap:8px}
+.search-wrap input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:7px 12px;color:var(--text);font-size:.83rem;outline:none;transition:border-color .2s}
+.search-wrap input:focus{border-color:var(--accent)}
+.search-wrap input::placeholder{color:var(--text-muted)}
+.search-clear{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1rem;padding:0 4px;display:none}
+.search-results{position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;max-height:280px;overflow-y:auto;z-index:170;display:none}
+.search-result-item{padding:8px 16px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .15s}
+.search-result-item:last-child{border-bottom:none}
+.search-result-item:hover{background:var(--surface2)}
+.search-result-tab{font-size:.72rem;color:var(--text-muted);margin-bottom:2px}
+.search-result-text{font-size:.82rem;color:var(--text)}
+.search-result-text mark{background:rgba(251,191,36,.35);color:var(--yellow);border-radius:2px;padding:0 2px}
+.search-empty{padding:16px;text-align:center;color:var(--text-muted);font-size:.82rem}
+
+/* ── COPY BUTTON ── */
+.copy-btn{position:absolute;top:8px;right:8px;background:var(--surface3);border:1px solid var(--border);border-radius:5px;padding:3px 9px;font-size:.72rem;color:var(--text-dim);cursor:pointer;transition:all .2s}
+.copy-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.copy-btn.copied{background:var(--green);color:#fff;border-color:var(--green)}
+
+/* ── SECTION TITLE ROW ── */
+.sec-title-row{display:flex;align-items:baseline;gap:0;flex-wrap:wrap;margin-bottom:5px}
+.sec-title-row .sec-title{margin-bottom:0}
+
+/* ── PRINT CSS ── */
+@media print{
+  .nav,.theme-btn,.help-btn,.search-wrap,.help-panel,.help-overlay{display:none!important}
+  .section{display:block!important;page-break-before:always}
+  .section:first-of-type{page-break-before:auto}
+  .card,.card-sm{break-inside:avoid;border:1px solid #ccc}
+  body{color:#000;background:#fff}
+  pre{border:1px solid #ccc}
+}
 </style>
 </head>
 <body>
@@ -158,6 +215,7 @@ small{font-size:.77rem;color:var(--text-dim)}
     <span class="badge bg-pink c-pink">Playwright · Cheerio · RSS</span>
     <span class="badge bg-yellow c-yellow">Drizzle ORM · tRPC 11</span>
   </div>
+  <div style="margin-top:10px;font-size:.74rem;color:var(--text-muted)">📅 문서 최신화: 2026-04-14 &nbsp;·&nbsp; 12개 탭 &nbsp;·&nbsp; Ctrl+F 대신 아래 검색창 사용</div>
 </div>
 
 <nav class="nav">
@@ -175,9 +233,20 @@ small{font-size:.77rem;color:var(--text-dim)}
   <button class="nav-btn" onclick="showTab('maintenance',this)">🔧 유지보수</button>
 </nav>
 
+<!-- 전체 탭 검색창 (Ctrl+F 대체) -->
+<div class="search-wrap" style="position:sticky;top:51px">
+  <span style="font-size:.82rem;color:var(--text-dim);white-space:nowrap">🔍</span>
+  <div style="position:relative;flex:1">
+    <input type="text" id="global-search" placeholder="전체 탭 검색 (예: BullMQ, pgvector, OAuth...)" oninput="onSearchInput(this.value)" onkeydown="onSearchKey(event)" autocomplete="off">
+    <div class="search-results" id="search-results"></div>
+  </div>
+  <button class="search-clear" id="search-clear" onclick="clearSearch()">✕</button>
+  <span id="search-count" style="font-size:.74rem;color:var(--text-muted);white-space:nowrap;display:none"></span>
+</div>
+
 <!-- ════════════════ TAB 1: 전체 개요 ════════════════ -->
 <section id="tab-overview" class="section active">
-  <div class="sec-title">🏠 AI SignalCraft — 시스템 전체 개요</div>
+  <div class="sec-title-row"><div class="sec-title">🏠 AI SignalCraft — 시스템 전체 개요</div><button class="help-btn" onclick="openHelp('overview')">❓ 도움말</button></div>
   <div class="sec-sub">키워드를 입력하면 웹 전체를 수집 → AI가 여론을 분석 → 리포트 생성. 각 레이어를 클릭하면 상세 탭으로 이동합니다.</div>
 
   <!-- 애니메이션 데이터 흐름 -->
@@ -305,7 +374,7 @@ small{font-size:.77rem;color:var(--text-dim)}
 
 <!-- ════════════════ TAB 2: 프론트엔드 ════════════════ -->
 <section id="tab-frontend" class="section">
-  <div class="sec-title">🌐 프론트엔드 — Next.js 15 App Router</div>
+  <div class="sec-title-row"><div class="sec-title">🌐 프론트엔드 — Next.js 15 App Router</div><button class="help-btn" onclick="openHelp('frontend')">❓ 도움말</button></div>
   <div class="sec-sub">React 19 · tRPC 11 · shadcn/ui · Recharts · SSE 실시간 스트리밍</div>
 
   <div class="g2">
@@ -418,7 +487,7 @@ small{font-size:.77rem;color:var(--text-dim)}
 
 <!-- ════════════════ TAB 3: BullMQ & 워커 ════════════════ -->
 <section id="tab-bullmq" class="section">
-  <div class="sec-title">⚡ BullMQ 5 & 워커 시스템</div>
+  <div class="sec-title-row"><div class="sec-title">⚡ BullMQ 5 & 워커 시스템</div><button class="help-btn" onclick="openHelp('bullmq')">❓ 도움말</button></div>
   <div class="sec-sub">Redis 기반 비동기 작업 큐 · FlowProducer 부모-자식 의존 · 부분 실패 허용 설계</div>
 
   <div class="card" style="margin-bottom:18px">
@@ -542,7 +611,7 @@ small{font-size:.77rem;color:var(--text-dim)}
 
 <!-- ════════════════ TAB 4: 수집기 ════════════════ -->
 <section id="tab-collectors" class="section">
-  <div class="sec-title">📡 데이터 수집기 — 9개 어댑터</div>
+  <div class="sec-title-row"><div class="sec-title">📡 데이터 수집기 — 9개 어댑터</div><button class="help-btn" onclick="openHelp('collectors')">❓ 도움말</button></div>
   <div class="sec-sub">AsyncGenerator 패턴으로 청크 단위 수집 · 부분 실패 허용 · IP 차단 방지 Rate Limit</div>
 
   <div class="card" style="margin-bottom:18px">
@@ -609,7 +678,7 @@ seenSourceIds.add(sourceId);</code></pre>
 
 <!-- ════════════════ TAB 5: 파이프라인 ════════════════ -->
 <section id="tab-pipeline" class="section">
-  <div class="sec-title">🔧 파이프라인 처리 — Normalize → Persist</div>
+  <div class="sec-title-row"><div class="sec-title">🔧 파이프라인 처리 — Normalize → Persist</div><button class="help-btn" onclick="openHelp('pipeline')">❓ 도움말</button></div>
   <div class="sec-sub">수집 원시 데이터 → 정규화 → DB 저장 → 임베딩 생성 → 분석 트리거</div>
 
   <div class="g2" style="margin-bottom:18px">
@@ -690,7 +759,7 @@ DO UPDATE SET
 
 <!-- ════════════════ TAB 6: AI 분석 ════════════════ -->
 <section id="tab-ai-stages" class="section">
-  <div class="sec-title">🤖 AI 분석 파이프라인 — Stage 0~4</div>
+  <div class="sec-title-row"><div class="sec-title">🤖 AI 분석 파이프라인 — Stage 0~4</div><button class="help-btn" onclick="openHelp('ai-stages')">❓ 도움말</button></div>
   <div class="sec-sub">전처리 7가지 프리셋 · Stage별 병렬/순차 실행 · 8개 도메인별 고급 모듈 · Map-Reduce 청킹</div>
 
   <div class="card" style="margin-bottom:18px">
@@ -896,7 +965,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <!-- ─────────────────── TAB 7: Vector DB ─────────────────── -->
 <section id="tab-vector" class="section">
-  <div class="sec-title">🧮 Vector DB — pgvector 상세</div>
+  <div class="sec-title-row"><div class="sec-title">🧮 Vector DB — pgvector 상세</div><button class="help-btn" onclick="openHelp('vector')">❓ 도움말</button></div>
   <div class="sec-sub">PostgreSQL 16 + pgvector · multilingual-e5-small (384차원) · RAG / 시맨틱검색 / 중복제거</div>
 
   <!-- 임베딩 생성 파이프라인 애니메이션 -->
@@ -1058,7 +1127,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <!-- ─────────────────── TAB 8: Graph DB ─────────────────── -->
 <section id="tab-graphdb" class="section">
-  <div class="sec-title">🕸️ Graph DB — 온톨로지 &amp; 지식 그래프</div>
+  <div class="sec-title-row"><div class="sec-title">🕸️ Graph DB — 온톨로지 &amp; 지식 그래프</div><button class="help-btn" onclick="openHelp('graphdb')">❓ 도움말</button></div>
   <div class="sec-sub">entities 6타입 · relations 6타입 · D3.js force simulation · 인터랙티브 드래그</div>
 
   <div class="grid-2" style="gap:20px">
@@ -1152,7 +1221,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <!-- ─────────────────── TAB 9: AI 프로바이더 ─────────────────── -->
 <section id="tab-providers" class="section">
-  <div class="sec-title">🤖 AI 프로바이더 &amp; 호출 상세</div>
+  <div class="sec-title-row"><div class="sec-title">🤖 AI 프로바이더 &amp; 호출 상세</div><button class="help-btn" onclick="openHelp('providers')">❓ 도움말</button></div>
   <div class="sec-sub">10개 프로바이더 · 모델 설정 3단계 폴백 · Gemini CLI OAuth · 동시성 제어</div>
 
   <!-- 프로바이더 비교표 -->
@@ -1311,7 +1380,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <!-- ─────────────────── TAB 10: 데이터베이스 ─────────────────── -->
 <section id="tab-database" class="section">
-  <div class="sec-title">🗄️ 데이터베이스 완전 맵</div>
+  <div class="sec-title-row"><div class="sec-title">🗄️ 데이터베이스 완전 맵</div><button class="help-btn" onclick="openHelp('database')">❓ 도움말</button></div>
   <div class="sec-sub">PostgreSQL 16 + pgvector · 24개 테이블 · 그룹별 ERD · 핵심 FK 관계</div>
 
   <!-- 개발 vs 운영 연결 -->
@@ -1580,7 +1649,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <!-- ─────────────────── TAB 11: 배포 & 인프라 ─────────────────── -->
 <section id="tab-deploy" class="section">
-  <div class="sec-title">🚀 배포 &amp; 인프라</div>
+  <div class="sec-title-row"><div class="sec-title">🚀 배포 &amp; 인프라</div><button class="help-btn" onclick="openHelp('deploy')">❓ 도움말</button></div>
   <div class="sec-sub">CI/CD 파이프라인 · Docker Multi-stage 빌드 · docker-compose.prod.yml · 배포 체크리스트</div>
 
   <!-- CI/CD 파이프라인 -->
@@ -1762,7 +1831,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <!-- ─────────────────── TAB 12: 유지보수 & 모니터링 ─────────────────── -->
 <section id="tab-maintenance" class="section">
-  <div class="sec-title">🔧 유지보수 &amp; 모니터링</div>
+  <div class="sec-title-row"><div class="sec-title">🔧 유지보수 &amp; 모니터링</div><button class="help-btn" onclick="openHelp('maintenance')">❓ 도움말</button></div>
   <div class="sec-sub">Worker 상태 판정 · 자동 복구 3종 · 재시도 전략 · Stage Gate · 비용 모니터링 · 장애 대응</div>
 
   <div class="grid-2" style="gap:16px">
@@ -2249,6 +2318,578 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   }
 });
+</script>
+
+<!-- ═══════ 도움말 슬라이드 패널 ═══════ -->
+<div class="help-overlay" id="help-overlay" onclick="closeHelp()"></div>
+<div class="help-panel" id="help-panel" role="dialog" aria-modal="true" aria-label="탭 도움말">
+  <div class="help-header">
+    <h3 id="help-title">도움말</h3>
+    <button class="help-close" onclick="closeHelp()" aria-label="닫기">✕</button>
+  </div>
+  <div class="help-body" id="help-body"></div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// HELP_DATA — 12개 탭 도움말 데이터
+// ══════════════════════════════════════════════
+const HELP_DATA = {
+  overview: {
+    title: '🏠 전체 개요 — 도움말',
+    context: '이 탭은 AI SignalCraft 전체 시스템의 진입점입니다. 데이터 흐름(수집→분석→리포트)을 한눈에 파악하고, 각 박스를 클릭하면 해당 탭으로 이동합니다. AI가 이 탭을 읽으면 "어떤 탭을 먼저 봐야 하는지" 빠르게 판단할 수 있습니다.',
+    files: [
+      'apps/web/src/app/dashboard/page.tsx  — 메인 대시보드',
+      'packages/core/src/index.ts  — core 패키지 public API',
+      'apps/web/public/docs/tech-architecture-v3.html  — 이 문서',
+    ],
+    maintenance: [
+      '기술 스택 버전 변경 시 상단 badges와 이 문서의 수치를 동시에 업데이트하세요',
+      '새 탭 추가 시 nav 버튼 + <section> + HELP_DATA 항목을 동시에 추가해야 합니다',
+      '주요 수치(9개 소스, 42+ 모듈 등) 변경 시 overview 탭 하단 g4 카드도 업데이트',
+    ],
+    warnings: [
+      '이 문서는 정적 HTML이므로 코드와 자동 동기화되지 않습니다 — 수동 업데이트 필요',
+    ]
+  },
+  frontend: {
+    title: '🌐 프론트엔드 — 도움말',
+    context: 'Next.js 15 App Router 기반 프론트엔드. tRPC로 타입 안전 API를 제공하고, SSE로 파이프라인 상태를 실시간 스트리밍합니다. 권한 레벨(superAdmin~public)별로 접근 가능한 procedure가 다릅니다.',
+    files: [
+      'apps/web/src/app/  — 페이지 라우트',
+      'apps/web/src/components/  — 공통 컴포넌트',
+      'apps/web/src/server/trpc/router/  — tRPC 라우터',
+      'apps/web/src/server/auth.config.ts  — NextAuth 권한 설정',
+      'apps/web/src/app/api/pipeline/[jobId]/stream/  — SSE 엔드포인트',
+      'apps/web/src/hooks/use-pipeline-status.ts  — SSE 클라이언트 훅',
+    ],
+    maintenance: [
+      '새 페이지 추가: app/ 하위 폴더 생성 → layout.tsx + page.tsx 작성',
+      '새 tRPC 라우터 추가: server/trpc/router/ 에 파일 생성 → appRouter에 merge',
+      '권한 레벨 변경: server/trpc/middleware/ 의 각 procedure 정의 수정',
+      'SSE 이슈 시 use-pipeline-status.ts의 재연결 로직(최대 3회) 확인',
+    ],
+    warnings: [
+      'partnerProcedure는 channel_partner / referral_partner role만 허용 — role 오타 시 조용히 차단됨',
+      'SSE 연결은 클라이언트당 1개 — 중복 EventSource 생성 시 메모리 누수',
+    ]
+  },
+  bullmq: {
+    title: '⚡ BullMQ·워커 — 도움말',
+    context: '비동기 작업 큐 시스템. 수집(Collector Worker) → 정규화(Pipeline Worker) → 분석(Analysis Worker) 순으로 실행됩니다. FlowProducer를 통해 부모-자식 의존성을 관리하며, 한 소스 실패가 전체 파이프라인을 멈추지 않도록 설계되었습니다.',
+    files: [
+      'packages/core/src/queue/worker-config.ts  — 워커 설정 (concurrency, lockDuration 등)',
+      'packages/core/src/queue/flows.ts  — FlowProducer 부모-자식 트리 정의',
+      'packages/core/src/queue/collector-worker.ts  — 수집 워커',
+      'packages/core/src/queue/pipeline-worker.ts  — 정규화 워커',
+      'packages/core/src/queue/analysis-worker.ts  — 분석 워커',
+      'packages/core/src/queue/worker-health.ts  — 워커 상태 감시',
+      'packages/core/src/queue/startup-cleanup.ts  — 시작 시 zombie job 복구',
+    ],
+    maintenance: [
+      '모든 Queue/Worker/FlowProducer 생성 시 getBullMQOptions() 필수 사용 (prefix 자동 분리)',
+      'concurrency 변경: worker-config.ts의 각 workerOptions.concurrency',
+      'stalledInterval 변경 후 반드시 개발→스테이징 순서로 검증 (운영 직접 변경 금지)',
+      '새 워커 추가: worker-config.ts에 옵션 추가 → workers.ts에 등록 → worker-process.ts에 실행',
+    ],
+    warnings: [
+      'lockDuration < stalledInterval 이면 활성 작업이 stalled로 잘못 판정될 수 있음',
+      '개발 환경에서 getBullPrefix()가 "ais-dev"를 반환하는지 반드시 확인 (운영 큐 오염 방지)',
+    ]
+  },
+  collectors: {
+    title: '📡 수집기 — 도움말',
+    context: '9개 데이터 소스에서 비동기 청크 단위로 데이터를 수집합니다. AsyncGenerator 패턴으로 메모리 효율을 유지하면서 진행률을 추적합니다. 수집 방식은 소스별로 다릅니다(Playwright / Fetch+Cheerio / YouTube API).',
+    files: [
+      'packages/collectors/src/adapters/  — 각 수집기 파일',
+      'packages/collectors/src/adapters/registry.ts  — 수집기 등록소',
+      'packages/collectors/src/adapters/factory.ts  — 수집기 인스턴스 생성',
+      'packages/collectors/src/adapters/browser-collector.ts  — Playwright 기반 수집기 부모',
+      'packages/collectors/src/adapters/community-base-collector.ts  — 커뮤니티 공통 로직',
+      'packages/collectors/src/adapters/base.ts  — 중복 제거 Set 포함',
+    ],
+    maintenance: [
+      '새 수집기 추가: adapters/ 에 파일 생성 → Collector 인터페이스 구현 → registry.ts 등록 → flows.ts에 FlowJob 추가',
+      '수집 오류 시 먼저 CSS 셀렉터/URL 패턴 변경부터 확인 (사이트 구조 변경이 원인인 경우가 많음)',
+      '커뮤니티 사이트는 CommunityBaseCollector 상속 후 getPageUrl(), parseItem() 오버라이드',
+      'Rate Limit 8개/10초는 IP 차단 방지를 위한 값 — 임의로 늘리지 말 것',
+    ],
+    warnings: [
+      'Playwright 수집기는 Docker worker에서 실행 — 로컬에서 테스트 시 chromium 설치 확인',
+      'YouTube API는 일일 쿼터 제한 있음 — search.list 100유닛/호출, 하루 10,000유닛 기본',
+    ]
+  },
+  pipeline: {
+    title: '🔧 파이프라인 — 도움말',
+    context: '수집된 원시 데이터를 표준 형식으로 정규화(Normalize)하고 DB에 저장(Persist)합니다. FK 무결성을 위해 저장 순서(articles → videos → comments → 조인 테이블)가 중요합니다. 임베딩 생성은 백그라운드로 비차단 실행됩니다.',
+    files: [
+      'packages/core/src/pipeline/normalize.ts  — 소스별 변환 함수',
+      'packages/core/src/pipeline/persist.ts  — DB 저장 (UPSERT 배치)',
+      'packages/core/src/pipeline/expire-paused.ts  — 24시간 초과 paused → cancelled',
+      'packages/core/src/pipeline/cleanup.ts  — 완료된 job 정리',
+    ],
+    maintenance: [
+      'DB 스키마 변경(컬럼 추가/삭제) 시 normalize.ts의 해당 소스 변환 함수도 반드시 동기화',
+      '새 소스 타입 추가 시 normalize.ts에 normalizeXxx() 함수 추가 → persist.ts에 분기 추가',
+      'PERSIST_BATCH_SIZE(1000) 변경 시 DB max_locks_per_transaction 설정도 확인',
+      'BullMQ Date 직렬화 이슈: job.data의 Date 필드는 반드시 toDate() 또는 new Date()로 복원',
+    ],
+    warnings: [
+      'articles → videos → comments 저장 순서 변경 금지 (FK 참조 무결성)',
+      'persistArticleEmbeddings()는 백그라운드 실행 — await하면 전체 파이프라인 블로킹됨',
+    ]
+  },
+  'ai-stages': {
+    title: '🤖 AI 분석 — 도움말',
+    context: 'Stage 0(전처리) → Stage 1(병렬 4개) → Stage 2(순차 4개) → Stage 4(도메인별 선택) 순서로 실행됩니다. 각 분석 모듈은 AnalysisModule 인터페이스를 구현하며, Map-Reduce 청킹으로 대량 데이터를 처리합니다.',
+    files: [
+      'packages/core/src/analysis/modules/  — 분석 모듈 파일들',
+      'packages/core/src/analysis/schemas/  — Zod 스키마',
+      'packages/core/src/analysis/pipeline-orchestrator.ts  — Stage 실행 순서 조율',
+      'packages/core/src/analysis/item-analyzer.ts  — 단일 모듈 실행',
+      'packages/core/src/analysis/map-reduce.ts  — 청킹 처리 (20,000자 초과 시)',
+      'packages/core/src/analysis/domain/  — 도메인별 Stage 4 모듈',
+      'packages/core/src/analysis/preprocessing/  — Stage 0 전처리',
+      'packages/core/src/analysis/concurrency-config.ts  — 동시성 프리셋',
+    ],
+    maintenance: [
+      '새 분석 모듈 추가: modules/<name>.ts 생성 → schemas/<name>.schema.ts → modules/index.ts export → runner.ts Stage 배열에 추가',
+      'Stage 2+ 모듈은 buildPromptWithContext()로 이전 Stage 결과 참조 가능',
+      'Stage 4 도메인 모듈: domain/<domain-name>/ 하위에 추가 → domain/index.ts에 export',
+      'Map-Reduce 청킹 크기 변경: map-reduce.ts의 CHUNK_TARGET_CHARS(15000) / MIN_CHARS_FOR_CHUNKING(20000)',
+    ],
+    warnings: [
+      'Stage 1 모듈은 서로 독립적 — 이전 Stage 결과를 참조하면 안 됨 (병렬 실행 순서 보장 없음)',
+      'Stage 4 모듈은 특정 preset에서만 실행됨 — runner.ts에서 skip 조건 확인',
+    ]
+  },
+  vector: {
+    title: '🧮 Vector DB — 도움말',
+    context: 'PostgreSQL 16의 pgvector 확장을 사용한 벡터 검색. 별도 벡터 DB 없이 기존 PostgreSQL에서 코사인 유사도 검색을 제공합니다. 임베딩 모델은 로컬 실행(Xenova)되어 네트워크 비용이 없습니다.',
+    files: [
+      'packages/core/src/db/schema/articles.ts  — embedding 컬럼 정의 (vector384 커스텀 타입)',
+      'packages/core/src/analysis/preprocessing/rag-retriever.ts  — RAG 검색',
+      'packages/core/src/analysis/preprocessing/deduplicator.ts  — 중복제거',
+      'packages/core/src/analysis/preprocessing/clusterer.ts  — 클러스터링',
+      'packages/core/src/pipeline/persist.ts  — persistArticleEmbeddings()',
+    ],
+    maintenance: [
+      'pgvector 인덱스 추가 (데이터 10만건 이상): CREATE INDEX ON articles USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100)',
+      '임베딩 모델 변경 시 기존 DB의 모든 embedding 컬럼을 재생성해야 함 (UPDATE articles SET embedding = NULL → 재실행)',
+      'Xenova 모델 캐시 경로: Docker 볼륨 /root/.cache/xenova — 첫 실행 시 100MB 다운로드',
+      '유사도 임계값(sim threshold) 변경: rag-retriever.ts의 각 프리셋 객체',
+    ],
+    warnings: [
+      'embedding 컬럼은 vector(384) 고정 — 모델 변경 시 차원이 다르면 ALTER TABLE 필요',
+      'IVFFlat 인덱스는 생성 후 데이터 추가되면 정확도가 저하됨 — 주기적 REINDEX 필요',
+    ]
+  },
+  graphdb: {
+    title: '🕸️ Graph DB — 도움말',
+    context: 'entities + relations 테이블로 구현된 온톨로지 시스템. AI 분석 결과에서 인물/기관/이슈 등 엔티티와 그 관계를 추출하여 지식 그래프를 구성합니다. D3.js로 인터랙티브 시각화됩니다.',
+    files: [
+      'packages/core/src/db/schema/ontology.ts  — entities, relations 테이블 스키마',
+      'packages/core/src/analysis/ontology-extractor.ts  — AI 결과 → 엔티티/관계 추출',
+      'packages/core/src/analysis/persist-ontology.ts  — DB UPSERT',
+      'packages/core/src/analysis/graph-builder.ts  — GraphNode/GraphEdge 생성',
+    ],
+    maintenance: [
+      '새 엔티티 타입 추가: ontology.ts 스키마 enum 수정 → ontology-extractor.ts 파서 → graph-builder.ts 색상/크기 매핑',
+      '새 관계 타입 추가: ontology.ts enum → ontology-extractor.ts → D3 link 스타일',
+      'D3 그래프 레이아웃 튜닝: 이 HTML 파일의 initOntologyGraph() 함수 내 simulation 파라미터',
+      'entities UPSERT 기준: normalizedName + type — 정규화 방식이 바뀌면 중복 엔티티 생성됨',
+    ],
+    warnings: [
+      'relations INSERT는 중복 체크 후 삽입 — source+target+type이 같으면 weight만 증가',
+      'D3 SVG는 탭 최초 활성화 시 initOntologyGraph() 한 번만 실행됨 — 데이터 갱신하려면 페이지 새로고침',
+    ]
+  },
+  providers: {
+    title: '💡 AI 프로바이더 — 도움말',
+    context: '10개 AI 프로바이더를 통합 관리합니다. 모델 설정은 preset_model_settings → model_settings DB → MODULE_MODEL_MAP 순서로 3단계 폴백됩니다. CLI 기반 프로바이더(gemini-cli, claude-cli)는 구조화 출력이 불가능해 텍스트 폴백을 사용합니다.',
+    files: [
+      'packages/core/src/ai-meta.ts  — MODULE_MODEL_MAP (코드 기본값)',
+      'packages/core/src/client.ts  — AI 호출 클라이언트',
+      'packages/core/src/analysis/model-config.ts  — 3단계 폴백 로직',
+      'packages/core/src/analysis/provider-keys.ts  — API 키 암호화/복호화',
+      'packages/core/src/analysis/concurrency-config.ts  — 동시성 프리셋',
+    ],
+    maintenance: [
+      '새 모델 추가: ai-meta.ts의 MODULE_MODEL_MAP에 모듈명: {provider, model} 추가',
+      '새 프로바이더 추가: packages/ai-gateway/ 에 adapter 추가 → client.ts에 분기',
+      'Gemini OAuth 토큰 만료 시: ~/.gemini/oauth_creds.json 재생성 후 Docker 볼륨 업데이트',
+      'API 키 관리: 관리자 UI(/admin/system) → AES-256-GCM 암호화 → provider_keys 테이블',
+    ],
+    warnings: [
+      'needsTextFallback 프로바이더는 generateObject() 대신 generateText() 사용 — 스키마 파싱 실패 시 재시도 2회 후 에러',
+      'claude-cli는 cli-proxy-api 컨테이너(8317)에 의존 — 컨테이너 다운 시 해당 모든 분석 실패',
+    ]
+  },
+  database: {
+    title: '🗄️ DB 전체 맵 — 도움말',
+    context: '24개 테이블을 6개 그룹(인증, 수집, 분석, 온톨로지, 설정, 벡터)으로 관리합니다. 개발/운영 환경이 같은 PostgreSQL 서버를 공유하므로 파괴적 SQL(DROP/TRUNCATE)은 매우 주의해야 합니다.',
+    files: [
+      'packages/core/src/db/schema/  — Drizzle ORM 스키마 파일',
+      'packages/core/src/db/index.ts  — DB 연결 설정',
+      'packages/core/src/db/seed-presets.ts  — 초기 데이터 시드',
+    ],
+    maintenance: [
+      '스키마 변경: schema/ 파일 수정 → pnpm db:push (개발) 또는 drizzle-kit generate+migrate (운영)',
+      '새 테이블 추가: schema/ 에 파일 생성 → db/schema/index.ts 에 export → db/index.ts에 포함',
+      'FK 관계: collection_jobs → articles/videos/comments (SET NULL, 수집본 보존) → analysis_results/reports (CASCADE, 분석 결과 연동)',
+      'Drizzle Studio로 데이터 확인: pnpm db:studio → http://localhost:4983',
+    ],
+    warnings: [
+      '개발/운영이 같은 DB 서버 공유 — 개발에서 DROP TABLE / TRUNCATE 절대 금지',
+      'db:push는 컬럼 삭제를 자동 실행하지 않음 — 실제 삭제는 수동 ALTER TABLE 또는 drizzle-kit 마이그레이션',
+    ]
+  },
+  deploy: {
+    title: '🚀 배포·인프라 — 도움말',
+    context: 'Docker Compose 기반 배포. web(Next.js)과 worker(BullMQ)만 교체하고 postgres/redis는 유지합니다. GitHub Actions로 CI/CD가 자동화되어 있습니다.',
+    files: [
+      'Dockerfile  — Multi-stage 빌드 (deps → builder → web/worker)',
+      'docker/docker-compose.prod.yml  — 운영 Compose 설정',
+      'docker/docker-compose.dev.yml  — 개발 Compose 설정',
+      '.github/workflows/  — CI/CD 파이프라인',
+      'apps/web/src/app/api/  — Next.js API 라우트',
+    ],
+    maintenance: [
+      '이미지 재빌드: ssh 운영서버 → docker compose build --no-cache web worker',
+      '환경변수 추가: Dockerfile ENV + docker-compose.prod.yml environment + .env.production 동시 업데이트',
+      '헬스체크: web은 /api/health, worker는 BullMQ 큐 연결 상태 확인',
+      'CI 실패 시 .github/workflows/ 의 lint/typecheck/build 단계 로그 확인',
+    ],
+    warnings: [
+      'postgres/redis 컨테이너는 배포 시 절대 재시작하지 말 것 — 데이터 손실 위험',
+      'AUTH_SECRET / ENCRYPTION_KEY는 환경변수로만 관리 — 코드에 하드코딩 금지',
+      'worker Dockerfile은 Playwright용 chromium + CJK 폰트(fonts-noto-cjk) 설치 필요',
+    ]
+  },
+  maintenance: {
+    title: '🔧 유지보수 — 도움말',
+    context: '워커 상태 모니터링, 자동 복구(Stale Recovery/Expire Paused/BullMQ Stalled), 장애 대응 가이드를 다룹니다. 장애 발생 시 worker-health.ts 로그부터 확인하고, zombie job은 startup-cleanup.ts로 처리합니다.',
+    files: [
+      'packages/core/src/queue/worker-health.ts  — 워커 상태 감시 (down/healthy/warn/stuck/idle)',
+      'packages/core/src/queue/startup-cleanup.ts  — 시작 시 zombie job 처리',
+      'packages/core/src/pipeline/expire-paused.ts  — 24시간 초과 paused → cancelled',
+      'packages/core/src/analysis/cost-calculator.ts  — 토큰 기반 비용 계산',
+    ],
+    maintenance: [
+      '분석 고착 시: DB에서 running 상태 30분+ job 확인 → startup-cleanup.ts의 stale recovery 수동 실행',
+      '큐 적체 시: BullMQ Bull Board UI → 각 큐의 waiting/active 수 확인 → concurrency 조정',
+      '비용 모니터링: cost-calculator.ts가 각 모듈별 input/output 토큰을 기록 → /admin/usage에서 확인',
+      'PDF 생성 실패 시: report-builder.ts의 puppeteer 설정 확인 → Docker chromium 경로 확인',
+    ],
+    warnings: [
+      'startup-cleanup.ts는 서버 재시작 시 자동 실행됨 — 수동 실행 시 running 작업 영향 주의',
+      'BullMQ maxStalledCount=2 초과 시 작업이 permanently failed 상태 — 수동 retry 필요',
+    ]
+  }
+};
+
+// ══════════════════════════════════════════════
+// 도움말 패널 열기/닫기
+// ══════════════════════════════════════════════
+function openHelp(tabId) {
+  const data = HELP_DATA[tabId];
+  if (!data) return;
+  const panel = document.getElementById('help-panel');
+  const overlay = document.getElementById('help-overlay');
+  const title = document.getElementById('help-title');
+  const body = document.getElementById('help-body');
+
+  title.textContent = data.title;
+
+  let html = '';
+
+  // AI 맥락 설명
+  html += `<div class="help-section">
+    <div class="help-section-title">🤖 AI 맥락 설명</div>
+    <div class="help-ctx">${data.context}</div>
+  </div>`;
+
+  // 관련 파일
+  if (data.files && data.files.length) {
+    html += `<div class="help-section">
+      <div class="help-section-title">📁 관련 파일 경로</div>
+      ${data.files.map(f => `<div class="help-file">${f}</div>`).join('')}
+    </div>`;
+  }
+
+  // 유지보수 팁
+  if (data.maintenance && data.maintenance.length) {
+    html += `<div class="help-section">
+      <div class="help-section-title">🛠️ 유지보수 팁</div>
+      ${data.maintenance.map(t => `<div class="help-tip">${t}</div>`).join('')}
+    </div>`;
+  }
+
+  // 주의사항
+  if (data.warnings && data.warnings.length) {
+    html += `<div class="help-section">
+      <div class="help-section-title">⚠️ 주의사항</div>
+      ${data.warnings.map(w => `<div class="help-warn">${w}</div>`).join('')}
+    </div>`;
+  }
+
+  body.innerHTML = html;
+  panel.classList.add('open');
+  overlay.classList.add('show');
+  // theme-btn을 패널 밖으로 밀어내기
+  const themeBtn = document.querySelector('.theme-btn');
+  if (themeBtn) themeBtn.style.right = '412px';
+  panel.focus();
+}
+
+function closeHelp() {
+  document.getElementById('help-panel').classList.remove('open');
+  document.getElementById('help-overlay').classList.remove('show');
+  const themeBtn = document.querySelector('.theme-btn');
+  if (themeBtn) themeBtn.style.right = '12px';
+}
+
+// Escape 키로 닫기
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeHelp();
+});
+
+// ══════════════════════════════════════════════
+// 전체 탭 검색
+// ══════════════════════════════════════════════
+const TAB_NAMES = {
+  overview: '🏠 전체 개요',
+  frontend: '🌐 프론트엔드',
+  bullmq: '⚡ BullMQ·워커',
+  collectors: '📡 수집기',
+  pipeline: '🔧 파이프라인',
+  'ai-stages': '🤖 AI 분석',
+  vector: '🧮 Vector DB',
+  graphdb: '🕸️ Graph DB',
+  providers: '💡 AI 프로바이더',
+  database: '🗄️ DB 전체 맵',
+  deploy: '🚀 배포·인프라',
+  maintenance: '🔧 유지보수',
+};
+
+let searchDebounce = null;
+
+function onSearchInput(val) {
+  const clearBtn = document.getElementById('search-clear');
+  const resultsEl = document.getElementById('search-results');
+  const countEl = document.getElementById('search-count');
+  clearBtn.style.display = val ? 'block' : 'none';
+
+  if (!val.trim()) {
+    resultsEl.style.display = 'none';
+    countEl.style.display = 'none';
+    return;
+  }
+
+  clearTimeout(searchDebounce);
+  searchDebounce = setTimeout(() => {
+    const results = searchAllTabs(val.trim());
+    renderSearchResults(results, val.trim());
+  }, 200);
+}
+
+function searchAllTabs(query) {
+  const q = query.toLowerCase();
+  const results = [];
+
+  document.querySelectorAll('.section').forEach(sec => {
+    const tabId = sec.id.replace('tab-', '');
+    // TreeWalker로 텍스트 노드 순회
+    const walker = document.createTreeWalker(sec, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        // script, style 태그 내부 제외
+        const tag = node.parentElement?.tagName;
+        if (tag === 'SCRIPT' || tag === 'STYLE') return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+
+    const matches = [];
+    let node;
+    while ((node = walker.nextNode())) {
+      const text = node.textContent;
+      const idx = text.toLowerCase().indexOf(q);
+      if (idx !== -1) {
+        const start = Math.max(0, idx - 30);
+        const end = Math.min(text.length, idx + q.length + 50);
+        const preview = (start > 0 ? '...' : '') + text.slice(start, end) + (end < text.length ? '...' : '');
+        matches.push({ preview, idx: start > 0 ? idx - start + 3 : idx });
+        if (matches.length >= 3) break; // 탭당 최대 3개
+      }
+    }
+
+    if (matches.length) {
+      results.push({ tabId, tabName: TAB_NAMES[tabId] || tabId, matches });
+    }
+  });
+
+  return results;
+}
+
+function renderSearchResults(results, query) {
+  const el = document.getElementById('search-results');
+  const countEl = document.getElementById('search-count');
+
+  if (!results.length) {
+    el.innerHTML = `<div class="search-empty">검색 결과 없음: "${query}"</div>`;
+    el.style.display = 'block';
+    countEl.style.display = 'none';
+    return;
+  }
+
+  const total = results.reduce((sum, r) => sum + r.matches.length, 0);
+  countEl.textContent = `${results.length}개 탭, ${total}개 결과`;
+  countEl.style.display = 'block';
+
+  el.innerHTML = results.map(r => r.matches.map((m, i) => `
+    <div class="search-result-item" onclick="jumpToTab('${r.tabId}','${query}')">
+      <div class="search-result-tab">${r.tabName}${r.matches.length > 1 ? ` (${i+1}/${r.matches.length})` : ''}</div>
+      <div class="search-result-text">${highlightMatch(m.preview, query)}</div>
+    </div>
+  `).join('')).join('');
+
+  el.style.display = 'block';
+}
+
+function highlightMatch(text, query) {
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return text.replace(new RegExp(`(${escaped})`, 'gi'), '<mark>$1</mark>');
+}
+
+function jumpToTab(tabId, query) {
+  // 검색창 닫기
+  document.getElementById('search-results').style.display = 'none';
+
+  // 탭 이동
+  showTab(tabId);
+
+  // 해당 탭에서 텍스트 하이라이트
+  setTimeout(() => {
+    // 기존 mark 초기화
+    document.querySelectorAll('mark.search-mark').forEach(m => m.replaceWith(m.textContent));
+
+    const sec = document.getElementById('tab-' + tabId);
+    if (!sec) return;
+
+    const walker = document.createTreeWalker(sec, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        const tag = node.parentElement?.tagName;
+        if (tag === 'SCRIPT' || tag === 'STYLE') return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+
+    const q = query.toLowerCase();
+    let firstMatch = null;
+    let node;
+    while ((node = walker.nextNode())) {
+      const text = node.textContent;
+      const idx = text.toLowerCase().indexOf(q);
+      if (idx !== -1) {
+        const parent = node.parentElement;
+        if (!firstMatch) firstMatch = parent;
+        const before = document.createTextNode(text.slice(0, idx));
+        const mark = document.createElement('mark');
+        mark.className = 'search-mark';
+        mark.style.cssText = 'background:rgba(251,191,36,.4);color:var(--yellow);border-radius:2px;padding:0 2px';
+        mark.textContent = text.slice(idx, idx + query.length);
+        const after = document.createTextNode(text.slice(idx + query.length));
+        const frag = document.createDocumentFragment();
+        frag.appendChild(before);
+        frag.appendChild(mark);
+        frag.appendChild(after);
+        parent.replaceChild(frag, node);
+      }
+    }
+
+    if (firstMatch) {
+      setTimeout(() => firstMatch.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+    }
+
+    // 3초 후 하이라이트 해제
+    setTimeout(() => {
+      document.querySelectorAll('mark.search-mark').forEach(m => m.replaceWith(m.textContent));
+    }, 3000);
+  }, 150);
+}
+
+function onSearchKey(e) {
+  if (e.key === 'Escape') {
+    clearSearch();
+  }
+}
+
+function clearSearch() {
+  const input = document.getElementById('global-search');
+  input.value = '';
+  document.getElementById('search-results').style.display = 'none';
+  document.getElementById('search-clear').style.display = 'none';
+  document.getElementById('search-count').style.display = 'none';
+}
+
+// 검색창 외부 클릭 시 결과 숨기기
+document.addEventListener('click', e => {
+  const wrap = document.querySelector('.search-wrap');
+  if (wrap && !wrap.contains(e.target)) {
+    document.getElementById('search-results').style.display = 'none';
+  }
+});
+
+// ══════════════════════════════════════════════
+// 코드 블록 복사 버튼 자동 삽입
+// ══════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('pre').forEach(pre => {
+    pre.style.position = 'relative';
+    const btn = document.createElement('button');
+    btn.className = 'copy-btn';
+    btn.textContent = '복사';
+    btn.setAttribute('title', '코드 복사');
+    btn.addEventListener('click', () => {
+      const text = pre.querySelector('code')?.textContent || pre.textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '완료 ✓';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = '복사';
+          btn.classList.remove('copied');
+        }, 1500);
+      }).catch(() => {
+        btn.textContent = '실패';
+        setTimeout(() => { btn.textContent = '복사'; }, 1500);
+      });
+    });
+    pre.appendChild(btn);
+  });
+});
+
+// ══════════════════════════════════════════════
+// URL 앵커 — 탭 북마크/공유
+// ══════════════════════════════════════════════
+(function() {
+  // 페이지 로드 시 hash 처리
+  const hash = location.hash.replace('#', '');
+  if (hash && document.getElementById('tab-' + hash)) {
+    // DOMContentLoaded 이후 실행
+    document.addEventListener('DOMContentLoaded', () => {
+      showTab(hash);
+    });
+  }
+
+  // showTab 패치 — URL 앵커 업데이트
+  const _origShowTab = window.showTab;
+  if (typeof _origShowTab === 'function') {
+    window.showTab = function(id, btn) {
+      _origShowTab(id, btn);
+      history.replaceState(null, '', '#' + id);
+    };
+  }
+})();
 </script>
 
 </body>

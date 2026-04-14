@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI SignalCraft — 기술 포트폴리오</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap');
+
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:'Noto Sans KR',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  background:#fff;color:#1e293b;line-height:1.6;font-size:14px;
+}
+code,.mono{font-family:'JetBrains Mono','Fira Code','Courier New',monospace;font-size:.85em}
+
+/* ── 인쇄 설정 ── */
+@page{size:A4;margin:18mm 16mm 18mm 16mm}
+@media print{
+  body{font-size:11px}
+  .page-break{page-break-before:always}
+  .no-break{page-break-inside:avoid}
+  .section{box-shadow:none!important}
+  nav{display:none}
+}
+
+/* ── 색상 변수 ── */
+:root{
+  --primary:#0f172a;--accent:#0284c7;--purple:#7c3aed;
+  --green:#16a34a;--yellow:#ca8a04;--orange:#ea580c;
+  --red:#dc2626;--cyan:#0891b2;--blue:#2563eb;--pink:#db2777;
+  --bg-section:#f8fafc;--border:#e2e8f0;
+  --text-dim:#64748b;--text-muted:#94a3b8;
+}
+
+/* ── 커버 페이지 ── */
+.cover{
+  min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;
+  background:linear-gradient(135deg,#0f172a 0%,#1e293b 50%,#0f172a 100%);
+  color:#fff;text-align:center;padding:60px 40px;
+  position:relative;overflow:hidden;
+}
+.cover::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 30% 30%,rgba(2,132,199,.15) 0%,transparent 60%),
+             radial-gradient(ellipse at 70% 70%,rgba(124,58,237,.15) 0%,transparent 60%);
+}
+.cover-inner{position:relative;z-index:1;max-width:700px}
+.cover-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);
+  border-radius:30px;padding:6px 18px;font-size:.82rem;color:#94a3b8;margin-bottom:32px;
+}
+.cover h1{font-size:3rem;font-weight:800;line-height:1.15;margin-bottom:16px;
+  background:linear-gradient(135deg,#38bdf8,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.cover-sub{font-size:1.1rem;color:#94a3b8;margin-bottom:40px;line-height:1.8}
+.cover-chips{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-bottom:48px}
+.cover-chip{padding:6px 16px;border-radius:20px;font-size:.8rem;font-weight:600;
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#e2e8f0}
+.cover-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+  border-radius:16px;padding:28px}
+.stat-num{font-size:2.2rem;font-weight:800;color:#38bdf8}
+.stat-label{font-size:.78rem;color:#64748b;margin-top:4px}
+.cover-date{position:absolute;bottom:28px;right:40px;font-size:.78rem;color:#334155}
+
+/* ── 섹션 공통 ── */
+.section{max-width:900px;margin:0 auto;padding:40px 24px 20px}
+.section-header{margin-bottom:24px}
+.section-num{font-size:.75rem;font-weight:700;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px}
+.section-title{font-size:1.6rem;font-weight:800;color:var(--primary);margin-bottom:6px}
+.section-sub{font-size:.88rem;color:var(--text-dim)}
+
+/* ── 카드 ── */
+.card{background:var(--bg-section);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px}
+.card-title{font-size:.95rem;font-weight:700;color:var(--primary);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.card-sm{background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px 14px}
+
+/* ── 그리드 ── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media(max-width:700px){.g2,.g3,.g4{grid-template-columns:1fr}}
+
+/* ── 배지/태그 ── */
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:600}
+.pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:.73rem;font-weight:600}
+.tag{display:inline-block;padding:2px 7px;border-radius:4px;font-size:.7rem;font-weight:700;margin:2px}
+
+/* ── 색상 ── */
+.c-accent{color:var(--accent)}.c-purple{color:var(--purple)}.c-green{color:var(--green)}
+.c-yellow{color:var(--yellow)}.c-orange{color:var(--orange)}.c-red{color:var(--red)}
+.c-cyan{color:var(--cyan)}.c-blue{color:var(--blue)}.c-pink{color:var(--pink)}.c-dim{color:var(--text-dim)}
+
+.bg-accent{background:rgba(2,132,199,.08);border:1px solid rgba(2,132,199,.2)}
+.bg-purple{background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.2)}
+.bg-green{background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.2)}
+.bg-yellow{background:rgba(202,138,4,.08);border:1px solid rgba(202,138,4,.2)}
+.bg-orange{background:rgba(234,88,12,.08);border:1px solid rgba(234,88,12,.2)}
+.bg-red{background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.2)}
+.bg-cyan{background:rgba(8,145,178,.08);border:1px solid rgba(8,145,178,.2)}
+.bg-blue{background:rgba(37,99,235,.08);border:1px solid rgba(37,99,235,.2)}
+.bg-pink{background:rgba(219,39,119,.08);border:1px solid rgba(219,39,119,.2)}
+
+/* ── 테이블 ── */
+.tbl{width:100%;border-collapse:collapse;font-size:.82rem}
+.tbl th{background:#f1f5f9;padding:9px 12px;text-align:left;font-weight:600;border:1px solid var(--border);color:var(--text-dim)}
+.tbl td{padding:8px 12px;border:1px solid var(--border);vertical-align:top}
+.tbl tr:nth-child(even) td{background:#f8fafc}
+
+/* ── 플로우 스텝 ── */
+.flow-step{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border)}
+.flow-step:last-child{border-bottom:none}
+.fnum{width:26px;height:26px;min-width:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700}
+.fbody .flabel{font-weight:600;font-size:.88rem;margin-bottom:2px;color:var(--primary)}
+.fbody .fdesc{color:var(--text-dim);font-size:.8rem}
+
+/* ── 아키텍처 다이어그램 ── */
+.arch-box{border-radius:10px;padding:14px;text-align:center;font-weight:700;font-size:.85rem}
+.arch-arrow{display:flex;align-items:center;justify-content:center;font-size:1.2rem;color:var(--text-muted)}
+.arch-flow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:16px}
+.arch-node{border-radius:9px;padding:10px 14px;text-align:center;min-width:100px;flex-shrink:0}
+
+/* ── 구분선 ── */
+.sep{height:1px;background:var(--border);margin:16px 0}
+
+/* ── 코드 블록 ── */
+pre{background:#0f172a;color:#e2e8f0;border-radius:8px;padding:14px;font-size:.78rem;overflow-x:auto;line-height:1.7}
+
+/* ── FSM ── */
+.fsm{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:.8rem;flex-wrap:wrap}
+.fsm-state{padding:5px 12px;border-radius:6px;font-size:.78rem;font-weight:600}
+.fsm-arr{color:var(--text-muted);font-size:.85rem}
+
+/* ── 워커 카드 ── */
+.worker-card{border-left:4px solid;border-radius:10px;padding:14px;background:var(--bg-section);border-top:1px solid var(--border);border-right:1px solid var(--border);border-bottom:1px solid var(--border)}
+.worker-title{font-size:.9rem;font-weight:700;margin-bottom:10px}
+.wstat{display:flex;justify-content:space-between;font-size:.78rem;border-bottom:1px dashed var(--border);padding:5px 0}
+.wstat:last-child{border-bottom:none}
+.wval{font-weight:700;color:var(--primary)}
+
+/* ── Gantt ── */
+.gantt{display:flex;flex-direction:column;gap:8px}
+.gantt-row{display:flex;align-items:center;gap:8px;min-height:32px}
+.gantt-label{width:130px;font-size:.78rem;font-weight:600;color:var(--text-dim);flex-shrink:0}
+.gantt-bar{height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;color:#fff;padding:0 8px;flex-shrink:0}
+.gantt-par{display:flex;gap:3px;flex:1}
+.gantt-track{flex:1;background:#f1f5f9;border-radius:6px;position:relative;overflow:hidden}
+
+/* ── 섹션 구분 헤더 (풀 와이드) ── */
+.sec-divider{background:linear-gradient(135deg,#0f172a,#1e293b);color:#fff;padding:28px 40px;margin:0}
+.sec-divider .num{font-size:.75rem;font-weight:700;color:#64748b;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px}
+.sec-divider h2{font-size:1.5rem;font-weight:800}
+.sec-divider p{font-size:.88rem;color:#64748b;margin-top:6px}
+
+/* ── 스택 뱃지 그리드 ── */
+.stack-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.stack-item{display:flex;align-items:center;gap:6px;padding:6px 12px;background:#f1f5f9;border:1px solid var(--border);border-radius:8px;font-size:.78rem}
+.stack-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+/* ── 결정 근거 블록 ── */
+.decision-box{border-radius:10px;padding:14px 16px;margin-bottom:10px}
+.decision-box .why{font-size:.92rem;font-weight:700;margin-bottom:6px}
+.decision-box .desc{font-size:.82rem;color:var(--text-dim);line-height:1.7}
+.decision-box .highlight{font-weight:700;color:var(--primary)}
+
+/* ── 인라인 정보 행 ── */
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:.82rem}
+.info-row:last-child{border-bottom:none}
+.info-row .key{color:var(--text-dim)}
+.info-row .val{font-weight:600;color:var(--primary)}
+
+/* ── 페이지 푸터 ── */
+.page-footer{text-align:center;padding:20px;color:var(--text-muted);font-size:.75rem;border-top:1px solid var(--border);margin-top:40px}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+     커버 페이지
+══════════════════════════════════════════ -->
+<div class="cover">
+  <div class="cover-inner">
+    <div class="cover-badge">
+      📄 기술 포트폴리오 · 2026
+    </div>
+    <h1>AI SignalCraft</h1>
+    <p class="cover-sub">
+      공인 여론 자동 수집 · AI 분석 파이프라인 · 웹 대시보드<br>
+      키워드 입력 → 9개 소스 자동 수집 → 42개 AI 모듈 분석 → 리포트 생성
+    </p>
+    <div class="cover-chips">
+      <div class="cover-chip">Next.js 15</div>
+      <div class="cover-chip">TypeScript 5</div>
+      <div class="cover-chip">PostgreSQL 16</div>
+      <div class="cover-chip">BullMQ 5</div>
+      <div class="cover-chip">Vercel AI SDK</div>
+      <div class="cover-chip">tRPC 11</div>
+      <div class="cover-chip">Playwright</div>
+      <div class="cover-chip">pgvector</div>
+      <div class="cover-chip">Redis 7</div>
+      <div class="cover-chip">Drizzle ORM</div>
+    </div>
+    <div class="cover-stats">
+      <div>
+        <div class="stat-num">9</div>
+        <div class="stat-label">데이터 수집 소스</div>
+      </div>
+      <div>
+        <div class="stat-num" style="color:#a78bfa">42+</div>
+        <div class="stat-label">AI 분석 모듈</div>
+      </div>
+      <div>
+        <div class="stat-num" style="color:#4ade80">24</div>
+        <div class="stat-label">DB 테이블</div>
+      </div>
+      <div>
+        <div class="stat-num" style="color:#fb923c">8</div>
+        <div class="stat-label">분석 도메인</div>
+      </div>
+    </div>
+  </div>
+  <div class="cover-date">2026.04.14 &nbsp;|&nbsp; 개인 포트폴리오</div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     목차
+══════════════════════════════════════════ -->
+<div class="section page-break">
+  <div class="section-header">
+    <div class="section-num">Table of Contents</div>
+    <div class="section-title">목차</div>
+  </div>
+  <div class="card no-break">
+    <div style="display:flex;flex-direction:column;gap:0">
+      <div class="info-row"><span class="key">01. 시스템 전체 개요</span><span class="val c-accent">데이터 흐름 / 기술 선택 근거</span></div>
+      <div class="info-row"><span class="key">02. 프론트엔드 아키텍처</span><span class="val c-purple">Next.js 15 · tRPC · SSE 스트리밍</span></div>
+      <div class="info-row"><span class="key">03. BullMQ 비동기 작업 큐</span><span class="val c-green">워커 설계 / 장애 허용 설계</span></div>
+      <div class="info-row"><span class="key">04. 데이터 수집 어댑터</span><span class="val c-yellow">9개 소스 / 수집 전략</span></div>
+      <div class="info-row"><span class="key">05. 파이프라인 처리</span><span class="val c-orange">Normalize → Persist → Embedding</span></div>
+      <div class="info-row"><span class="key">06. AI 분석 파이프라인</span><span class="val c-red">Stage 0~4 / Map-Reduce / 8개 도메인</span></div>
+      <div class="info-row"><span class="key">07. Vector DB (pgvector)</span><span class="val c-cyan">임베딩 / 의미검색 / 중복제거</span></div>
+      <div class="info-row"><span class="key">08. 데이터베이스 스키마</span><span class="val c-blue">24개 테이블 설계</span></div>
+      <div class="info-row"><span class="key">09. 배포 & 인프라</span><span class="val c-pink">Docker Compose / 개발-운영 분리</span></div>
+    </div>
+  </div>
+
+  <div class="card no-break" style="margin-top:16px">
+    <div class="card-title">🏗️ 모노레포 구조</div>
+    <pre><code>ai-signalcraft/
+├── apps/web/              ← Next.js 15 (UI + tRPC API + SSE)
+└── packages/
+    ├── core/              ← 비즈니스 로직 (분석 · DB · 큐 · 리포트)
+    │   ├── src/analysis/  ← AI 분석 42개 모듈
+    │   ├── src/db/        ← Drizzle ORM 스키마 (24개 테이블)
+    │   ├── src/queue/     ← BullMQ 큐 정의 & 플로우
+    │   └── src/report/    ← 리포트 생성 (Markdown → PDF)
+    ├── collectors/        ← 9개 수집 어댑터 (Playwright · Cheerio · API)
+    └── ai-gateway/        ← Vercel AI SDK v6 (Claude · GPT · Gemini)</code></pre>
+    <div style="margin-top:12px;font-size:.8rem;color:var(--text-dim)">
+      의존성 방향: <strong class="c-accent">web</strong> → <strong class="c-purple">core</strong> → <strong class="c-green">collectors</strong> · <strong class="c-orange">ai-gateway</strong> (역방향 금지)
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     01. 시스템 개요
+══════════════════════════════════════════ -->
+<div class="sec-divider page-break">
+  <div class="num">01 · Overview</div>
+  <h2>시스템 전체 개요</h2>
+  <p>키워드 → 수집 → 분석 → 리포트 전체 파이프라인과 기술 선택 근거</p>
+</div>
+
+<div class="section">
+  <!-- 데이터 흐름 -->
+  <div class="card no-break">
+    <div class="card-title">📦 전체 데이터 흐름</div>
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:8px 0">
+      <div class="arch-node bg-accent" style="text-align:center">
+        <div style="font-size:1.2rem">👤</div>
+        <div style="font-size:.78rem;font-weight:700;margin-top:3px">사용자</div>
+        <div style="font-size:.7rem;color:var(--text-dim)">키워드 입력</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-node bg-accent">
+        <div style="font-size:1.2rem">🌐</div>
+        <div style="font-size:.78rem;font-weight:700;margin-top:3px">Next.js 15</div>
+        <div style="font-size:.7rem;color:var(--text-dim)">tRPC API</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-node bg-purple">
+        <div style="font-size:1.2rem">⚡</div>
+        <div style="font-size:.78rem;font-weight:700;margin-top:3px">BullMQ 큐</div>
+        <div style="font-size:.7rem;color:var(--text-dim)">Redis 7</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-node bg-green">
+        <div style="font-size:1.2rem">📡</div>
+        <div style="font-size:.78rem;font-weight:700;margin-top:3px">수집 워커</div>
+        <div style="font-size:.7rem;color:var(--text-dim)">9개 소스</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-node bg-yellow">
+        <div style="font-size:1.2rem">🔧</div>
+        <div style="font-size:.78rem;font-weight:700;margin-top:3px">파이프라인</div>
+        <div style="font-size:.7rem;color:var(--text-dim)">정규화·저장</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-node bg-orange">
+        <div style="font-size:1.2rem">🤖</div>
+        <div style="font-size:.78rem;font-weight:700;margin-top:3px">AI 분석</div>
+        <div style="font-size:.7rem;color:var(--text-dim)">42개 모듈</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-node bg-cyan">
+        <div style="font-size:1.2rem">🗄️</div>
+        <div style="font-size:.78rem;font-weight:700;margin-top:3px">PostgreSQL</div>
+        <div style="font-size:.7rem;color:var(--text-dim)">+ pgvector</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-node bg-pink">
+        <div style="font-size:1.2rem">📊</div>
+        <div style="font-size:.78rem;font-weight:700;margin-top:3px">리포트</div>
+        <div style="font-size:.7rem;color:var(--text-dim)">대시보드·PDF</div>
+      </div>
+    </div>
+    <div style="margin-top:10px;font-size:.8rem;color:var(--text-dim);background:#f1f5f9;border-radius:7px;padding:8px 12px">
+      🔄 SSE 실시간 피드백: 1초마다 DB 폴링 → 브라우저 UI 실시간 업데이트
+    </div>
+  </div>
+
+  <!-- 기술 선택 근거 -->
+  <div class="card no-break">
+    <div class="card-title">💭 기술 선택 근거</div>
+    <div class="g3">
+      <div class="decision-box bg-accent">
+        <div class="why c-accent">⚡ Next.js 15 App Router</div>
+        <div class="desc">서버 컴포넌트로 DB 직접 쿼리 + tRPC로 타입 안전 API + SSE 스트리밍.<br>
+        <span class="highlight">한 프레임워크로 프론트+백엔드+API 통합.</span></div>
+      </div>
+      <div class="decision-box bg-purple">
+        <div class="why c-purple">🔄 BullMQ 5 + Redis</div>
+        <div class="desc">수집 실패 시 자동 재시도, 워커 프로세스 분리, Rate Limit 대응.<br>
+        <span class="highlight">부분 실패해도 다른 소스는 계속 진행.</span></div>
+      </div>
+      <div class="decision-box bg-green">
+        <div class="why c-green">🗄️ PostgreSQL + pgvector</div>
+        <div class="desc">별도 벡터DB 없이 SQL DB에서 벡터 검색 가능.<br>
+        <span class="highlight">운영 복잡도 최소화, 관계형+벡터 동시 처리.</span></div>
+      </div>
+      <div class="decision-box bg-yellow">
+        <div class="why c-yellow">🧬 Drizzle ORM</div>
+        <div class="desc">TypeScript 완전 타입 안전 SQL. Prisma보다 가볍고 raw SQL에 가까움.<br>
+        <span class="highlight">db:push로 마이그레이션 없이 개발 속도 향상.</span></div>
+      </div>
+      <div class="decision-box bg-orange">
+        <div class="why c-orange">🤖 Vercel AI SDK v6</div>
+        <div class="desc">Claude·Gemini·GPT를 동일 API로 호출. generateObject()로 Zod 기반 구조화 출력.<br>
+        <span class="highlight">프로바이더 교체가 설정 변경만으로 가능.</span></div>
+      </div>
+      <div class="decision-box bg-pink">
+        <div class="why c-pink">🎭 Playwright + Cheerio</div>
+        <div class="desc">JS 렌더링 필요한 커뮤니티는 Playwright, 정적 사이트는 Cheerio로 경량 처리.<br>
+        <span class="highlight">사이트별 최적 수집 방식 선택.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 기술 스택 테이블 -->
+  <div class="card no-break">
+    <div class="card-title">🛠️ 기술 스택 전체 목록</div>
+    <table class="tbl">
+      <thead><tr><th>영역</th><th>기술</th><th>버전</th><th>용도</th></tr></thead>
+      <tbody>
+        <tr><td rowspan="5"><strong>프론트엔드</strong></td><td>Next.js (App Router)</td><td>15</td><td>웹 UI + API 서버</td></tr>
+        <tr><td>React</td><td>19</td><td>UI 컴포넌트</td></tr>
+        <tr><td>tRPC</td><td>11</td><td>타입 안전 API</td></tr>
+        <tr><td>shadcn/ui + Tailwind</td><td>4</td><td>UI 컴포넌트 라이브러리</td></tr>
+        <tr><td>TanStack Query</td><td>5</td><td>클라이언트 상태·캐시</td></tr>
+        <tr><td rowspan="4"><strong>백엔드/DB</strong></td><td>PostgreSQL</td><td>16</td><td>메인 데이터베이스</td></tr>
+        <tr><td>Drizzle ORM</td><td>최신</td><td>타입 안전 SQL ORM</td></tr>
+        <tr><td>Redis</td><td>7</td><td>BullMQ 큐 브로커</td></tr>
+        <tr><td>pgvector</td><td>-</td><td>벡터 임베딩 저장·검색</td></tr>
+        <tr><td rowspan="3"><strong>작업 큐</strong></td><td>BullMQ</td><td>5</td><td>비동기 작업 큐</td></tr>
+        <tr><td>FlowProducer</td><td>-</td><td>부모-자식 의존 작업 트리</td></tr>
+        <tr><td>BullBoard</td><td>-</td><td>큐 모니터링 UI</td></tr>
+        <tr><td rowspan="2"><strong>AI</strong></td><td>Vercel AI SDK</td><td>v6</td><td>다중 AI 프로바이더 통합</td></tr>
+        <tr><td>Claude · GPT · Gemini</td><td>-</td><td>분석 모듈별 모델 선택</td></tr>
+        <tr><td rowspan="2"><strong>수집</strong></td><td>Playwright</td><td>최신</td><td>JS 렌더링 사이트 크롤링</td></tr>
+        <tr><td>Cheerio</td><td>최신</td><td>정적 HTML 파싱</td></tr>
+        <tr><td><strong>인증</strong></td><td>NextAuth.js</td><td>5</td><td>사용자 인증·세션 관리</td></tr>
+        <tr><td><strong>배포</strong></td><td>Docker Compose</td><td>-</td><td>컨테이너 오케스트레이션</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     02. 프론트엔드
+══════════════════════════════════════════ -->
+<div class="sec-divider page-break">
+  <div class="num">02 · Frontend</div>
+  <h2>프론트엔드 아키텍처</h2>
+  <p>Next.js 15 App Router · tRPC 11 · shadcn/ui · SSE 실시간 스트리밍</p>
+</div>
+
+<div class="section">
+  <div class="g2">
+    <div>
+      <div class="card no-break">
+        <div class="card-title">📁 페이지 라우트 트리</div>
+        <pre><code>apps/web/src/app/
+├── /dashboard        ← 분석 트리거 + 히스토리
+├── /queue-status     ← 실시간 파이프라인 현황
+├── /admin/
+│   ├── jobs          ← 수집 작업 전체 목록
+│   ├── users         ← 사용자 관리
+│   ├── usage         ← 비용·토큰 통계
+│   ├── sources       ← RSS/HTML 소스 등록
+│   ├── presets       ← 분석 프리셋 관리
+│   └── system        ← 모델 설정·동시성
+├── /demo             ← 체험 계정 분석
+├── /landing          ← 랜딩·가격
+├── /login, /signup   ← 인증
+├── /partner          ← 파트너 프로그램
+└── api/
+    ├── pipeline/[jobId]/stream  ← SSE 스트리밍
+    ├── trpc/[trpc]              ← tRPC 엔드포인트
+    └── auth/[...nextauth]       ← NextAuth.js 5</code></pre>
+      </div>
+
+      <div class="card no-break" style="margin-top:14px">
+        <div class="card-title">🧩 컴포넌트 계층</div>
+        <div style="font-size:.82rem;line-height:2.2;font-family:monospace">
+          <div><span class="c-accent">Dashboard (Server Component)</span></div>
+          <div style="margin-left:16px">├── <span class="c-purple">TriggerForm</span> — 키워드·날짜·소스 선택</div>
+          <div style="margin-left:16px">├── <span class="c-purple">PipelineMonitor</span> — 실시간 진행률</div>
+          <div style="margin-left:32px">├── <span class="c-green">SentimentChart</span> — Recharts 감정 분포</div>
+          <div style="margin-left:32px">├── <span class="c-green">WordCloud</span> — 키워드 클라우드</div>
+          <div style="margin-left:32px">├── <span class="c-green">RiskCards</span> — 위험 지도</div>
+          <div style="margin-left:32px">└── <span class="c-green">InsightSummary</span> — AI 요약 카드</div>
+          <div style="margin-left:16px">└── <span class="c-purple">ReportViewer</span> — 마크다운 리포트</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card no-break">
+        <div class="card-title">🔐 tRPC Procedure 권한 레벨</div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+          <div style="background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.25);border-radius:8px;padding:10px 13px">
+            <div style="font-size:.82rem;font-weight:700;color:var(--red)">🔴 superAdminProcedure</div>
+            <div style="font-size:.77rem;color:var(--text-dim);margin-top:3px">systemRole='super_admin' 전용 · 전체 시스템 접근</div>
+          </div>
+          <div style="background:rgba(234,88,12,.08);border:1px solid rgba(234,88,12,.25);border-radius:8px;padding:10px 13px">
+            <div style="font-size:.82rem;font-weight:700;color:var(--orange)">🟠 systemAdminProcedure</div>
+            <div style="font-size:.77rem;color:var(--text-dim);margin-top:3px">systemRole='staff' · 운영 대시보드·사용자 관리</div>
+          </div>
+          <div style="background:rgba(202,138,4,.08);border:1px solid rgba(202,138,4,.25);border-radius:8px;padding:10px 13px">
+            <div style="font-size:.82rem;font-weight:700;color:var(--yellow)">🟡 staffProcedure</div>
+            <div style="font-size:.77rem;color:var(--text-dim);margin-top:3px">내부 직원(staff) · CRM·영업 데이터 접근</div>
+          </div>
+          <div style="background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.25);border-radius:8px;padding:10px 13px">
+            <div style="font-size:.82rem;font-weight:700;color:var(--green)">🟢 partnerProcedure</div>
+            <div style="font-size:.77rem;color:var(--text-dim);margin-top:3px">channel_partner / referral_partner · 수수료·고객 조회</div>
+          </div>
+          <div style="background:rgba(2,132,199,.08);border:1px solid rgba(2,132,199,.25);border-radius:8px;padding:10px 13px">
+            <div style="font-size:.82rem;font-weight:700;color:var(--accent)">🔵 protectedProcedure</div>
+            <div style="font-size:.77rem;color:var(--text-dim);margin-top:3px">인증된 사용자 · 분석 실행·리포트 조회</div>
+          </div>
+          <div style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:10px 13px">
+            <div style="font-size:.82rem;font-weight:700;color:var(--text-dim)">⚪ publicProcedure</div>
+            <div style="font-size:.77rem;color:var(--text-dim);margin-top:3px">비인증 가능 · 랜딩·데모 데이터</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card no-break" style="margin-top:14px">
+        <div class="card-title">📡 SSE 연결 수명주기</div>
+        <div class="flow-step">
+          <div class="fnum bg-accent" style="background:rgba(2,132,199,.1);color:var(--accent)">1</div>
+          <div class="fbody">
+            <div class="flabel">EventSource 생성</div>
+            <div class="fdesc"><code>/api/pipeline/[jobId]/stream</code> 연결<br>text/event-stream · Cache-Control: no-cache</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="fnum" style="background:rgba(124,58,237,.1);color:var(--purple)">2</div>
+          <div class="fbody">
+            <div class="flabel">1초 폴링 (서버 측)</div>
+            <div class="fdesc">collection_jobs + analysis_results DB 쿼리<br><code>stableStringify()</code>로 해시 계산 → 변경 시만 push</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="fnum" style="background:rgba(22,163,74,.1);color:var(--green)">3</div>
+          <div class="fbody">
+            <div class="flabel">재연결 (클라이언트)</div>
+            <div class="fdesc">연속 실패 최대 3회 → 이후 자동 종료<br>훅: <code>use-pipeline-status.ts</code></div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="fnum" style="background:rgba(220,38,38,.1);color:var(--red)">4</div>
+          <div class="fbody">
+            <div class="flabel">종료 조건</div>
+            <div class="fdesc">cancelled → 즉시 / completed,failed → 확인 후 종료<br>partial_failure → 리포트 생성 확인 후 종료</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     03. BullMQ
+══════════════════════════════════════════ -->
+<div class="sec-divider page-break">
+  <div class="num">03 · Queue System</div>
+  <h2>BullMQ 5 & 워커 시스템</h2>
+  <p>Redis 기반 비동기 작업 큐 · FlowProducer 부모-자식 의존 · 부분 실패 허용 설계</p>
+</div>
+
+<div class="section">
+  <div class="card no-break">
+    <div class="card-title">🌳 FlowProducer 부모-자식 트리</div>
+    <div style="font-size:.82rem;line-height:2.2;font-family:monospace;margin-top:10px">
+      <div><span class="pill bg-orange c-orange">persist</span> <span class="c-dim">(pipeline 큐) ← 모든 normalize 완료 후 실행</span></div>
+      <div style="margin-left:20px">├── <span class="pill bg-purple c-purple">normalize-naver</span> <span class="c-dim">(pipeline 큐)</span></div>
+      <div style="margin-left:44px">└── <span class="pill bg-green c-green">collect-naver-articles</span> <span class="c-dim">(collectors 큐)</span></div>
+      <div style="margin-left:20px">├── <span class="pill bg-purple c-purple">normalize-youtube</span></div>
+      <div style="margin-left:44px">└── <span class="pill bg-green c-green">collect-youtube-videos</span></div>
+      <div style="margin-left:20px">├── <span class="pill bg-purple c-purple">normalize-dcinside / fmkorea / clien</span></div>
+      <div style="margin-left:44px">└── <span class="pill bg-green c-green">collect-community-*</span></div>
+      <div style="margin-left:20px">└── <span class="pill bg-purple c-purple">normalize-feed-* (RSS/HTML)</span> <span class="c-dim">← DB에서 동적 생성</span></div>
+      <div style="margin-left:44px">└── <span class="pill bg-green c-green">collect-feed-*</span></div>
+    </div>
+    <div style="margin-top:12px;font-size:.8rem;color:var(--text-dim);background:#f1f5f9;border-radius:7px;padding:8px 12px">
+      ⚠️ <strong>부분 실패 허용:</strong> collect-naver 실패해도 collect-youtube는 계속 실행. 실패 소스는 빈 결과 반환 → status='partial_failure'
+    </div>
+  </div>
+
+  <div class="g3 no-break" style="margin-bottom:16px">
+    <div class="worker-card" style="border-left-color:var(--green)">
+      <div class="worker-title c-green">📡 Collector Worker</div>
+      <div class="wstat"><span>concurrency</span><span class="wval">2</span></div>
+      <div class="wstat"><span>Rate Limiter</span><span class="wval">8개 / 10초</span></div>
+      <div class="wstat"><span>lockDuration</span><span class="wval">600,000ms (10분)</span></div>
+      <div class="wstat"><span>stalledInterval</span><span class="wval">300,000ms (5분)</span></div>
+      <div class="wstat"><span>maxStalledCount</span><span class="wval">2회</span></div>
+      <div style="font-size:.75rem;color:var(--text-dim);margin-top:8px">수집은 분 단위 소요 → 10분 lock. 8/10s limiter로 IP 차단 방지.</div>
+    </div>
+    <div class="worker-card" style="border-left-color:var(--purple)">
+      <div class="worker-title c-purple">🔧 Pipeline Worker</div>
+      <div class="wstat"><span>concurrency</span><span class="wval">3</span></div>
+      <div class="wstat"><span>Rate Limiter</span><span class="wval">없음</span></div>
+      <div class="wstat"><span>lockDuration</span><span class="wval">600,000ms (10분)</span></div>
+      <div class="wstat"><span>stalledInterval</span><span class="wval">300,000ms (5분)</span></div>
+      <div class="wstat"><span>maxStalledCount</span><span class="wval">2회</span></div>
+      <div style="font-size:.75rem;color:var(--text-dim);margin-top:8px">normalize 3개 병렬. 대량 DB insert로 10분 필요.</div>
+    </div>
+    <div class="worker-card" style="border-left-color:var(--orange)">
+      <div class="worker-title c-orange">🤖 Analysis Worker</div>
+      <div class="wstat"><span>lockDuration</span><span class="wval">600,000ms (10분)</span></div>
+      <div class="wstat"><span>Lock 갱신 주기</span><span class="wval">120,000ms (2분)</span></div>
+      <div class="wstat"><span>stalledInterval</span><span class="wval">300,000ms (5분)</span></div>
+      <div class="wstat"><span>removeOnComplete</span><span class="wval">1시간 후</span></div>
+      <div class="wstat"><span>removeOnFail</span><span class="wval">24시간 후</span></div>
+      <div style="font-size:.75rem;color:var(--text-dim);margin-top:8px">장시간 분석 → 2분마다 lock 연장. Stage 4까지 수십분 가능.</div>
+    </div>
+  </div>
+
+  <div class="g2">
+    <div class="card no-break">
+      <div class="card-title">🔄 워커 상태 머신 (FSM)</div>
+      <div class="fsm"><div class="fsm-state bg-cyan c-cyan">waiting</div><div class="fsm-arr">→</div><div class="fsm-state bg-green c-green">active</div><div class="fsm-arr">→</div><div class="fsm-state bg-purple c-purple">completed ✓</div></div>
+      <div class="fsm"><div class="fsm-state bg-cyan c-cyan">waiting</div><div class="fsm-arr">→</div><div class="fsm-state bg-green c-green">active</div><div class="fsm-arr">→</div><div class="fsm-state bg-red c-red">failed</div><div class="fsm-arr">→ 재시도</div><div class="fsm-state bg-cyan c-cyan">waiting</div></div>
+      <div class="fsm"><div class="fsm-state bg-green c-green">active</div><div class="fsm-arr">→ 5분 무응답</div><div class="fsm-state bg-yellow c-yellow">stalled</div><div class="fsm-arr">→ &lt;2회</div><div class="fsm-state bg-cyan c-cyan">waiting</div></div>
+      <div class="fsm"><div class="fsm-state bg-yellow c-yellow">stalled</div><div class="fsm-arr">→ ≥3회</div><div class="fsm-state bg-red c-red">failed</div></div>
+    </div>
+
+    <div class="card no-break">
+      <div class="card-title">🏷️ 개발/운영 네임스페이스 분리</div>
+      <div class="g2" style="gap:10px;margin-top:10px">
+        <div style="background:rgba(202,138,4,.08);border-radius:8px;padding:12px;border:1px solid rgba(202,138,4,.2)">
+          <div style="font-size:.82rem;font-weight:700;color:var(--yellow);margin-bottom:6px">🛠️ 개발 (ais-dev)</div>
+          <div style="font-size:.77rem;font-family:monospace;line-height:2">ais-dev:collectors<br>ais-dev:pipeline<br>ais-dev:analysis</div>
+        </div>
+        <div style="background:rgba(22,163,74,.08);border-radius:8px;padding:12px;border:1px solid rgba(22,163,74,.2)">
+          <div style="font-size:.82rem;font-weight:700;color:var(--green);margin-bottom:6px">🚀 운영 (bull)</div>
+          <div style="font-size:.77rem;font-family:monospace;line-height:2">bull:collectors<br>bull:pipeline<br>bull:analysis</div>
+        </div>
+      </div>
+      <div style="font-size:.8rem;margin-top:10px;color:var(--text-dim)">
+        <code>getBullPrefix()</code>: <code>NODE_ENV=production</code> → <code>'bull'</code>, 그 외 → <code>'ais-dev'</code>
+      </div>
+      <div class="sep"></div>
+      <div class="card-title" style="margin-bottom:8px;font-size:.88rem">⏱️ Rate Limit 재시도 로직</div>
+      <div class="flow-step" style="padding:6px 0">
+        <div class="fnum" style="background:rgba(220,38,38,.1);color:var(--red);font-size:.7rem">①</div>
+        <div class="fbody"><div class="fdesc"><code>isRateLimitError()</code>: /rate.*limit|429|TPM/i 패턴 감지</div></div>
+      </div>
+      <div class="flow-step" style="padding:6px 0">
+        <div class="fnum" style="background:rgba(202,138,4,.1);color:var(--yellow);font-size:.7rem">②</div>
+        <div class="fbody"><div class="fdesc"><code>parseRetryAfter(error)</code>: "retry in 5s" 추출</div></div>
+      </div>
+      <div class="flow-step" style="padding:6px 0">
+        <div class="fnum" style="background:rgba(22,163,74,.1);color:var(--green);font-size:.7rem">③</div>
+        <div class="fbody"><div class="fdesc"><code>backoffMs = max(retryAfterSec×1000, attempt×3000)</code><br>최대 5회 재시도</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     04. 수집기
+══════════════════════════════════════════ -->
+<div class="sec-divider page-break">
+  <div class="num">04 · Collectors</div>
+  <h2>데이터 수집 어댑터 — 9개</h2>
+  <p>AsyncGenerator 패턴 · 부분 실패 허용 · IP 차단 방지 Rate Limit</p>
+</div>
+
+<div class="section">
+  <div class="card no-break">
+    <div class="card-title">🏗️ 수집 인터페이스 (Collector)</div>
+    <pre><code>interface Collector&lt;T = unknown&gt; {
+  readonly source: string;  // 'naver-news', 'youtube', 'dcinside' 등
+  collect(options: CollectionOptions): AsyncGenerator&lt;T[], void, unknown&gt;;
+  //                                  ↑ 청크 단위로 yield → 메모리 효율 + 진행률 추적 가능
+}
+
+interface CollectionOptions {
+  keyword: string;       // 검색 키워드
+  startDate?: Date;      // 수집 시작일
+  endDate?: Date;        // 수집 종료일
+  maxItems?: number;     // 기사/영상 최대 수집량
+  maxComments?: number;  // 댓글 최대 수집량
+}</code></pre>
+  </div>
+
+  <div class="g3 no-break">
+    <div class="card-sm" style="border-left:4px solid var(--green)">
+      <div style="font-size:.88rem;font-weight:700;margin-bottom:6px">📰 naver-news</div>
+      <div style="font-size:.75rem;color:var(--text-dim)">Fetch + Playwright (혼합)<br>검색: 300-600ms / 본문: 500-1000ms<br>최대 1,000건 · 날짜 분할 2-pass</div>
+    </div>
+    <div class="card-sm" style="border-left:4px solid var(--cyan)">
+      <div style="font-size:.88rem;font-weight:700;margin-bottom:6px">💬 naver-comments</div>
+      <div style="font-size:.75rem;color:var(--text-dim)">Playwright + 비공식 API<br>500-1000ms · 최대 500건<br>JSONP 응답 파싱</div>
+    </div>
+    <div class="card-sm" style="border-left:4px solid var(--red)">
+      <div style="font-size:.88rem;font-weight:700;margin-bottom:6px">▶️ youtube-videos</div>
+      <div style="font-size:.75rem;color:var(--text-dim)">YouTube Data API v3<br>쿼터 기반 (100유닛/search)<br>search.list + videos.list</div>
+    </div>
+    <div class="card-sm" style="border-left:4px solid rgba(220,38,38,.5)">
+      <div style="font-size:.88rem;font-weight:700;margin-bottom:6px">💭 youtube-comments</div>
+      <div style="font-size:.75rem;color:var(--text-dim)">YouTube Data API v3<br>CommentThreads API<br>대댓글(replies) 포함</div>
+    </div>
+    <div class="card-sm" style="border-left:4px solid var(--orange)">
+      <div style="font-size:.88rem;font-weight:700;margin-bottom:6px">🖼️ dcinside</div>
+      <div style="font-size:.75rem;color:var(--text-dim)">Playwright + Cheerio<br>1500-2500ms · 최대 50건<br>마이너 갤러리 자동감지</div>
+    </div>
+    <div class="card-sm" style="border-left:4px solid var(--blue)">
+      <div style="font-size:.88rem;font-weight:700;margin-bottom:6px">⚽ fmkorea</div>
+      <div style="font-size:.75rem;color:var(--text-dim)">Playwright + Cheerio<br>1500-2500ms · 최대 50건<br>SPA 구조 브라우저 자동화</div>
+    </div>
+    <div class="card-sm" style="border-left:4px solid var(--purple)">
+      <div style="font-size:.88rem;font-weight:700;margin-bottom:6px">💻 clien</div>
+      <div style="font-size:.75rem;color:var(--text-dim)">Playwright + Cheerio<br>1500-2500ms · 최대 50건<br>IT 커뮤니티</div>
+    </div>
+    <div class="card-sm" style="border-left:4px solid var(--yellow)">
+      <div style="font-size:.88rem;font-weight:700;margin-bottom:6px">📡 RSS</div>
+      <div style="font-size:.75rem;color:var(--text-dim)">RSS Parser (Fetch)<br>단일 요청 · 최대 50건<br>관리자 DB 등록 → 동적 생성</div>
+    </div>
+    <div class="card-sm" style="border-left:4px solid var(--accent)">
+      <div style="font-size:.88rem;font-weight:700;margin-bottom:6px">🌐 HTML</div>
+      <div style="font-size:.75rem;color:var(--text-dim)">Fetch + Cheerio<br>300-600ms · 동적 설정<br>CSS 셀렉터 기반 추출</div>
+    </div>
+  </div>
+
+  <div class="g2" style="margin-top:14px">
+    <div class="card no-break">
+      <div class="card-title">🔬 수집 방식 비교</div>
+      <table class="tbl">
+        <thead><tr><th>방식</th><th>속도</th><th>JS렌더링</th><th>적용 소스</th></tr></thead>
+        <tbody>
+          <tr><td><span class="c-blue">YouTube Data API</span></td><td class="c-green">빠름</td><td>불필요</td><td>YouTube</td></tr>
+          <tr><td><span class="c-orange">Playwright</span></td><td class="c-red">느림</td><td>✓ 필요</td><td>DC·FM·클리앙</td></tr>
+          <tr><td><span class="c-cyan">Fetch + Cheerio</span></td><td class="c-yellow">중간</td><td>불필요</td><td>RSS, HTML</td></tr>
+          <tr><td><span class="c-purple">혼합</span></td><td class="c-yellow">중간</td><td>일부</td><td>네이버 뉴스</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card no-break">
+      <div class="card-title">📅 네이버 날짜 분할 2-pass 알고리즘</div>
+      <div class="flow-step" style="padding:8px 0">
+        <div class="fnum" style="background:rgba(2,132,199,.1);color:var(--accent)">1</div>
+        <div class="fbody"><div class="flabel">기간 → 일별 분할</div><div class="fdesc">startDate~endDate를 하루씩 배열로 분할</div></div>
+      </div>
+      <div class="flow-step" style="padding:8px 0">
+        <div class="fnum" style="background:rgba(124,58,237,.1);color:var(--purple)">2</div>
+        <div class="fbody"><div class="flabel">Pass 1: 각 날짜 균등 수집</div><div class="fdesc">각 날짜에서 perDayLimit만큼 수집 (최신순 편중 방지)</div></div>
+      </div>
+      <div class="flow-step" style="padding:8px 0">
+        <div class="fnum" style="background:rgba(22,163,74,.1);color:var(--green)">3</div>
+        <div class="fbody"><div class="flabel">Pass 2: 부족분 보충</div><div class="fdesc">총 maxItems 미달 시 최신 날짜부터 추가 수집</div></div>
+      </div>
+      <div class="sep"></div>
+      <pre style="font-size:.75rem"><code>// 전역 Set으로 Cross-day 중복 방지
+const seenSourceIds = new Set&lt;string&gt;();
+if (seenSourceIds.has(sourceId)) continue;
+seenSourceIds.add(sourceId);</code></pre>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     05. 파이프라인
+══════════════════════════════════════════ -->
+<div class="sec-divider page-break">
+  <div class="num">05 · Pipeline</div>
+  <h2>파이프라인 처리</h2>
+  <p>수집 원시 데이터 → 정규화 → DB 저장 → 임베딩 생성 → 분석 트리거</p>
+</div>
+
+<div class="section">
+  <div class="g2">
+    <div class="card no-break">
+      <div class="card-title">📐 Normalize — 소스별 변환 함수</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+        <div style="border-left:3px solid var(--green);padding-left:10px">
+          <div style="font-size:.82rem;font-weight:700;color:var(--green)">normalizeNaverArticle()</div>
+          <div style="font-size:.77rem;color:var(--text-dim);margin-top:3px">source='naver-news' · sourceId=<code>${oid}_${aid}</code> · HTML→텍스트<br>⚠️ BullMQ Date 직렬화 → <code>toDate()</code> 복원 필수</div>
+        </div>
+        <div style="border-left:3px solid var(--red);padding-left:10px">
+          <div style="font-size:.82rem;font-weight:700;color:var(--red)">normalizeYoutubeVideo()</div>
+          <div style="font-size:.77rem;color:var(--text-dim);margin-top:3px">source='youtube' · viewCount · likeCount · channelId</div>
+        </div>
+        <div style="border-left:3px solid var(--orange);padding-left:10px">
+          <div style="font-size:.82rem;font-weight:700;color:var(--orange)">normalizeCommunityPost()</div>
+          <div style="font-size:.77rem;color:var(--text-dim);margin-top:3px">source='dcinside'|'fmkorea'|'clien' · publisher=boardName</div>
+        </div>
+        <div style="border-left:3px solid var(--yellow);padding-left:10px">
+          <div style="font-size:.82rem;font-weight:700;color:var(--yellow)">normalizeFeedArticle()</div>
+          <div style="font-size:.77rem;color:var(--text-dim);margin-top:3px">source='rss'|'html' · <strong>dataSourceId</strong>=FK→data_sources<br>여러 RSS 인스턴스가 같은 source 공유 → dataSourceId로 구분</div>
+        </div>
+        <div style="border-left:3px solid var(--cyan);padding-left:10px">
+          <div style="font-size:.82rem;font-weight:700;color:var(--cyan)">normalizeComment()</div>
+          <div style="font-size:.77rem;color:var(--text-dim);margin-top:3px">parentId(대댓글) · articleId FK / videoId FK · likeCount</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card no-break">
+      <div class="card-title">💾 Persist — DB 저장 순서 (FK 무결성)</div>
+      <div class="flow-step" style="padding:8px 0">
+        <div class="fnum" style="background:rgba(22,163,74,.1);color:var(--green)">1</div>
+        <div class="fbody"><div class="flabel">articles UPSERT</div><div class="fdesc">ON CONFLICT (source, source_id) DO UPDATE<br>PERSIST_BATCH_SIZE = 1,000</div></div>
+      </div>
+      <div class="flow-step" style="padding:8px 0">
+        <div class="fnum" style="background:rgba(8,145,178,.1);color:var(--cyan)">2</div>
+        <div class="fbody"><div class="flabel">videos UPSERT</div><div class="fdesc">동일 패턴. source+sourceId 기준</div></div>
+      </div>
+      <div class="flow-step" style="padding:8px 0">
+        <div class="fnum" style="background:rgba(124,58,237,.1);color:var(--purple)">3</div>
+        <div class="fbody"><div class="flabel">comments UPSERT</div><div class="fdesc">articleId / videoId FK 연결<br>배치 1,000건씩, MAX_EVENTS=100 순환버퍼</div></div>
+      </div>
+      <div class="flow-step" style="padding:8px 0">
+        <div class="fnum" style="background:rgba(234,88,12,.1);color:var(--orange)">4</div>
+        <div class="fbody"><div class="flabel">조인 테이블 INSERT</div><div class="fdesc">article_jobs / video_jobs / comment_jobs<br>N:M 관계 — 기사가 여러 Job에서 재사용 가능</div></div>
+      </div>
+      <div class="flow-step" style="padding:8px 0">
+        <div class="fnum" style="background:rgba(219,39,119,.1);color:var(--pink)">5</div>
+        <div class="fbody"><div class="flabel">임베딩 생성 (비차단)</div><div class="fdesc">embedding IS NULL만 처리 → 최대 500건<br>백그라운드 실행 — persist를 블로킹하지 않음</div></div>
+      </div>
+      <div class="flow-step" style="padding:8px 0">
+        <div class="fnum" style="background:rgba(2,132,199,.1);color:var(--accent)">6</div>
+        <div class="fbody"><div class="flabel">triggerAnalysis() 호출</div><div class="fdesc">analysis 큐에 작업 추가 → AI 분석 시작</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card no-break">
+    <div class="card-title">🔍 Upsert 전략</div>
+    <pre><code>-- articles (videos, comments 동일 패턴)
+INSERT INTO articles (source, source_id, url, title, content, collected_at, ...)
+VALUES ('naver-news', '0123_4567', 'https://...', '제목', '본문', NOW(), ...)
+ON CONFLICT (source, source_id)
+DO UPDATE SET
+  title        = EXCLUDED.title,
+  content      = EXCLUDED.content,
+  raw_data     = EXCLUDED.raw_data,
+  collected_at = NOW();
+  -- 중복 URL이 다른 job에서 다시 수집되면 최신 데이터로 갱신
+  -- FK는 변경하지 않음 (original job 유지)</code></pre>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     06. AI 분석
+══════════════════════════════════════════ -->
+<div class="sec-divider page-break">
+  <div class="num">06 · AI Analysis</div>
+  <h2>AI 분석 파이프라인</h2>
+  <p>Stage 0~4 · 전처리 7개 프리셋 · 8개 도메인 42개 모듈 · Map-Reduce 청킹</p>
+</div>
+
+<div class="section">
+  <!-- 전처리 프리셋 -->
+  <div class="card no-break">
+    <div class="card-title">⚙️ 전처리 (Stage 0) — 7가지 최적화 프리셋</div>
+    <table class="tbl" style="margin-top:10px">
+      <thead>
+        <tr><th>프리셋</th><th>중복제거 임계값</th><th>클러스터링</th><th>최대 댓글</th><th>pgvector</th><th>토큰 절감</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="pill bg-cyan c-cyan">none</span></td><td>-</td><td>✗</td><td>전체</td><td>✗</td><td>0%</td></tr>
+        <tr><td><span class="pill bg-green c-green">light</span></td><td>0.95</td><td>✗</td><td>200</td><td>✗</td><td>~20%</td></tr>
+        <tr><td><span class="pill bg-blue c-blue">standard</span></td><td>0.90</td><td>✗</td><td>100</td><td>✗</td><td>~40%</td></tr>
+        <tr><td><span class="pill bg-orange c-orange">aggressive</span></td><td>0.85</td><td>✓</td><td>50</td><td>✗</td><td>~60%</td></tr>
+        <tr><td><span class="pill bg-purple c-purple">rag-light</span></td><td>-</td><td>✗</td><td>50 (의미검색)</td><td>✓</td><td>~50%</td></tr>
+        <tr><td><span class="pill bg-purple" style="background:rgba(124,58,237,.15)">rag-standard</span></td><td>-</td><td>✓(10개)</td><td>30 (의미검색)</td><td>✓</td><td>~65%</td></tr>
+        <tr><td><span class="pill bg-red c-red">rag-aggressive</span></td><td>-</td><td>✓(5개)</td><td>15 (의미검색)</td><td>✓</td><td>~80%</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Stage 타임라인 -->
+  <div class="card no-break">
+    <div class="card-title">⏱️ Stage 실행 타임라인</div>
+    <div class="gantt" style="margin-top:14px">
+      <div class="gantt-row">
+        <div class="gantt-label">Stage 0 (전처리)</div>
+        <div class="gantt-bar" style="background:var(--cyan);width:15%">전처리</div>
+      </div>
+      <div class="gantt-row">
+        <div class="gantt-label">Stage 1 (병렬)</div>
+        <div class="gantt-par" style="margin-left:15%">
+          <div class="gantt-bar" style="background:var(--green);flex:1">macro-view</div>
+          <div class="gantt-bar" style="background:#16a34a99;flex:1">segmentation</div>
+          <div class="gantt-bar" style="background:var(--green);flex:1">sentiment-framing</div>
+          <div class="gantt-bar" style="background:#16a34a99;flex:1">message-impact</div>
+        </div>
+      </div>
+      <div class="gantt-row">
+        <div class="gantt-label">Stage 2 (순차)</div>
+        <div class="gantt-par" style="margin-left:35%">
+          <div class="gantt-bar" style="background:var(--orange);width:15%">risk-map</div>
+          <div class="gantt-bar" style="background:var(--yellow);width:15%">opportunity</div>
+          <div class="gantt-bar" style="background:var(--orange);width:15%">strategy</div>
+          <div class="gantt-bar" style="background:var(--yellow);width:15%">final-summary</div>
+        </div>
+      </div>
+      <div class="gantt-row">
+        <div class="gantt-label">Stage 4 (도메인)</div>
+        <div class="gantt-par" style="margin-left:75%">
+          <div class="gantt-bar" style="background:var(--purple);flex:1">병렬 모듈</div>
+          <div class="gantt-bar" style="background:var(--pink);flex:1">순차 모듈</div>
+        </div>
+      </div>
+    </div>
+    <div style="font-size:.78rem;color:var(--text-dim);margin-top:8px">
+      ⚡ Stage 1은 4개 동시 실행 (독립적). Stage 2는 이전 결과 참조하여 순서 필요.
+    </div>
+  </div>
+
+  <!-- 8개 도메인 모듈 -->
+  <div class="card no-break">
+    <div class="card-title">🌐 8개 도메인별 Stage 4 모듈</div>
+    <table class="tbl" style="margin-top:10px">
+      <thead><tr><th>도메인</th><th>병렬 모듈</th><th>순차 모듈</th><th>기본 모델</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="c-orange">🏛️ 정치</span></td>
+          <td>approval-rating · frame-war</td>
+          <td>crisis-scenario · win-simulation</td>
+          <td>claude-sonnet-4-6</td>
+        </tr>
+        <tr>
+          <td><span class="c-pink">🎭 팬덤</span></td>
+          <td>fan-loyalty-index · fandom-narrative-war</td>
+          <td>fandom-crisis · release-reception</td>
+          <td>claude-sonnet-4-6</td>
+        </tr>
+        <tr>
+          <td><span class="c-blue">📢 PR</span></td>
+          <td>crisis-type-classifier · reputation-index</td>
+          <td>-</td>
+          <td>claude-sonnet-4-6</td>
+        </tr>
+        <tr>
+          <td><span class="c-cyan">🏢 기업 평판</span></td>
+          <td>stakeholder-map · esg-sentiment · media-framing</td>
+          <td>csr-communication-gap · reputation-recovery</td>
+          <td>일부 gemini</td>
+        </tr>
+        <tr>
+          <td><span class="c-green">🏥 헬스케어</span></td>
+          <td>health-risk-perception · compliance-predictor</td>
+          <td>-</td>
+          <td>claude-sonnet-4-6</td>
+        </tr>
+        <tr>
+          <td><span class="c-yellow">⚽ 스포츠</span></td>
+          <td>performance-narrative · season-outlook</td>
+          <td>-</td>
+          <td>claude-sonnet-4-6</td>
+        </tr>
+        <tr>
+          <td><span class="c-accent">💰 금융</span></td>
+          <td>market-sentiment-index · information-asymmetry</td>
+          <td>catalyst-scenario · investment-signal</td>
+          <td>claude-sonnet-4-6</td>
+        </tr>
+        <tr>
+          <td><span class="c-purple">🎓 교육</span></td>
+          <td>institutional-reputation · education-opinion-frame</td>
+          <td>education-crisis · outcome-simulation</td>
+          <td>claude-sonnet-4-6</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Map-Reduce -->
+  <div class="card no-break">
+    <div class="card-title">🔀 Map-Reduce 청킹 — 대량 데이터 처리</div>
+    <div class="g2" style="gap:14px;margin-top:10px">
+      <div>
+        <div class="card-sm" style="margin-bottom:8px">
+          <div style="font-size:.82rem;font-weight:600;color:var(--accent);margin-bottom:6px">청킹 기준값</div>
+          <div class="info-row"><span class="key">chunkTargetChars</span><span class="val">15,000자 (≈4K 토큰)</span></div>
+          <div class="info-row"><span class="key">minCharsForChunking</span><span class="val">20,000자 이상만</span></div>
+          <div class="info-row"><span class="key">mapTimeoutMs</span><span class="val">300,000ms (5분)</span></div>
+          <div class="info-row"><span class="key">reduceTimeoutMs</span><span class="val">300,000ms (5분)</span></div>
+        </div>
+        <div class="card-sm">
+          <div style="font-size:.82rem;font-weight:600;color:var(--purple);margin-bottom:6px">분배 전략</div>
+          <div style="font-size:.8rem;line-height:1.9">
+            기사: <strong>라운드로빈</strong> (시간순 보존)<br>
+            댓글: <strong>균등분배</strong> (좋아요순 유지)<br>
+            영상: <strong>균등분배</strong>
+          </div>
+        </div>
+      </div>
+      <pre style="font-size:.77rem"><code>// 20,000자 이하 → 단일 API 호출
+if (totalChars &lt; 20000) {
+  return module.buildPrompt(input);
+}
+
+// 20,000자 초과 → 청크 분할
+const chunks = splitIntoChunks(input, 15000);
+
+// Map: 청크별 병렬 분석
+const mapResults = await Promise.all(
+  chunks.map(chunk =>
+    analyzeText(prompt, { timeoutMs: 300_000 })
+  )
+);
+
+// Reduce: 결과 통합
+const finalResult = await reduceResults(mapResults);</code></pre>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     07. Vector DB
+══════════════════════════════════════════ -->
+<div class="sec-divider page-break">
+  <div class="num">07 · Vector DB</div>
+  <h2>Vector DB — pgvector</h2>
+  <p>PostgreSQL 16 + pgvector · multilingual-e5-small (384차원) · RAG / 시맨틱검색 / 중복제거</p>
+</div>
+
+<div class="section">
+  <div class="card no-break">
+    <div class="card-title">🧠 임베딩 생성 파이프라인</div>
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:10px 0">
+      <div class="arch-node" style="background:#f8fafc;border:1px solid var(--border);text-align:center">
+        <div style="font-size:1.1rem">📝</div>
+        <div style="font-size:.75rem;font-weight:700;margin-top:3px">입력 텍스트</div>
+        <div style="font-size:.68rem;color:var(--text-dim)">"윤석열 탄핵 여론"</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-node bg-purple" style="text-align:center">
+        <div style="font-size:1.1rem">🔤</div>
+        <div style="font-size:.75rem;font-weight:700;margin-top:3px;color:var(--purple)">토큰화</div>
+        <div style="font-size:.68rem;color:var(--text-dim)">WordPiece<br>[101, 9521, ...]</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-node bg-accent" style="text-align:center">
+        <div style="font-size:1.1rem">🤖</div>
+        <div style="font-size:.75rem;font-weight:700;margin-top:3px;color:var(--accent)">Transformer</div>
+        <div style="font-size:.68rem;color:var(--text-dim)">multilingual-e5-small<br>6레이어 @Xenova</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-node bg-green" style="text-align:center">
+        <div style="font-size:1.1rem">🎯</div>
+        <div style="font-size:.75rem;font-weight:700;margin-top:3px;color:var(--green)">Mean Pooling</div>
+        <div style="font-size:.68rem;color:var(--text-dim)">+ L2 정규화<br>→ float32[384]</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-node bg-cyan" style="text-align:center">
+        <div style="font-size:1.1rem">🗄️</div>
+        <div style="font-size:.75rem;font-weight:700;margin-top:3px;color:var(--cyan)">pgvector 저장</div>
+        <div style="font-size:.68rem;color:var(--text-dim)">[0.12,-0.34,...]<br>::vector(384)</div>
+      </div>
+    </div>
+    <div style="margin-top:10px;background:#f1f5f9;border-radius:8px;padding:10px 14px;font-size:.8rem;color:var(--text-dim)">
+      ⚡ <strong style="color:var(--yellow)">로컬 실행</strong> — 네트워크 없음, GPU 불필요 · 캐시: <code>/root/.cache/xenova</code> (Docker 볼륨) · 첫 실행 시 모델 다운로드(약 100MB)
+    </div>
+  </div>
+
+  <div class="g2">
+    <div class="card no-break">
+      <div class="card-title">📊 인덱스 & 성능 설정</div>
+      <pre style="font-size:.77rem"><code>-- articles 임베딩 인덱스 (HNSW)
+CREATE INDEX ON articles
+USING hnsw (embedding vector_cosine_ops)
+WITH (m = 16, ef_construction = 64);
+
+-- 시맨틱 유사도 검색
+SELECT id, title,
+  1 - (embedding &lt;=&gt; $1::vector) AS similarity
+FROM articles
+WHERE embedding IS NOT NULL
+ORDER BY embedding &lt;=&gt; $1::vector
+LIMIT 20;</code></pre>
+      <div style="margin-top:10px">
+        <div class="info-row"><span class="key">차원수</span><span class="val">384 (float32)</span></div>
+        <div class="info-row"><span class="key">인덱스 타입</span><span class="val">HNSW (Hierarchical NSW)</span></div>
+        <div class="info-row"><span class="key">거리 함수</span><span class="val">코사인 유사도</span></div>
+        <div class="info-row"><span class="key">검색 파라미터</span><span class="val">ef_search = 40</span></div>
+      </div>
+    </div>
+    <div class="card no-break">
+      <div class="card-title">🎯 3가지 활용 시나리오</div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:6px">
+        <div style="border-left:3px solid var(--purple);padding-left:12px">
+          <div style="font-size:.85rem;font-weight:700;color:var(--purple)">1. RAG (검색 증강 생성)</div>
+          <div style="font-size:.78rem;color:var(--text-dim);margin-top:3px">입력 키워드 임베딩 → 유사 기사 Top-K 검색 → AI 프롬프트에 컨텍스트 주입. rag-* 프리셋에서 활성화.</div>
+        </div>
+        <div style="border-left:3px solid var(--green);padding-left:12px">
+          <div style="font-size:.85rem;font-weight:700;color:var(--green)">2. 의미 기반 중복 제거</div>
+          <div style="font-size:.78rem;color:var(--text-dim);margin-top:3px">코사인 유사도 &gt; 임계값(0.85~0.95)인 기사 쌍 필터링. 같은 사건 다른 언론사 기사 제거.</div>
+        </div>
+        <div style="border-left:3px solid var(--accent);padding-left:12px">
+          <div style="font-size:.85rem;font-weight:700;color:var(--accent)">3. 의미 기반 클러스터링</div>
+          <div style="font-size:.78rem;color:var(--text-dim);margin-top:3px">k-means 유사 알고리즘으로 주제별 그룹화. 대표 기사 선정으로 프롬프트 다양성 확보.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     08. DB 스키마
+══════════════════════════════════════════ -->
+<div class="sec-divider page-break">
+  <div class="num">08 · Database</div>
+  <h2>데이터베이스 스키마</h2>
+  <p>PostgreSQL 16 · Drizzle ORM · 24개 테이블 · pgvector 임베딩</p>
+</div>
+
+<div class="section">
+  <div class="card no-break">
+    <div class="card-title">🗂️ 테이블 전체 맵</div>
+    <div class="g3" style="margin-top:10px">
+      <div>
+        <div style="font-size:.8rem;font-weight:700;color:var(--green);margin-bottom:8px;padding-bottom:4px;border-bottom:2px solid var(--green)">📦 수집 데이터</div>
+        <div style="font-size:.78rem;line-height:2">
+          <div>articles <span class="c-dim">(기사 + embedding)</span></div>
+          <div>videos <span class="c-dim">(유튜브 영상)</span></div>
+          <div>comments <span class="c-dim">(기사/영상 댓글)</span></div>
+          <div>article_jobs <span class="c-dim">(N:M 조인)</span></div>
+          <div>video_jobs <span class="c-dim">(N:M 조인)</span></div>
+          <div>comment_jobs <span class="c-dim">(N:M 조인)</span></div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:.8rem;font-weight:700;color:var(--orange);margin-bottom:8px;padding-bottom:4px;border-bottom:2px solid var(--orange)">⚙️ 작업 제어</div>
+        <div style="font-size:.78rem;line-height:2">
+          <div>collection_jobs <span class="c-dim">(수집 작업)</span></div>
+          <div>analysis_jobs <span class="c-dim">(분석 작업)</span></div>
+          <div>analysis_results <span class="c-dim">(모듈 결과)</span></div>
+          <div>reports <span class="c-dim">(최종 리포트)</span></div>
+          <div>data_sources <span class="c-dim">(RSS/HTML 소스)</span></div>
+          <div>presets <span class="c-dim">(분석 프리셋)</span></div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:.8rem;font-weight:700;color:var(--purple);margin-bottom:8px;padding-bottom:4px;border-bottom:2px solid var(--purple)">👤 사용자 관리</div>
+        <div style="font-size:.78rem;line-height:2">
+          <div>users <span class="c-dim">(계정 + 역할)</span></div>
+          <div>accounts <span class="c-dim">(OAuth 연동)</span></div>
+          <div>sessions <span class="c-dim">(세션 관리)</span></div>
+          <div>subscriptions <span class="c-dim">(구독 플랜)</span></div>
+          <div>usage_logs <span class="c-dim">(비용 추적)</span></div>
+          <div>ai_model_configs <span class="c-dim">(모델 설정)</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="g2">
+    <div class="card no-break">
+      <div class="card-title">🔑 핵심 관계 (ERD 요약)</div>
+      <pre style="font-size:.77rem"><code>collection_jobs
+  ├── article_jobs → articles (N:M)
+  │                   └── embedding ::vector(384)
+  ├── video_jobs   → videos   (N:M)
+  └── comment_jobs → comments (N:M)
+       ├── article_id FK → articles
+       └── video_id FK   → videos
+
+analysis_jobs (FK: collection_job_id)
+  └── analysis_results (모듈별 JSON 결과)
+       └── reports (최종 마크다운 리포트)
+
+users
+  ├── subscriptions (플랜·크레딧)
+  └── usage_logs (API 비용 추적)</code></pre>
+    </div>
+    <div class="card no-break">
+      <div class="card-title">📐 주요 설계 결정</div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:6px">
+        <div style="border-left:3px solid var(--accent);padding-left:12px">
+          <div style="font-size:.83rem;font-weight:700;color:var(--accent)">N:M 조인 테이블 (article_jobs 등)</div>
+          <div style="font-size:.77rem;color:var(--text-dim);margin-top:2px">같은 기사가 여러 수집 작업에서 재사용 가능. Upsert로 중복 방지하면서 작업별 연결 유지.</div>
+        </div>
+        <div style="border-left:3px solid var(--purple);padding-left:12px">
+          <div style="font-size:.83rem;font-weight:700;color:var(--purple)">analysis_results JSONB</div>
+          <div style="font-size:.77rem;color:var(--text-dim);margin-top:2px">42개 모듈 각각의 결과를 JSONB로 저장. 스키마 변경 없이 새 모듈 추가 가능.</div>
+        </div>
+        <div style="border-left:3px solid var(--green);padding-left:12px">
+          <div style="font-size:.83rem;font-weight:700;color:var(--green)">pgvector 인라인 저장</div>
+          <div style="font-size:.77rem;color:var(--text-dim);margin-top:2px">articles.embedding을 같은 테이블에. 별도 벡터DB 없이 SQL JOIN과 벡터 검색 동시 실행.</div>
+        </div>
+        <div style="border-left:3px solid var(--yellow);padding-left:12px">
+          <div style="font-size:.83rem;font-weight:700;color:var(--yellow)">data_sources 동적 수집기</div>
+          <div style="font-size:.77rem;color:var(--text-dim);margin-top:2px">관리자가 DB에 URL + CSS 셀렉터 등록 → 런타임에 Collector 동적 생성. 코드 변경 없이 새 소스 추가.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     09. 배포 & 인프라
+══════════════════════════════════════════ -->
+<div class="sec-divider page-break">
+  <div class="num">09 · Infrastructure</div>
+  <h2>배포 & 인프라</h2>
+  <p>Docker Compose · 개발-운영 분리 · 홈 서버 자체 운영</p>
+</div>
+
+<div class="section">
+  <div class="card no-break">
+    <div class="card-title">🐳 Docker Compose 서비스 구성</div>
+    <div class="g2" style="gap:14px;margin-top:10px">
+      <div>
+        <div style="font-size:.82rem;font-weight:700;color:var(--accent);margin-bottom:10px">애플리케이션 레이어</div>
+        <table class="tbl">
+          <thead><tr><th>서비스</th><th>포트</th><th>역할</th></tr></thead>
+          <tbody>
+            <tr><td>ais-prod-web</td><td>3300</td><td>Next.js 웹 서버</td></tr>
+            <tr><td>ais-prod-worker</td><td>-</td><td>BullMQ 워커 (수집+분석)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div>
+        <div style="font-size:.82rem;font-weight:700;color:var(--cyan);margin-bottom:10px">인프라 레이어</div>
+        <table class="tbl">
+          <thead><tr><th>서비스</th><th>포트</th><th>역할</th></tr></thead>
+          <tbody>
+            <tr><td>ais-prod-postgres</td><td>5438</td><td>PostgreSQL 16 + pgvector</td></tr>
+            <tr><td>ais-prod-redis</td><td>6385</td><td>Redis 7 (BullMQ 브로커)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="g2">
+    <div class="card no-break">
+      <div class="card-title">🔀 개발 / 운영 환경 분리</div>
+      <table class="tbl">
+        <thead><tr><th>구분</th><th>개발</th><th>운영</th></tr></thead>
+        <tbody>
+          <tr><td>서버</td><td>localhost:3000</td><td>ais-prod-web:3300</td></tr>
+          <tr><td>DB</td><td>192.168.0.5:5438</td><td>postgres:5432 (내부)</td></tr>
+          <tr><td>Redis</td><td>192.168.0.5:6385</td><td>redis:6379 (내부)</td></tr>
+          <tr><td>BullMQ prefix</td><td class="c-yellow">ais-dev</td><td class="c-green">bull</td></tr>
+        </tbody>
+      </table>
+      <div style="font-size:.8rem;margin-top:10px;color:var(--text-dim);background:#f1f5f9;border-radius:7px;padding:8px 12px">
+        개발·운영이 같은 PostgreSQL과 Redis를 공유하지만, BullMQ prefix로 큐가 완전히 분리되어 작업이 섞이지 않음
+      </div>
+    </div>
+
+    <div class="card no-break">
+      <div class="card-title">🚀 배포 명령어</div>
+      <pre style="font-size:.78rem"><code># 운영 서버 컨테이너 관리 (192.168.0.5)
+dserver ps                   # 컨테이너 목록
+dserver logs ais-prod-web    # 웹 서버 로그
+dcserver up -d               # Compose 전체 재시작
+
+# 빌드 & 배포
+pnpm build                   # 프로덕션 빌드
+docker build -t ais-web .    # 이미지 빌드
+docker push registry/ais-web # 레지스트리 push
+
+# DB 관리
+pnpm db:push                 # 스키마 동기화
+pnpm db:studio               # Drizzle Studio UI</code></pre>
+    </div>
+  </div>
+
+  <!-- 기술 스택 최종 요약 -->
+  <div class="card no-break" style="margin-top:16px">
+    <div class="card-title">✅ 구현 완료 기능 요약</div>
+    <div class="g2" style="gap:14px;margin-top:10px">
+      <div>
+        <div style="font-size:.8rem;font-weight:700;color:var(--green);margin-bottom:8px">✓ 완료</div>
+        <div style="font-size:.8rem;line-height:2.1">
+          <div>✅ 9개 데이터 소스 수집 어댑터</div>
+          <div>✅ BullMQ FlowProducer 부분 실패 허용</div>
+          <div>✅ 42개 AI 분석 모듈 (Stage 0~4)</div>
+          <div>✅ 8개 도메인별 특화 분석</div>
+          <div>✅ Map-Reduce 대용량 데이터 처리</div>
+          <div>✅ pgvector 임베딩 + RAG</div>
+          <div>✅ SSE 실시간 파이프라인 모니터링</div>
+          <div>✅ tRPC 6단계 권한 체계</div>
+          <div>✅ 7가지 전처리 프리셋 (토큰 최적화)</div>
+          <div>✅ 관리자 대시보드 (소스·모델·사용자)</div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:.8rem;font-weight:700;color:var(--accent);margin-bottom:8px">🏗️ 설계 특징</div>
+        <div style="font-size:.8rem;line-height:2.1">
+          <div>🔷 TypeScript 완전 타입 안전 (Zod + Drizzle + tRPC)</div>
+          <div>🔷 모노레포 단방향 의존성 (web→core→collectors)</div>
+          <div>🔷 개발/운영 인프라 공유 + 큐 네임스페이스 분리</div>
+          <div>🔷 AsyncGenerator 청크 단위 수집 (메모리 효율)</div>
+          <div>🔷 UPSERT 전략으로 중복 수집 방지</div>
+          <div>🔷 로컬 임베딩 모델 (외부 API 비용 없음)</div>
+          <div>🔷 동적 수집기 생성 (DB 등록만으로 새 소스 추가)</div>
+          <div>🔷 다중 AI 프로바이더 (Claude·GPT·Gemini 통합)</div>
+          <div>🔷 Docker Compose 자체 서버 운영</div>
+          <div>🔷 HNSW 인덱스 벡터 검색 최적화</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 푸터 -->
+<div class="page-footer">
+  AI SignalCraft — 기술 포트폴리오 &nbsp;|&nbsp; 2026.04.14 &nbsp;|&nbsp; 개인 프로젝트
+</div>
+
+</body>
+</html>
