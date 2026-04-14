@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { CardHelp, DASHBOARD_HELP } from './card-help';
 import { Card, CardContent } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 interface KpiCardsProps {
   totalMentions: number | null;
@@ -49,6 +50,13 @@ export function KpiCards({
       : { label: '부정', value: Math.round(sentimentRatio.negative * 100), color: 'text-red-500' }
     : null;
 
+  const CARD_ACCENT: Record<string, string> = {
+    '총 수집량': 'border-t-2 border-t-blue-500',
+    '주요 감성': 'border-t-2 border-t-emerald-500',
+    '핵심 키워드': 'border-t-2 border-t-violet-500',
+    '여론 방향': 'border-t-2 border-t-amber-400',
+  };
+
   const cards = [
     {
       title: '총 수집량',
@@ -86,7 +94,13 @@ export function KpiCards({
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
       {cards.map((card) => (
-        <Card key={card.title}>
+        <Card
+          key={card.title}
+          className={cn(
+            'border-slate-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all',
+            CARD_ACCENT[card.title],
+          )}
+        >
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-muted-foreground mb-2">
               <card.icon className="h-4 w-4" />

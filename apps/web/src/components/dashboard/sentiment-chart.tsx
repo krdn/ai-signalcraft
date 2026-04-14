@@ -49,7 +49,7 @@ export function SentimentChart({ data }: SentimentChartProps) {
   }, [data]);
 
   return (
-    <Card className="min-h-[280px]">
+    <Card className="h-full border-t-2 border-t-emerald-500 border-slate-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all min-h-[280px]">
       <CardHeader>
         <div className="flex items-center gap-2">
           <CardTitle className="text-lg font-semibold">감성 비율</CardTitle>
