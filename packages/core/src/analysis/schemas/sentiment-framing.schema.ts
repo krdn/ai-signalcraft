@@ -17,7 +17,7 @@ export const SentimentFramingSchema = z.object({
         sentiment: z.enum(['positive', 'negative', 'neutral']).catch('neutral'),
       }),
     )
-    .min(1)
+    .default([])
     .describe('반복 키워드 TOP 20 — 반드시 1개 이상 포함'),
   relatedKeywords: z
     .array(
@@ -28,9 +28,9 @@ export const SentimentFramingSchema = z.object({
         context: z.string().catch('').describe('연관 맥락 설명'),
       }),
     )
-    .min(1)
+    .default([])
     .describe(
-      '연관어 네트워크 (ANLZ-02) — 반드시 1개 이상 포함. topKeywords에서 함께 등장하는 키워드 쌍을 반드시 추출할 것',
+      '연관어 네트워크 (ANLZ-02) — topKeywords에서 함께 등장하는 키워드 쌍을 반드시 추출할 것',
     ),
   positiveFrames: z
     .array(
@@ -40,6 +40,7 @@ export const SentimentFramingSchema = z.object({
         strength: z.number().catch(0).describe('1~10'),
       }),
     )
+    .default([])
     .describe('긍정 프레임 TOP5 (최대 5개, 없으면 빈 배열)'),
   negativeFrames: z
     .array(
@@ -49,6 +50,7 @@ export const SentimentFramingSchema = z.object({
         strength: z.number().catch(0).describe('1~10'),
       }),
     )
+    .default([])
     .describe('부정 프레임 TOP5 (최대 5개, 없으면 빈 배열)'),
   frameConflict: z
     .object({
