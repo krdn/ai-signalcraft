@@ -212,6 +212,7 @@ export default function Home() {
   const handleGoToAnalysis = useCallback(() => {
     setActiveJobId(null);
     setIsShowcase(false);
+    setIsRunning(false);
     setActiveTab(0);
   }, []);
 
@@ -229,6 +230,7 @@ export default function Home() {
             onTabChange={setActiveTab}
             activeJobId={activeJobId}
             isRunning={isRunning}
+            onJobSelect={handleSelectJob}
           />
         }
         header={<AppHeader activeTab={activeTab} activeJobId={activeJobId} />}

@@ -75,6 +75,7 @@ interface AppSidebarProps {
   onTabChange: (index: number) => void;
   activeJobId: number | null;
   isRunning?: boolean;
+  onJobSelect: (jobId: number) => void;
 }
 
 function JobSelector({
@@ -205,7 +206,13 @@ function NavSection({
   );
 }
 
-export function AppSidebar({ activeTab, onTabChange, activeJobId, isRunning }: AppSidebarProps) {
+export function AppSidebar({
+  activeTab,
+  onTabChange,
+  activeJobId,
+  isRunning,
+  onJobSelect,
+}: AppSidebarProps) {
   const { data: session } = useSession();
   const { theme, setTheme } = useTheme();
   const isDark = theme === 'dark';
@@ -225,8 +232,8 @@ export function AppSidebar({ activeTab, onTabChange, activeJobId, isRunning }: A
         <JobSelector
           activeJobId={activeJobId}
           isRunning={isRunning}
-          onSelectJob={(_jobId) => {
-            onTabChange(1);
+          onSelectJob={(jobId) => {
+            onJobSelect(jobId);
           }}
         />
       </div>
