@@ -1,0 +1,738 @@
+// ── 모듈 메타데이터 (model-settings.tsx에서 분리) ──
+export type ModuleMeta = {
+  name: string;
+  description: string;
+  analyzes: string[];
+  recommended: { provider: string; model: string; reason: string };
+  costTip: string;
+  domain?:
+    | 'political'
+    | 'fandom'
+    | 'corporate'
+    | 'pr'
+    | 'policy'
+    | 'finance'
+    | 'healthcare'
+    | 'legal'
+    | 'sports'
+    | 'education'; // undefined = 공통
+};
+
+export const MODULE_META: Record<string, ModuleMeta> = {
+  // 공통 모듈 (Stage 1)
+  'macro-view': {
+    name: '전체 여론 구조 분석',
+    description: '수집된 전체 데이터를 바탕으로 여론의 거시적 구조와 흐름을 파악합니다.',
+    analyzes: [
+      '주요 이슈별 여론 분포 비율',
+      '시간대별 여론 변화 트렌드',
+      '플랫폼 간 여론 차이 비교',
+      '핵심 키워드 및 토픽 클러스터링',
+    ],
+    recommended: {
+      provider: 'gemini',
+      model: 'gemini-2.5-flash',
+      reason: '대량 텍스트 요약에 비용 효율적',
+    },
+    costTip: '데이터 양이 많아 토큰 소비가 큽니다. 비용 절감이 중요하면 경량 모델을 추천합니다.',
+  },
+  segmentation: {
+    name: '여론 진영 세분화',
+    description: '여론 참여자를 성향, 관심사, 입장에 따라 세부 진영으로 분류합니다.',
+    analyzes: [
+      '지지/반대/중립 진영 분류 및 규모 추정',
+      '진영별 핵심 주장과 논리 구조',
+      '진영 간 대립 포인트 매핑',
+      '이탈 가능성이 높은 유동층 식별',
+    ],
+    recommended: {
+      provider: 'gemini',
+      model: 'gemini-2.5-flash',
+      reason: '패턴 분류 작업에 충분한 성능, 비용 효율적',
+    },
+    costTip: '분류 작업은 비교적 단순하므로 경량 모델로도 정확도가 높습니다.',
+  },
+  'sentiment-framing': {
+    name: '감정 프레이밍 분석',
+    description: '텍스트에 내재된 감정의 종류와 강도, 프레이밍 방식을 분석합니다.',
+    analyzes: [
+      '긍정/부정/분노/불안/희망 등 감정 분류',
+      '감정 강도 수치화 (1~10)',
+      '프레이밍 전략 탐지',
+      '감정 유발 키워드 추출',
+    ],
+    recommended: {
+      provider: 'gemini',
+      model: 'gemini-2.5-flash',
+      reason: '감정 분류에 비용 대비 성능 우수',
+    },
+    costTip: '한국어 뉘앙스 파악이 중요한 경우 고급 모델이 더 정확합니다.',
+  },
+  'message-impact': {
+    name: '메시지 임팩트 분석',
+    description: '특정 메시지나 발언이 여론에 미친 실제 영향력을 측정합니다.',
+    analyzes: [
+      '메시지 도달 범위 및 확산 속도 추정',
+      '메시지 전후 여론 변화량 측정',
+      '반응 유형 분류',
+      '메시지 효과의 지속 기간 예측',
+    ],
+    recommended: {
+      provider: 'gemini',
+      model: 'gemini-2.5-flash',
+      reason: '정량적 분석에 적합, 비용 효율적',
+    },
+    costTip: '시계열 비교가 포함되어 입력 토큰이 많을 수 있습니다.',
+  },
+  // 공통 모듈 (Stage 2)
+  'risk-map': {
+    name: '리스크 맵',
+    description: '현재 여론 상황에서 잠재적 위험 요소를 식별하고 우선순위를 매깁니다.',
+    analyzes: [
+      '부정 여론 확산 위험도 평가',
+      '이슈별 위기 발생 확률 예측',
+      '위험 요소 영향 범위 및 심각도 매트릭스',
+      '조기 경보 신호 탐지',
+    ],
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      reason: '복합적 위험 분석에 높은 추론 능력 필요',
+    },
+    costTip: '정확한 위험 평가가 중요하므로 고급 모델 사용을 권장합니다.',
+  },
+  opportunity: {
+    name: '기회 요소 분석',
+    description: '여론 데이터에서 활용 가능한 긍정적 기회와 전략적 포인트를 발굴합니다.',
+    analyzes: [
+      '긍정 여론 강화 가능 포인트',
+      '경쟁 대상 대비 우위 영역',
+      '미디어 어젠다 선점 기회',
+      '지지층 확대 가능 타겟 그룹 식별',
+    ],
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      reason: '창의적 인사이트 도출에 강점',
+    },
+    costTip: '전략적 판단이 필요한 영역으로, 모델 품질이 결과에 직접 영향을 줍니다.',
+  },
+  strategy: {
+    name: '전략 제안',
+    description: '분석 결과를 종합하여 실행 가능한 구체적 전략 방안을 제시합니다.',
+    analyzes: [
+      '단기/중기/장기 대응 전략 로드맵',
+      '타겟별 맞춤 메시지 전략',
+      '위기 대응 시나리오별 액션 플랜',
+      '채널별 최적 커뮤니케이션 방안',
+    ],
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      reason: '전략 수립에 깊은 추론 능력 필수',
+    },
+    costTip: '최종 의사결정에 활용되므로 가장 높은 품질의 모델을 추천합니다.',
+  },
+  'final-summary': {
+    name: '최종 요약',
+    description: '모든 분석 모듈의 결과를 하나의 통합 요약 보고서로 정리합니다.',
+    analyzes: [
+      '각 모듈 핵심 결론 종합 정리',
+      '우선순위별 주요 발견 사항',
+      '즉시 대응 필요 항목 하이라이트',
+      '의사결정자용 원페이지 브리핑',
+    ],
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      reason: '다중 분석 결과 종합에 뛰어난 정리 능력',
+    },
+    costTip: '입력이 다른 모듈 결과 전체이므로 토큰 소비가 클 수 있습니다.',
+  },
+  'integrated-report': {
+    name: '종합 리포트',
+    description: '모든 분석 결과를 구조화된 전문 리포트 형태로 생성합니다.',
+    analyzes: [
+      '목차가 포함된 공식 보고서 형태 생성',
+      '그래프/차트 데이터 포맷팅',
+      '참고 데이터 원문 인용 및 출처 표기',
+      '배포 가능한 최종 문서 형태 출력',
+    ],
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      reason: '긴 형식의 구조화된 문서 생성에 최적',
+    },
+    costTip: '출력 토큰이 매우 많습니다. 비용에 민감하면 요약 수준을 조절하세요.',
+  },
+  // 정치 / 정책 공유 (Stage 4) — political, policy, public-sector, legal 도메인
+  'approval-rating': {
+    name: '지지율 / 수용도 추정',
+    description:
+      '여론 데이터로 정치 지지율(political) 또는 정책 수용도(policy·public-sector)를 집단별로 추정합니다.',
+    analyzes: [
+      '현재 여론 기반 지지율·수용도 추정 범위',
+      '집단별(지지층/반대층/전문가) 반응 분리 측정',
+      '플랫폼 편향 보정 후 신뢰도 산출',
+      '지지율 변동에 영향하는 핵심 변수 식별',
+    ],
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      reason: '수치 추정에 정밀한 추론 필요',
+    },
+    costTip: '정량적 추정의 정확도는 모델 성능에 크게 의존합니다.',
+  },
+  'frame-war': {
+    name: '프레임 전쟁 분석',
+    description:
+      '지지/반대 진영이 사용하는 프레이밍 전략과 세력 역학을 분석합니다. 도메인에 따라 정치 프레임 또는 정책 담론 프레임으로 분석됩니다.',
+    analyzes: [
+      '지배적/위협적/반전가능 프레임 3분류',
+      '프레임 간 세력 역학·시간 추이 분석',
+      '플랫폼별 프레임 우세/열세 비교',
+      '약세 프레임의 우세 전환 조건 도출',
+    ],
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      reason: '미묘한 언어 전략 분석에 고급 모델 필수',
+    },
+    costTip: '담론 분석은 컨텍스트 이해가 핵심이므로 모델 품질이 중요합니다.',
+  },
+  'crisis-scenario': {
+    name: '위기 시나리오',
+    description:
+      '리스크 확산/통제/역전 3가지 시나리오를 시뮬레이션합니다. 정치 도메인은 여론 위기를, 정책 도메인은 정책 추진 좌초·통제·성과 역전을 분석합니다.',
+    analyzes: [
+      'spread(확산): 최악 시나리오 경로와 트리거 조건',
+      'control(통제): 현 수준 봉쇄 및 단계적 대응 경로',
+      'reverse(역전): 위기→기회 전환 조건과 실행 방안',
+      '각 시나리오별 확률·타임라인·대응 전략',
+    ],
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      reason: '복합 시나리오 생성에 고급 추론 필요',
+    },
+    costTip: '여러 시나리오를 생성하므로 출력 토큰이 많습니다.',
+  },
+  'win-simulation': {
+    name: '목표 달성 시뮬레이션',
+    description:
+      '전 단계 분석을 종합하여 목표 달성 확률과 최적 전략 경로를 시뮬레이션합니다. 정치 도메인은 선거 승리, 정책 도메인은 정책 수용도 목표 달성 확률을 산출합니다.',
+    analyzes: [
+      '목표 달성 확률(0~100%) 산출',
+      '달성 조건(3~7개): 충족/부분/미충족 상태 점검',
+      '핵심 변수별 민감도 분석',
+      '최적 자원 배분 및 우선순위 전략 제안',
+    ],
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      reason: '전 단계 결과 종합 및 전략 시뮬레이션에 최고 성능 필요',
+    },
+    costTip: '가장 복잡한 분석 모듈입니다. 최고 품질 모델 사용을 강력 권장합니다.',
+  },
+  // 팬덤 전용 (Stage 4)
+  'fan-loyalty-index': {
+    name: '팬 로열티 지수',
+    description: '팬덤의 충성도를 정량 분석하고 이탈 징후를 조기 감지합니다.',
+    analyzes: [
+      '충성도 점수 (engagement/sentiment/advocacy)',
+      '이탈 징후 및 위험 팬 식별',
+      '팬덤 세분화 (5단계: 열성팬→일반인)',
+      '플랫폼별 팬 참여도 비교',
+    ],
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      reason: '팬덤 심리 분석에 높은 이해력 필요',
+    },
+    costTip: '정서적 뉘앙스 분석이 핵심이므로 고급 모델을 권장합니다.',
+    domain: 'fandom',
+  },
+  'fandom-narrative-war': {
+    name: '팬덤 내러티브 전쟁',
+    description: '팬덤 vs 안티 내러티브 경쟁과 팬덤 간 경쟁 구도를 분석합니다.',
+    analyzes: [
+      '팬덤 vs 안티 주요 내러티브 매핑',
+      '팬덤 간 갈등 구조 및 연합 관계',
+      '내러티브 확산 경로 및 영향력 평가',
+      '방어/역공 내러티브 전략 제안',
+    ],
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      reason: '복합적 내러티브 분석에 고급 추론 필요',
+    },
+    costTip: '다양한 관점을 종합해야 하므로 고품질 모델이 필요합니다.',
+    domain: 'fandom',
+  },
+  'fandom-crisis-scenario': {
+    name: '팬덤 위기 시나리오',
+    description: '팬덤 특유의 위기 유형(논란, 구설, 루머)별 시나리오를 생성합니다.',
+    analyzes: [
+      '팬덤 위기 유형별 발생 시나리오 3종',
+      '확산/통제/역전 단계별 대응 매뉴얼',
+      '위기별 팬덤 반응 예측',
+      '플랫폼별 대응 전략 차이',
+    ],
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      reason: '팬덤 특화 위기 시나리오에 전문적 분석 필요',
+    },
+    costTip: '여러 시나리오를 생성하므로 출력 토큰이 많습니다.',
+    domain: 'fandom',
+  },
+  'release-reception-prediction': {
+    name: '컴백/발표 반응 예측',
+    description: '신곡, 컴백, 방송 출연 등의 반응을 사전 예측합니다.',
+    analyzes: [
+      '성공/보통/실망 시나리오별 반응 예측',
+      '성공 요인 및 리스크 요인 분석',
+      '플랫폼별 반응 차이 예측',
+      '최적 발표 타이밍 및 전략 제안',
+    ],
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      reason: '예측 정확도에 고급 모델 필수',
+    },
+    costTip: '예측의 정확도가 비즈니스에 직접 영향을 미치므로 최고 품질 모델을 추천합니다.',
+    domain: 'fandom',
+  },
+  // 기업 평판 전용 (Stage 4)
+  'stakeholder-map': {
+    name: '이해관계자 영향력 지도',
+    description:
+      'Stakeholder Salience Model 기반으로 투자자·소비자·임직원·규제기관·미디어의 권력·합법성·긴급성을 매핑합니다.',
+    analyzes: [
+      '7가지 이해관계자 유형 분류 (Dormant→Definitive)',
+      '이해관계자별 현출성(Salience) 점수 산출',
+      '긴급 대응 필요 이해관계자 우선순위 결정',
+      '2×2 권력-관심 매트릭스 구성',
+    ],
+    recommended: {
+      provider: 'gemini',
+      model: 'gemini-2.5-flash',
+      reason: '이해관계자 분류 작업에 비용 효율적',
+    },
+    costTip: '구조화된 분류 작업이므로 경량 모델로도 정확합니다.',
+    domain: 'corporate',
+  },
+  'esg-sentiment': {
+    name: 'ESG 여론 분석',
+    description:
+      '환경(E)·사회(S)·지배구조(G) 3차원별로 온라인 여론을 분리 측정하고 규제 리스크를 평가합니다.',
+    analyzes: [
+      'E·S·G 차원별 여론 점수 (0~100)',
+      '그린워싱 논란 감지',
+      '규제기관 관련 언급 및 리스크 수준',
+      'ESG 개선 기회 식별',
+    ],
+    recommended: {
+      provider: 'gemini',
+      model: 'gemini-2.5-flash',
+      reason: '3차원 분류 작업에 비용 효율적',
+    },
+    costTip: 'ESG 언급이 없는 차원은 자동으로 중립(50점) 처리됩니다.',
+    domain: 'corporate',
+  },
+  'reputation-index': {
+    name: '평판 지수 측정 (RepTrak)',
+    description:
+      'RepTrak 7차원 모델(제품·혁신·직장·거버넌스·시민의식·리더십·재무)로 종합 평판 점수를 산출합니다.',
+    analyzes: [
+      'RepTrak 7차원별 점수 및 추세 (improving/stable/declining)',
+      '이해관계자별 평판 인식 차이',
+      '평판 취약 지점 및 개선 권고',
+      '업계 평균 대비 위치 추정',
+    ],
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      reason: '7차원 통합 평가에 깊은 추론 필요',
+    },
+    costTip: '선행 분석 결과를 종합하므로 입력 토큰이 많을 수 있습니다.',
+    domain: 'corporate',
+  },
+  'crisis-type-classifier': {
+    name: 'SCCT 위기 유형 분류',
+    description:
+      'Situational Crisis Communication Theory로 위기 유형(희생자형/사고형/예방가능형)을 분류하고 Image Repair 전략을 매핑합니다.',
+    analyzes: [
+      'SCCT 3가지 위기 유형 분류 및 귀속 책임 수준',
+      'Image Repair Theory 5가지 대응 전략 우선순위',
+      '골든타임 잔여 시간 평가 (critical/high/medium/low)',
+      '과거 유사 위기 이력 추출',
+    ],
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      reason: '위기 유형 판단에 미묘한 컨텍스트 이해 필요',
+    },
+    costTip: '위기 대응의 골든타임을 다루므로 정확도 우선 고급 모델 권장.',
+    domain: 'corporate',
+  },
+  'media-framing-dominance': {
+    name: '미디어 프레임 의제 설정력',
+    description:
+      '언론 기사 프레임 vs 댓글 여론 프레임의 간극을 분석하고, 기업 공식 메시지의 의제 설정력을 측정합니다.',
+    analyzes: [
+      '언론 지배 프레임과 강도 (0~100)',
+      '기사 프레임 vs 댓글 여론 간 괴리 (frameMismatch)',
+      '기업 공식 메시지의 언론 반영도 (0~100)',
+      '의제 주도권 판단 (company-led/media-led/public-led/contested)',
+    ],
+    recommended: {
+      provider: 'gemini',
+      model: 'gemini-2.5-flash',
+      reason: '프레임 분류에 비용 효율적',
+    },
+    costTip: '병렬 실행 모듈로 처리 속도가 빠릅니다.',
+    domain: 'corporate',
+  },
+  'csr-communication-gap': {
+    name: 'CSR 공약 진정성 간극',
+    description:
+      'ESG/CSR 공약과 실제 온라인 여론 평가의 간극을 측정하고 그린워싱 위험을 진단합니다.',
+    analyzes: [
+      'E·S·G 차원별 기업 공약 vs 온라인 여론 신뢰도',
+      '그린워싱(Greenwashing) 위험 수준',
+      'CSR 이니셔티브별 평판 ROI',
+      '전반적 CSR 신뢰도 점수 (0~100)',
+    ],
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      reason: '진정성 판단에 Claude 언어 이해력 활용',
+    },
+    costTip: 'ESG 공시 문서 컨텍스트가 많을수록 정확도가 높아집니다.',
+    domain: 'corporate',
+  },
+  'reputation-recovery-simulation': {
+    name: '평판 회복 시뮬레이션',
+    description:
+      'RepTrak·SCCT·SLO 이론을 종합하여 평판 회복 목표 달성 확률과 최적 회복 전략을 도출합니다.',
+    analyzes: [
+      '평판 회복 목표 달성 확률 (0~100%)',
+      '회복 조건 met/partial/unmet 상태 진단',
+      '회복 장애 요인 및 이해관계자별 완화 방안',
+      '우선순위별 회복 전략 (immediate/short-term/long-term)',
+    ],
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      reason: '전략적 종합 추론에 최고 성능 필요',
+    },
+    costTip:
+      '모든 선행 모듈 결과를 종합하므로 입력 토큰이 가장 많습니다. 최고 품질 모델 강력 권장.',
+    domain: 'corporate',
+  },
+
+  // ── 헬스케어 도메인 Stage 4 ──
+  'health-risk-perception': {
+    name: '건강 위험 인식 분석',
+    description:
+      'Risk Perception Theory(Slovic, 1987)로 대중의 건강 위험 인식 편향(공포요소·미지성·정상화편향·가용성휴리스틱)을 분석하고, 전문가 평가와 대중 인식 간 간극을 측정합니다.',
+    analyzes: [
+      '대중 위험 인식 수준 (overestimated/accurate/underestimated)',
+      '전문가 vs 대중 인식 간극 + 간극 크기 평가',
+      '편향 유형별(dread-factor/unknown-risk/normalcy-bias) 데이터 패턴 식별',
+      '확산 중인 오정보 목록 + 정정 우선순위',
+    ],
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      reason: '미묘한 위험 인식 편향 패턴 식별에 Claude 언어 이해력 필요',
+    },
+    costTip: '선행 sentiment-framing 결과를 활용하므로 독립 실행 시보다 정확도가 높습니다.',
+    domain: 'healthcare',
+  },
+  'compliance-predictor': {
+    name: '의료 순응도 예측',
+    description:
+      'Health Belief Model(Rosenstock, 1966) 6요인(취약성·심각성·이익·장벽·계기·자기효능감)으로 집단별 의료 순응 예측 확률과 장벽을 도출하고 개입 전략을 제안합니다.',
+    analyzes: [
+      '전체 의료 순응 예측 확률 (0~100%)',
+      'HBM 6요인별 여론 신호 강도 및 근거',
+      '집단별(환자/보호자/의료진/일반대중) 순응 확률 + 핵심 장벽',
+      '순응도 향상 개입 전략 우선순위',
+    ],
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      reason: '행동 심리 모델 적용과 집단별 차별화 분석에 고급 추론 필요',
+    },
+    costTip: '선행 health-risk-perception 결과를 활용하여 더 정확한 집단별 예측이 가능합니다.',
+    domain: 'healthcare',
+  },
+
+  // ── 금융 도메인 Stage 4 ──
+  'market-sentiment-index': {
+    name: '투자 심리 지수',
+    description:
+      'Baker & Wurgler(2006) 투자자 심리 지수와 Kahneman & Tversky(1979) 행동 재무학으로 공포/탐욕 스펙트럼과 투자자 편향을 측정합니다. ⚠️ 투자 자문 아님.',
+    analyzes: [
+      '투자 심리 지수 (0=극단적 공포 ~ 100=극단적 탐욕)',
+      '투자자 집단별 (개인/기관/외국인) bullish/bearish 심리',
+      '행동 재무학 편향 패턴 (손실 회피·앵커링·군집 행동·확증 편향)',
+      '역발상 신호 vs 추세 추종 신호 분류',
+    ],
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      reason: '투자자 심리 편향 패턴 분류에 정교한 언어 이해 필요',
+    },
+    costTip: '심리 지수 산출은 댓글 분석 집중형 — 댓글 수집량이 많을수록 정확도 향상.',
+    domain: 'finance',
+  },
+  'information-asymmetry': {
+    name: '정보 비대칭 분석',
+    description:
+      'Bikhchandani et al.(1992) Information Cascade Theory로 정보 폭포 현상, 선행 지표, 루머 위험 영역을 식별합니다. ⚠️ 투자 자문 아님.',
+    analyzes: [
+      '기관-개인 정보 격차 수준 (high/medium/low)',
+      '정보 폭포 시작점 및 확산 경로',
+      '주류 미디어 반영 전 선행 지표 (커뮤니티 선행 신호)',
+      '정보 공백 영역과 루머 위험도 및 공식 정보 권고',
+    ],
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      reason: '정보 폭포 패턴의 맥락적 이해와 선행/후행 신호 구분에 Claude 추론 필요',
+    },
+    costTip: '선행 의존 모듈이 많아 컨텍스트가 큼 — 경량 토큰 최적화 설정 권장.',
+    domain: 'finance',
+  },
+  'catalyst-scenario': {
+    name: '시장 시나리오',
+    description:
+      'De Long et al.(1990) Noise Trader Theory로 여론 기반 강세(Bull)/기본(Base)/약세(Bear) 3개 시나리오와 촉발 이벤트를 분석합니다. ⚠️ 투자 자문 아님.',
+    analyzes: [
+      'Bull / Base / Bear 3개 시나리오별 확률·촉발 이벤트·시장 내러티브',
+      '현재 가장 가능성 높은 시나리오 선정',
+      '심리 모멘텀 방향 (accelerating-bull / stable / accelerating-bear)',
+      '현재 여론이 단기 노이즈인지 구조적 시그널인지 판단',
+    ],
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      reason: '복수 시나리오 분기 추론과 확률 배분에 Claude 추론 능력 활용',
+    },
+    costTip: '시나리오 생성은 창의적 추론 집중형 — 모델 품질이 결과 다양성에 직결됨.',
+    domain: 'finance',
+  },
+  'investment-signal': {
+    name: '투자 신호 종합',
+    description:
+      '금융 Stage 4 분석을 종합하여 여론 기반 단기(1~2주) / 중기(1~3개월) 투자 심리 신호를 도출합니다. ⚠️ 투자 자문 아님.',
+    analyzes: [
+      '종합 투자 신호 (strong-buy / buy / hold / sell / strong-sell) — 여론 기반',
+      '신호 강도 (0~100) 및 구성 요소 가중치 분해',
+      '단기 / 중기 신호 구분 및 근거',
+      '극단적 심리 경고 및 역발상 신호 발동 조건',
+    ],
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      reason: '전체 금융 Stage 4 결과 종합 — 가장 많은 선행 컨텍스트를 처리하는 최종 모듈',
+    },
+    costTip:
+      '모든 금융 Stage 4 선행 결과를 입력으로 받아 토큰이 가장 많습니다. 최고 품질 모델 강력 권장.',
+    domain: 'finance',
+  },
+  // 스포츠 전용 (Stage 4)
+  'performance-narrative': {
+    name: '성과 내러티브 분석',
+    description:
+      'BIRGing/CORFing Theory(Cialdini et al., 1976)로 팀/선수 성적과 팬덤 여론 온도 간 상관관계를 분석하고, 지배적 서사 호(Arc)를 파악합니다.',
+    analyzes: [
+      'BIRGing/CORFing 패턴 측정 — 승/패 시 팬 반응 강도 변화',
+      '서사 호 유형 식별: 부활/몰락/영웅/악역/라이벌리',
+      '미디어 프레임 vs 팬 커뮤니티 프레임 차이 분석',
+      '팬덤 여론 안정성 지수 및 모멘텀 방향',
+    ],
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      reason: '팬덤 심리 미묘한 뉘앙스 분석과 서사 호 식별에 고급 추론 필요',
+    },
+    costTip: '선행 macro-view·sentiment-framing 결과를 컨텍스트로 받아 토큰이 증가합니다.',
+    domain: 'sports',
+  },
+  'season-outlook-prediction': {
+    name: '시즌 전망 예측',
+    description:
+      'Sport Consumer Motivation Theory(Trail et al., 2003) 기반으로 팬 기대치 지수(0~100), 팬 참여도 예측, 주요 관전 포인트와 리스크·기회 요인을 종합합니다.',
+    analyzes: [
+      '팬 기대치 지수(0~100) — 성적 기대·스타 선수·라이벌전 종합',
+      '팬 참여도 예측: 증가/유지/감소 추세 및 근거',
+      '주요 관전 포인트 및 팬덤 내러티브 잠재력',
+      '리스크 요인(확률·영향도) 및 기회 요인 목록',
+    ],
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      reason: '복합 예측 시나리오 생성과 선행 분석 결과 종합에 Claude 추론 활용',
+    },
+    costTip: '성과 내러티브 선행 결과를 포함하여 컨텍스트가 큽니다. 경량 토큰 최적화 권장.',
+    domain: 'sports',
+  },
+  // 교육 전용 (Stage 4)
+  'institutional-reputation-index': {
+    name: '기관 평판 지수',
+    description:
+      'Fombrun(1996) Institutional Reputation Theory와 Spence(1973) Signaling Theory 기반으로 4차원(교육품질·연구력·취업률·학생생활) 평판 지수와 공식 신호-수신 간극을 측정합니다.',
+    analyzes: [
+      '4차원별 평판 점수 (교육품질 / 연구력 / 취업률 / 학생생활)',
+      '4집단별 인식 차이 (지원자·재학생·졸업생·일반대중)',
+      '기관 공식 신호와 실제 수신 간 간극 (Signaling Theory)',
+      '경쟁 교육기관 대비 포지션 및 차별화 기회',
+    ],
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      reason: '4차원 동시 측정과 집단별 인식 비교에 정밀한 추론 필요',
+    },
+    costTip: 'sentiment-framing·segmentation 선행 결과를 컨텍스트로 활용하여 토큰이 증가합니다.',
+    domain: 'education',
+  },
+  'education-opinion-frame': {
+    name: '교육 여론 프레임',
+    description:
+      'Espeland & Sauder(2007) Rankings Dynamics와 Spence(1973) Signaling Theory 기반으로 기관 공식 프레임과 학생 경험 프레임 간 세력 역학 및 순위 변동의 프레임 영향을 분석합니다.',
+    analyzes: [
+      '기관 공식 프레임 vs 재학생 경험 프레임 세력 균형',
+      '순위 변동이 이해관계자별 프레임에 미치는 영향',
+      '프레임 전환 조건 및 기관에 유리한 커뮤니케이션 방향',
+      '신뢰도 저하 프레임 유형 및 역효과 메시지 패턴',
+    ],
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      reason: '교육기관 담론 역학 분석과 프레임 세력 역학 파악에 고급 언어 이해 필요',
+    },
+    costTip:
+      'sentiment-framing과 institutional-reputation-index 선행 결과를 활용하여 컨텍스트가 큽니다.',
+    domain: 'education',
+  },
+  'education-crisis-scenario': {
+    name: '교육 위기 시나리오',
+    description:
+      'Rawls(1971) Social Contract Theory와 Fombrun(1996) Institutional Reputation Theory 기반으로 교육기관-학생 간 사회계약 위반 차원을 중심으로 확산/통제/역전 3가지 위기 경로를 시뮬레이션합니다.',
+    analyzes: [
+      '교육 사회계약 위반 차원 (취업·교육품질·학비·비리)',
+      '확산(worst)/통제(moderate)/역전(best) 3가지 시나리오 경로',
+      '골든타임(72시간) 내 우선 대응 조치',
+      '단기(3개월)·중기(1년)·장기(3년) 평판 회복 프레임워크',
+    ],
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      reason: '다중 시나리오 분기와 교육기관 맥락 이벤트 추론에 Claude 추론 능력 필요',
+    },
+    costTip:
+      'risk-map·institutional-reputation-index·education-opinion-frame 선행 결과를 활용하여 토큰이 많습니다.',
+    domain: 'education',
+  },
+  'education-outcome-simulation': {
+    name: '교육기관 목표 달성 시뮬레이션',
+    description:
+      'Rankings Dynamics(Espeland & Sauder, 2007)와 Institutional Reputation Theory(Fombrun, 1996) 기반으로 교육기관 신뢰 회복 확률과 전략 우선순위를 시뮬레이션합니다.',
+    analyzes: [
+      '교육기관 신뢰 회복 확률 (0~100%) 및 산출 근거',
+      '목표 달성 조건 체크리스트 (met/partial/unmet)',
+      '전략 우선순위 재배치 (정량적 expectedImpact)',
+      '낙관/비관 시나리오별 확률과 핵심 변수',
+    ],
+    recommended: {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      reason: '교육 Stage 4 전체 선행 결과 종합 — 가장 많은 컨텍스트를 처리하는 최종 모듈',
+    },
+    costTip:
+      '모든 교육 Stage 4 선행 결과를 입력으로 받아 토큰이 가장 많습니다. 최고 품질 모델 강력 권장.',
+    domain: 'education',
+  },
+};
+
+// ── 모듈 분류 상수 ──
+
+export const COMMON_MODULES = [
+  'macro-view',
+  'segmentation',
+  'sentiment-framing',
+  'message-impact',
+  'risk-map',
+  'opportunity',
+  'strategy',
+  'final-summary',
+];
+
+export const DOMAIN_MODULES: Record<string, string[]> = {
+  political: ['approval-rating', 'frame-war', 'crisis-scenario', 'win-simulation'],
+  policy: ['approval-rating', 'frame-war', 'crisis-scenario', 'win-simulation'],
+  fandom: [
+    'fan-loyalty-index',
+    'fandom-narrative-war',
+    'fandom-crisis-scenario',
+    'release-reception-prediction',
+  ],
+  corporate: [
+    'stakeholder-map',
+    'esg-sentiment',
+    'reputation-index',
+    'crisis-type-classifier',
+    'media-framing-dominance',
+    'csr-communication-gap',
+    'crisis-scenario',
+    'reputation-recovery-simulation',
+  ],
+  pr: ['crisis-type-classifier', 'reputation-index', 'crisis-scenario', 'frame-war'],
+  finance: [
+    'market-sentiment-index',
+    'information-asymmetry',
+    'catalyst-scenario',
+    'investment-signal',
+  ],
+  healthcare: ['health-risk-perception', 'compliance-predictor'],
+  legal: ['reputation-index', 'frame-war', 'crisis-scenario', 'win-simulation'],
+  education: [
+    'institutional-reputation-index',
+    'education-opinion-frame',
+    'education-crisis-scenario',
+    'education-outcome-simulation',
+  ],
+  'public-sector': ['approval-rating', 'frame-war', 'crisis-scenario', 'win-simulation'],
+  sports: [
+    'performance-narrative',
+    'season-outlook-prediction',
+    'fandom-crisis-scenario',
+    'frame-war',
+  ],
+  retail: ['reputation-index', 'esg-sentiment', 'crisis-scenario', 'win-simulation'],
+};
+
+// 프리셋 → 도메인 매핑 (seed-presets와 동일)
+export const PRESET_DOMAIN_MAP: Record<
+  string,
+  { domain: string; title: string; category: string }
+> = {
+  politics: { domain: 'political', title: '정치 캠프', category: '핵심 활용' },
+  pr_crisis: { domain: 'pr', title: 'PR / 위기관리', category: '핵심 활용' },
+  corporate_reputation: { domain: 'corporate', title: '기업 평판 관리', category: '핵심 활용' },
+  entertainment: { domain: 'fandom', title: '연예인 / 기획사', category: '핵심 활용' },
+  policy_research: { domain: 'policy', title: '정책 연구', category: '산업 특화' },
+  finance: { domain: 'finance', title: '금융 / 투자', category: '산업 특화' },
+  pharma_healthcare: { domain: 'healthcare', title: '제약 / 헬스케어', category: '산업 특화' },
+  public_sector: { domain: 'public-sector', title: '지자체 / 공공기관', category: '산업 특화' },
+  education: { domain: 'education', title: '대학 / 교육', category: '확장 영역' },
+  sports: { domain: 'sports', title: '스포츠 / e스포츠', category: '확장 영역' },
+  legal: { domain: 'legal', title: '법률 / 로펌', category: '확장 영역' },
+  franchise_retail: { domain: 'retail', title: '프랜차이즈 / 유통', category: '확장 영역' },
+};
+
+export const CATEGORY_ORDER = ['핵심 활용', '산업 특화', '확장 영역'];
