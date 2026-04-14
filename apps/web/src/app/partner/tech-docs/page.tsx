@@ -1,12 +1,15 @@
 'use client';
 
+import Link from 'next/link';
 import {
   BookOpen,
   CheckCircle2,
   Clock,
   Cpu,
+  ExternalLink,
   FileText,
   HardDrive,
+  Layers,
   Play,
   Terminal,
   Video,
@@ -126,6 +129,77 @@ export default function TechDocsPage() {
         </p>
       </div>
 
+      {/* ── 시스템 아키텍처 문서 카드 ── */}
+      <section className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Layers className="h-5 w-5 text-primary" />
+          <h2 className="text-xl font-semibold">문서 목록</h2>
+        </div>
+
+        <Link href="/partner/tech-docs/architecture" className="block group">
+          <Card className="transition-colors hover:border-primary/50 hover:bg-muted/30">
+            <CardHeader className="pb-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xl">
+                    🏗️
+                  </div>
+                  <div>
+                    <CardTitle className="text-base group-hover:text-primary transition-colors">
+                      시스템 아키텍처 완전 기술 문서
+                    </CardTitle>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      수집 → 분석 → 배포 → 유지보수 전체 생애주기 · 12개 탭 인터랙티브
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Badge variant="default">신규</Badge>
+                  <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                {[
+                  { v: '9개', l: '수집 소스', c: 'text-green-500' },
+                  { v: '42+', l: 'AI 모듈', c: 'text-purple-500' },
+                  { v: '24개', l: 'DB 테이블', c: 'text-blue-500' },
+                  { v: '10개', l: 'AI 프로바이더', c: 'text-orange-500' },
+                ].map((s) => (
+                  <div key={s.l} className="rounded-md bg-muted/50 px-2 py-1.5 text-center">
+                    <div className={`font-bold text-sm ${s.c}`}>{s.v}</div>
+                    <div className="text-muted-foreground">{s.l}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="flex flex-wrap gap-1.5 mt-3">
+                {[
+                  '전체 개요',
+                  'BullMQ·워커',
+                  '수집기 9종',
+                  'Vector DB',
+                  'Graph DB',
+                  'AI 프로바이더',
+                  'DB 맵',
+                  '배포·인프라',
+                  '유지보수',
+                ].map((tag) => (
+                  <span
+                    key={tag}
+                    className="inline-block rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+      </section>
+
+      <Separator />
+
       {/* YouTube 요약 섹션 */}
       <section className="space-y-4">
         <div className="flex items-center gap-2">
@@ -136,7 +210,6 @@ export default function TechDocsPage() {
           YouTube 동영상을 텍스트로 변환하여 AI 요약하는 3가지 방법과 소요 시간 안내입니다.
         </p>
 
-        {/* 방법 카드 목록 */}
         <div className="space-y-4">
           {METHODS.map((method) => {
             const Icon = method.icon;
@@ -156,7 +229,6 @@ export default function TechDocsPage() {
                 <CardContent className="space-y-4">
                   <p className="text-sm text-muted-foreground">{method.description}</p>
 
-                  {/* 명령어 */}
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
                       <Terminal className="h-3.5 w-3.5" />
@@ -172,7 +244,6 @@ export default function TechDocsPage() {
                     </div>
                   </div>
 
-                  {/* 소요 시간 */}
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
                       <Clock className="h-3.5 w-3.5" />
@@ -206,7 +277,6 @@ export default function TechDocsPage() {
 
         <Separator />
 
-        {/* 방법 비교표 */}
         <div className="space-y-2">
           <div className="flex items-center gap-1.5 text-sm font-medium">
             <Play className="h-4 w-4 text-primary" />

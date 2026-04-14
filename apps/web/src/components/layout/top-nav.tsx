@@ -27,6 +27,7 @@ import {
   Users,
   Lightbulb,
   Megaphone,
+  Layers,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { toast } from 'sonner';
@@ -447,6 +448,14 @@ export function TopNav({ activeTab, onTabChange, hasActiveJob = false }: TopNavP
                 <Link href="/partner" className="flex w-full items-center gap-2 px-1.5 py-1">
                   <Handshake className="h-4 w-4" />
                   <span>파트너</span>
+                </Link>
+              </DropdownMenuItem>
+            )}
+            {['admin', 'sales', 'partner'].includes(session?.user?.role ?? '') && (
+              <DropdownMenuItem className="p-0">
+                <Link href="/docs" className="flex w-full items-center gap-2 px-1.5 py-1">
+                  <Layers className="h-4 w-4" />
+                  <span>기술 문서</span>
                 </Link>
               </DropdownMenuItem>
             )}
