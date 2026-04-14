@@ -3,7 +3,9 @@
 import { useState, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { ArrowLeft, Play } from 'lucide-react';
-import { TopNav } from '@/components/layout/top-nav';
+import { AppShell } from '@/components/layout/app-shell';
+import { AppSidebar } from '@/components/layout/app-sidebar';
+import { AppHeader } from '@/components/layout/app-header';
 import { TabLayout } from '@/components/layout/tab-layout';
 import { AnalysisLauncher } from '@/components/analysis/analysis-launcher';
 import { PipelineMonitor } from '@/components/analysis/pipeline-monitor';
@@ -15,15 +17,12 @@ import { CollectedDataView } from '@/components/dashboard/collected-data-view';
 import { AdvancedView } from '@/components/advanced/advanced-view';
 import { ExploreView } from '@/components/explore/explore-view';
 import { Button } from '@/components/ui/button';
-import { DemoQuotaBanner } from '@/components/demo/demo-quota-banner';
 import { UpgradeModal } from '@/components/demo/upgrade-modal';
 import { trpcClient } from '@/lib/trpc';
 
-// 쇼케이스용 데이터 페칭 함수
 const showcaseFetchResults = (jobId: number) => trpcClient.showcase.getResults.query({ jobId });
 const showcaseFetchReport = (jobId: number) => trpcClient.showcase.getReport.query({ jobId });
 
-// 분석 실행 탭 -- 트리거 폼 + 파이프라인 모니터 + 최근 작업
 function AnalysisTab({
   activeJobId,
   onJobStarted,
@@ -41,9 +40,9 @@ function AnalysisTab({
   onNewAnalysis: () => void;
   isDemo?: boolean;
 }) {
-  return (
-    <div className="space-y-4">
-      {activeJobId ? (
+  if (activeJobId) {
+    return (
+      <div className="space-y-4">
         <Button
           variant="ghost"
           size="sm"
@@ -52,22 +51,30 @@ function AnalysisTab({
         >
           <Play className="h-4 w-4 mr-1" />새 분석 실행
         </Button>
-      ) : (
+        <PipelineMonitor jobId={activeJobId} onComplete={onComplete} onRetry={() => {}} />
+        <RecentJobs onSelectJob={onSelectJob} onSelectShowcase={onSelectShowcase} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex min-h-[60vh] items-center justify-center">
+      <div className="w-full max-w-2xl">
+        <div className="mb-6 text-center">
+          <h2 className="text-xl font-bold text-slate-900">새 여론 분석 시작</h2>
+          <p className="mt-1 text-sm text-slate-500">
+            키워드와 수집 소스를 설정하고 AI 분석을 실행하세요
+          </p>
+        </div>
         <AnalysisLauncher onJobStarted={onJobStarted} isDemo={isDemo} />
-      )}
-      <PipelineMonitor
-        jobId={activeJobId}
-        onComplete={onComplete}
-        onRetry={() => {
-          // 재시도 시 현재 jobId로 모니터링 유지
-        }}
-      />
-      <RecentJobs onSelectJob={onSelectJob} onSelectShowcase={onSelectShowcase} />
+        <div className="mt-6">
+          <RecentJobs onSelectJob={onSelectJob} onSelectShowcase={onSelectShowcase} />
+        </div>
+      </div>
     </div>
   );
 }
 
-// 결과 탭 공통 래퍼 -- "새 분석 실행" 버튼 포함
 function ResultTabWrapper({
   jobId,
   onGoToAnalysis,
@@ -94,7 +101,6 @@ function ResultTabWrapper({
   );
 }
 
-// 결과 대시보드 탭
 function DashboardTab({
   jobId,
   onGoToAnalysis,
@@ -115,7 +121,6 @@ function DashboardTab({
   );
 }
 
-// AI 리포트 탭
 function ReportTab({
   jobId,
   onGoToAnalysis,
@@ -132,12 +137,10 @@ function ReportTab({
   );
 }
 
-// 히스토리 탭
 function HistoryTabPanel({ onViewResult }: { onViewResult: (jobId: number) => void }) {
   return <HistoryTable onViewResult={onViewResult} />;
 }
 
-// 수집 데이터 탭
 function CollectedDataTab({
   jobId,
   onGoToAnalysis,
@@ -152,7 +155,6 @@ function CollectedDataTab({
   );
 }
 
-// 탐색 탭 — 사용자 자체 시각화 대시보드
 function ExploreTab({
   jobId,
   onGoToAnalysis,
@@ -167,7 +169,6 @@ function ExploreTab({
   );
 }
 
-// 고급 분석 탭
 function AdvancedTab({
   jobId,
   onGoToAnalysis,
@@ -190,84 +191,90 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState(0);
   const [activeJobId, setActiveJobId] = useState<number | null>(null);
   const [isShowcase, setIsShowcase] = useState(false);
+  const [isRunning, setIsRunning] = useState(false);
 
-  // 분석 완료 시 -- 탭 전환 없이 파이프라인 상태 화면 유지 (사용자가 직접 탭 이동)
   const handleComplete = useCallback(() => {
-    // 파이프라인 모니터에서 "결과 보기" 버튼으로 이동 가능
+    setIsRunning(false);
   }, []);
 
-  // 작업 선택 시 결과 대시보드 탭으로 전환 + jobId 설정
   const handleSelectJob = useCallback((jobId: number) => {
     setActiveJobId(jobId);
     setIsShowcase(false);
     setActiveTab(1);
   }, []);
 
-  // 쇼케이스 항목 선택 시
   const handleSelectShowcase = useCallback((jobId: number) => {
     setActiveJobId(jobId);
     setIsShowcase(true);
     setActiveTab(1);
   }, []);
 
-  // 분석 실행 탭으로 돌아가기 (jobId 리셋하여 PipelineMonitor 비활성화)
   const handleGoToAnalysis = useCallback(() => {
     setActiveJobId(null);
     setIsShowcase(false);
     setActiveTab(0);
   }, []);
 
+  const handleJobStarted = useCallback((jobId: number) => {
+    setActiveJobId(jobId);
+    setIsRunning(true);
+  }, []);
+
   return (
-    <main className="min-h-screen bg-background">
-      <TopNav
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        hasActiveJob={activeJobId !== null}
-      />
-      <div className="pt-14 px-4 md:px-8">
-        <DemoQuotaBanner />
-      </div>
-      <UpgradeModal />
-      <TabLayout
-        activeTab={activeTab}
-        panels={[
-          <AnalysisTab
-            key="analysis"
+    <>
+      <AppShell
+        sidebar={
+          <AppSidebar
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
             activeJobId={activeJobId}
-            onJobStarted={setActiveJobId}
-            onComplete={handleComplete}
-            onSelectJob={handleSelectJob}
-            onSelectShowcase={handleSelectShowcase}
-            onNewAnalysis={handleGoToAnalysis}
-            isDemo={isDemo}
-          />,
-          <DashboardTab
-            key="dashboard"
-            jobId={activeJobId}
-            onGoToAnalysis={handleGoToAnalysis}
-            isShowcase={isShowcase}
-          />,
-          <CollectedDataTab
-            key="collected"
-            jobId={activeJobId}
-            onGoToAnalysis={handleGoToAnalysis}
-          />,
-          <ReportTab
-            key="report"
-            jobId={activeJobId}
-            onGoToAnalysis={handleGoToAnalysis}
-            isShowcase={isShowcase}
-          />,
-          <HistoryTabPanel key="history" onViewResult={handleSelectJob} />,
-          <AdvancedTab
-            key="advanced"
-            jobId={activeJobId}
-            onGoToAnalysis={handleGoToAnalysis}
-            isShowcase={isShowcase}
-          />,
-          <ExploreTab key="explore" jobId={activeJobId} onGoToAnalysis={handleGoToAnalysis} />,
-        ]}
-      />
-    </main>
+            isRunning={isRunning}
+          />
+        }
+        header={<AppHeader activeTab={activeTab} activeJobId={activeJobId} />}
+      >
+        <TabLayout
+          activeTab={activeTab}
+          panels={[
+            <AnalysisTab
+              key="analysis"
+              activeJobId={activeJobId}
+              onJobStarted={handleJobStarted}
+              onComplete={handleComplete}
+              onSelectJob={handleSelectJob}
+              onSelectShowcase={handleSelectShowcase}
+              onNewAnalysis={handleGoToAnalysis}
+              isDemo={isDemo}
+            />,
+            <DashboardTab
+              key="dashboard"
+              jobId={activeJobId}
+              onGoToAnalysis={handleGoToAnalysis}
+              isShowcase={isShowcase}
+            />,
+            <CollectedDataTab
+              key="collected"
+              jobId={activeJobId}
+              onGoToAnalysis={handleGoToAnalysis}
+            />,
+            <ReportTab
+              key="report"
+              jobId={activeJobId}
+              onGoToAnalysis={handleGoToAnalysis}
+              isShowcase={isShowcase}
+            />,
+            <HistoryTabPanel key="history" onViewResult={handleSelectJob} />,
+            <AdvancedTab
+              key="advanced"
+              jobId={activeJobId}
+              onGoToAnalysis={handleGoToAnalysis}
+              isShowcase={isShowcase}
+            />,
+            <ExploreTab key="explore" jobId={activeJobId} onGoToAnalysis={handleGoToAnalysis} />,
+          ]}
+        />
+      </AppShell>
+      <UpgradeModal />
+    </>
   );
 }
