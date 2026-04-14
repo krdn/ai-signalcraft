@@ -90,8 +90,8 @@ const PRESET_SEEDS = [
     sources: { naver: true, youtube: true, dcinside: true, fmkorea: true, clien: true },
     customSourceIds: [],
     limits: { naverArticles: 500, youtubeVideos: 30, communityPosts: 50, commentsPerItem: 300 },
-    optimization: 'standard' as const,
-    skippedModules: ['frame-war', 'win-simulation', 'crisis-scenario'],
+    optimization: 'rag-standard' as const,
+    skippedModules: [],
     enableItemAnalysis: false,
   },
   {
