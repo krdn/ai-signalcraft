@@ -1,0 +1,1327 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI SignalCraft — 분석 실행 워크플로우</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #0a0e1a;
+  --surface: #131829;
+  --surface2: #1c2340;
+  --surface3: #252d4a;
+  --border: #2a3358;
+  --border-hover: #4a5580;
+  --text: #e2e8f0;
+  --text-dim: #8892b0;
+  --text-muted: #5a6380;
+  --accent: #38bdf8;
+  --accent2: #818cf8;
+  --purple: #a78bfa;
+  --purple-bg: rgba(167,139,250,0.08);
+  --green: #4ade80;
+  --green-bg: rgba(74,222,128,0.08);
+  --yellow: #fbbf24;
+  --yellow-bg: rgba(251,191,36,0.08);
+  --orange: #fb923c;
+  --orange-bg: rgba(251,146,60,0.08);
+  --pink: #f472b6;
+  --pink-bg: rgba(244,114,182,0.08);
+  --red: #f87171;
+  --red-bg: rgba(248,113,113,0.08);
+  --cyan: #22d3ee;
+  --cyan-bg: rgba(34,211,238,0.08);
+  --blue: #60a5fa;
+  --blue-bg: rgba(96,165,250,0.08);
+  --code-bg: #161625;
+  --code-header: #1e1e35;
+  --code-border: #2a2a40;
+}
+[data-theme="light"] {
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --surface2: #f1f5f9;
+  --surface3: #e2e8f0;
+  --border: #cbd5e1;
+  --border-hover: #94a3b8;
+  --text: #1e293b;
+  --text-dim: #475569;
+  --text-muted: #94a3b8;
+  --accent: #0284c7;
+  --accent2: #6366f1;
+  --purple: #7c3aed;
+  --purple-bg: rgba(124,58,237,0.08);
+  --green: #16a34a;
+  --green-bg: rgba(22,163,74,0.08);
+  --yellow: #ca8a04;
+  --yellow-bg: rgba(202,138,4,0.08);
+  --orange: #ea580c;
+  --orange-bg: rgba(234,88,12,0.08);
+  --pink: #db2777;
+  --pink-bg: rgba(219,39,119,0.08);
+  --red: #dc2626;
+  --red-bg: rgba(220,38,38,0.08);
+  --cyan: #0891b2;
+  --cyan-bg: rgba(8,145,178,0.08);
+  --blue: #2563eb;
+  --blue-bg: rgba(37,99,235,0.08);
+  --code-bg: #f8fafc;
+  --code-header: #f1f5f9;
+  --code-border: #e2e8f0;
+}
+body {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+code, .mono { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
+
+.theme-toggle {
+  position: fixed; top: 16px; right: 16px;
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); cursor: pointer; font-size: 18px;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200; transition: all 0.25s;
+}
+.theme-toggle:hover { background: var(--surface3); border-color: var(--border-hover); transform: scale(1.1); }
+
+.header {
+  text-align: center; padding: 56px 24px 40px;
+  background: linear-gradient(180deg, var(--surface) 0%, var(--bg) 100%);
+  border-bottom: 1px solid var(--border);
+}
+.header h1 {
+  font-size: 2.4rem; font-weight: 800;
+  background: linear-gradient(135deg, var(--accent), var(--orange));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  margin-bottom: 8px;
+}
+.header p { color: var(--text-dim); font-size: 1.05rem; }
+.header .badges { display: flex; gap: 8px; justify-content: center; margin-top: 14px; flex-wrap: wrap; }
+.badge {
+  padding: 4px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: 600;
+}
+
+.nav {
+  display: flex; justify-content: center; gap: 6px; padding: 14px 24px;
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  flex-wrap: wrap; position: sticky; top: 0; z-index: 100;
+  backdrop-filter: blur(12px);
+}
+.nav-btn {
+  padding: 8px 18px; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text-dim); cursor: pointer;
+  font-size: 0.82rem; font-weight: 600; transition: all 0.25s;
+}
+.nav-btn:hover { background: var(--surface3); color: var(--text); border-color: var(--border-hover); }
+.nav-btn.active {
+  background: linear-gradient(135deg, var(--accent), var(--purple));
+  color: white; border-color: transparent;
+  box-shadow: 0 2px 12px rgba(56,189,248,0.25);
+}
+
+.section { max-width: 1400px; margin: 0 auto; padding: 48px 24px; display: none; }
+.section.active { display: block; animation: fadeIn 0.4s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+.section-title { font-size: 1.6rem; font-weight: 800; margin-bottom: 8px; }
+.section-desc { color: var(--text-dim); margin-bottom: 32px; font-size: 0.95rem; }
+
+.card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 20px; transition: border-color 0.2s, transform 0.15s;
+}
+.card:hover { border-color: var(--border-hover); transform: translateY(-2px); }
+.card-title { font-size: 0.95rem; font-weight: 700; margin-bottom: 8px; }
+.card-desc { font-size: 0.83rem; color: var(--text-dim); }
+
+/* ===== SECTION 1: 전체 아키텍처 플로우차트 ===== */
+.arch-flow {
+  display: flex; flex-direction: column; align-items: center; gap: 0;
+}
+.arch-layer {
+  width: 100%; max-width: 960px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  padding: 20px 28px; position: relative;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.arch-layer:hover { border-color: var(--border-hover); box-shadow: 0 4px 24px rgba(0,0,0,0.2); }
+.arch-layer-title {
+  font-size: 0.78rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+}
+.arch-layer-body { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.arch-chip {
+  padding: 6px 14px; border-radius: 8px; font-size: 0.8rem; font-weight: 600;
+  border: 1px solid transparent; transition: transform 0.15s;
+}
+.arch-chip:hover { transform: scale(1.05); }
+.arch-arrow {
+  display: flex; align-items: center; justify-content: center;
+  height: 36px; color: var(--text-muted); font-size: 1.4rem; position: relative;
+}
+.arch-arrow::before {
+  content: '';
+  position: absolute; top: 0; bottom: 0; left: 50%;
+  width: 2px; background: linear-gradient(180deg, var(--border), var(--border-hover));
+}
+.arch-arrow span { background: var(--bg); padding: 0 8px; z-index: 1; position: relative; }
+.proto-badge {
+  position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
+  font-size: 0.72rem; font-weight: 700; padding: 3px 10px; border-radius: 20px;
+}
+
+/* ===== SECTION 2: BullMQ Flow ===== */
+.flow-container { display: flex; flex-direction: column; gap: 0; align-items: flex-start; }
+.flow-root {
+  background: var(--surface2); border: 2px solid var(--green); border-radius: 12px;
+  padding: 16px 24px; min-width: 280px; position: relative;
+  margin-bottom: 0;
+}
+.flow-root-title { font-size: 1rem; font-weight: 800; color: var(--green); }
+.flow-root-sub { font-size: 0.78rem; color: var(--text-dim); margin-top: 4px; }
+.flow-children {
+  display: flex; gap: 12px; flex-wrap: wrap; padding: 20px 0 20px 32px;
+  border-left: 2px dashed var(--border); margin-left: 24px;
+}
+.flow-branch {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 0;
+  position: relative;
+}
+.flow-branch::before {
+  content: ''; position: absolute; left: -32px; top: 26px;
+  width: 32px; height: 2px; background: var(--border);
+}
+.flow-node {
+  border-radius: 10px; padding: 12px 18px; min-width: 200px;
+  font-size: 0.82rem; border: 1px solid transparent; cursor: default;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.flow-node:hover { transform: translateX(4px); box-shadow: 0 2px 12px rgba(0,0,0,0.2); }
+.flow-node .fn-queue { font-size: 0.68rem; opacity: 0.7; font-weight: 600; margin-top: 3px; }
+.flow-connector {
+  width: 2px; height: 16px; background: var(--border); margin: 0 auto 0 18px;
+}
+.source-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-top: 20px; }
+
+/* ===== SECTION 3: 수집기 상세 ===== */
+.collector-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+.collector-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  overflow: hidden; transition: all 0.2s;
+}
+.collector-card:hover { border-color: var(--border-hover); transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+.collector-header {
+  padding: 16px 20px; display: flex; align-items: center; gap: 12px;
+}
+.collector-icon { font-size: 1.6rem; }
+.collector-name { font-size: 0.95rem; font-weight: 700; }
+.collector-method { font-size: 0.72rem; font-weight: 600; padding: 2px 8px; border-radius: 10px; margin-top: 3px; display: inline-block; }
+.collector-body { padding: 0 20px 16px; }
+.collector-detail { font-size: 0.8rem; color: var(--text-dim); display: flex; align-items: center; gap: 6px; padding: 4px 0; }
+.collector-detail::before { content: '→'; color: var(--text-muted); }
+
+/* ===== SECTION 4: AI 분석 Stage ===== */
+.stage-flow { display: flex; flex-direction: column; gap: 0; }
+.stage-block {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  overflow: hidden; transition: border-color 0.2s;
+}
+.stage-block:hover { border-color: var(--border-hover); }
+.stage-header {
+  padding: 16px 24px; display: flex; align-items: center; gap: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.stage-num {
+  width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center;
+  justify-content: center; font-size: 1.1rem; font-weight: 800; flex-shrink: 0;
+}
+.stage-info-title { font-size: 1rem; font-weight: 700; }
+.stage-info-sub { font-size: 0.8rem; color: var(--text-dim); margin-top: 2px; }
+.stage-modules { padding: 16px 24px; display: flex; gap: 10px; flex-wrap: wrap; }
+.module-chip {
+  padding: 8px 16px; border-radius: 8px; font-size: 0.82rem; font-weight: 600;
+  border: 1px solid transparent; transition: transform 0.15s;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.module-chip:hover { transform: scale(1.04); }
+.module-chip .mc-name { font-size: 0.82rem; }
+.module-chip .mc-desc { font-size: 0.7rem; opacity: 0.75; }
+.stage-arrow-block {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 8px 0; color: var(--text-muted); font-size: 0.78rem;
+}
+.stage-arrow-block .sa-line {
+  flex: 1; max-width: 200px; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+}
+
+.domain-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+.domain-tab {
+  padding: 6px 16px; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer;
+  color: var(--text-dim); transition: all 0.2s;
+}
+.domain-tab:hover { border-color: var(--border-hover); color: var(--text); }
+.domain-tab.active { background: var(--purple-bg); border-color: var(--purple); color: var(--purple); }
+.domain-content { display: none; }
+.domain-content.active { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.domain-group { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+.domain-group-title { font-size: 0.8rem; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+.domain-module { padding: 8px 12px; border-radius: 8px; font-size: 0.8rem; margin-bottom: 6px; font-weight: 500; }
+
+/* ===== SECTION 5: DB + 워커 상세 ===== */
+.db-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.db-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  padding: 16px; transition: all 0.2s;
+}
+.db-card:hover { border-color: var(--border-hover); transform: translateY(-2px); }
+.db-card-name { font-size: 0.85rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; margin-bottom: 6px; }
+.db-card-desc { font-size: 0.78rem; color: var(--text-dim); }
+
+.worker-detail-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+.worker-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+}
+.worker-card-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+.worker-card-body { padding: 16px 20px; }
+.worker-stat { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 0.82rem; }
+.worker-stat:last-child { border-bottom: none; }
+.worker-stat-key { color: var(--text-dim); }
+.worker-stat-val { font-weight: 600; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; }
+
+/* ===== SECTION 6: 파이프라인 제어 ===== */
+.control-flow { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+.control-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; transition: all 0.2s; }
+.control-card:hover { border-color: var(--border-hover); transform: translateY(-2px); }
+.control-icon { font-size: 2rem; margin-bottom: 10px; }
+.control-title { font-size: 0.95rem; font-weight: 700; margin-bottom: 8px; }
+.control-desc { font-size: 0.82rem; color: var(--text-dim); line-height: 1.5; }
+.control-tag { font-size: 0.72rem; font-weight: 600; padding: 2px 8px; border-radius: 6px; display: inline-block; margin-top: 8px; }
+
+/* ===== SSE + 상태 흐름 ===== */
+.sse-flow { display: flex; flex-direction: column; gap: 12px; }
+.sse-row {
+  display: flex; align-items: center; gap: 16px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px 20px; transition: border-color 0.2s;
+}
+.sse-row:hover { border-color: var(--border-hover); }
+.sse-step {
+  width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center;
+  justify-content: center; font-weight: 800; font-size: 0.9rem; flex-shrink: 0;
+}
+.sse-content { flex: 1; }
+.sse-title { font-size: 0.9rem; font-weight: 600; }
+.sse-detail { font-size: 0.78rem; color: var(--text-dim); margin-top: 2px; }
+.sse-arrow { color: var(--text-muted); font-size: 1.2rem; }
+
+@media (max-width: 768px) {
+  .header h1 { font-size: 1.6rem; }
+  .flow-children { flex-direction: column; padding-left: 20px; }
+  .domain-content.active { grid-template-columns: 1fr; }
+  .db-grid { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+<button class="theme-toggle" onclick="toggleTheme()" title="테마 전환">🌙</button>
+
+<div class="header">
+  <h1>AI SignalCraft 분석 워크플로우</h1>
+  <p>프론트엔드 → API → 큐 → 워커 → DB → AI 전체 연결 구조</p>
+  <div class="badges">
+    <span class="badge" style="background:var(--blue-bg);color:var(--blue)">Next.js 15</span>
+    <span class="badge" style="background:var(--purple-bg);color:var(--purple)">tRPC 11</span>
+    <span class="badge" style="background:var(--orange-bg);color:var(--orange)">BullMQ 5</span>
+    <span class="badge" style="background:var(--green-bg);color:var(--green)">PostgreSQL 16</span>
+    <span class="badge" style="background:var(--cyan-bg);color:var(--cyan)">Redis 7</span>
+    <span class="badge" style="background:var(--pink-bg);color:var(--pink)">Vercel AI SDK v6</span>
+  </div>
+</div>
+
+<nav class="nav">
+  <button class="nav-btn active" onclick="showSection('overview')">전체 아키텍처</button>
+  <button class="nav-btn" onclick="showSection('queue')">BullMQ Flow</button>
+  <button class="nav-btn" onclick="showSection('collectors')">수집기 상세</button>
+  <button class="nav-btn" onclick="showSection('analysis')">AI 분석 Stage</button>
+  <button class="nav-btn" onclick="showSection('db')">DB + 워커</button>
+  <button class="nav-btn" onclick="showSection('control')">파이프라인 제어</button>
+</nav>
+
+<!-- ===== SECTION 1: 전체 아키텍처 ===== -->
+<section class="section active" id="s-overview">
+  <div class="section-title">전체 시스템 아키텍처</div>
+  <div class="section-desc">사용자 트리거부터 AI 리포트 완성까지 7개 레이어 연결 구조</div>
+
+  <div class="arch-flow">
+    <!-- Layer 1: 브라우저 -->
+    <div class="arch-layer" style="border-color: var(--blue); max-width: 960px;">
+      <div class="arch-layer-title" style="color: var(--blue)">
+        <span>🌐</span> 브라우저 (사용자)
+      </div>
+      <div class="arch-layer-body">
+        <div class="arch-chip" style="background:var(--blue-bg);border-color:var(--blue);color:var(--blue)">키워드 입력</div>
+        <div class="arch-chip" style="background:var(--blue-bg);border-color:var(--blue);color:var(--blue)">날짜 범위 선택</div>
+        <div class="arch-chip" style="background:var(--blue-bg);border-color:var(--blue);color:var(--blue)">수집 소스 선택</div>
+        <div class="arch-chip" style="background:var(--blue-bg);border-color:var(--blue);color:var(--blue)">분석 도메인 선택</div>
+        <span style="color:var(--text-muted);font-size:0.8rem">→</span>
+        <div class="arch-chip" style="background:var(--blue-bg);border-color:var(--blue);color:var(--blue)">실시간 진행률 표시 (SSE)</div>
+      </div>
+      <span class="proto-badge" style="background:var(--blue-bg);color:var(--blue)">HTTP + SSE</span>
+    </div>
+
+    <div class="arch-arrow"><span>↕</span></div>
+
+    <!-- Layer 2: Next.js -->
+    <div class="arch-layer" style="border-color: var(--accent); max-width: 960px;">
+      <div class="arch-layer-title" style="color: var(--accent)">
+        <span>⚡</span> Next.js 15 App Router <span style="font-size:0.72rem;color:var(--text-muted)">apps/web · :3000</span>
+      </div>
+      <div class="arch-layer-body">
+        <div class="arch-chip" style="background:var(--cyan-bg);border-color:var(--cyan);color:var(--cyan)">/dashboard — 분석 트리거 UI</div>
+        <div class="arch-chip" style="background:var(--cyan-bg);border-color:var(--cyan);color:var(--cyan)">/api/pipeline/[jobId]/stream — SSE</div>
+        <div class="arch-chip" style="background:var(--cyan-bg);border-color:var(--cyan);color:var(--cyan)">/api/trpc/[trpc] — tRPC</div>
+        <div class="arch-chip" style="background:var(--cyan-bg);border-color:var(--cyan);color:var(--cyan)">/admin/* — 관리자 페이지</div>
+      </div>
+      <span class="proto-badge" style="background:var(--cyan-bg);color:var(--cyan)">tRPC 11 + SSE</span>
+    </div>
+
+    <div class="arch-arrow"><span>↕</span></div>
+
+    <!-- Layer 3: packages/core -->
+    <div class="arch-layer" style="border-color: var(--purple); max-width: 960px;">
+      <div class="arch-layer-title" style="color: var(--purple)">
+        <span>🔧</span> packages/core — 비즈니스 로직
+      </div>
+      <div class="arch-layer-body">
+        <div class="arch-chip" style="background:var(--purple-bg);border-color:var(--purple);color:var(--purple)">tRPC 라우터 (pipeline, analysis)</div>
+        <div class="arch-chip" style="background:var(--purple-bg);border-color:var(--purple);color:var(--purple)">triggerCollection() → BullMQ Flow</div>
+        <div class="arch-chip" style="background:var(--purple-bg);border-color:var(--purple);color:var(--purple)">pipeline-orchestrator (Stage 0~4)</div>
+        <div class="arch-chip" style="background:var(--purple-bg);border-color:var(--purple);color:var(--purple)">report-builder</div>
+        <div class="arch-chip" style="background:var(--purple-bg);border-color:var(--purple);color:var(--purple)">ontology-extractor</div>
+      </div>
+    </div>
+
+    <div class="arch-arrow"><span>↕</span></div>
+
+    <!-- Layer 4: Redis + BullMQ -->
+    <div class="arch-layer" style="border-color: var(--orange); max-width: 960px;">
+      <div class="arch-layer-title" style="color: var(--orange)">
+        <span>🚦</span> BullMQ 5 + Redis 7
+      </div>
+      <div class="arch-layer-body">
+        <div class="arch-chip" style="background:var(--orange-bg);border-color:var(--orange);color:var(--orange)">collectors 큐</div>
+        <div class="arch-chip" style="background:var(--orange-bg);border-color:var(--orange);color:var(--orange)">pipeline 큐</div>
+        <div class="arch-chip" style="background:var(--orange-bg);border-color:var(--orange);color:var(--orange)">analysis 큐</div>
+        <span style="color:var(--text-muted);font-size:0.78rem">prefix: ais-dev (개발) / bull (운영)</span>
+      </div>
+      <span class="proto-badge" style="background:var(--orange-bg);color:var(--orange)">192.168.0.5:6385</span>
+    </div>
+
+    <div class="arch-arrow"><span>↕</span></div>
+
+    <!-- Layer 5: Workers -->
+    <div class="arch-layer" style="border-color: var(--green); max-width: 960px;">
+      <div class="arch-layer-title" style="color: var(--green)">
+        <span>⚙️</span> Worker Process — packages/core
+      </div>
+      <div class="arch-layer-body">
+        <div class="arch-chip" style="background:var(--green-bg);border-color:var(--green);color:var(--green)">collector-worker (Playwright/Cheerio/API)</div>
+        <div class="arch-chip" style="background:var(--green-bg);border-color:var(--green);color:var(--green)">pipeline-worker (normalize + persist)</div>
+        <div class="arch-chip" style="background:var(--green-bg);border-color:var(--green);color:var(--green)">analysis-worker (AI 분석 전체)</div>
+      </div>
+    </div>
+
+    <div class="arch-arrow"><span>↕</span></div>
+
+    <!-- Layer 6: DB -->
+    <div class="arch-layer" style="border-color: var(--yellow); max-width: 960px;">
+      <div class="arch-layer-title" style="color: var(--yellow)">
+        <span>🗄️</span> PostgreSQL 16 + Drizzle ORM
+      </div>
+      <div class="arch-layer-body">
+        <div class="arch-chip" style="background:var(--yellow-bg);border-color:var(--yellow);color:var(--yellow)">collection_jobs</div>
+        <div class="arch-chip" style="background:var(--yellow-bg);border-color:var(--yellow);color:var(--yellow)">articles / videos / comments</div>
+        <div class="arch-chip" style="background:var(--yellow-bg);border-color:var(--yellow);color:var(--yellow)">analysis_results</div>
+        <div class="arch-chip" style="background:var(--yellow-bg);border-color:var(--yellow);color:var(--yellow)">report_sections</div>
+        <div class="arch-chip" style="background:var(--yellow-bg);border-color:var(--yellow);color:var(--yellow)">pipeline_control</div>
+        <div class="arch-chip" style="background:var(--yellow-bg);border-color:var(--yellow);color:var(--yellow)">ontology_*</div>
+      </div>
+      <span class="proto-badge" style="background:var(--yellow-bg);color:var(--yellow)">192.168.0.5:5438</span>
+    </div>
+
+    <div class="arch-arrow"><span>↕</span></div>
+
+    <!-- Layer 7: AI -->
+    <div class="arch-layer" style="border-color: var(--pink); max-width: 960px;">
+      <div class="arch-layer-title" style="color: var(--pink)">
+        <span>🤖</span> AI Gateway — packages/ai-gateway (Vercel AI SDK v6)
+      </div>
+      <div class="arch-layer-body">
+        <div class="arch-chip" style="background:var(--pink-bg);border-color:var(--pink);color:var(--pink)">Anthropic Claude</div>
+        <div class="arch-chip" style="background:var(--pink-bg);border-color:var(--pink);color:var(--pink)">OpenAI GPT</div>
+        <div class="arch-chip" style="background:var(--pink-bg);border-color:var(--pink);color:var(--pink)">Google Gemini</div>
+        <span style="color:var(--text-muted);font-size:0.78rem">→ 14개+ 분석 모듈, 도메인별 라우팅</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SSE 실시간 피드백 루프 -->
+  <div style="margin-top: 40px;">
+    <div style="font-size:1.1rem;font-weight:700;margin-bottom:16px;">실시간 상태 피드백 루프 (SSE)</div>
+    <div class="sse-flow">
+      <div class="sse-row">
+        <div class="sse-step" style="background:var(--blue-bg);color:var(--blue)">1</div>
+        <div class="sse-content">
+          <div class="sse-title">클라이언트 SSE 연결 시작</div>
+          <div class="sse-detail">GET /api/pipeline/[jobId]/stream → EventSource 연결</div>
+        </div>
+        <div class="sse-arrow">→</div>
+      </div>
+      <div class="sse-row">
+        <div class="sse-step" style="background:var(--cyan-bg);color:var(--cyan)">2</div>
+        <div class="sse-content">
+          <div class="sse-title">서버 DB 폴링 (1초 간격)</div>
+          <div class="sse-detail">collection_jobs + analysis_results 조회 → PipelineStatus 합성</div>
+        </div>
+        <div class="sse-arrow">→</div>
+      </div>
+      <div class="sse-row">
+        <div class="sse-step" style="background:var(--purple-bg);color:var(--purple)">3</div>
+        <div class="sse-content">
+          <div class="sse-title">이벤트 로그 합성</div>
+          <div class="sse-detail">pipeline-status/events.ts → 소스별 수집 이벤트 + 모듈 분석 이벤트</div>
+        </div>
+        <div class="sse-arrow">→</div>
+      </div>
+      <div class="sse-row">
+        <div class="sse-step" style="background:var(--green-bg);color:var(--green)">4</div>
+        <div class="sse-content">
+          <div class="sse-title">클라이언트 UI 업데이트</div>
+          <div class="sse-detail">PipelineStatusPanel 컴포넌트 — 진행바, 소스별 카운트, 모듈별 상태</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SECTION 2: BullMQ Flow ===== -->
+<section class="section" id="s-queue">
+  <div class="section-title">BullMQ Flow 구조</div>
+  <div class="section-desc">부모-자식 관계로 구성된 3-tier 비동기 파이프라인. 자식 완료 후 부모 실행.</div>
+
+  <div class="flow-container">
+    <!-- Root: persist -->
+    <div class="flow-root">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:1.4rem;">💾</span>
+        <div>
+          <div class="flow-root-title">persist</div>
+          <div class="flow-root-sub">pipeline 큐 · 모든 normalize 완료 후 실행</div>
+          <div style="margin-top:8px;font-size:0.78rem;color:var(--text-dim)">
+            ① DB 저장 (articles → videos → comments)<br>
+            ② FK 무결성 보장 (sourceId→dbId 매핑)<br>
+            ③ 임베딩 생성 (비차단 백그라운드)<br>
+            ④ analysis 큐 트리거 → run-analysis
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Children: normalize -->
+    <div class="flow-children">
+      <!-- Naver -->
+      <div class="flow-branch">
+        <div class="flow-node" style="background:var(--blue-bg);border-color:var(--blue);">
+          <div style="font-weight:700;color:var(--blue)">normalize-naver</div>
+          <div class="fn-queue" style="color:var(--blue)">pipeline 큐</div>
+          <div style="font-size:0.75rem;color:var(--text-dim);margin-top:6px;">
+            기사 URL 추출 → n.news.naver.com 필터<br>
+            댓글 병렬수집 (동시 4개 기사)
+          </div>
+        </div>
+        <div class="flow-connector"></div>
+        <div class="flow-node" style="background:var(--surface2);border-color:var(--border-hover);">
+          <div style="font-weight:700;color:var(--text-dim)">collect-naver-articles</div>
+          <div class="fn-queue">collectors 큐 · HTTP API</div>
+          <div style="font-size:0.75rem;color:var(--text-dim);margin-top:6px;">최대 1,000건 · 청크 단위 수집</div>
+        </div>
+      </div>
+
+      <!-- YouTube -->
+      <div class="flow-branch">
+        <div class="flow-node" style="background:var(--red-bg);border-color:var(--red);">
+          <div style="font-weight:700;color:var(--red)">normalize-youtube</div>
+          <div class="fn-queue" style="color:var(--red)">pipeline 큐</div>
+          <div style="font-size:0.75rem;color:var(--text-dim);margin-top:6px;">
+            영상 sourceId 추출<br>
+            댓글 병렬수집 (동시 3개, quota 고려)
+          </div>
+        </div>
+        <div class="flow-connector"></div>
+        <div class="flow-node" style="background:var(--surface2);border-color:var(--border-hover);">
+          <div style="font-weight:700;color:var(--text-dim)">collect-youtube-videos</div>
+          <div class="fn-queue">collectors 큐 · YouTube API v3</div>
+          <div style="font-size:0.75rem;color:var(--text-dim);margin-top:6px;">최대 50건 영상</div>
+        </div>
+      </div>
+
+      <!-- DCInside -->
+      <div class="flow-branch">
+        <div class="flow-node" style="background:var(--orange-bg);border-color:var(--orange);">
+          <div style="font-weight:700;color:var(--orange)">normalize-community-dcinside</div>
+          <div class="fn-queue" style="color:var(--orange)">pipeline 큐</div>
+          <div style="font-size:0.75rem;color:var(--text-dim);margin-top:6px;">게시글+댓글 통합 (수집기가 함께 반환)</div>
+        </div>
+        <div class="flow-connector"></div>
+        <div class="flow-node" style="background:var(--surface2);border-color:var(--border-hover);">
+          <div style="font-weight:700;color:var(--text-dim)">collect-dcinside</div>
+          <div class="fn-queue">collectors 큐 · Playwright</div>
+          <div style="font-size:0.75rem;color:var(--text-dim);margin-top:6px;">헤드리스 브라우저 수집</div>
+        </div>
+      </div>
+
+      <!-- FMKorea -->
+      <div class="flow-branch">
+        <div class="flow-node" style="background:var(--orange-bg);border-color:var(--orange);">
+          <div style="font-weight:700;color:var(--orange)">normalize-community-fmkorea</div>
+          <div class="fn-queue" style="color:var(--orange)">pipeline 큐</div>
+          <div style="font-size:0.75rem;color:var(--text-dim);margin-top:6px;">게시글+댓글 통합</div>
+        </div>
+        <div class="flow-connector"></div>
+        <div class="flow-node" style="background:var(--surface2);border-color:var(--border-hover);">
+          <div style="font-weight:700;color:var(--text-dim)">collect-fmkorea</div>
+          <div class="fn-queue">collectors 큐 · Cheerio</div>
+          <div style="font-size:0.75rem;color:var(--text-dim);margin-top:6px;">HTML 파싱</div>
+        </div>
+      </div>
+
+      <!-- Clien -->
+      <div class="flow-branch">
+        <div class="flow-node" style="background:var(--orange-bg);border-color:var(--orange);">
+          <div style="font-weight:700;color:var(--orange)">normalize-community-clien</div>
+          <div class="fn-queue" style="color:var(--orange)">pipeline 큐</div>
+          <div style="font-size:0.75rem;color:var(--text-dim);margin-top:6px;">게시글+댓글 통합</div>
+        </div>
+        <div class="flow-connector"></div>
+        <div class="flow-node" style="background:var(--surface2);border-color:var(--border-hover);">
+          <div style="font-weight:700;color:var(--text-dim)">collect-clien</div>
+          <div class="fn-queue">collectors 큐 · Cheerio</div>
+          <div style="font-size:0.75rem;color:var(--text-dim);margin-top:6px;">HTML 파싱</div>
+        </div>
+      </div>
+
+      <!-- Dynamic -->
+      <div class="flow-branch">
+        <div class="flow-node" style="background:var(--purple-bg);border-color:var(--purple);">
+          <div style="font-weight:700;color:var(--purple)">normalize-feed-{id}</div>
+          <div class="fn-queue" style="color:var(--purple)">pipeline 큐</div>
+          <div style="font-size:0.75rem;color:var(--text-dim);margin-top:6px;">
+            관리자 등록 동적 소스<br>
+            lastCollectedAt 갱신
+          </div>
+        </div>
+        <div class="flow-connector"></div>
+        <div class="flow-node" style="background:var(--surface2);border-color:var(--border-hover);">
+          <div style="font-weight:700;color:var(--text-dim)">collect-feed-{id}</div>
+          <div class="fn-queue">collectors 큐 · RSS/HTML</div>
+          <div style="font-size:0.75rem;color:var(--text-dim);margin-top:6px;">동적 팩토리 생성</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Analysis -->
+    <div style="margin-top:24px;">
+      <div style="text-align:center;color:var(--text-muted);font-size:0.82rem;margin-bottom:8px;">persist 완료 후 자동 트리거</div>
+      <div class="flow-root" style="border-color:var(--pink);">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:1.4rem;">🤖</span>
+          <div>
+            <div style="color:var(--pink);font-weight:800;font-size:1rem;">run-analysis</div>
+            <div class="flow-root-sub">analysis 큐 · AI 분석 파이프라인 전체</div>
+            <div style="margin-top:8px;font-size:0.78rem;color:var(--text-dim);">
+              lockDuration: 10분 | lock 자동갱신: 2분마다<br>
+              Stage 0 → Stage 1(병렬) → Stage 2 → Stage 3 → Stage 4<br>
+              완료 후 collection_jobs.status 업데이트
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SECTION 3: 수집기 ===== -->
+<section class="section" id="s-collectors">
+  <div class="section-title">수집기(Collector) 어댑터 상세</div>
+  <div class="section-desc">packages/collectors/src/adapters/ — Collector 인터페이스 구현체들</div>
+
+  <div class="collector-grid">
+    <div class="collector-card">
+      <div class="collector-header" style="background:var(--blue-bg);">
+        <div class="collector-icon">📰</div>
+        <div>
+          <div class="collector-name" style="color:var(--blue)">naver-news</div>
+          <span class="collector-method" style="background:var(--blue-bg);color:var(--blue)">HTTP API</span>
+        </div>
+      </div>
+      <div class="collector-body">
+        <div class="collector-detail">네이버 뉴스 검색 API</div>
+        <div class="collector-detail">키워드 + 날짜 범위 검색</div>
+        <div class="collector-detail">최대 1,000건 기사 수집</div>
+        <div class="collector-detail">URL, 제목, 출처, 날짜 포함</div>
+      </div>
+    </div>
+
+    <div class="collector-card">
+      <div class="collector-header" style="background:var(--blue-bg);">
+        <div class="collector-icon">💬</div>
+        <div>
+          <div class="collector-name" style="color:var(--blue)">naver-comments</div>
+          <span class="collector-method" style="background:var(--blue-bg);color:var(--blue)">HTTP API</span>
+        </div>
+      </div>
+      <div class="collector-body">
+        <div class="collector-detail">기사별 네이버 댓글 수집</div>
+        <div class="collector-detail">n.news.naver.com URL만 지원</div>
+        <div class="collector-detail">normalize 단계에서 병렬 수집 (동시 4개)</div>
+        <div class="collector-detail">최대 500댓글/기사</div>
+      </div>
+    </div>
+
+    <div class="collector-card">
+      <div class="collector-header" style="background:var(--red-bg);">
+        <div class="collector-icon">▶️</div>
+        <div>
+          <div class="collector-name" style="color:var(--red)">youtube-videos</div>
+          <span class="collector-method" style="background:var(--red-bg);color:var(--red)">YouTube Data API v3</span>
+        </div>
+      </div>
+      <div class="collector-body">
+        <div class="collector-detail">YouTube 영상 검색</div>
+        <div class="collector-detail">키워드 + 날짜 범위</div>
+        <div class="collector-detail">최대 50건 영상</div>
+        <div class="collector-detail">제목, 설명, 조회수, 채널명</div>
+      </div>
+    </div>
+
+    <div class="collector-card">
+      <div class="collector-header" style="background:var(--red-bg);">
+        <div class="collector-icon">💬</div>
+        <div>
+          <div class="collector-name" style="color:var(--red)">youtube-comments</div>
+          <span class="collector-method" style="background:var(--red-bg);color:var(--red)">YouTube Data API v3</span>
+        </div>
+      </div>
+      <div class="collector-body">
+        <div class="collector-detail">영상별 댓글 수집</div>
+        <div class="collector-detail">병렬 수집 (동시 3개 영상)</div>
+        <div class="collector-detail">API quota 고려 동시성 제한</div>
+        <div class="collector-detail">최대 500댓글/영상</div>
+      </div>
+    </div>
+
+    <div class="collector-card">
+      <div class="collector-header" style="background:var(--orange-bg);">
+        <div class="collector-icon">🔥</div>
+        <div>
+          <div class="collector-name" style="color:var(--orange)">dcinside</div>
+          <span class="collector-method" style="background:var(--orange-bg);color:var(--orange)">Playwright (헤드리스)</span>
+        </div>
+      </div>
+      <div class="collector-body">
+        <div class="collector-detail">디시인사이드 게시글 수집</div>
+        <div class="collector-detail">댓글 포함 통합 수집</div>
+        <div class="collector-detail">브라우저 자동화 (JS 렌더링)</div>
+        <div class="collector-detail">CommunityBaseCollector 상속</div>
+      </div>
+    </div>
+
+    <div class="collector-card">
+      <div class="collector-header" style="background:var(--orange-bg);">
+        <div class="collector-icon">⚽</div>
+        <div>
+          <div class="collector-name" style="color:var(--orange)">fmkorea</div>
+          <span class="collector-method" style="background:var(--orange-bg);color:var(--orange)">Cheerio (HTML)</span>
+        </div>
+      </div>
+      <div class="collector-body">
+        <div class="collector-detail">에펨코리아 게시글 수집</div>
+        <div class="collector-detail">댓글 포함 통합 수집</div>
+        <div class="collector-detail">CSS 셀렉터 기반 파싱</div>
+        <div class="collector-detail">CommunityBaseCollector 상속</div>
+      </div>
+    </div>
+
+    <div class="collector-card">
+      <div class="collector-header" style="background:var(--orange-bg);">
+        <div class="collector-icon">🖥️</div>
+        <div>
+          <div class="collector-name" style="color:var(--orange)">clien</div>
+          <span class="collector-method" style="background:var(--orange-bg);color:var(--orange)">Cheerio (HTML)</span>
+        </div>
+      </div>
+      <div class="collector-body">
+        <div class="collector-detail">클리앙 게시글 수집</div>
+        <div class="collector-detail">댓글 포함 통합 수집</div>
+        <div class="collector-detail">CSS 셀렉터 기반 파싱</div>
+        <div class="collector-detail">CommunityBaseCollector 상속</div>
+      </div>
+    </div>
+
+    <div class="collector-card">
+      <div class="collector-header" style="background:var(--purple-bg);">
+        <div class="collector-icon">📡</div>
+        <div>
+          <div class="collector-name" style="color:var(--purple)">rss / html (동적)</div>
+          <span class="collector-method" style="background:var(--purple-bg);color:var(--purple)">RSS 파싱 / Cheerio</span>
+        </div>
+      </div>
+      <div class="collector-body">
+        <div class="collector-detail">관리자가 /admin/sources에서 등록</div>
+        <div class="collector-detail">DataSourceSnapshot 스냅샷으로 실행</div>
+        <div class="collector-detail">buildDynamicCollector() 팩토리 생성</div>
+        <div class="collector-detail">lastCollectedAt 자동 갱신</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 부분 실패 허용 설명 -->
+  <div style="margin-top:32px;padding:20px 24px;background:var(--yellow-bg);border:1px solid var(--yellow);border-radius:12px;">
+    <div style="font-weight:700;color:var(--yellow);margin-bottom:8px;">⚠️ 부분 실패 허용 정책 (D-04)</div>
+    <div style="font-size:0.85rem;color:var(--text-dim);line-height:1.7;">
+      각 소스 수집기는 독립적으로 실행됩니다. 특정 소스 수집 실패 시 <code style="background:var(--code-bg);padding:2px 6px;border-radius:4px;">{ source, items: [], count: 0 }</code>를 반환하고 파이프라인을 계속 진행합니다.
+      전체 소스가 모두 실패하는 경우에만 파이프라인이 중단됩니다.
+    </div>
+  </div>
+</section>
+
+<!-- ===== SECTION 4: AI 분석 Stage ===== -->
+<section class="section" id="s-analysis">
+  <div class="section-title">AI 분석 파이프라인 — Stage 상세</div>
+  <div class="section-desc">pipeline-orchestrator.ts + runner.ts — 최대 14개+ 모듈, 체크포인트 복원, 부분 재실행 지원</div>
+
+  <div class="stage-flow">
+    <!-- Stage 0 -->
+    <div class="stage-block">
+      <div class="stage-header">
+        <div class="stage-num" style="background:var(--surface3);color:var(--text-dim)">0</div>
+        <div>
+          <div class="stage-info-title">개별 항목 분석 (선택적)</div>
+          <div class="stage-info-sub">item-analyzer.ts — 기사/영상별 개별 AI 분석 (선택 시에만 실행)</div>
+        </div>
+      </div>
+      <div class="stage-modules">
+        <div class="module-chip" style="background:var(--surface3);border-color:var(--border);">
+          <div class="mc-name">item-level analysis</div>
+          <div class="mc-desc">개별 기사/영상 감성 분류</div>
+        </div>
+        <div class="module-chip" style="background:var(--surface3);border-color:var(--border);">
+          <div class="mc-name">sentiment-classifier</div>
+          <div class="mc-desc">긍/부/중립 분류</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage-arrow-block">
+      <div class="sa-line"></div>
+      <span>↓ Stage 0 결과 → Stage 1 입력</span>
+      <div class="sa-line"></div>
+    </div>
+
+    <!-- Stage 1 -->
+    <div class="stage-block" style="border-color:var(--blue);">
+      <div class="stage-header" style="border-color:var(--blue);">
+        <div class="stage-num" style="background:var(--blue-bg);color:var(--blue)">1</div>
+        <div>
+          <div class="stage-info-title">병렬 실행 — 4개 모듈 동시</div>
+          <div class="stage-info-sub">독립 모듈, 상호 의존성 없음. Promise.all 패턴.</div>
+        </div>
+        <div style="margin-left:auto;">
+          <span style="background:var(--blue-bg);color:var(--blue);font-size:0.72rem;font-weight:700;padding:4px 10px;border-radius:8px;">병렬</span>
+        </div>
+      </div>
+      <div class="stage-modules">
+        <div class="module-chip" style="background:var(--blue-bg);border-color:var(--blue);">
+          <div class="mc-name" style="color:var(--blue)">macro-view</div>
+          <div class="mc-desc">거시적 여론 지형 분석</div>
+        </div>
+        <div class="module-chip" style="background:var(--blue-bg);border-color:var(--blue);">
+          <div class="mc-name" style="color:var(--blue)">segmentation</div>
+          <div class="mc-desc">여론 세그먼트 분류</div>
+        </div>
+        <div class="module-chip" style="background:var(--blue-bg);border-color:var(--blue);">
+          <div class="mc-name" style="color:var(--blue)">sentiment-framing</div>
+          <div class="mc-desc">감성 · 프레이밍 분석</div>
+        </div>
+        <div class="module-chip" style="background:var(--blue-bg);border-color:var(--blue);">
+          <div class="mc-name" style="color:var(--blue)">message-impact</div>
+          <div class="mc-desc">핵심 메시지 영향력</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage-arrow-block">
+      <div class="sa-line"></div>
+      <span>↓ Stage 1 priorResults → Stage 2 참조</span>
+      <div class="sa-line"></div>
+    </div>
+
+    <!-- Stage 2 -->
+    <div class="stage-block" style="border-color:var(--purple);">
+      <div class="stage-header" style="border-color:var(--purple);">
+        <div class="stage-num" style="background:var(--purple-bg);color:var(--purple)">2</div>
+        <div>
+          <div class="stage-info-title">순차/병렬 혼합 — Stage 1 의존</div>
+          <div class="stage-info-sub">risk-map + opportunity 병렬 → strategy 순차 실행</div>
+        </div>
+        <div style="margin-left:auto;">
+          <span style="background:var(--purple-bg);color:var(--purple);font-size:0.72rem;font-weight:700;padding:4px 10px;border-radius:8px;">혼합</span>
+        </div>
+      </div>
+      <div class="stage-modules">
+        <div class="module-chip" style="background:var(--purple-bg);border-color:var(--purple);">
+          <div class="mc-name" style="color:var(--purple)">risk-map</div>
+          <div class="mc-desc">리스크 지형도 ┐ 병렬</div>
+        </div>
+        <div class="module-chip" style="background:var(--purple-bg);border-color:var(--purple);">
+          <div class="mc-name" style="color:var(--purple)">opportunity</div>
+          <div class="mc-desc">기회 요인 분석 ┘ 병렬</div>
+        </div>
+        <div style="display:flex;align-items:center;color:var(--text-muted);font-size:0.9rem;">→</div>
+        <div class="module-chip" style="background:var(--purple-bg);border-color:var(--purple);">
+          <div class="mc-name" style="color:var(--purple)">strategy</div>
+          <div class="mc-desc">전략 제안 (순차)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage-arrow-block">
+      <div class="sa-line"></div>
+      <span>↓ Stage 1+2 전체 결과 통합</span>
+      <div class="sa-line"></div>
+    </div>
+
+    <!-- Stage 3 -->
+    <div class="stage-block" style="border-color:var(--green);">
+      <div class="stage-header" style="border-color:var(--green);">
+        <div class="stage-num" style="background:var(--green-bg);color:var(--green)">3</div>
+        <div>
+          <div class="stage-info-title">최종 요약</div>
+          <div class="stage-info-sub">Stage 1+2 모든 결과를 통합하여 종합 분석 요약 생성</div>
+        </div>
+      </div>
+      <div class="stage-modules">
+        <div class="module-chip" style="background:var(--green-bg);border-color:var(--green);">
+          <div class="mc-name" style="color:var(--green)">final-summary</div>
+          <div class="mc-desc">전체 결과 통합 요약</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage-arrow-block">
+      <div class="sa-line"></div>
+      <span>↓ 도메인별 고급 분석 (선택)</span>
+      <div class="sa-line"></div>
+    </div>
+
+    <!-- Stage 4 -->
+    <div class="stage-block" style="border-color:var(--orange);">
+      <div class="stage-header" style="border-color:var(--orange);">
+        <div class="stage-num" style="background:var(--orange-bg);color:var(--orange)">4</div>
+        <div>
+          <div class="stage-info-title">고급 분석 — 도메인별 선택 실행</div>
+          <div class="stage-info-sub">병렬 그룹 → 순차 그룹. getDomainConfig()로 모듈 라우팅.</div>
+        </div>
+        <div style="margin-left:auto;">
+          <span style="background:var(--orange-bg);color:var(--orange);font-size:0.72rem;font-weight:700;padding:4px 10px;border-radius:8px;">도메인별</span>
+        </div>
+      </div>
+      <div style="padding:16px 24px;">
+        <div class="domain-tabs" id="domainTabs">
+          <button class="domain-tab active" onclick="showDomain('political')">정치/정책</button>
+          <button class="domain-tab" onclick="showDomain('fandom')">팬덤</button>
+          <button class="domain-tab" onclick="showDomain('pr')">PR/기업</button>
+          <button class="domain-tab" onclick="showDomain('corp')">기업 평판</button>
+          <button class="domain-tab" onclick="showDomain('health')">헬스케어</button>
+          <button class="domain-tab" onclick="showDomain('finance')">금융</button>
+          <button class="domain-tab" onclick="showDomain('edu')">교육</button>
+        </div>
+
+        <div class="domain-content active" id="d-political">
+          <div class="domain-group">
+            <div class="domain-group-title" style="color:var(--blue)">⚡ 병렬 실행</div>
+            <div class="domain-module" style="background:var(--blue-bg);color:var(--blue)">approval-rating — 지지율 예측</div>
+            <div class="domain-module" style="background:var(--blue-bg);color:var(--blue)">frame-war — 프레임 전쟁 분석</div>
+          </div>
+          <div class="domain-group">
+            <div class="domain-group-title" style="color:var(--orange)">→ 순차 실행</div>
+            <div class="domain-module" style="background:var(--orange-bg);color:var(--orange)">crisis-scenario — 위기 시나리오</div>
+            <div class="domain-module" style="background:var(--orange-bg);color:var(--orange)">win-simulation — 승리 시뮬레이션</div>
+          </div>
+        </div>
+        <div class="domain-content" id="d-fandom">
+          <div class="domain-group">
+            <div class="domain-group-title" style="color:var(--blue)">⚡ 병렬 실행</div>
+            <div class="domain-module" style="background:var(--blue-bg);color:var(--blue)">fan-loyalty-index — 팬 충성도 지수</div>
+            <div class="domain-module" style="background:var(--blue-bg);color:var(--blue)">fandom-narrative-war — 내러티브 전쟁</div>
+          </div>
+          <div class="domain-group">
+            <div class="domain-group-title" style="color:var(--orange)">→ 순차 실행</div>
+            <div class="domain-module" style="background:var(--orange-bg);color:var(--orange)">fandom-crisis-scenario — 팬덤 위기 시나리오</div>
+            <div class="domain-module" style="background:var(--orange-bg);color:var(--orange)">release-reception-prediction — 앨범 수용 예측</div>
+          </div>
+        </div>
+        <div class="domain-content" id="d-pr">
+          <div class="domain-group">
+            <div class="domain-group-title" style="color:var(--blue)">⚡ 병렬 실행</div>
+            <div class="domain-module" style="background:var(--blue-bg);color:var(--blue)">crisis-type-classifier — 위기 유형 분류</div>
+            <div class="domain-module" style="background:var(--blue-bg);color:var(--blue)">reputation-index — 평판 지수</div>
+          </div>
+          <div class="domain-group">
+            <div class="domain-group-title" style="color:var(--orange)">→ 순차 실행</div>
+            <div class="domain-module" style="background:var(--orange-bg);color:var(--orange)">reputation-recovery-simulation — 평판 회복 시뮬레이션</div>
+          </div>
+        </div>
+        <div class="domain-content" id="d-corp">
+          <div class="domain-group">
+            <div class="domain-group-title" style="color:var(--blue)">⚡ 병렬 실행</div>
+            <div class="domain-module" style="background:var(--blue-bg);color:var(--blue)">esg-sentiment — ESG 감성 분석</div>
+            <div class="domain-module" style="background:var(--blue-bg);color:var(--blue)">media-framing-dominance — 미디어 프레이밍</div>
+            <div class="domain-module" style="background:var(--blue-bg);color:var(--blue)">stakeholder-map — 이해관계자 지도</div>
+          </div>
+          <div class="domain-group">
+            <div class="domain-group-title" style="color:var(--orange)">→ 순차 실행</div>
+            <div class="domain-module" style="background:var(--orange-bg);color:var(--orange)">csr-communication-gap — CSR 소통 격차</div>
+          </div>
+        </div>
+        <div class="domain-content" id="d-health">
+          <div class="domain-group">
+            <div class="domain-group-title" style="color:var(--blue)">⚡ 병렬 실행</div>
+            <div class="domain-module" style="background:var(--blue-bg);color:var(--blue)">health-risk-perception — 건강 위험 인식</div>
+          </div>
+          <div class="domain-group">
+            <div class="domain-group-title" style="color:var(--orange)">→ 순차 실행</div>
+            <div class="domain-module" style="background:var(--orange-bg);color:var(--orange)">compliance-predictor — 컴플라이언스 예측</div>
+          </div>
+        </div>
+        <div class="domain-content" id="d-finance">
+          <div class="domain-group">
+            <div class="domain-group-title" style="color:var(--blue)">⚡ 병렬 실행</div>
+            <div class="domain-module" style="background:var(--blue-bg);color:var(--blue)">market-sentiment-index — 시장 감성 지수</div>
+            <div class="domain-module" style="background:var(--blue-bg);color:var(--blue)">information-asymmetry — 정보 비대칭 분석</div>
+          </div>
+          <div class="domain-group">
+            <div class="domain-group-title" style="color:var(--orange)">→ 순차 실행</div>
+            <div class="domain-module" style="background:var(--orange-bg);color:var(--orange)">catalyst-scenario — 촉매 시나리오</div>
+            <div class="domain-module" style="background:var(--orange-bg);color:var(--orange)">investment-signal — 투자 시그널</div>
+          </div>
+        </div>
+        <div class="domain-content" id="d-edu">
+          <div class="domain-group">
+            <div class="domain-group-title" style="color:var(--blue)">⚡ 병렬 실행</div>
+            <div class="domain-module" style="background:var(--blue-bg);color:var(--blue)">institutional-reputation-index — 기관 평판 지수</div>
+            <div class="domain-module" style="background:var(--blue-bg);color:var(--blue)">education-opinion-frame — 교육 의견 프레임</div>
+          </div>
+          <div class="domain-group">
+            <div class="domain-group-title" style="color:var(--orange)">→ 순차 실행</div>
+            <div class="domain-module" style="background:var(--orange-bg);color:var(--orange)">education-crisis-scenario — 교육 위기 시나리오</div>
+            <div class="domain-module" style="background:var(--orange-bg);color:var(--orange)">education-outcome-simulation — 교육 결과 시뮬레이션</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Final Report -->
+    <div class="stage-arrow-block">
+      <div class="sa-line"></div>
+      <span>↓ 모든 Stage 완료</span>
+      <div class="sa-line"></div>
+    </div>
+    <div class="stage-block" style="border-color:var(--pink);">
+      <div class="stage-header" style="border-color:var(--pink);">
+        <div class="stage-num" style="background:var(--pink-bg);color:var(--pink)">📄</div>
+        <div>
+          <div class="stage-info-title">종합 리포트 생성</div>
+          <div class="stage-info-sub">report-builder.ts + generateIntegratedReport() → collection_jobs.status = 'completed'</div>
+        </div>
+      </div>
+      <div class="stage-modules">
+        <div class="module-chip" style="background:var(--pink-bg);border-color:var(--pink);">
+          <div class="mc-name" style="color:var(--pink)">integrated-report</div>
+          <div class="mc-desc">마크다운 + 섹션별 저장</div>
+        </div>
+        <div class="module-chip" style="background:var(--pink-bg);border-color:var(--pink);">
+          <div class="mc-name" style="color:var(--pink)">ontology-extraction</div>
+          <div class="mc-desc">지식 그래프 엔티티 추출</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SECTION 5: DB + 워커 ===== -->
+<section class="section" id="s-db">
+  <div class="section-title">데이터베이스 스키마 + 워커 상세</div>
+  <div class="section-desc">Drizzle ORM · PostgreSQL 16 · packages/core/src/db/schema/</div>
+
+  <div style="font-size:1rem;font-weight:700;margin-bottom:16px;">핵심 테이블</div>
+  <div class="db-grid" style="margin-bottom:40px;">
+    <div class="db-card" style="border-color:var(--blue);">
+      <div class="db-card-name" style="color:var(--blue)">collection_jobs</div>
+      <div class="db-card-desc">분석 job 마스터. status, progress JSONB, keyword, domain, 사용자 FK</div>
+    </div>
+    <div class="db-card" style="border-color:var(--green);">
+      <div class="db-card-name" style="color:var(--green)">articles</div>
+      <div class="db-card-desc">수집 기사/게시글. sourceId(unique), embedding(pgvector), jobId FK</div>
+    </div>
+    <div class="db-card" style="border-color:var(--green);">
+      <div class="db-card-name" style="color:var(--green)">videos</div>
+      <div class="db-card-desc">수집 유튜브 영상. sourceId, title, viewCount, jobId FK</div>
+    </div>
+    <div class="db-card" style="border-color:var(--green);">
+      <div class="db-card-name" style="color:var(--green)">comments</div>
+      <div class="db-card-desc">수집 댓글. articleId/videoId FK, embedding, source 타입</div>
+    </div>
+    <div class="db-card" style="border-color:var(--purple);">
+      <div class="db-card-name" style="color:var(--purple)">analysis_results</div>
+      <div class="db-card-desc">모듈별 분석 결과. module, status, result JSONB, usage(token 수)</div>
+    </div>
+    <div class="db-card" style="border-color:var(--purple);">
+      <div class="db-card-name" style="color:var(--purple)">report_sections</div>
+      <div class="db-card-desc">최종 리포트 섹션. 마크다운 콘텐츠, model 정보</div>
+    </div>
+    <div class="db-card" style="border-color:var(--orange);">
+      <div class="db-card-name" style="color:var(--orange)">pipeline_control</div>
+      <div class="db-card-desc">cancelled, paused, cost_limit_usd, skipped_modules 플래그</div>
+    </div>
+    <div class="db-card" style="border-color:var(--yellow);">
+      <div class="db-card-name" style="color:var(--yellow)">model_configs</div>
+      <div class="db-card-desc">모듈별 AI 모델 설정. provider, model, apiKey, baseUrl</div>
+    </div>
+    <div class="db-card" style="border-color:var(--yellow);">
+      <div class="db-card-name" style="color:var(--yellow)">presets</div>
+      <div class="db-card-desc">AI 모델 프리셋. slug로 조회, 관리자 설정 우선 적용</div>
+    </div>
+    <div class="db-card" style="border-color:var(--cyan);">
+      <div class="db-card-name" style="color:var(--cyan)">data_sources</div>
+      <div class="db-card-desc">동적 수집 소스. adapterType(rss/html), url, config JSONB</div>
+    </div>
+    <div class="db-card" style="border-color:var(--cyan);">
+      <div class="db-card-name" style="color:var(--cyan)">ontology_*</div>
+      <div class="db-card-desc">지식 그래프. 엔티티, 관계, 속성 (분석 결과에서 추출)</div>
+    </div>
+    <div class="db-card">
+      <div class="db-card-name">article_jobs / comment_jobs</div>
+      <div class="db-card-desc">기사/댓글 ↔ job 매핑 테이블 (임베딩 생성 추적)</div>
+    </div>
+  </div>
+
+  <div style="font-size:1rem;font-weight:700;margin-bottom:16px;">워커 상세 설정</div>
+  <div class="worker-detail-grid">
+    <div class="worker-card">
+      <div class="worker-card-header" style="background:var(--surface2);">
+        <span style="font-size:1.4rem;">🕷️</span>
+        <div>
+          <div style="font-weight:700;">collector-worker</div>
+          <div style="font-size:0.78rem;color:var(--text-dim);">collectors 큐 · packages/core/src/queue/collector-worker.ts</div>
+        </div>
+      </div>
+      <div class="worker-card-body">
+        <div class="worker-stat"><span class="worker-stat-key">동시성</span><span class="worker-stat-val">기본값 (auto)</span></div>
+        <div class="worker-stat"><span class="worker-stat-key">취소 확인</span><span class="worker-stat-val">매 청크마다</span></div>
+        <div class="worker-stat"><span class="worker-stat-key">실패 처리</span><span class="worker-stat-val">빈 배열 반환 (파이프라인 계속)</span></div>
+        <div class="worker-stat"><span class="worker-stat-key">진행률</span><span class="worker-stat-val">DB updateJobProgress()</span></div>
+      </div>
+    </div>
+    <div class="worker-card">
+      <div class="worker-card-header" style="background:var(--surface2);">
+        <span style="font-size:1.4rem;">⚙️</span>
+        <div>
+          <div style="font-weight:700;">pipeline-worker</div>
+          <div style="font-size:0.78rem;color:var(--text-dim);">pipeline 큐 · pipeline-worker.ts</div>
+        </div>
+      </div>
+      <div class="worker-card-body">
+        <div class="worker-stat"><span class="worker-stat-key">normalize-naver 병렬</span><span class="worker-stat-val">동시 4개 기사</span></div>
+        <div class="worker-stat"><span class="worker-stat-key">normalize-youtube 병렬</span><span class="worker-stat-val">동시 3개 영상</span></div>
+        <div class="worker-stat"><span class="worker-stat-key">FK 보장</span><span class="worker-stat-val">저장 순서 엄수</span></div>
+        <div class="worker-stat"><span class="worker-stat-key">임베딩</span><span class="worker-stat-val">비차단 백그라운드</span></div>
+      </div>
+    </div>
+    <div class="worker-card">
+      <div class="worker-card-header" style="background:var(--surface2);">
+        <span style="font-size:1.4rem;">🤖</span>
+        <div>
+          <div style="font-weight:700;">analysis-worker</div>
+          <div style="font-size:0.78rem;color:var(--text-dim);">analysis 큐 · analysis-worker.ts</div>
+        </div>
+      </div>
+      <div class="worker-card-body">
+        <div class="worker-stat"><span class="worker-stat-key">lockDuration</span><span class="worker-stat-val">600,000ms (10분)</span></div>
+        <div class="worker-stat"><span class="worker-stat-key">stalledInterval</span><span class="worker-stat-val">300,000ms (5분)</span></div>
+        <div class="worker-stat"><span class="worker-stat-key">maxStalledCount</span><span class="worker-stat-val">2</span></div>
+        <div class="worker-stat"><span class="worker-stat-key">lock 자동 갱신</span><span class="worker-stat-val">120초마다</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SECTION 6: 파이프라인 제어 ===== -->
+<section class="section" id="s-control">
+  <div class="section-title">파이프라인 제어 시스템</div>
+  <div class="section-desc">packages/core/src/pipeline/control.ts — DB 기반 실시간 제어</div>
+
+  <div class="control-flow">
+    <div class="control-card" style="border-color:var(--red);">
+      <div class="control-icon">🛑</div>
+      <div class="control-title">취소 (Cancel)</div>
+      <div class="control-desc">
+        <strong>DB</strong>: pipeline_control.cancelled = true<br><br>
+        <strong>체크 위치</strong>:<br>
+        · 매 수집 청크마다<br>
+        · normalize 배치 시작 전<br>
+        · persist 단계 진입 전<br>
+        · analysis 트리거 직전<br><br>
+        취소 시 현재까지 수집된 데이터 보존
+      </div>
+      <span class="control-tag" style="background:var(--red-bg);color:var(--red)">즉시 적용</span>
+    </div>
+
+    <div class="control-card" style="border-color:var(--yellow);">
+      <div class="control-icon">⏸️</div>
+      <div class="control-title">일시정지 (Pause)</div>
+      <div class="control-desc">
+        <strong>DB</strong>: pipeline_control.paused = true<br><br>
+        <strong>체크 위치</strong>:<br>
+        · 각 분석 모듈 실행 전<br>
+        · waitIfPaused() → 재개까지 블로킹<br><br>
+        일시정지 중에는 AI 호출 없음.<br>
+        재개(Resume) 시 다음 모듈부터 계속.
+      </div>
+      <span class="control-tag" style="background:var(--yellow-bg);color:var(--yellow)">분석 단계에서만</span>
+    </div>
+
+    <div class="control-card" style="border-color:var(--orange);">
+      <div class="control-icon">💰</div>
+      <div class="control-title">비용 한도 (Cost Limit)</div>
+      <div class="control-desc">
+        <strong>DB</strong>: pipeline_control.cost_limit_usd<br><br>
+        <strong>체크 위치</strong>:<br>
+        · 각 모듈 실행 전 checkCostLimit()<br>
+        · 초과 시 이후 모듈 모두 스킵<br><br>
+        완료된 결과는 보존.<br>
+        최종 status: partial_failure
+      </div>
+      <span class="control-tag" style="background:var(--orange-bg);color:var(--orange)">실시간 비용 추적</span>
+    </div>
+
+    <div class="control-card" style="border-color:var(--purple);">
+      <div class="control-icon">⏭️</div>
+      <div class="control-title">모듈 스킵 (Skip)</div>
+      <div class="control-desc">
+        <strong>DB</strong>: pipeline_control.skipped_modules[]<br><br>
+        <strong>체크 위치</strong>:<br>
+        · 오케스트레이터에서 모듈 실행 전<br>
+        · getSkippedModules() 조회<br><br>
+        실행 전 tRPC skipModules mutation으로 설정.<br>
+        skipped 상태로 analysis_results 저장.
+      </div>
+      <span class="control-tag" style="background:var(--purple-bg);color:var(--purple)">사전 설정</span>
+    </div>
+
+    <div class="control-card" style="border-color:var(--cyan);">
+      <div class="control-icon">🔄</div>
+      <div class="control-title">재실행 (Resume)</div>
+      <div class="control-desc">
+        <strong>방식</strong>: triggerAnalysisResume()<br><br>
+        <strong>옵션</strong>:<br>
+        · retryModules: 특정 모듈만 재실행<br>
+        · reportOnly: 완료 결과로만 리포트 재생성<br><br>
+        체크포인트 복원: DB에서 완료 결과 로드 후 실패/미실행 모듈만 실행.
+      </div>
+      <span class="control-tag" style="background:var(--cyan-bg);color:var(--cyan)">체크포인트 복원</span>
+    </div>
+
+    <div class="control-card" style="border-color:var(--green);">
+      <div class="control-icon">🚧</div>
+      <div class="control-title">Stage Gate</div>
+      <div class="control-desc">
+        <strong>파일</strong>: pipeline/pipeline-checks.ts<br><br>
+        <strong>게이트 목록</strong>:<br>
+        · collection 게이트: 수집 완료 대기<br>
+        · normalize 게이트: 정규화 완료 대기<br><br>
+        awaitStageGate()가 각 단계 전 전제조건을 확인. 실패 시 파이프라인 중단.
+      </div>
+      <span class="control-tag" style="background:var(--green-bg);color:var(--green)">단계별 검증</span>
+    </div>
+  </div>
+
+  <!-- 전체 상태 머신 -->
+  <div style="margin-top:40px;">
+    <div style="font-size:1rem;font-weight:700;margin-bottom:16px;">collection_jobs 상태 전이</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+      <div style="padding:10px 20px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;font-size:0.85rem;font-weight:600;">pending</div>
+      <span style="color:var(--text-muted);">→</span>
+      <div style="padding:10px 20px;background:var(--blue-bg);border:1px solid var(--blue);border-radius:10px;font-size:0.85rem;font-weight:600;color:var(--blue);">running</div>
+      <span style="color:var(--text-muted);">→</span>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="padding:8px 16px;background:var(--green-bg);border:1px solid var(--green);border-radius:10px;font-size:0.82rem;font-weight:600;color:var(--green);">completed</div>
+        <div style="padding:8px 16px;background:var(--yellow-bg);border:1px solid var(--yellow);border-radius:10px;font-size:0.82rem;font-weight:600;color:var(--yellow);">partial_failure</div>
+        <div style="padding:8px 16px;background:var(--red-bg);border:1px solid var(--red);border-radius:10px;font-size:0.82rem;font-weight:600;color:var(--red);">cancelled</div>
+        <div style="padding:8px 16px;background:var(--red-bg);border:1px solid var(--red);border-radius:10px;font-size:0.82rem;font-weight:600;color:var(--red);">failed</div>
+      </div>
+    </div>
+    <div style="margin-top:12px;font-size:0.8rem;color:var(--text-dim);">
+      · partial_failure: 일부 모듈 실패 또는 비용 한도 초과<br>
+      · cancelled: 사용자 취소<br>
+      · failed: 전체 실패 (수집 또는 분석 전체 실패)
+    </div>
+  </div>
+</section>
+
+<script>
+function showSection(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('s-' + name).classList.add('active');
+  event.target.classList.add('active');
+}
+
+function showDomain(name) {
+  document.querySelectorAll('.domain-content').forEach(d => d.classList.remove('active'));
+  document.querySelectorAll('.domain-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('d-' + name).classList.add('active');
+  event.target.classList.add('active');
+}
+
+function toggleTheme() {
+  const html = document.documentElement;
+  const btn = document.querySelector('.theme-toggle');
+  if (html.getAttribute('data-theme') === 'light') {
+    html.removeAttribute('data-theme');
+    btn.textContent = '🌙';
+    localStorage.setItem('theme', 'dark');
+  } else {
+    html.setAttribute('data-theme', 'light');
+    btn.textContent = '☀️';
+    localStorage.setItem('theme', 'light');
+  }
+}
+(function() {
+  const saved = localStorage.getItem('theme');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  if (saved === 'light' || (!saved && !prefersDark)) {
+    document.documentElement.setAttribute('data-theme', 'light');
+    document.querySelector('.theme-toggle').textContent = '☀️';
+  }
+})();
+</script>
+</body>
+</html>

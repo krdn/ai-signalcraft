@@ -1,0 +1,1350 @@
+<!-- ═══════════════════════════════════════════════════════════════
+     TAB 7~12  (part2 — concatenate after part1)
+     탭 id: tab-vector, tab-graphdb, tab-providers, tab-database, tab-deploy, tab-maintenance
+═══════════════════════════════════════════════════════════════ -->
+
+<!-- ─────────────────── TAB 7: Vector DB ─────────────────── -->
+<section id="tab-vector" class="section">
+  <div class="sec-title">🧮 Vector DB — pgvector 상세</div>
+  <div class="sec-sub">PostgreSQL 16 + pgvector · multilingual-e5-small (384차원) · RAG / 시맨틱검색 / 중복제거</div>
+
+  <!-- 임베딩 생성 파이프라인 애니메이션 -->
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-title c-purple">임베딩 생성 파이프라인</div>
+    <div style="display:flex;align-items:center;gap:0;flex-wrap:wrap;margin-top:12px" id="embed-flow">
+      <div class="embed-step" style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;min-width:130px;text-align:center;position:relative">
+        <div style="font-size:1.4rem">📝</div>
+        <div style="font-size:0.78rem;font-weight:700;margin-top:4px">입력 텍스트</div>
+        <div style="font-size:0.72rem;color:var(--text-dim);margin-top:3px">"윤석열 탄핵 여론"</div>
+      </div>
+      <div class="embed-arrow">→</div>
+      <div class="embed-step" style="background:var(--purple-bg);border:1px solid rgba(167,139,250,0.3);border-radius:10px;padding:12px 16px;min-width:150px;text-align:center">
+        <div style="font-size:1.4rem">🔤</div>
+        <div style="font-size:0.78rem;font-weight:700;margin-top:4px;color:var(--purple)">토큰화</div>
+        <div style="font-size:0.72rem;color:var(--text-dim);margin-top:3px">WordPiece<br>→ [101, 9521, ...]</div>
+      </div>
+      <div class="embed-arrow">→</div>
+      <div class="embed-step" style="background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.25);border-radius:10px;padding:12px 16px;min-width:160px;text-align:center">
+        <div style="font-size:1.4rem">🤖</div>
+        <div style="font-size:0.78rem;font-weight:700;margin-top:4px;color:var(--accent)">Transformer 인코더</div>
+        <div style="font-size:0.72rem;color:var(--text-dim);margin-top:3px">multilingual-e5-small<br>6레이어 @Xenova</div>
+      </div>
+      <div class="embed-arrow">→</div>
+      <div class="embed-step" style="background:var(--green-bg);border:1px solid rgba(74,222,128,0.25);border-radius:10px;padding:12px 16px;min-width:150px;text-align:center">
+        <div style="font-size:1.4rem">🎯</div>
+        <div style="font-size:0.78rem;font-weight:700;margin-top:4px;color:var(--green)">Mean Pooling</div>
+        <div style="font-size:0.72rem;color:var(--text-dim);margin-top:3px">+ L2 정규화<br>→ float32[384]</div>
+      </div>
+      <div class="embed-arrow">→</div>
+      <div class="embed-step" style="background:var(--cyan-bg);border:1px solid rgba(34,211,238,0.25);border-radius:10px;padding:12px 16px;min-width:180px;text-align:center">
+        <div style="font-size:1.4rem">🗄️</div>
+        <div style="font-size:0.78rem;font-weight:700;margin-top:4px;color:var(--cyan)">pgvector 저장</div>
+        <div style="font-size:0.72rem;color:var(--text-dim);margin-top:3px">[0.12,-0.34,...]<br>::vector(384)</div>
+      </div>
+    </div>
+    <div style="margin-top:16px;background:var(--surface2);border-radius:8px;padding:12px 16px;font-size:0.8rem;color:var(--text-dim)">
+      <span class="c-yellow">⚡ 로컬 실행</span> — 네트워크 없음, GPU 불필요 · <span class="c-green">캐시</span>: <code>/root/.cache/xenova</code> (Docker 볼륨 마운트) · <span class="c-purple">첫 실행</span>: 모델 다운로드 (약 100MB) → 이후 즉시 사용
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <!-- Drizzle 커스텀 타입 -->
+    <div class="card">
+      <div class="card-title c-cyan">Drizzle 커스텀 타입 정의</div>
+      <pre style="background:var(--surface2);border-radius:8px;padding:14px;font-size:0.78rem;color:var(--text-dim);overflow-x:auto;line-height:1.7"><code><span style="color:var(--purple)">export const</span> <span style="color:var(--accent)">vector384</span> = <span style="color:var(--yellow)">customType</span>&lt;{
+  data: <span style="color:var(--green)">number[]</span>;
+  driverData: <span style="color:var(--green)">string</span>;
+}&gt;({
+  <span style="color:var(--cyan)">dataType</span>() {
+    <span style="color:var(--purple)">return</span> <span style="color:var(--green)">'vector(384)'</span>;
+  },
+  <span style="color:var(--cyan)">fromDriver</span>(value: <span style="color:var(--green)">string</span>): <span style="color:var(--green)">number[]</span> {
+    <span style="color:var(--purple)">return</span> <span style="color:var(--yellow)">JSON.parse</span>(value);
+  },
+  <span style="color:var(--cyan)">toDriver</span>(value: <span style="color:var(--green)">number[]</span>): <span style="color:var(--green)">string</span> {
+    <span style="color:var(--purple)">return</span> <span style="color:var(--green)">`[${value.join(',')}]`</span>;
+  },
+});</code></pre>
+      <div style="margin-top:10px;padding:8px 12px;background:var(--yellow-bg);border-radius:6px;font-size:0.8rem;color:var(--yellow)">
+        💡 별도 벡터 DB(Pinecone/Qdrant) 없이 기존 PostgreSQL에서 벡터 검색 — 운영 복잡도 최소화
+      </div>
+    </div>
+
+    <!-- pgvector SQL -->
+    <div class="card">
+      <div class="card-title c-green">pgvector SQL — 코사인 유사도 쿼리</div>
+      <pre style="background:var(--surface2);border-radius:8px;padding:14px;font-size:0.78rem;color:var(--text-dim);overflow-x:auto;line-height:1.7"><code><span style="color:var(--purple)">SELECT</span> a.id, a.title,
+       <span style="color:var(--yellow)">1 - (a.embedding &lt;=&gt;
+         '[0.12,-0.34,...]'::vector)</span>
+       <span style="color:var(--purple)">AS</span> similarity
+<span style="color:var(--purple)">FROM</span> articles a
+<span style="color:var(--purple)">INNER JOIN</span> article_jobs aj
+  <span style="color:var(--purple)">ON</span> a.id = aj.article_id
+<span style="color:var(--purple)">WHERE</span> aj.job_id = <span style="color:var(--green)">$1</span>
+  <span style="color:var(--purple)">AND</span> a.embedding <span style="color:var(--purple)">IS NOT NULL</span>
+<span style="color:var(--purple)">ORDER BY</span> a.embedding <span style="color:var(--yellow)">&lt;=&gt;</span>
+  <span style="color:var(--green)">'[0.12,-0.34,...]'::vector</span>
+<span style="color:var(--purple)">LIMIT</span> <span style="color:var(--orange)">40</span>;</code></pre>
+      <div style="margin-top:8px;font-size:0.78rem;color:var(--text-dim)">
+        <span class="c-yellow">&lt;=&gt;</span> 연산자: 코사인 거리 (0=동일, 2=반대) · <span class="c-green">1 - 거리</span> = 유사도
+      </div>
+    </div>
+  </div>
+
+  <!-- 3가지 활용 패턴 -->
+  <div class="card" style="margin-top:4px">
+    <div class="card-title">3가지 활용 패턴</div>
+    <div class="grid-3" style="margin-top:14px">
+      <!-- RAG Retrieval -->
+      <div style="background:var(--surface2);border-radius:10px;padding:16px;border-top:3px solid var(--purple)">
+        <div style="font-weight:700;color:var(--purple);margin-bottom:10px">① RAG Retrieval</div>
+        <div style="font-size:0.78rem;color:var(--text-dim);line-height:1.6">
+          <div class="vdb-flow" style="flex-direction:column;gap:6px">
+            <div class="vdb-box" style="font-size:0.76rem">키워드 임베딩 생성</div>
+            <div style="text-align:center;color:var(--text-muted)">↓</div>
+            <div class="vdb-box" style="font-size:0.76rem">pgvector <code>&lt;=&gt;</code> 코사인 거리</div>
+            <div style="text-align:center;color:var(--text-muted)">↓</div>
+            <div class="vdb-box" style="font-size:0.76rem">topK 선별 → AI 프롬프트</div>
+          </div>
+        </div>
+        <div style="margin-top:12px;font-size:0.75rem">
+          <div style="padding:4px 8px;background:var(--surface3);border-radius:5px;margin-bottom:4px">
+            <span style="color:var(--green)">rag-light</span>: article=0, comment=50, sim≥0.30
+          </div>
+          <div style="padding:4px 8px;background:var(--surface3);border-radius:5px;margin-bottom:4px">
+            <span style="color:var(--yellow)">rag-standard</span>: article=30, cluster=10, comment=30, sim≥0.35
+          </div>
+          <div style="padding:4px 8px;background:var(--surface3);border-radius:5px">
+            <span style="color:var(--orange)">rag-aggressive</span>: article=15, cluster=5, comment=15, sim≥0.40
+          </div>
+        </div>
+        <div style="margin-top:8px;font-size:0.72rem;color:var(--text-muted)">rag-retriever.ts</div>
+      </div>
+
+      <!-- 시맨틱 검색 -->
+      <div style="background:var(--surface2);border-radius:10px;padding:16px;border-top:3px solid var(--accent)">
+        <div style="font-weight:700;color:var(--accent);margin-bottom:10px">② 시맨틱 검색</div>
+        <div class="vdb-flow" style="flex-direction:column;gap:6px">
+          <div class="vdb-box" style="font-size:0.76rem">질의 임베딩 생성</div>
+          <div style="text-align:center;color:var(--text-muted)">↓</div>
+          <div class="vdb-box" style="font-size:0.76rem"><code>&lt;=&gt;</code> ORDER BY</div>
+          <div style="text-align:center;color:var(--text-muted)">↓</div>
+          <div class="vdb-box" style="font-size:0.76rem">sentiment/jobId 필터 적용</div>
+          <div style="text-align:center;color:var(--text-muted)">↓</div>
+          <div class="vdb-box" style="font-size:0.76rem">topK=20, sim≥0.40 반환</div>
+        </div>
+        <div style="margin-top:12px;font-size:0.75rem;color:var(--text-dim)">
+          <div style="padding:4px 8px;background:var(--surface3);border-radius:5px">
+            <code>findSimilarDocuments()</code>: 원본 임베딩 조회 → 유사 문서 검색, sim≥0.50
+          </div>
+        </div>
+        <div style="margin-top:8px;font-size:0.72rem;color:var(--text-muted)">semantic-search.ts</div>
+      </div>
+
+      <!-- 중복제거/클러스터링 -->
+      <div style="background:var(--surface2);border-radius:10px;padding:16px;border-top:3px solid var(--green)">
+        <div style="font-weight:700;color:var(--green);margin-bottom:10px">③ 중복제거 / 클러스터링</div>
+        <div class="vdb-flow" style="flex-direction:column;gap:6px">
+          <div class="vdb-box" style="font-size:0.76rem">즉석 임베딩 계산 (DB 미사용)</div>
+          <div style="text-align:center;color:var(--text-muted)">↓</div>
+          <div class="vdb-box" style="font-size:0.76rem"><code>cosineSimilarity()</code> 계산</div>
+          <div style="text-align:center;color:var(--text-muted)">↓</div>
+          <div class="vdb-box" style="font-size:0.76rem">임계값 비교</div>
+        </div>
+        <div style="margin-top:12px;font-size:0.75rem">
+          <div style="padding:4px 8px;background:var(--surface3);border-radius:5px;margin-bottom:4px">
+            <span class="c-yellow">deduplicator</span>: 유사≥임계값 → 긴 쪽 선택
+          </div>
+          <div style="padding:4px 8px;background:var(--surface3);border-radius:5px">
+            <span class="c-cyan">clusterer</span>: 대표 1개 선별
+          </div>
+        </div>
+        <div style="margin-top:8px;font-size:0.72rem;color:var(--text-muted)">deduplicator.ts / clusterer.ts</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────── TAB 8: Graph DB ─────────────────── -->
+<section id="tab-graphdb" class="section">
+  <div class="sec-title">🕸️ Graph DB — 온톨로지 &amp; 지식 그래프</div>
+  <div class="sec-sub">entities 6타입 · relations 6타입 · D3.js force simulation · 인터랙티브 드래그</div>
+
+  <div class="grid-2" style="gap:20px">
+    <!-- D3 그래프 -->
+    <div class="card" style="padding:16px">
+      <div class="card-title">인터랙티브 지식 그래프 <small style="font-weight:400;color:var(--text-dim)">(드래그 가능)</small></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px" id="graph-legend">
+        <span class="pill" style="background:rgba(251,146,60,0.15);color:var(--orange)">● 인물</span>
+        <span class="pill" style="background:rgba(96,165,250,0.15);color:var(--blue)">● 기관</span>
+        <span class="pill" style="background:rgba(248,113,113,0.15);color:var(--red)">● 이슈</span>
+        <span class="pill" style="background:rgba(74,222,128,0.15);color:var(--green)">● 키워드</span>
+        <span class="pill" style="background:rgba(167,139,250,0.15);color:var(--purple)">● 프레임</span>
+        <span class="pill" style="background:rgba(34,211,238,0.15);color:var(--cyan)">● 주장</span>
+      </div>
+      <svg id="ontology-graph" width="100%" height="380" style="background:var(--surface2);border-radius:8px;border:1px solid var(--border)"></svg>
+      <div style="margin-top:8px;font-size:0.76rem;color:var(--text-dim);text-align:center">노드 hover: 상세정보 · 드래그: 위치 이동 · 선 두께: 관계 강도</div>
+    </div>
+
+    <!-- 온톨로지 파이프라인 -->
+    <div class="card">
+      <div class="card-title c-orange">온톨로지 추출 파이프라인</div>
+      <div class="flow">
+        <div class="flow-step">
+          <div class="flow-num" style="background:var(--purple-bg);color:var(--purple)">1</div>
+          <div class="flow-body">
+            <div class="flow-label">AI 분석 완료</div>
+            <div class="flow-desc">sentimentFraming · frameWar · riskMap 결과 수신</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num" style="background:var(--orange-bg);color:var(--orange)">2</div>
+          <div class="flow-body">
+            <div class="flow-label">ontology-extractor.ts</div>
+            <div class="flow-desc"><code>ExtractedEntity[]</code> + <code>ExtractedRelation[]</code> 추출<br>6타입 엔티티: person / organization / issue / keyword / frame / claim</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num" style="background:var(--cyan-bg);color:var(--cyan)">3</div>
+          <div class="flow-body">
+            <div class="flow-label">persist-ontology.ts</div>
+            <div class="flow-desc">entities UPSERT (normalizedName+type 기준) → mentionCount 증가<br>relations INSERT (source+target+type 중복 방지)</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num" style="background:var(--green-bg);color:var(--green)">4</div>
+          <div class="flow-body">
+            <div class="flow-label">graph-builder.ts → 프론트 렌더링</div>
+            <div class="flow-desc"><code>GraphNode[]</code> + <code>GraphEdge[]</code> 생성 → D3.js 시각화</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- graph-builder 함수 -->
+      <div style="margin-top:12px">
+        <div style="font-size:0.85rem;font-weight:700;margin-bottom:8px">graph-builder.ts 3개 함수</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;border-left:3px solid var(--blue)">
+            <div style="font-size:0.8rem;font-weight:700;color:var(--blue)">buildKeywordNetwork(sentimentFraming)</div>
+            <div style="font-size:0.75rem;color:var(--text-dim);margin-top:3px">topKeywords(count/sentiment), relatedKeywords(coOccurrenceScore) → 노드 크기=count, 색=sentiment, 엣지 굵기=coOccurrenceScore</div>
+          </div>
+          <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;border-left:3px solid var(--red)">
+            <div style="font-size:0.8rem;font-weight:700;color:var(--red)">buildFrameWarGraph(frameWar, sentimentFraming)</div>
+            <div style="font-size:0.75rem;color:var(--text-dim);margin-top:3px">dominant=파랑, threatening=빨강, reversible=노랑 · 충돌 엣지 생성</div>
+          </div>
+          <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;border-left:3px solid var(--orange)">
+            <div style="font-size:0.8rem;font-weight:700;color:var(--orange)">buildRiskChainGraph(riskMap)</div>
+            <div style="font-size:0.75rem;color:var(--text-dim);margin-top:3px">크기=spreadProbability×40, 공통 triggerKeyword로 엣지 연결</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- entity-search API -->
+  <div class="card" style="margin-top:4px">
+    <div class="card-title c-cyan">entity-search.ts API</div>
+    <div class="grid-2">
+      <div style="background:var(--surface2);border-radius:8px;padding:12px">
+        <div style="font-size:0.82rem;font-weight:700;color:var(--cyan)">getRelatedEntities(entityId, topK=10)</div>
+        <div style="font-size:0.78rem;color:var(--text-dim);margin-top:5px">outgoing + incoming relations JOIN → weight 정렬 → 상위 topK 엔티티 반환</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:8px;padding:12px">
+        <div style="font-size:0.82rem;font-weight:700;color:var(--cyan)">searchEntities(jobId, query, limit=20)</div>
+        <div style="font-size:0.78rem;color:var(--text-dim);margin-top:5px">name ILIKE '%query%' → jobId 필터 → mentionCount 정렬</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────── TAB 9: AI 프로바이더 ─────────────────── -->
+<section id="tab-providers" class="section">
+  <div class="sec-title">🤖 AI 프로바이더 &amp; 호출 상세</div>
+  <div class="sec-sub">10개 프로바이더 · 모델 설정 3단계 폴백 · Gemini CLI OAuth · 동시성 제어</div>
+
+  <!-- 프로바이더 비교표 -->
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-title">10개 프로바이더 비교표</div>
+    <div style="overflow-x:auto;margin-top:10px">
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>프로바이더</th>
+            <th>방식</th>
+            <th>구조화 출력</th>
+            <th>API 키</th>
+            <th>특이사항</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="tag" style="background:var(--orange-bg);color:var(--orange)">anthropic</span></td><td>direct-api</td><td><span class="c-green">✓ 네이티브</span></td><td><span class="c-yellow">필요</span></td><td>AES-256-GCM 암호화 저장</td></tr>
+          <tr><td><span class="tag" style="background:var(--green-bg);color:var(--green)">openai</span></td><td>direct-api</td><td><span class="c-green">✓ 네이티브</span></td><td><span class="c-yellow">필요</span></td><td>—</td></tr>
+          <tr><td><span class="tag" style="background:var(--blue-bg);color:var(--blue)">gemini</span></td><td>direct-api</td><td><span class="c-green">✓ 네이티브</span></td><td><span class="c-yellow">필요</span></td><td>대용량 컨텍스트</td></tr>
+          <tr><td><span class="tag" style="background:var(--cyan-bg);color:var(--cyan)">gemini-cli</span></td><td>proxy-cli</td><td><span class="c-red">✗ → 폴백</span></td><td><span class="c-green">불필요</span></td><td>OAuth 토큰, 일일 쿼터</td></tr>
+          <tr><td><span class="tag" style="background:var(--purple-bg);color:var(--purple)">claude-cli</span></td><td>proxy-cli</td><td><span class="c-red">✗ → 폴백</span></td><td><span class="c-green">불필요</span></td><td>Claude Code CLI · cli-proxy-api:8317</td></tr>
+          <tr><td><span class="tag" style="background:rgba(100,100,100,0.15);color:#aaa">ollama</span></td><td>local</td><td><span class="c-red">✗ → 폴백</span></td><td><span class="c-green">불필요</span></td><td>localhost:11434</td></tr>
+          <tr><td><span class="tag" style="background:rgba(56,189,248,0.1);color:var(--accent)">deepseek</span></td><td>direct-api</td><td><span class="c-green">✓</span></td><td><span class="c-yellow">필요</span></td><td>Cache Hit $0.028/MTok</td></tr>
+          <tr><td><span class="tag" style="background:var(--yellow-bg);color:var(--yellow)">xai</span></td><td>direct-api</td><td><span class="c-green">✓</span></td><td><span class="c-yellow">필요</span></td><td>Grok 계열</td></tr>
+          <tr><td><span class="tag" style="background:var(--pink-bg);color:var(--pink)">openrouter</span></td><td>direct-api</td><td><span class="c-yellow">requiresJsonMode</span></td><td><span class="c-yellow">필요</span></td><td>generateText+JSON파싱 폴백</td></tr>
+          <tr><td><span class="tag" style="background:var(--surface3);color:var(--text-dim)">custom</span></td><td>direct-api</td><td>설정가능</td><td>설정가능</td><td>OpenAI 호환 엔드포인트</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="grid-2" style="gap:16px">
+    <!-- 모델 설정 3단계 폴백 -->
+    <div class="card">
+      <div class="card-title c-yellow">모델 설정 3단계 폴백</div>
+      <div style="display:flex;flex-direction:column;gap:0;margin-top:12px">
+        <div style="background:var(--yellow-bg);border:1px solid rgba(251,191,36,0.3);border-radius:8px 8px 0 0;padding:12px 16px">
+          <div style="font-size:0.82rem;font-weight:700;color:var(--yellow)">① 1순위: preset_model_settings</div>
+          <div style="font-size:0.76rem;color:var(--text-dim);margin-top:3px">presetSlug + moduleName → provider + model</div>
+        </div>
+        <div style="text-align:center;padding:4px;font-size:0.9rem;color:var(--text-muted)">↓ 없으면</div>
+        <div style="background:var(--orange-bg);border:1px solid rgba(251,146,60,0.3);border-radius:0;padding:12px 16px">
+          <div style="font-size:0.82rem;font-weight:700;color:var(--orange)">② 2순위: model_settings DB</div>
+          <div style="font-size:0.76rem;color:var(--text-dim);margin-top:3px">moduleName → provider + model (전역 설정)</div>
+        </div>
+        <div style="text-align:center;padding:4px;font-size:0.9rem;color:var(--text-muted)">↓ 없으면</div>
+        <div style="background:var(--red-bg);border:1px solid rgba(248,113,113,0.3);border-radius:0 0 8px 8px;padding:12px 16px">
+          <div style="font-size:0.82rem;font-weight:700;color:var(--red)">③ 3순위: MODULE_MODEL_MAP</div>
+          <div style="font-size:0.76rem;color:var(--text-dim);margin-top:3px">코드 하드코딩 기본값</div>
+        </div>
+      </div>
+      <div style="margin-top:10px;background:var(--surface2);border-radius:6px;padding:8px 12px;font-size:0.77rem;color:var(--text-dim)">
+        + <code>getProviderKeyInfo()</code>: providerKeys.baseUrl / apiKey 함께 조회
+      </div>
+    </div>
+
+    <!-- needsTextFallback 분기 -->
+    <div class="card">
+      <div class="card-title c-purple">needsTextFallback() 분기 로직</div>
+      <div style="margin-top:12px;font-size:0.8rem;line-height:1.8">
+        <div style="background:var(--surface2);border-radius:8px;padding:12px 14px">
+          <div style="color:var(--accent);font-weight:700">analyzeStructured() 호출</div>
+          <div style="margin-left:16px;margin-top:6px">
+            <div style="color:var(--green)">→ false: generateObject(schema)</div>
+            <div style="color:var(--text-dim);margin-left:16px;font-size:0.76rem">구조화 출력 직접 생성</div>
+            <div style="margin-top:6px;color:var(--red)">→ true: generateText()</div>
+            <div style="margin-left:16px;font-size:0.76rem;color:var(--text-dim)">→ JSON.parse()</div>
+            <div style="margin-left:16px;font-size:0.76rem;color:var(--text-dim)">→ z.safeParse(schema)</div>
+            <div style="margin-left:16px;font-size:0.76rem;color:var(--red)">→ 실패: MAX_PARSE_RETRIES=2 재시도</div>
+          </div>
+        </div>
+        <div style="margin-top:10px;padding:8px 12px;background:var(--purple-bg);border-radius:6px;font-size:0.76rem;color:var(--text-dim)">
+          needsTextFallback 대상: <span class="c-cyan">gemini-cli</span>, <span class="c-purple">claude-cli</span>, <span class="c-text-dim">ollama</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gemini CLI OAuth -->
+    <div class="card">
+      <div class="card-title c-blue">Gemini CLI OAuth 토큰 갱신 흐름</div>
+      <div style="margin-top:10px;font-size:0.78rem;line-height:1.8;background:var(--surface2);border-radius:8px;padding:12px 14px">
+        <div class="c-accent">Worker 시작</div>
+        <div style="margin-left:12px;color:var(--text-dim)">→ <code>ensureGeminiTokenFresh()</code></div>
+        <div style="margin-left:12px;color:var(--text-dim)">→ <code>loadCreds(~/.gemini/oauth_creds.json)</code></div>
+        <div style="margin-left:12px">
+          <span class="c-green">expiry_date - now() &gt; 5분</span> → <span class="c-green">유효 ✓</span>
+        </div>
+        <div style="margin-left:12px;color:var(--text-dim)">아니면: <code>refreshAccessToken(refresh_token)</code></div>
+        <div style="margin-left:24px;color:var(--text-dim)">→ POST oauth2.googleapis.com/token</div>
+        <div style="margin-left:24px;color:var(--text-dim)">&nbsp;&nbsp; (client_id + client_secret + refresh_token)</div>
+        <div style="margin-left:24px">→ <span class="c-green">{access_token, expires_in:3600}</span></div>
+        <div style="margin-left:24px;color:var(--text-dim)">→ <code>saveCreds()</code> (mode: 0o600)</div>
+        <div style="margin-top:8px;padding:6px 10px;background:var(--yellow-bg);border-radius:5px;color:var(--yellow)">
+          ⏰ 자동 갱신: <code>startGeminiTokenAutoRefresh()</code> → setInterval(45분).unref()
+        </div>
+      </div>
+    </div>
+
+    <!-- Claude CLI 프록시 -->
+    <div class="card">
+      <div class="card-title c-orange">Claude CLI 프록시 흐름</div>
+      <div style="margin-top:10px;font-size:0.78rem;line-height:1.8;background:var(--surface2);border-radius:8px;padding:12px 14px">
+        <div class="c-orange">insight-gateway</div>
+        <div style="margin-left:12px;color:var(--text-dim)">→ provider='claude-cli'</div>
+        <div style="margin-left:12px;color:var(--text-dim)">→ getModel('claude-cli', model, baseUrl=cli-proxy:8317)</div>
+        <div style="margin-left:12px">→ <span class="c-accent">HTTP → cli-proxy-api 컨테이너</span></div>
+        <div style="margin-left:24px;color:var(--text-dim)">(포트 8317 / 54545)</div>
+        <div style="margin-left:24px;color:var(--text-dim)">→ Claude Code CLI 내부 실행</div>
+        <div style="margin-left:24px">→ <span class="c-green">응답 반환</span></div>
+      </div>
+      <div style="margin-top:10px">
+        <div style="font-size:0.82rem;font-weight:700;margin-bottom:8px">동시성 제어 3프리셋</div>
+        <div style="display:flex;flex-direction:column;gap:5px;font-size:0.77rem">
+          <div style="background:var(--surface2);border-radius:6px;padding:7px 10px">
+            <span class="c-green">free-safe</span>: gemini=1, anthropic=1, openai=1, apiConcurrency=2
+          </div>
+          <div style="background:var(--surface2);border-radius:6px;padding:7px 10px">
+            <span class="c-yellow">paid-basic</span>: gemini=1, anthropic=2, openai=3, apiConcurrency=10
+          </div>
+          <div style="background:var(--surface2);border-radius:6px;padding:7px 10px">
+            <span class="c-orange">paid-max</span>: gemini=5, anthropic=5, openai=5, apiConcurrency=10
+          </div>
+          <div style="background:var(--surface2);border-radius:6px;padding:7px 10px">
+            <span class="c-cyan">기본 CLI</span>: gemini-cli=1, claude-cli=1
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 가격표 -->
+  <div class="card" style="margin-top:4px">
+    <div class="card-title">💰 모델 가격표 (USD per 1M tokens)</div>
+    <div style="overflow-x:auto;margin-top:10px">
+      <table class="compare-table">
+        <thead>
+          <tr><th>모델</th><th>Input</th><th>Output</th><th>비고</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="c-orange">Claude Opus 4.6</span></td><td class="c-red">$15.00</td><td class="c-red">$75.00</td><td>최고 품질</td></tr>
+          <tr><td><span class="c-orange">Claude Sonnet 4.6</span></td><td class="c-yellow">$3.00</td><td class="c-yellow">$15.00</td><td>권장 기본값</td></tr>
+          <tr><td><span class="c-orange">Claude Haiku 4.5</span></td><td class="c-green">$0.80</td><td class="c-green">$4.00</td><td>경량 고속</td></tr>
+          <tr><td><span class="c-green">GPT-4o</span></td><td class="c-yellow">$2.50</td><td class="c-yellow">$10.00</td><td></td></tr>
+          <tr><td><span class="c-blue">Gemini 2.5 Flash</span></td><td class="c-green">$0.15</td><td class="c-green">$0.60</td><td>최저가</td></tr>
+          <tr><td><span class="c-accent">DeepSeek Chat</span></td><td class="c-green">$0.27</td><td class="c-green">$1.10</td><td>Cache Hit 절약</td></tr>
+          <tr><td><span class="c-accent">DeepSeek Reasoner</span></td><td class="c-green">$0.55</td><td class="c-yellow">$2.19</td><td>추론 특화</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:10px;padding:8px 12px;background:var(--surface2);border-radius:6px;font-size:0.78rem;color:var(--text-dim)">
+      🔐 API 키 보안: <span class="c-yellow">AES-256-GCM</span> 암호화 → DB <code>provider_keys.encryptedKey</code> 저장 · UI: <code>maskedKey('sk-...xxx')</code> · 분석 시 <code>getDecryptedKey(id)</code> 복호화
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────── TAB 10: 데이터베이스 ─────────────────── -->
+<section id="tab-database" class="section">
+  <div class="sec-title">🗄️ 데이터베이스 완전 맵</div>
+  <div class="sec-sub">PostgreSQL 16 + pgvector · 24개 테이블 · 그룹별 ERD · 핵심 FK 관계</div>
+
+  <!-- 개발 vs 운영 연결 -->
+  <div class="grid-2" style="margin-bottom:20px">
+    <div style="background:var(--yellow-bg);border:1px solid rgba(251,191,36,0.3);border-radius:10px;padding:14px">
+      <div style="font-weight:700;color:var(--yellow);margin-bottom:6px">🔧 개발 환경</div>
+      <code style="font-size:0.78rem;color:var(--text-dim)">postgresql://ais:pw@192.168.0.5:5438/ai_signalcraft</code>
+      <div style="font-size:0.76rem;color:var(--text-dim);margin-top:5px">외부 접속 · BullMQ prefix: <span class="c-yellow">ais-dev</span></div>
+    </div>
+    <div style="background:var(--green-bg);border:1px solid rgba(74,222,128,0.3);border-radius:10px;padding:14px">
+      <div style="font-weight:700;color:var(--green);margin-bottom:6px">🚀 운영 환경</div>
+      <code style="font-size:0.78rem;color:var(--text-dim)">postgresql://ais:pw@postgres:5432/ai_signalcraft</code>
+      <div style="font-size:0.76rem;color:var(--text-dim);margin-top:5px">Docker 내부 · BullMQ prefix: <span class="c-green">bull</span> (기본값)</div>
+    </div>
+  </div>
+
+  <!-- 테이블 그룹들 -->
+  <!-- 인증 그룹 -->
+  <div class="db-group">
+    <div class="db-group-title" style="color:var(--blue)">🔐 인증 (Authentication)</div>
+    <div class="grid-4">
+      <div class="db-table-card" onclick="toggleDbDetail(this)" style="cursor:pointer">
+        <div class="db-table-name"><span style="color:var(--blue)">■</span> users</div>
+        <div class="db-cols">
+          <span class="db-col pk">id PK</span><span class="db-col">name</span><span class="db-col">email</span><span class="db-col">role</span>
+        </div>
+        <div class="db-detail" style="display:none;margin-top:8px;font-size:0.75rem;color:var(--text-dim)">
+          role: enum(user/admin/superadmin) · emailVerified · image · createdAt
+        </div>
+      </div>
+      <div class="db-table-card" onclick="toggleDbDetail(this)" style="cursor:pointer">
+        <div class="db-table-name"><span style="color:var(--blue)">■</span> accounts</div>
+        <div class="db-cols">
+          <span class="db-col pk">id PK</span><span class="db-col fk">userId FK</span><span class="db-col">provider</span>
+        </div>
+        <div class="db-detail" style="display:none;margin-top:8px;font-size:0.75rem;color:var(--text-dim)">
+          providerAccountId · access_token · refresh_token · NextAuth OAuth
+        </div>
+      </div>
+      <div class="db-table-card" onclick="toggleDbDetail(this)" style="cursor:pointer">
+        <div class="db-table-name"><span style="color:var(--blue)">■</span> teams</div>
+        <div class="db-cols">
+          <span class="db-col pk">id PK</span><span class="db-col">name</span><span class="db-col">plan</span>
+        </div>
+        <div class="db-detail" style="display:none;margin-top:8px;font-size:0.75rem;color:var(--text-dim)">
+          plan: enum(free/starter/pro/enterprise) · monthlyAnalysisQuota · usedAnalysisCount
+        </div>
+      </div>
+      <div class="db-table-card" onclick="toggleDbDetail(this)" style="cursor:pointer">
+        <div class="db-table-name"><span style="color:var(--blue)">■</span> teamMembers</div>
+        <div class="db-cols">
+          <span class="db-col fk">teamId FK</span><span class="db-col fk">userId FK</span><span class="db-col">role</span>
+        </div>
+        <div class="db-detail" style="display:none;margin-top:8px;font-size:0.75rem;color:var(--text-dim)">
+          role: enum(owner/admin/member) · joinedAt
+        </div>
+      </div>
+    </div>
+    <div class="grid-4" style="margin-top:8px">
+      <div class="db-table-card" onclick="toggleDbDetail(this)" style="cursor:pointer">
+        <div class="db-table-name"><span style="color:var(--blue)">■</span> sessions</div>
+        <div class="db-cols"><span class="db-col pk">id PK</span><span class="db-col fk">userId FK</span><span class="db-col">expires</span></div>
+        <div class="db-detail" style="display:none;margin-top:8px;font-size:0.75rem;color:var(--text-dim)">sessionToken · NextAuth 세션 관리</div>
+      </div>
+      <div class="db-table-card" onclick="toggleDbDetail(this)" style="cursor:pointer">
+        <div class="db-table-name"><span style="color:var(--blue)">■</span> invitations</div>
+        <div class="db-cols"><span class="db-col pk">id PK</span><span class="db-col fk">teamId FK</span><span class="db-col">email</span></div>
+        <div class="db-detail" style="display:none;margin-top:8px;font-size:0.75rem;color:var(--text-dim)">token · status: pending/accepted/expired · expiresAt</div>
+      </div>
+      <div class="db-table-card" onclick="toggleDbDetail(this)" style="cursor:pointer">
+        <div class="db-table-name"><span style="color:var(--blue)">■</span> demoQuotas</div>
+        <div class="db-cols"><span class="db-col pk">id PK</span><span class="db-col">ipHash</span><span class="db-col">count</span></div>
+        <div class="db-detail" style="display:none;margin-top:8px;font-size:0.75rem;color:var(--text-dim)">데모 사용자 IP 기반 쿼터 제한 · resetAt</div>
+      </div>
+      <div class="db-table-card" onclick="toggleDbDetail(this)" style="cursor:pointer">
+        <div class="db-table-name"><span style="color:var(--blue)">■</span> verificationTokens</div>
+        <div class="db-cols"><span class="db-col">identifier</span><span class="db-col">token</span><span class="db-col">expires</span></div>
+        <div class="db-detail" style="display:none;margin-top:8px;font-size:0.75rem;color:var(--text-dim)">이메일 인증 토큰 (NextAuth)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 수집 그룹 -->
+  <div class="db-group">
+    <div class="db-group-title" style="color:var(--green)">📥 수집 (Collection)</div>
+    <div class="grid-4">
+      <div class="db-table-card" onclick="toggleDbDetail(this)" style="cursor:pointer">
+        <div class="db-table-name"><span style="color:var(--green)">■</span> collection_jobs</div>
+        <div class="db-cols">
+          <span class="db-col pk">id PK</span><span class="db-col fk">teamId FK</span><span class="db-col">status</span>
+        </div>
+        <div class="db-detail" style="display:none;margin-top:8px;font-size:0.75rem;color:var(--text-dim)">
+          status: enum(7: pending/running/completed/partial_failure/failed/cancelled/paused)<br>
+          keyword · sources JSONB · articleCount · costLimitUsd · pausedAt · breakpoints JSONB
+        </div>
+      </div>
+      <div class="db-table-card" onclick="toggleDbDetail(this)" style="cursor:pointer">
+        <div class="db-table-name"><span style="color:var(--green)">■</span> articles</div>
+        <div class="db-cols">
+          <span class="db-col pk">id PK</span><span class="db-col">title</span><span class="db-col">source</span><span class="db-col vec">embedding</span>
+        </div>
+        <div class="db-detail" style="display:none;margin-top:8px;font-size:0.75rem;color:var(--text-dim)">
+          content · url · publishedAt · sentiment · embedding vector(384) · wordCount
+        </div>
+      </div>
+      <div class="db-table-card" onclick="toggleDbDetail(this)" style="cursor:pointer">
+        <div class="db-table-name"><span style="color:var(--green)">■</span> comments</div>
+        <div class="db-cols">
+          <span class="db-col pk">id PK</span><span class="db-col">content</span><span class="db-col vec">embedding</span>
+        </div>
+        <div class="db-detail" style="display:none;margin-top:8px;font-size:0.75rem;color:var(--text-dim)">
+          source · likes · sentiment · embedding vector(384) · parentId
+        </div>
+      </div>
+      <div class="db-table-card" onclick="toggleDbDetail(this)" style="cursor:pointer">
+        <div class="db-table-name"><span style="color:var(--green)">■</span> videos</div>
+        <div class="db-cols">
+          <span class="db-col pk">id PK</span><span class="db-col">title</span><span class="db-col">platform</span>
+        </div>
+        <div class="db-detail" style="display:none;margin-top:8px;font-size:0.75rem;color:var(--text-dim)">
+          channelName · viewCount · likeCount · description · publishedAt
+        </div>
+      </div>
+    </div>
+    <div class="grid-3" style="margin-top:8px">
+      <div class="db-table-card" onclick="toggleDbDetail(this)" style="cursor:pointer">
+        <div class="db-table-name"><span style="color:var(--green)">■</span> article_jobs</div>
+        <div class="db-cols"><span class="db-col fk">articleId FK</span><span class="db-col fk">jobId FK</span></div>
+        <div class="db-detail" style="display:none;margin-top:8px;font-size:0.75rem;color:var(--text-dim)">article ↔ collection_job 다대다 조인 · ON DELETE SET NULL</div>
+      </div>
+      <div class="db-table-card" onclick="toggleDbDetail(this)" style="cursor:pointer">
+        <div class="db-table-name"><span style="color:var(--green)">■</span> video_jobs</div>
+        <div class="db-cols"><span class="db-col fk">videoId FK</span><span class="db-col fk">jobId FK</span></div>
+        <div class="db-detail" style="display:none;margin-top:8px;font-size:0.75rem;color:var(--text-dim)">video ↔ collection_job 다대다 조인</div>
+      </div>
+      <div class="db-table-card" onclick="toggleDbDetail(this)" style="cursor:pointer">
+        <div class="db-table-name"><span style="color:var(--green)">■</span> comment_jobs</div>
+        <div class="db-cols"><span class="db-col fk">commentId FK</span><span class="db-col fk">jobId FK</span></div>
+        <div class="db-detail" style="display:none;margin-top:8px;font-size:0.75rem;color:var(--text-dim)">comment ↔ collection_job 다대다 조인</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 분석 그룹 -->
+  <div class="db-group">
+    <div class="db-group-title" style="color:var(--purple)">🤖 분석 (Analysis)</div>
+    <div class="grid-2">
+      <div class="db-table-card" onclick="toggleDbDetail(this)" style="cursor:pointer">
+        <div class="db-table-name"><span style="color:var(--purple)">■</span> analysis_results</div>
+        <div class="db-cols">
+          <span class="db-col pk">id PK</span><span class="db-col fk">jobId FK</span><span class="db-col">moduleName</span><span class="db-col">status</span>
+        </div>
+        <div class="db-detail" style="display:none;margin-top:8px;font-size:0.75rem;color:var(--text-dim)">
+          status: enum(5: pending/running/completed/failed/skipped)<br>
+          result JSONB · usage JSONB(inputTokens/outputTokens/cost) · provider · model · stage · startedAt · completedAt
+        </div>
+      </div>
+      <div class="db-table-card" onclick="toggleDbDetail(this)" style="cursor:pointer">
+        <div class="db-table-name"><span style="color:var(--purple)">■</span> analysis_reports</div>
+        <div class="db-cols">
+          <span class="db-col pk">id PK</span><span class="db-col fk">jobId FK</span><span class="db-col">format</span>
+        </div>
+        <div class="db-detail" style="display:none;margin-top:8px;font-size:0.75rem;color:var(--text-dim)">
+          format: enum(pdf/html/json) · filePath · fileSize · generatedAt · Playwright PDF 생성
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 온톨로지 그룹 -->
+  <div class="db-group">
+    <div class="db-group-title" style="color:var(--orange)">🕸️ 온톨로지 (Ontology)</div>
+    <div class="grid-2">
+      <div class="db-table-card" onclick="toggleDbDetail(this)" style="cursor:pointer">
+        <div class="db-table-name"><span style="color:var(--orange)">■</span> entities</div>
+        <div class="db-cols">
+          <span class="db-col pk">id PK</span><span class="db-col fk">jobId FK</span><span class="db-col">name</span><span class="db-col">type</span>
+        </div>
+        <div class="db-detail" style="display:none;margin-top:8px;font-size:0.75rem;color:var(--text-dim)">
+          type: enum(6: person/organization/issue/keyword/frame/claim)<br>
+          normalizedName · mentionCount · sentiment · UPSERT 기준: normalizedName+type+jobId
+        </div>
+      </div>
+      <div class="db-table-card" onclick="toggleDbDetail(this)" style="cursor:pointer">
+        <div class="db-table-name"><span style="color:var(--orange)">■</span> relations</div>
+        <div class="db-cols">
+          <span class="db-col pk">id PK</span><span class="db-col fk">sourceId FK</span><span class="db-col fk">targetId FK</span><span class="db-col">type</span>
+        </div>
+        <div class="db-detail" style="display:none;margin-top:8px;font-size:0.75rem;color:var(--text-dim)">
+          type: enum(6: supports/opposes/related/causes/cooccurs/threatens)<br>
+          weight REAL · CASCADE DELETE · 중복 방지: source+target+type UNIQUE
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 설정 그룹 -->
+  <div class="db-group">
+    <div class="db-group-title" style="color:var(--yellow)">⚙️ 설정 (Settings)</div>
+    <div class="grid-3">
+      <div class="db-table-card" onclick="toggleDbDetail(this)" style="cursor:pointer">
+        <div class="db-table-name"><span style="color:var(--yellow)">■</span> model_settings</div>
+        <div class="db-cols"><span class="db-col pk">id PK</span><span class="db-col">moduleName</span><span class="db-col">provider</span></div>
+        <div class="db-detail" style="display:none;margin-top:8px;font-size:0.75rem;color:var(--text-dim)">전역 모듈별 기본 프로바이더+모델 설정</div>
+      </div>
+      <div class="db-table-card" onclick="toggleDbDetail(this)" style="cursor:pointer">
+        <div class="db-table-name"><span style="color:var(--yellow)">■</span> preset_model_settings</div>
+        <div class="db-cols"><span class="db-col pk">id PK</span><span class="db-col">presetSlug</span><span class="db-col">moduleName</span></div>
+        <div class="db-detail" style="display:none;margin-top:8px;font-size:0.75rem;color:var(--text-dim)">프리셋별 모듈 오버라이드 · 1순위 폴백</div>
+      </div>
+      <div class="db-table-card" onclick="toggleDbDetail(this)" style="cursor:pointer">
+        <div class="db-table-name"><span style="color:var(--yellow)">■</span> provider_keys</div>
+        <div class="db-cols"><span class="db-col pk">id PK</span><span class="db-col">provider</span><span class="db-col">encryptedKey</span></div>
+        <div class="db-detail" style="display:none;margin-top:8px;font-size:0.75rem;color:var(--text-dim)">AES-256-GCM 암호화 · maskedKey · baseUrl (custom 엔드포인트)</div>
+      </div>
+      <div class="db-table-card" onclick="toggleDbDetail(this)" style="cursor:pointer">
+        <div class="db-table-name"><span style="color:var(--yellow)">■</span> concurrency_settings</div>
+        <div class="db-cols"><span class="db-col pk">id PK</span><span class="db-col">preset</span><span class="db-col">gemini</span></div>
+        <div class="db-detail" style="display:none;margin-top:8px;font-size:0.75rem;color:var(--text-dim)">3프리셋: free-safe/paid-basic/paid-max · 프로바이더별 동시성</div>
+      </div>
+      <div class="db-table-card" onclick="toggleDbDetail(this)" style="cursor:pointer">
+        <div class="db-table-name"><span style="color:var(--yellow)">■</span> analysis_presets</div>
+        <div class="db-cols"><span class="db-col pk">id PK</span><span class="db-col">slug</span><span class="db-col">name</span></div>
+        <div class="db-detail" style="display:none;margin-top:8px;font-size:0.75rem;color:var(--text-dim)">분석 프리셋 (modules, ragMode 등 설정 묶음)</div>
+      </div>
+      <div class="db-table-card" onclick="toggleDbDetail(this)" style="cursor:pointer">
+        <div class="db-table-name"><span style="color:var(--yellow)">■</span> data_sources</div>
+        <div class="db-cols"><span class="db-col pk">id PK</span><span class="db-col">name</span><span class="db-col">type</span></div>
+        <div class="db-detail" style="display:none;margin-top:8px;font-size:0.75rem;color:var(--text-dim)">수집 소스 설정 · enabled · config JSONB</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 핵심 FK 관계 요약 -->
+  <div class="card">
+    <div class="card-title">🔗 핵심 FK 관계 요약</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px;font-size:0.8rem">
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface2);border-radius:6px">
+        <span class="c-green" style="font-weight:700">collection_jobs</span>
+        <span class="c-text-muted">→ 1:N (SET NULL) →</span>
+        <span class="c-green">articles / videos / comments</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface2);border-radius:6px">
+        <span class="c-green" style="font-weight:700">collection_jobs</span>
+        <span class="c-text-muted">→ 1:N (CASCADE) →</span>
+        <span class="c-purple">analysis_results / analysis_reports</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface2);border-radius:6px">
+        <span class="c-green" style="font-weight:700">collection_jobs</span>
+        <span class="c-text-muted">→ 1:N (CASCADE) →</span>
+        <span class="c-orange">entities / relations</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface2);border-radius:6px">
+        <span class="c-orange" style="font-weight:700">entities</span>
+        <span class="c-text-muted">→ sourceId/targetId →</span>
+        <span class="c-orange">relations (CASCADE DELETE)</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface2);border-radius:6px">
+        <span class="c-green" style="font-weight:700">articles / comments</span>
+        <span class="c-text-muted">→ pgvector 컬럼 →</span>
+        <span class="c-purple">embedding vector(384)</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────── TAB 11: 배포 & 인프라 ─────────────────── -->
+<section id="tab-deploy" class="section">
+  <div class="sec-title">🚀 배포 &amp; 인프라</div>
+  <div class="sec-sub">CI/CD 파이프라인 · Docker Multi-stage 빌드 · docker-compose.prod.yml · 배포 체크리스트</div>
+
+  <!-- CI/CD 파이프라인 -->
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-title">CI/CD 파이프라인</div>
+    <div style="display:flex;gap:0;align-items:flex-start;flex-wrap:wrap;margin-top:14px">
+      <div style="flex:1;min-width:160px;background:var(--surface2);border-radius:10px;padding:14px;border-top:3px solid var(--accent)">
+        <div style="font-size:0.8rem;font-weight:700;color:var(--accent);margin-bottom:8px">PR 생성</div>
+        <div style="font-size:0.75rem;color:var(--text-dim);line-height:1.7">
+          <div>📋 quality job</div>
+          <div style="margin-left:10px">• pnpm lint</div>
+          <div style="margin-left:10px">• pnpm format</div>
+          <div style="margin-left:10px">• pnpm typecheck</div>
+          <div style="margin-left:10px">• pnpm build</div>
+          <div style="margin-top:6px">🧪 test job</div>
+          <div style="margin-left:10px">• pnpm test (Vitest)</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;padding:0 10px;color:var(--text-muted);font-size:1.3rem">→</div>
+      <div style="flex:1;min-width:160px;background:var(--surface2);border-radius:10px;padding:14px;border-top:3px solid var(--green)">
+        <div style="font-size:0.8rem;font-weight:700;color:var(--green);margin-bottom:8px">main 브랜치 merge</div>
+        <div style="font-size:0.75rem;color:var(--text-dim);line-height:1.7">
+          <div>🗄️ DB Schema Push</div>
+          <div style="margin-left:10px">(Drizzle db:push)</div>
+          <div style="margin-top:6px">🐳 Docker Compose 빌드</div>
+          <div style="margin-left:10px">web + worker 이미지</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;padding:0 10px;color:var(--text-muted);font-size:1.3rem">→</div>
+      <div style="flex:1;min-width:160px;background:var(--surface2);border-radius:10px;padding:14px;border-top:3px solid var(--orange)">
+        <div style="font-size:0.8rem;font-weight:700;color:var(--orange);margin-bottom:8px">서비스 교체</div>
+        <div style="font-size:0.75rem;color:var(--text-dim);line-height:1.7">
+          <div>↻ web, worker만 교체</div>
+          <div style="margin-left:10px">(postgres/redis 유지)</div>
+          <div style="margin-top:6px">✅ Health Check</div>
+          <div style="margin-left:10px">15초 대기 + curl</div>
+          <div style="margin-left:10px">/api/health</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;padding:0 10px;color:var(--text-muted);font-size:1.3rem">→</div>
+      <div style="flex:1;min-width:140px;background:var(--surface2);border-radius:10px;padding:14px;border-top:3px solid var(--purple)">
+        <div style="font-size:0.8rem;font-weight:700;color:var(--purple);margin-bottom:8px">Release 발행</div>
+        <div style="font-size:0.75rem;color:var(--text-dim);line-height:1.7">
+          GitHub Release 자동 생성
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2" style="gap:16px">
+    <!-- Docker Multi-stage -->
+    <div class="card">
+      <div class="card-title c-cyan">Docker Multi-stage 빌드</div>
+      <div style="display:flex;flex-direction:column;gap:0;margin-top:12px">
+        <div style="background:var(--surface2);border-radius:8px 8px 0 0;padding:10px 14px;border-left:3px solid var(--blue)">
+          <div style="font-size:0.8rem;font-weight:700;color:var(--blue)">Stage 1: deps</div>
+          <div style="font-size:0.75rem;color:var(--text-dim);margin-top:3px">node:24-slim · pnpm install (--frozen-lockfile)</div>
+        </div>
+        <div style="text-align:center;font-size:0.8rem;color:var(--text-muted);padding:2px">↓</div>
+        <div style="background:var(--surface2);padding:10px 14px;border-left:3px solid var(--purple)">
+          <div style="font-size:0.8rem;font-weight:700;color:var(--purple)">Stage 2: builder</div>
+          <div style="font-size:0.75rem;color:var(--text-dim);margin-top:3px">tsc + next build (standalone 출력)</div>
+        </div>
+        <div style="text-align:center;font-size:0.8rem;color:var(--text-muted);padding:2px">↓ (분기)</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
+          <div style="background:var(--green-bg);border:1px solid rgba(74,222,128,0.2);border-radius:0 0 0 8px;padding:10px 12px">
+            <div style="font-size:0.78rem;font-weight:700;color:var(--green)">Stage 3: web</div>
+            <div style="font-size:0.72rem;color:var(--text-dim);margin-top:4px;line-height:1.6">
+              node:24-slim<br>
+              COPY .next/standalone<br>
+              PORT=3000<br>
+              CMD: node apps/web/server.js
+            </div>
+          </div>
+          <div style="background:var(--orange-bg);border:1px solid rgba(251,146,60,0.2);border-radius:0 0 8px 0;padding:10px 12px">
+            <div style="font-size:0.78rem;font-weight:700;color:var(--orange)">Stage 4: worker</div>
+            <div style="font-size:0.72rem;color:var(--text-dim);margin-top:4px;line-height:1.6">
+              apt: chromium<br>
+              fonts-noto-cjk 🇰🇷<br>
+              Vol: xenova 캐시<br>
+              CMD: tsx worker-process.ts
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- docker-compose 서비스 맵 -->
+    <div class="card">
+      <div class="card-title c-green">docker-compose.prod.yml 서비스 맵</div>
+      <div style="overflow-x:auto;margin-top:10px">
+        <table class="compare-table" style="font-size:0.76rem">
+          <thead><tr><th>서비스</th><th>이미지</th><th>포트</th><th>볼륨</th><th>헬스체크</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="c-green">web</span></td>
+              <td>ais-web</td>
+              <td>3300:3000</td>
+              <td>~/.gemini</td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td><span class="c-orange">worker</span></td>
+              <td>ais-worker</td>
+              <td>—</td>
+              <td>model-cache:/root/.cache/xenova</td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td><span class="c-cyan">postgres</span></td>
+              <td>pgvector/pgvector:pg16</td>
+              <td>5438:5432</td>
+              <td>ais-prod-pgdata</td>
+              <td>pg_isready(10s/3s/3회)</td>
+            </tr>
+            <tr>
+              <td><span class="c-red">redis</span></td>
+              <td>redis:7</td>
+              <td>6385:6379</td>
+              <td>ais-prod-redis</td>
+              <td>redis-cli ping(10s)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:10px;padding:8px 12px;background:var(--yellow-bg);border-radius:6px;font-size:0.76rem;color:var(--yellow)">
+        📝 Redis 운영 설정: maxmemory=1gb · appendonly=yes (AOF 영속화)
+      </div>
+    </div>
+  </div>
+
+  <!-- 배포 체크리스트 -->
+  <div class="card" style="margin-top:4px">
+    <div class="card-title">✅ 배포 체크리스트</div>
+    <div class="grid-2" style="margin-top:12px">
+      <div>
+        <div style="font-size:0.85rem;font-weight:700;margin-bottom:8px;color:var(--accent)">환경 설정</div>
+        <div style="display:flex;flex-direction:column;gap:5px;font-size:0.8rem">
+          <label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer"><input type="checkbox" style="margin-top:2px"> <span>AUTH_SECRET, DATABASE_URL, REDIS_URL, ENCRYPTION_KEY 설정</span></label>
+          <label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer"><input type="checkbox" style="margin-top:2px"> <span>Gemini CLI OAuth: <code>gemini auth</code> 완료 (~/.gemini/oauth_creds.json)</span></label>
+          <label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer"><input type="checkbox" style="margin-top:2px"> <span>Claude CLI: claude 설치 + 로그인</span></label>
+          <label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer"><input type="checkbox" style="margin-top:2px"> <span>pnpm db:push (스키마 동기화)</span></label>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:0.85rem;font-weight:700;margin-bottom:8px;color:var(--green)">기동 순서</div>
+        <div style="display:flex;flex-direction:column;gap:5px;font-size:0.8rem">
+          <label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer"><input type="checkbox" style="margin-top:2px"> <span>postgres / redis 먼저 기동 확인</span></label>
+          <label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer"><input type="checkbox" style="margin-top:2px"> <span>web → worker 순서로 기동</span></label>
+          <label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer"><input type="checkbox" style="margin-top:2px"> <span>Health Check: curl localhost:3300/api/health</span></label>
+          <label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer"><input type="checkbox" style="margin-top:2px"> <span>BullMQ 대시보드 확인 (큐 상태)</span></label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 개발 vs 운영 비교 -->
+  <div class="card" style="margin-top:4px">
+    <div class="card-title">개발 ↔ 운영 전체 비교</div>
+    <div style="overflow-x:auto;margin-top:10px">
+      <table class="compare-table">
+        <thead><tr><th>항목</th><th class="diff-dev">개발 (localhost:3000)</th><th class="diff-prod">운영 (3300)</th></tr></thead>
+        <tbody>
+          <tr><td>DATABASE_URL</td><td class="diff-dev">192.168.0.5:5438</td><td class="diff-prod">postgres:5432 (Docker 내부)</td></tr>
+          <tr><td>REDIS_URL</td><td class="diff-dev">192.168.0.5:6385</td><td class="diff-prod">redis:6379 (Docker 내부)</td></tr>
+          <tr><td>BullMQ prefix</td><td class="diff-dev">ais-dev (강제)</td><td class="diff-prod">bull (기본값)</td></tr>
+          <tr><td>NODE_ENV</td><td class="diff-dev">development</td><td class="diff-prod">production</td></tr>
+          <tr><td>워커 실행</td><td class="diff-dev">pnpm worker (tsx)</td><td class="diff-prod">Docker 컨테이너</td></tr>
+          <tr><td>임베딩 캐시</td><td class="diff-dev">~/.cache/xenova (로컬)</td><td class="diff-prod">Docker Volume 마운트</td></tr>
+          <tr><td>Gemini OAuth</td><td class="diff-dev">~/.gemini/oauth_creds.json</td><td class="diff-prod">~/.gemini → 컨테이너 마운트</td></tr>
+          <tr><td>DB 초기화</td><td class="diff-dev">pnpm db:push (직접)</td><td class="diff-prod">CI deploy job → db:push</td></tr>
+          <tr><td>Chromium</td><td class="diff-dev">시스템 설치</td><td class="diff-prod">apt chromium (worker 이미지)</td></tr>
+          <tr><td>한글 폰트</td><td class="diff-dev">시스템 폰트</td><td class="diff-prod">fonts-noto-cjk (apt 설치)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────── TAB 12: 유지보수 & 모니터링 ─────────────────── -->
+<section id="tab-maintenance" class="section">
+  <div class="sec-title">🔧 유지보수 &amp; 모니터링</div>
+  <div class="sec-sub">Worker 상태 판정 · 자동 복구 3종 · 재시도 전략 · Stage Gate · 비용 모니터링 · 장애 대응</div>
+
+  <div class="grid-2" style="gap:16px">
+    <!-- Worker 상태 판정 -->
+    <div class="card">
+      <div class="card-title c-cyan">Worker 상태 판정 로직 (worker-health.ts)</div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:12px">
+        <div style="display:flex;gap:10px;align-items:center;padding:8px 12px;background:var(--red-bg);border-radius:6px;font-size:0.8rem">
+          <span style="font-size:1.1rem">🔴</span>
+          <div><span style="font-weight:700;color:var(--red)">down</span> — workers 배열이 비어있음</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;padding:8px 12px;background:var(--green-bg);border-radius:6px;font-size:0.8rem">
+          <span style="font-size:1.1rem">🟢</span>
+          <div><span style="font-weight:700;color:var(--green)">healthy</span> — active &gt; 0 &amp;&amp; idle &lt; 60초</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;padding:8px 12px;background:var(--yellow-bg);border-radius:6px;font-size:0.8rem">
+          <span style="font-size:1.1rem">🟡</span>
+          <div><span style="font-weight:700;color:var(--yellow)">warn</span> — active &gt; 0 &amp;&amp; idle ≥ 60초 (최근 활동 없음)</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;padding:8px 12px;background:var(--orange-bg);border-radius:6px;font-size:0.8rem">
+          <span style="font-size:1.1rem">🟠</span>
+          <div><span style="font-weight:700;color:var(--orange)">stuck</span> — waiting/delayed &gt; 0 &amp;&amp; active = 0 (큐 적체)</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;padding:8px 12px;background:var(--surface2);border-radius:6px;font-size:0.8rem">
+          <span style="font-size:1.1rem">⚪</span>
+          <div><span style="font-weight:700">idle</span> — 모든 카운트가 0 (대기 중)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 자동 복구 3종 -->
+    <div class="card">
+      <div class="card-title c-orange">자동 복구 메커니즘 3종</div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px">
+        <div style="background:var(--surface2);border-radius:8px;padding:12px;border-left:3px solid var(--red)">
+          <div style="font-size:0.82rem;font-weight:700;color:var(--red)">① Stale Recovery (stale-recovery.ts)</div>
+          <div style="font-size:0.76rem;color:var(--text-dim);margin-top:5px;line-height:1.6">
+            Worker 시작 시 1회 실행 · 30분 이상 status='running' → status='failed'<br>
+            에러: "Worker 재시작으로 인한 자동 복구 (30분 이상 running 상태)"
+          </div>
+        </div>
+        <div style="background:var(--surface2);border-radius:8px;padding:12px;border-left:3px solid var(--yellow)">
+          <div style="font-size:0.82rem;font-weight:700;color:var(--yellow)">② Expire Paused (expire-paused.ts)</div>
+          <div style="font-size:0.76rem;color:var(--text-dim);margin-top:5px;line-height:1.6">
+            1시간 주기 cron · 24시간 초과 paused → cancelled<br>
+            Stage Gate에서도 24h 초과 감지 → 자동 cancelled
+          </div>
+        </div>
+        <div style="background:var(--surface2);border-radius:8px;padding:12px;border-left:3px solid var(--orange)">
+          <div style="font-size:0.82rem;font-weight:700;color:var(--orange)">③ BullMQ Stalled (워커 설정)</div>
+          <div style="font-size:0.76rem;color:var(--text-dim);margin-top:5px;line-height:1.6">
+            stalledInterval=300,000ms(5분) 주기 체크<br>
+            maxStalledCount=2: 2회 자동 복구 → 3회째 failed
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 재시도 전략 -->
+    <div class="card">
+      <div class="card-title c-yellow">재시도 전략 (retry-utils.ts)</div>
+      <div style="overflow-x:auto;margin-top:10px">
+        <table class="compare-table">
+          <thead><tr><th>에러 유형</th><th>최대 횟수</th><th>대기 전략</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="c-red">Rate Limit (429)</span></td>
+              <td class="c-yellow">5회</td>
+              <td style="font-size:0.75rem">max(retryAfterSec×1000, attempt×3000)</td>
+            </tr>
+            <tr>
+              <td><span class="c-orange">Server Overload (503)</span></td>
+              <td class="c-yellow">1회</td>
+              <td style="font-size:0.75rem">고정 3000ms</td>
+            </tr>
+            <tr>
+              <td><span class="c-cyan">Parse Error</span></td>
+              <td class="c-yellow">2회</td>
+              <td style="font-size:0.75rem">즉시 재시도</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:10px;font-size:0.76rem;color:var(--text-dim);line-height:1.7;background:var(--surface2);border-radius:6px;padding:8px 12px">
+        <div><code>isRateLimitError()</code>: /rate.*limit|429|RESOURCE_EXHAUSTED|[TR]PM/i</div>
+        <div><code>isServerOverloadError()</code>: 503, overloaded, temporarily unavailable</div>
+        <div><code>isParseError()</code>: "could not parse", "No object generated"</div>
+      </div>
+    </div>
+
+    <!-- Stage Gate -->
+    <div class="card">
+      <div class="card-title c-purple">Stage Gate 동작 (pipeline-checks.ts)</div>
+      <div style="margin-top:10px;background:var(--surface2);border-radius:8px;padding:12px 14px;font-size:0.78rem;line-height:1.8">
+        <div class="c-accent">breakpoints에 현재 stage 포함?</div>
+        <div style="margin-left:12px">→ <span class="c-yellow">pausedAt 설정, status='paused'</span></div>
+        <div style="margin-left:12px;color:var(--text-dim)">→ polling: 3s → 10s → 60s (점진적)</div>
+        <div style="margin-left:12px">
+          <div style="color:var(--green)">→ resumeMode='step-once':</div>
+          <div style="margin-left:16px;font-size:0.74rem;color:var(--text-dim)">다음 stage 완료 후 다시 pause</div>
+          <div style="color:var(--cyan)">→ resumeMode='continue':</div>
+          <div style="margin-left:16px;font-size:0.74rem;color:var(--text-dim)">계속 진행</div>
+        </div>
+        <div style="margin-left:12px;color:var(--red)">→ 24시간 초과: 자동 cancelled</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 비용 모니터링 -->
+  <div class="card" style="margin-top:4px">
+    <div class="card-title c-green">💰 비용 모니터링 (cost-calculator.ts)</div>
+    <div class="grid-2">
+      <div>
+        <div style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:10px;font-size:0.78rem;line-height:1.7">
+          <div class="c-yellow" style="font-weight:700">비용 계산 공식</div>
+          <div style="margin-top:6px;background:var(--surface3);border-radius:5px;padding:8px;font-family:monospace">
+            cost = (inputTokens × inputPrice<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ outputTokens × outputPrice)<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; / 1,000,000
+          </div>
+          <div style="margin-top:8px;color:var(--text-dim)">실시간 한도: <code>collectionJobs.costLimitUsd</code><br>→ 초과 시 자동 분석 중지</div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:0.82rem;font-weight:700;margin-bottom:8px">집계 함수</div>
+        <div style="display:flex;flex-direction:column;gap:5px;font-size:0.78rem">
+          <div style="background:var(--surface2);border-radius:6px;padding:7px 10px"><code class="c-cyan">getUsageSummary(teamId?, period)</code><br><span style="color:var(--text-dim)">기간별 총 비용</span></div>
+          <div style="background:var(--surface2);border-radius:6px;padding:7px 10px"><code class="c-cyan">getUsageByTeam()</code><br><span style="color:var(--text-dim)">팀별 분포</span></div>
+          <div style="background:var(--surface2);border-radius:6px;padding:7px 10px"><code class="c-cyan">getUsageByModule()</code><br><span style="color:var(--text-dim)">모듈별 분포</span></div>
+          <div style="background:var(--surface2);border-radius:6px;padding:7px 10px"><code class="c-cyan">getUsageTrend()</code><br><span style="color:var(--text-dim)">일별 추이</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 시스템 헬스 대시보드 (모의) -->
+  <div class="card" style="margin-top:4px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div class="card-title" style="margin-bottom:0">시스템 헬스 대시보드 (모의)</div>
+      <button onclick="refreshMockHealth()" style="padding:5px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text-dim);cursor:pointer;font-size:0.78rem">새로고침</button>
+    </div>
+    <div class="grid-4">
+      <div style="background:var(--surface2);border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:0.76rem;color:var(--text-dim);margin-bottom:5px">Collector Worker</div>
+        <div id="hlt-collector" style="font-size:1.1rem">🟢 healthy</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:0.76rem;color:var(--text-dim);margin-bottom:5px">Pipeline Worker</div>
+        <div id="hlt-pipeline" style="font-size:1.1rem">🟢 healthy</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:0.76rem;color:var(--text-dim);margin-bottom:5px">Analysis Worker</div>
+        <div id="hlt-analysis" style="font-size:1.1rem">⚪ idle</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:0.76rem;color:var(--text-dim);margin-bottom:5px">최근 24h 비용</div>
+        <div id="hlt-cost" style="font-size:1.1rem;color:var(--green)">$0.00</div>
+      </div>
+    </div>
+    <div class="grid-4" style="margin-top:10px">
+      <div style="background:var(--surface2);border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:0.72rem;color:var(--text-dim)">PostgreSQL</div>
+        <div style="font-size:0.85rem;color:var(--green);margin-top:3px">● Connected</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:0.72rem;color:var(--text-dim)">Redis</div>
+        <div style="font-size:0.85rem;color:var(--green);margin-top:3px">● Connected</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:0.72rem;color:var(--text-dim)">BullMQ Waiting</div>
+        <div id="hlt-waiting" style="font-size:0.85rem;color:var(--accent);margin-top:3px">0</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:0.72rem;color:var(--text-dim)">총 분석 건수</div>
+        <div id="hlt-total" style="font-size:0.85rem;color:var(--purple);margin-top:3px">0건</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 장애 대응 체크리스트 -->
+  <div class="card" style="margin-top:4px">
+    <div class="card-title c-red">운영 장애 대응 체크리스트</div>
+    <div style="overflow-x:auto;margin-top:10px">
+      <table class="compare-table">
+        <thead><tr><th>증상</th><th>원인</th><th>해결</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="c-red">분석 30분째 running</span></td>
+            <td>Worker 재시작 후 zombie</td>
+            <td><code>stale-recovery</code> 수동 실행</td>
+          </tr>
+          <tr>
+            <td><span class="c-orange">큐 적체 (waiting 누적)</span></td>
+            <td>Worker 다운</td>
+            <td><code>docker restart ais-prod-worker</code></td>
+          </tr>
+          <tr>
+            <td><span class="c-yellow">Rate Limit 반복</span></td>
+            <td>API 쿼터 초과</td>
+            <td>provider 변경 또는 concurrency 줄이기</td>
+          </tr>
+          <tr>
+            <td><span class="c-cyan">임베딩 생성 느림</span></td>
+            <td>모델 미캐시</td>
+            <td>Docker Volume 확인, 첫 실행 시 정상</td>
+          </tr>
+          <tr>
+            <td><span class="c-purple">PDF 생성 실패</span></td>
+            <td>Playwright/Chromium 문제</td>
+            <td>worker 로그 확인, fonts-noto-cjk 설치 여부</td>
+          </tr>
+          <tr>
+            <td><span class="c-blue">pgvector 쿼리 느림</span></td>
+            <td>인덱스 없음</td>
+            <td>IVFFlat 인덱스 추가 고려 (lists=100)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SCRIPTS
+═══════════════════════════════════════════════════════════════ -->
+<style>
+.embed-arrow {
+  display:flex;align-items:center;color:var(--text-muted);font-size:1.3rem;padding:0 6px;
+}
+</style>
+
+<script>
+// ─── Tab switching (generic, works for all 12 tabs) ───
+function showTab(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const sec = document.getElementById('tab-' + id);
+  if (sec) sec.classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => {
+    if (b.getAttribute('data-tab') === id) b.classList.add('active');
+  });
+  // D3 graph init when graphdb tab becomes visible
+  if (id === 'graphdb') initOntologyGraph();
+}
+
+// ─── DB table detail accordion ───
+function toggleDbDetail(card) {
+  const detail = card.querySelector('.db-detail');
+  if (!detail) return;
+  detail.style.display = detail.style.display === 'none' ? 'block' : 'none';
+}
+
+// ─── Mock health dashboard ───
+const healthStates = [
+  { icon:'🟢', label:'healthy' },
+  { icon:'🟡', label:'warn' },
+  { icon:'🟠', label:'stuck' },
+  { icon:'⚪', label:'idle' },
+  { icon:'🔴', label:'down' },
+];
+function refreshMockHealth() {
+  const pick = (arr) => arr[Math.floor(Math.random()*arr.length)];
+  const ws = [
+    ['hlt-collector', 'hlt-pipeline', 'hlt-analysis'],
+    healthStates.slice(0,4) // exclude down for demo
+  ];
+  ['hlt-collector','hlt-pipeline','hlt-analysis'].forEach(id => {
+    const s = pick(healthStates.slice(0,4));
+    const el = document.getElementById(id);
+    if (el) el.textContent = s.icon + ' ' + s.label;
+  });
+  const waiting = Math.floor(Math.random()*12);
+  const total = Math.floor(Math.random()*200)+10;
+  const cost = (Math.random()*5).toFixed(2);
+  const w = document.getElementById('hlt-waiting');
+  const t = document.getElementById('hlt-total');
+  const c = document.getElementById('hlt-cost');
+  if (w) w.textContent = waiting;
+  if (t) t.textContent = total + '건';
+  if (c) { c.textContent = '$' + cost; c.style.color = parseFloat(cost) > 3 ? 'var(--red)' : 'var(--green)'; }
+}
+
+// ─── D3.js Ontology Force Graph ───
+let ontologyInitialized = false;
+
+function initOntologyGraph() {
+  if (ontologyInitialized) return;
+  ontologyInitialized = true;
+
+  const svg = d3.select('#ontology-graph');
+  if (!svg || !svg.node()) return;
+
+  const width = svg.node().clientWidth || 500;
+  const height = 380;
+
+  svg.attr('viewBox', `0 0 ${width} ${height}`);
+
+  // Node colors by type
+  const typeColor = {
+    person: '#fb923c',
+    organization: '#60a5fa',
+    issue: '#f87171',
+    keyword: '#4ade80',
+    frame: '#a78bfa',
+    claim: '#22d3ee'
+  };
+
+  // Sample political domain data
+  const nodes = [
+    { id: 'n1', label: '윤석열', type: 'person', size: 20 },
+    { id: 'n2', label: '민주당', type: 'organization', size: 18 },
+    { id: 'n3', label: '국민의힘', type: 'organization', size: 16 },
+    { id: 'n4', label: '탄핵', type: 'issue', size: 22 },
+    { id: 'n5', label: '지지율', type: 'keyword', size: 14 },
+    { id: 'n6', label: '여론 조작', type: 'frame', size: 15 },
+    { id: 'n7', label: '헌법 위반', type: 'claim', size: 13 },
+    { id: 'n8', label: '국회', type: 'organization', size: 15 },
+  ];
+
+  const links = [
+    { source: 'n1', target: 'n4', type: 'threatens', weight: 3 },
+    { source: 'n2', target: 'n4', type: 'supports', weight: 4 },
+    { source: 'n3', target: 'n1', type: 'supports', weight: 3 },
+    { source: 'n4', target: 'n5', type: 'related', weight: 2 },
+    { source: 'n2', target: 'n7', type: 'supports', weight: 2 },
+    { source: 'n1', target: 'n6', type: 'opposes', weight: 2 },
+    { source: 'n8', target: 'n4', type: 'causes', weight: 3 },
+    { source: 'n7', target: 'n4', type: 'causes', weight: 2 },
+    { source: 'n3', target: 'n2', type: 'opposes', weight: 3 },
+    { source: 'n5', target: 'n1', type: 'related', weight: 2 },
+  ];
+
+  const linkColor = {
+    supports: '#4ade80', opposes: '#f87171', related: '#8892b0',
+    causes: '#fbbf24', cooccurs: '#60a5fa', threatens: '#fb923c'
+  };
+
+  const simulation = d3.forceSimulation(nodes)
+    .force('link', d3.forceLink(links).id(d => d.id).distance(90).strength(0.6))
+    .force('charge', d3.forceManyBody().strength(-250))
+    .force('center', d3.forceCenter(width / 2, height / 2))
+    .force('collision', d3.forceCollide().radius(d => d.size + 12));
+
+  // Arrow markers
+  const defs = svg.append('defs');
+  Object.entries(linkColor).forEach(([type, color]) => {
+    defs.append('marker')
+      .attr('id', 'arrow-' + type)
+      .attr('viewBox', '0 -5 10 10')
+      .attr('refX', 20)
+      .attr('refY', 0)
+      .attr('markerWidth', 6)
+      .attr('markerHeight', 6)
+      .attr('orient', 'auto')
+      .append('path')
+      .attr('d', 'M0,-5L10,0L0,5')
+      .attr('fill', color)
+      .attr('opacity', 0.7);
+  });
+
+  // Links
+  const link = svg.append('g').selectAll('line')
+    .data(links).enter().append('line')
+    .attr('stroke', d => linkColor[d.type] || '#8892b0')
+    .attr('stroke-width', d => Math.max(1, d.weight * 0.7))
+    .attr('stroke-opacity', 0.6)
+    .attr('marker-end', d => `url(#arrow-${d.type})`);
+
+  // Node groups
+  const node = svg.append('g').selectAll('g')
+    .data(nodes).enter().append('g')
+    .style('cursor', 'pointer')
+    .call(d3.drag()
+      .on('start', dragStart)
+      .on('drag', dragged)
+      .on('end', dragEnd)
+    );
+
+  // Circles
+  node.append('circle')
+    .attr('r', d => d.size)
+    .attr('fill', d => typeColor[d.type] || '#8892b0')
+    .attr('fill-opacity', 0.2)
+    .attr('stroke', d => typeColor[d.type] || '#8892b0')
+    .attr('stroke-width', 2);
+
+  // Labels
+  node.append('text')
+    .attr('text-anchor', 'middle')
+    .attr('dy', '0.35em')
+    .attr('font-size', '11px')
+    .attr('font-weight', '600')
+    .attr('fill', d => typeColor[d.type] || '#e2e8f0')
+    .attr('pointer-events', 'none')
+    .text(d => d.label);
+
+  // Tooltip
+  const tooltip = d3.select('body').append('div')
+    .style('position', 'fixed')
+    .style('background', '#131829')
+    .style('border', '1px solid #2a3358')
+    .style('border-radius', '8px')
+    .style('padding', '8px 12px')
+    .style('font-size', '12px')
+    .style('color', '#e2e8f0')
+    .style('pointer-events', 'none')
+    .style('z-index', '9999')
+    .style('display', 'none');
+
+  node.on('mouseover', function(event, d) {
+    tooltip.style('display', 'block')
+      .html(`<strong>${d.label}</strong><br>타입: ${d.type}<br>크기: ${d.size}`);
+  }).on('mousemove', function(event) {
+    tooltip.style('left', (event.clientX + 12) + 'px')
+      .style('top', (event.clientY - 20) + 'px');
+  }).on('mouseout', function() {
+    tooltip.style('display', 'none');
+  });
+
+  simulation.on('tick', () => {
+    link
+      .attr('x1', d => Math.max(20, Math.min(width-20, d.source.x)))
+      .attr('y1', d => Math.max(20, Math.min(height-20, d.source.y)))
+      .attr('x2', d => Math.max(20, Math.min(width-20, d.target.x)))
+      .attr('y2', d => Math.max(20, Math.min(height-20, d.target.y)));
+    node.attr('transform', d =>
+      `translate(${Math.max(d.size, Math.min(width-d.size, d.x))},${Math.max(d.size, Math.min(height-d.size, d.y))})`
+    );
+  });
+
+  function dragStart(event, d) {
+    if (!event.active) simulation.alphaTarget(0.3).restart();
+    d.fx = d.x; d.fy = d.y;
+  }
+  function dragged(event, d) {
+    d.fx = event.x; d.fy = event.y;
+  }
+  function dragEnd(event, d) {
+    if (!event.active) simulation.alphaTarget(0);
+    d.fx = null; d.fy = null;
+  }
+}
+
+// ─── DOMContentLoaded ───
+document.addEventListener('DOMContentLoaded', () => {
+  // Wire nav buttons (part2 tabs)
+  const tabMap = {
+    'tab-vector': 'vector',
+    'tab-graphdb': 'graphdb',
+    'tab-providers': 'providers',
+    'tab-database': 'database',
+    'tab-deploy': 'deploy',
+    'tab-maintenance': 'maintenance',
+  };
+
+  // Attach data-tab to nav buttons that reference these tabs
+  document.querySelectorAll('.nav-btn').forEach(btn => {
+    const onclick = btn.getAttribute('onclick') || '';
+    const m = onclick.match(/showTab\(['"]([^'"]+)['"]\)/);
+    if (m) btn.setAttribute('data-tab', m[1]);
+  });
+
+  // Patch showTab if part1 doesn't define it (standalone fallback)
+  if (typeof window.showTab !== 'function') {
+    window.showTab = showTab;
+  } else {
+    // Extend part1's showTab to also handle D3 init
+    const _orig = window.showTab;
+    window.showTab = function(id) {
+      _orig(id);
+      if (id === 'graphdb') initOntologyGraph();
+    };
+  }
+});
+</script>
+
+</body>
+</html>
