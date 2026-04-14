@@ -224,16 +224,21 @@ export default function Home() {
   return (
     <>
       <AppShell
-        sidebar={
+        sidebar={(_open, onClose) => (
           <AppSidebar
             activeTab={activeTab}
-            onTabChange={setActiveTab}
+            onTabChange={(index) => {
+              setActiveTab(index);
+              onClose();
+            }}
             activeJobId={activeJobId}
             isRunning={isRunning}
             onJobSelect={handleSelectJob}
           />
-        }
-        header={<AppHeader activeTab={activeTab} activeJobId={activeJobId} />}
+        )}
+        header={(onMenuClick) => (
+          <AppHeader activeTab={activeTab} activeJobId={activeJobId} onMenuClick={onMenuClick} />
+        )}
       >
         <TabLayout
           activeTab={activeTab}
