@@ -86,7 +86,7 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
   const [helpTab, setHelpTab] = useState('quickstart');
   const [startDate, setStartDate] = useState<Date>(STABLE_INIT_DATE);
   const [endDate, setEndDate] = useState<Date>(STABLE_INIT_DATE);
-  const [enableItemAnalysis, setEnableItemAnalysis] = useState(isDemo);
+  const [enableItemAnalysis, setEnableItemAnalysis] = useState(true);
   const [dateMode, setDateMode] = useState<'period' | 'event'>('period');
   const [eventName, setEventName] = useState('');
   const [eventDate, setEventDate] = useState<Date>(STABLE_INIT_DATE);
@@ -138,7 +138,7 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
     setMaxCommunityPosts(preset.limits.communityPosts);
     setMaxCommentsPerItem(preset.limits.commentsPerItem);
     setOptimizationPreset(preset.optimization);
-    setEnableItemAnalysis(preset.enableItemAnalysis);
+    setEnableItemAnalysis(true);
   }, [preset]);
 
   const triggerMutation = useMutation({
