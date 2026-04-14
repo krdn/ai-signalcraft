@@ -32,8 +32,7 @@ FROM node:24-slim AS web
 WORKDIR /app
 COPY --from=builder /app/apps/web/.next/standalone ./
 COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
-# public 디렉토리가 있으면 복사 (없어도 빌드 실패하지 않도록)
-RUN mkdir -p ./apps/web/public
+COPY --from=builder /app/apps/web/public ./apps/web/public
 ENV NODE_ENV=production
 ENV PORT=3000
 EXPOSE 3000
