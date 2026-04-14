@@ -22,6 +22,15 @@ Playwright · Cheerio · Recharts · TanStack Query 5 · NextAuth.js 5 · Vitest
 
 상세: [docs/tech-stack.md](docs/tech-stack.md)
 
+## AI 모델 설정
+
+분석 모듈별 LLM 모델 추천 (최고/보통/최소 티어, 한국어 성능, 비용 비교):
+**[docs/llm-model-recommendations.md](docs/llm-model-recommendations.md)**
+
+- 현재 지원 프로바이더(Claude/Gemini/GPT/DeepSeek) + OpenRouter 확장 모델 포함
+- 시나리오 프리셋(A~G) 평가 및 업그레이드 가이드
+- 시나리오 G → DeepSeek V4 전환 시 캐시 히트 57% 절감 가능
+
 ## Conventions
 
 - **패키지 매니저**: pnpm
