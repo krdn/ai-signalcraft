@@ -39,7 +39,7 @@ export function WordCloud({ words }: WordCloudProps) {
   }, [words]);
 
   return (
-    <Card className="min-h-[280px]">
+    <Card className="h-full border-t-2 border-t-violet-500 border-slate-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all min-h-[280px]">
       <CardHeader>
         <div className="flex items-center gap-2">
           <CardTitle className="text-lg font-semibold">키워드 / 연관어</CardTitle>

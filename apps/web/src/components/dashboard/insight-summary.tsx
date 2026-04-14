@@ -23,7 +23,7 @@ export function InsightSummary({ oneLiner, currentState, criticalActions }: Insi
   }
 
   return (
-    <Card className="border-amber-500/30 bg-amber-500/5">
+    <Card className="border-t-2 border-t-violet-500 border-slate-100 shadow-sm hover:shadow-md transition-all bg-amber-500/5">
       <CardContent className="p-4 space-y-3">
         <div className="flex items-center gap-2 text-amber-500">
           <Lightbulb className="h-4 w-4" />
