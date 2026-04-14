@@ -21,12 +21,14 @@ export const SentimentFramingSchema = z.object({
     .describe('반복 키워드 TOP 20 — 반드시 1개 이상 포함'),
   relatedKeywords: z
     .array(
-      z.object({
-        keyword: z.string(),
-        relatedTo: z.array(z.string()).describe('연관 키워드 목록'),
-        coOccurrenceScore: z.number().catch(0).describe('0~1 동시출현 빈도'),
-        context: z.string().catch('').describe('연관 맥락 설명'),
-      }),
+      z
+        .object({
+          keyword: z.string().catch(''),
+          relatedTo: z.array(z.string().catch('')).catch([]).describe('연관 키워드 목록'),
+          coOccurrenceScore: z.number().catch(0).describe('0~1 동시출현 빈도'),
+          context: z.string().catch('').describe('연관 맥락 설명'),
+        })
+        .catch({ keyword: '', relatedTo: [], coOccurrenceScore: 0, context: '' }),
     )
     .default([])
     .describe(

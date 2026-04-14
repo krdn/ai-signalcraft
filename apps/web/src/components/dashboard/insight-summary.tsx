@@ -45,8 +45,8 @@ export function InsightSummary({ oneLiner, currentState, criticalActions }: Insi
               {currentState.keyFactor}
             </li>
           )}
-          {criticalActions?.slice(0, 3).map((action) => (
-            <li key={action.priority} className="text-sm text-muted-foreground">
+          {criticalActions?.slice(0, 3).map((action, index) => (
+            <li key={`${action.priority}-${index}`} className="text-sm text-muted-foreground">
               <span className="text-foreground font-medium">조치 {action.priority}:</span>{' '}
               {action.action} ({action.timeline})
             </li>
