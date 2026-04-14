@@ -52,6 +52,7 @@ const POLITICAL_ADVN_MODULES = [
   'crisis-scenario',
   'win-simulation',
 ];
+const POLICY_ADVN_MODULES = ['approval-rating', 'frame-war', 'crisis-scenario', 'win-simulation'];
 const FANDOM_ADVN_MODULES = [
   'fan-loyalty-index',
   'fandom-narrative-war',
@@ -113,6 +114,7 @@ const RETAIL_ADVN_MODULES = [
 ];
 const ALL_ADVN_MODULES = [
   ...POLITICAL_ADVN_MODULES,
+  ...POLICY_ADVN_MODULES,
   ...FANDOM_ADVN_MODULES,
   ...CORPORATE_ADVN_MODULES,
   ...PR_ADVN_MODULES,
@@ -614,7 +616,7 @@ export function AdvancedView({ jobId, domain: domainProp, fetchFn }: AdvancedVie
             }
           })()}
         </div>
-      ) : domain === 'public-sector' ? (
+      ) : domain === 'public-sector' || domain === 'policy' ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <ApprovalRatingCard data={parseModuleResult(moduleResults, 'approval-rating') ?? null} />
           <FrameWarChart data={parseModuleResult(moduleResults, 'frame-war') ?? null} />

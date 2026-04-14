@@ -91,7 +91,7 @@ const PRESET_SEEDS = [
     customSourceIds: [],
     limits: { naverArticles: 500, youtubeVideos: 30, communityPosts: 50, commentsPerItem: 300 },
     optimization: 'standard' as const,
-    skippedModules: ['frameWar', 'winSimulation', 'crisisScenario'],
+    skippedModules: ['frame-war', 'win-simulation', 'crisis-scenario'],
     enableItemAnalysis: false,
   },
   {
@@ -107,7 +107,7 @@ const PRESET_SEEDS = [
     customSourceIds: [],
     limits: { naverArticles: 1000, youtubeVideos: 10, communityPosts: 30, commentsPerItem: 200 },
     optimization: 'light' as const,
-    skippedModules: ['frameWar', 'winSimulation', 'crisisScenario', 'approvalRating'],
+    skippedModules: ['frame-war', 'win-simulation', 'crisis-scenario', 'approval-rating'],
     enableItemAnalysis: false,
   },
   {
@@ -186,7 +186,7 @@ const PRESET_SEEDS = [
     customSourceIds: [],
     limits: { naverArticles: 500, youtubeVideos: 20, communityPosts: 50, commentsPerItem: 300 },
     optimization: 'standard' as const,
-    skippedModules: ['approvalRating'],
+    skippedModules: ['approval-rating'],
     enableItemAnalysis: false,
   },
   {
