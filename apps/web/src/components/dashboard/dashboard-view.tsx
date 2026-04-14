@@ -324,7 +324,7 @@ export function DashboardView({ jobId, fetchFn, readOnly, collectionStats }: Das
         {/* 키워드 네트워크 — 8칸 */}
         {keywordNetworkData && keywordNetworkData.nodes.length > 0 && (
           <div className="col-span-12 lg:col-span-8">
-            <Card className="h-full border-slate-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all">
+            <Card className="h-full border-t-2 border-t-blue-400 border-slate-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-sm font-semibold">키워드 네트워크</h3>

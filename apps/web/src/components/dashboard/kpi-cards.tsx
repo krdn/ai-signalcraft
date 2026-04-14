@@ -28,6 +28,13 @@ const directionConfig = {
   mixed: { label: '혼합', icon: Minus, color: 'text-amber-500' },
 } as const;
 
+const CARD_ACCENT: Record<string, string> = {
+  '총 수집량': 'border-t-2 border-t-blue-500',
+  '주요 감성': 'border-t-2 border-t-emerald-500',
+  '핵심 키워드': 'border-t-2 border-t-violet-500',
+  '여론 방향': 'border-t-2 border-t-amber-400',
+};
+
 export function KpiCards({
   totalMentions,
   articleCount,
@@ -49,13 +56,6 @@ export function KpiCards({
         }
       : { label: '부정', value: Math.round(sentimentRatio.negative * 100), color: 'text-red-500' }
     : null;
-
-  const CARD_ACCENT: Record<string, string> = {
-    '총 수집량': 'border-t-2 border-t-blue-500',
-    '주요 감성': 'border-t-2 border-t-emerald-500',
-    '핵심 키워드': 'border-t-2 border-t-violet-500',
-    '여론 방향': 'border-t-2 border-t-amber-400',
-  };
 
   const cards = [
     {
