@@ -346,14 +346,11 @@ export function AppSidebar({
               <DialogTrigger
                 nativeButton={false}
                 render={
-                  <DropdownMenuItem
-                    className="flex items-center gap-2 cursor-pointer text-sm px-2 py-1.5"
-                    onSelect={(e) => e.preventDefault()}
-                  >
-                    <Users className="h-4 w-4" />팀 설정
-                  </DropdownMenuItem>
+                  <div className="relative flex cursor-pointer select-none items-center gap-1.5 rounded-md px-1.5 py-1 text-sm outline-hidden hover:bg-accent hover:text-accent-foreground" />
                 }
-              />
+              >
+                <Users className="h-4 w-4" />팀 설정
+              </DialogTrigger>
               <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
                   <DialogTitle>팀 설정</DialogTitle>
@@ -366,15 +363,12 @@ export function AppSidebar({
                 <DialogTrigger
                   nativeButton={false}
                   render={
-                    <DropdownMenuItem
-                      className="flex items-center gap-2 cursor-pointer text-sm px-2 py-1.5"
-                      onSelect={(e) => e.preventDefault()}
-                    >
-                      <Settings className="h-4 w-4" />
-                      AI 설정
-                    </DropdownMenuItem>
+                    <div className="relative flex cursor-pointer select-none items-center gap-1.5 rounded-md px-1.5 py-1 text-sm outline-hidden hover:bg-accent hover:text-accent-foreground" />
                   }
-                />
+                >
+                  <Settings className="h-4 w-4" />
+                  AI 설정
+                </DialogTrigger>
                 <DialogContent className="sm:max-w-xl max-h-[85vh] flex flex-col">
                   <DialogHeader>
                     <DialogTitle>AI 설정</DialogTitle>
