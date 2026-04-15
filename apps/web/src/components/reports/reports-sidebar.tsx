@@ -61,7 +61,7 @@ export function ReportsSidebar({ items, selectedDomain, onSelectDomain }: Report
                   : 'border-border text-muted-foreground hover:border-primary/40 hover:text-foreground',
               )}
             >
-              <span>{getDomainLabel(domain) || domain}</span>
+              <span>{getDomainLabel(domain)}</span>
               <span className="text-xs opacity-60">{domainCounts[domain]}</span>
             </button>
           ))}
@@ -77,7 +77,7 @@ export function ReportsSidebar({ items, selectedDomain, onSelectDomain }: Report
               {totalArticles.toLocaleString()}
               <span className="text-xs font-normal text-muted-foreground ml-1">건</span>
             </p>
-            <p className="text-xs text-muted-foreground">기사 + 댓글 합산</p>
+            <p className="text-xs text-muted-foreground">수집 기사 건수</p>
           </div>
           <div>
             <p className="text-2xl font-extrabold">
