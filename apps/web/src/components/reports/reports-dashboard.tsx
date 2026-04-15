@@ -14,7 +14,11 @@ import { getDomainLabel } from '@/components/analysis/domain-badge';
 export function ReportsDashboard() {
   const [selectedDomain, setSelectedDomain] = useState<string | null>(null);
 
-  const { data: items, isLoading } = useQuery({
+  const {
+    data: items,
+    isLoading,
+    isError,
+  } = useQuery({
     queryKey: ['showcase', 'list'],
     queryFn: () => trpcClient.showcase.list.query(),
     staleTime: Infinity,
@@ -138,6 +142,10 @@ export function ReportsDashboard() {
               {Array.from({ length: 4 }).map((_, i) => (
                 <Skeleton key={i} className="h-24 rounded-xl" />
               ))}
+            </div>
+          ) : isError ? (
+            <div className="text-center py-20 text-muted-foreground">
+              <p>데이터를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.</p>
             </div>
           ) : filteredItems.length === 0 ? (
             <div className="text-center py-20 text-muted-foreground">
