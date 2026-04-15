@@ -9,7 +9,8 @@ import { ArrowLeft, Play, LayoutDashboard, Database, FileText, History, Brain } 
 import { DashboardView } from '@/components/dashboard/dashboard-view';
 import { ReportView } from '@/components/report/report-view';
 import { AdvancedView } from '@/components/advanced/advanced-view';
-import { ShowcaseDetailPanel } from '@/components/landing/showcase-detail-panel';
+import { PipelineMonitor } from '@/components/analysis/pipeline-monitor';
+import { useShowcasePipelineStatus } from '@/hooks/use-showcase-pipeline-status';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { trpcClient } from '@/lib/trpc';
@@ -34,6 +35,9 @@ export default function ShowcaseDetailPage() {
   const params = useParams();
   const jobId = Number(params.jobId);
   const [activeTab, setActiveTab] = useState(0);
+
+  // 탭 0용 PipelineMonitor 어댑터 데이터
+  const { data: pipelineData } = useShowcasePipelineStatus(jobId);
 
   // 쇼케이스 기본 정보 로드
   const { data: detail, isLoading } = useQuery({
@@ -101,7 +105,9 @@ export default function ShowcaseDetailPage() {
       {/* 탭 콘텐츠 */}
       <div className="px-4 md:px-8 py-6">
         {/* 탭 0: 분석 실행 — 파이프라인 상세 (읽기 전용) */}
-        {activeTab === 0 && <ShowcaseDetailPanel jobId={jobId} onClose={() => {}} embedded />}
+        {activeTab === 0 && (
+          <PipelineMonitor jobId={null} staticData={pipelineData ?? undefined} readOnly />
+        )}
 
         {/* 탭 1: 결과 대시보드 */}
         {activeTab === 1 && (
