@@ -7,6 +7,7 @@ import { format } from 'date-fns';
 import {
   Activity,
   Brain,
+  BrainCircuit,
   ChevronDown,
   Database,
   FileText,
@@ -54,7 +55,7 @@ import { ConcurrencySettings } from '@/components/settings/concurrency-settings'
 import { CollectionLimitsSettings } from '@/components/settings/collection-limits-settings';
 import { useTheme } from '@/lib/theme';
 
-const RESULT_TAB_INDICES = [1, 2, 3, 5, 6];
+const RESULT_TAB_INDICES = [1, 2, 3, 5, 6, 7];
 
 type NavItem = { label: string; icon: React.ElementType; index: number };
 
@@ -68,6 +69,7 @@ const ADVANCED_ITEMS: NavItem[] = [
   { label: '히스토리', icon: History, index: 4 },
   { label: '고급 분석', icon: Brain, index: 5 },
   { label: '탐색', icon: Telescope, index: 6 },
+  { label: 'LLM 인사이트', icon: BrainCircuit, index: 7 },
 ];
 
 interface AppSidebarProps {
