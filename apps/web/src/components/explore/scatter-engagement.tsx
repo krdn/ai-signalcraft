@@ -39,6 +39,7 @@ interface ScatterRow {
 interface ScatterEngagementProps {
   data: ScatterRow[] | undefined;
   isLoading: boolean;
+  onNavigateToArticle?: (articleId: number) => void;
 }
 
 const scatterChartConfig = {
@@ -47,7 +48,11 @@ const scatterChartConfig = {
   neutral: { label: '중립', color: SENTIMENT_COLORS.neutral },
 } satisfies ChartConfig;
 
-export function ScatterEngagement({ data, isLoading }: ScatterEngagementProps) {
+export function ScatterEngagement({
+  data,
+  isLoading,
+  onNavigateToArticle,
+}: ScatterEngagementProps) {
   const [logScale, setLogScale] = useState(true);
   const [selected, setSelected] = useState<ScatterRow | null>(null);
 
@@ -185,6 +190,20 @@ export function ScatterEngagement({ data, isLoading }: ScatterEngagementProps) {
           <div className="text-sm whitespace-pre-wrap break-words max-h-[50vh] overflow-y-auto">
             {selected?.contentPreview}
           </div>
+          {selected?.articleId && onNavigateToArticle && (
+            <div className="pt-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  onNavigateToArticle(selected.articleId!);
+                  setSelected(null);
+                }}
+              >
+                원본 기사 보기 →
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </Card>

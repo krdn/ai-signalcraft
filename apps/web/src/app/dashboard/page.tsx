@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { ArrowLeft, Play } from 'lucide-react';
 import { AppShell } from '@/components/layout/app-shell';
@@ -145,13 +145,21 @@ function HistoryTabPanel({ onViewResult }: { onViewResult: (jobId: number) => vo
 function CollectedDataTab({
   jobId,
   onGoToAnalysis,
+  initialSourceFilter,
+  onNavigateToExplore,
 }: {
   jobId: number | null;
   onGoToAnalysis: () => void;
+  initialSourceFilter?: string | null;
+  onNavigateToExplore?: (source?: string) => void;
 }) {
   return (
     <ResultTabWrapper jobId={jobId} onGoToAnalysis={onGoToAnalysis}>
-      <CollectedDataView jobId={jobId} />
+      <CollectedDataView
+        jobId={jobId}
+        initialSourceFilter={initialSourceFilter}
+        onNavigateToExplore={onNavigateToExplore}
+      />
     </ResultTabWrapper>
   );
 }
@@ -159,13 +167,21 @@ function CollectedDataTab({
 function ExploreTab({
   jobId,
   onGoToAnalysis,
+  initialSourceFilter,
+  onNavigateToCollected,
 }: {
   jobId: number | null;
   onGoToAnalysis: () => void;
+  initialSourceFilter?: string | null;
+  onNavigateToCollected?: (source?: string) => void;
 }) {
   return (
     <ResultTabWrapper jobId={jobId} onGoToAnalysis={onGoToAnalysis}>
-      <ExploreView jobId={jobId} />
+      <ExploreView
+        jobId={jobId}
+        initialSourceFilter={initialSourceFilter}
+        onNavigateToCollected={onNavigateToCollected}
+      />
     </ResultTabWrapper>
   );
 }
@@ -207,6 +223,28 @@ export default function Home() {
   const [activeJobId, setActiveJobId] = useState<number | null>(null);
   const [isShowcase, setIsShowcase] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
+
+  // 크로스 네비게이션: 탭 간 소스 필터 전달
+  const [pendingCollectedSourceFilter, setPendingCollectedSourceFilter] = useState<string | null>(
+    null,
+  );
+  const [pendingExploreSourceFilter, setPendingExploreSourceFilter] = useState<string | null>(null);
+
+  const handleNavigateToCollected = useCallback((source?: string) => {
+    setPendingCollectedSourceFilter(source ?? null);
+    setActiveTab(2); // 수집 데이터 탭
+  }, []);
+
+  const handleNavigateToExplore = useCallback((source?: string) => {
+    setPendingExploreSourceFilter(source ?? null);
+    setActiveTab(6); // 탐색 탭
+  }, []);
+
+  // 탭 전환 후 pendingFilter 소비 (탭이 2 또는 6에서 다른 탭으로 변경되면 초기화)
+  useEffect(() => {
+    if (activeTab !== 2) setPendingCollectedSourceFilter(null);
+    if (activeTab !== 6) setPendingExploreSourceFilter(null);
+  }, [activeTab]);
 
   const handleComplete = useCallback(() => {
     setIsRunning(false);
@@ -278,6 +316,8 @@ export default function Home() {
               key="collected"
               jobId={activeJobId}
               onGoToAnalysis={handleGoToAnalysis}
+              initialSourceFilter={pendingCollectedSourceFilter}
+              onNavigateToExplore={handleNavigateToExplore}
             />,
             <ReportTab
               key="report"
@@ -292,7 +332,13 @@ export default function Home() {
               onGoToAnalysis={handleGoToAnalysis}
               isShowcase={isShowcase}
             />,
-            <ExploreTab key="explore" jobId={activeJobId} onGoToAnalysis={handleGoToAnalysis} />,
+            <ExploreTab
+              key="explore"
+              jobId={activeJobId}
+              onGoToAnalysis={handleGoToAnalysis}
+              initialSourceFilter={pendingExploreSourceFilter}
+              onNavigateToCollected={handleNavigateToCollected}
+            />,
             <LlmInsightsTab
               key="llm-insights"
               jobId={activeJobId}

@@ -1,10 +1,12 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { ExternalLink } from 'lucide-react';
 import { EXPLORE_HELP, SENTIMENT_COLORS } from './explore-help';
 import { CardHelp } from '@/components/dashboard/card-help';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 import { SOURCE_LABELS } from '@/components/dashboard/collected-data-shared';
 import { cn } from '@/lib/utils';
 
@@ -19,6 +21,7 @@ interface SourceSentimentMatrixProps {
   splitData: SplitData | undefined;
   isLoading: boolean;
   onSelectSource?: (source: string) => void;
+  onDrillDownToCollected?: (source: string) => void;
 }
 
 type ViewMode = 'both' | 'articles' | 'comments';
@@ -52,6 +55,7 @@ export function SourceSentimentMatrix({
   splitData,
   isLoading,
   onSelectSource,
+  onDrillDownToCollected,
 }: SourceSentimentMatrixProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('both');
 
@@ -99,24 +103,39 @@ export function SourceSentimentMatrix({
         ) : (
           <div className="space-y-1">
             {/* 헤더 */}
-            <div className="grid grid-cols-[100px_1fr_1fr_1fr_60px] gap-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wide px-1">
+            <div
+              className={cn(
+                'gap-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wide px-1',
+                onDrillDownToCollected
+                  ? 'grid grid-cols-[100px_1fr_1fr_1fr_60px_80px]'
+                  : 'grid grid-cols-[100px_1fr_1fr_1fr_60px]',
+              )}
+            >
               <span>소스</span>
               <span className="text-center">긍정</span>
               <span className="text-center">부정</span>
               <span className="text-center">중립</span>
               <span className="text-right">합계</span>
+              {onDrillDownToCollected && <span className="text-right">수집</span>}
             </div>
             {rows.map((row) => (
-              <button
+              <div
                 key={row.source}
-                type="button"
-                onClick={() => onSelectSource?.(row.source)}
-                className="w-full grid grid-cols-[100px_1fr_1fr_1fr_60px] gap-2 items-center hover:bg-muted/40 rounded-md px-1 py-1 text-xs transition-colors"
-                aria-label={`${SOURCE_LABELS[row.source] ?? row.source} 필터`}
+                className={cn(
+                  'w-full gap-2 items-center hover:bg-muted/40 rounded-md px-1 py-1 text-xs transition-colors',
+                  onDrillDownToCollected
+                    ? 'grid grid-cols-[100px_1fr_1fr_1fr_60px_80px]'
+                    : 'grid grid-cols-[100px_1fr_1fr_1fr_60px]',
+                )}
               >
-                <span className="text-left font-medium truncate">
+                <button
+                  type="button"
+                  onClick={() => onSelectSource?.(row.source)}
+                  className="text-left font-medium truncate"
+                  aria-label={`${SOURCE_LABELS[row.source] ?? row.source} 필터`}
+                >
                   {SOURCE_LABELS[row.source] ?? row.source}
-                </span>
+                </button>
                 {SENTIMENT_ORDER.map((s) => {
                   const count = row[s];
                   const ratio = row.total > 0 ? count / row.total : 0;
@@ -140,7 +159,19 @@ export function SourceSentimentMatrix({
                 <span className="text-right font-mono text-muted-foreground tabular-nums">
                   {row.total}
                 </span>
-              </button>
+                {onDrillDownToCollected && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 px-1.5 text-[10px] justify-end"
+                    onClick={() => onDrillDownToCollected(row.source)}
+                    aria-label={`${SOURCE_LABELS[row.source] ?? row.source} 수집 데이터 보기`}
+                  >
+                    <ExternalLink className="h-3 w-3 mr-0.5" />
+                    수집 데이터
+                  </Button>
+                )}
+              </div>
             ))}
           </div>
         )}

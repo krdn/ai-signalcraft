@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Newspaper, FileText, BarChart3, Video, MessageSquare, Search } from 'lucide-react';
 import { SummaryView } from './collected-data-summary';
@@ -12,9 +12,15 @@ import { Button } from '@/components/ui/button';
 
 interface CollectedDataViewProps {
   jobId: number | null;
+  initialSourceFilter?: string | null;
+  onNavigateToExplore?: (source?: string) => void;
 }
 
-export function CollectedDataView({ jobId }: CollectedDataViewProps) {
+export function CollectedDataView({
+  jobId,
+  initialSourceFilter,
+  onNavigateToExplore,
+}: CollectedDataViewProps) {
   const [view, setView] = useState<'summary' | 'articles' | 'videos' | 'comments' | 'search'>(
     'summary',
   );
@@ -23,6 +29,15 @@ export function CollectedDataView({ jobId }: CollectedDataViewProps) {
   const [commentPage, setCommentPage] = useState(1);
   const [selectedArticleId, setSelectedArticleId] = useState<number | null>(null);
   const [sourceFilter, setSourceFilter] = useState<string | null>(null);
+
+  // initialSourceFilter가 있으면 마운트 시 해당 소스 필터 적용 및 기사 뷰로 전환
+  useEffect(() => {
+    if (initialSourceFilter) {
+      setSourceFilter(initialSourceFilter);
+      setView('articles');
+      setArticlePage(1);
+    }
+  }, [initialSourceFilter]);
 
   // 사용 가능한 소스 목록 (요약 데이터 재사용)
   const { data: summary } = useQuery({
@@ -57,58 +72,69 @@ export function CollectedDataView({ jobId }: CollectedDataViewProps) {
 
   return (
     <div className="space-y-4">
-      {/* 뷰 전환 탭 */}
-      <div className="flex gap-2">
-        <Button
-          variant={view === 'summary' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setView('summary')}
-        >
-          <BarChart3 className="h-4 w-4 mr-1" />
-          요약
-        </Button>
-        <Button
-          variant={view === 'articles' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => {
-            setView('articles');
-            setArticlePage(1);
-          }}
-        >
-          <Newspaper className="h-4 w-4 mr-1" />
-          기사
-        </Button>
-        <Button
-          variant={view === 'videos' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => {
-            setView('videos');
-            setVideoPage(1);
-          }}
-        >
-          <Video className="h-4 w-4 mr-1" />
-          영상
-        </Button>
-        <Button
-          variant={view === 'comments' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => {
-            setView('comments');
-            setCommentPage(1);
-            setSelectedArticleId(null);
-          }}
-        >
-          <MessageSquare className="h-4 w-4 mr-1" />
-          댓글
-        </Button>
-        <Button
-          variant={view === 'search' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setView('search')}
-        >
-          <Search className="h-4 w-4 mr-1" />
-          의미 검색
-        </Button>
+      {/* 헤더: 뷰 전환 탭 + 탐색 이동 버튼 */}
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex gap-2">
+          <Button
+            variant={view === 'summary' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setView('summary')}
+          >
+            <BarChart3 className="h-4 w-4 mr-1" />
+            요약
+          </Button>
+          <Button
+            variant={view === 'articles' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => {
+              setView('articles');
+              setArticlePage(1);
+            }}
+          >
+            <Newspaper className="h-4 w-4 mr-1" />
+            기사
+          </Button>
+          <Button
+            variant={view === 'videos' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => {
+              setView('videos');
+              setVideoPage(1);
+            }}
+          >
+            <Video className="h-4 w-4 mr-1" />
+            영상
+          </Button>
+          <Button
+            variant={view === 'comments' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => {
+              setView('comments');
+              setCommentPage(1);
+              setSelectedArticleId(null);
+            }}
+          >
+            <MessageSquare className="h-4 w-4 mr-1" />
+            댓글
+          </Button>
+          <Button
+            variant={view === 'search' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setView('search')}
+          >
+            <Search className="h-4 w-4 mr-1" />
+            의미 검색
+          </Button>
+        </div>
+        {onNavigateToExplore && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onNavigateToExplore(sourceFilter ?? undefined)}
+          >
+            {sourceFilter ? `이 소스 탐색에서 분석 →` : '탐색에서 분석 →'}
+          </Button>
+        )}
       </div>
 
       {/* 데이터 소스 필터 (요약/검색 뷰 제외) */}
