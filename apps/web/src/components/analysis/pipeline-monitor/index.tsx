@@ -51,10 +51,22 @@ interface PipelineMonitorProps {
   jobId: number | null;
   onComplete?: () => void;
   onRetry?: () => void;
+  /** 읽기 전용 모드 — 제어 버튼 숨김 */
+  readOnly?: boolean;
+  /** SSE 대신 외부 정적 데이터를 직접 주입 (쇼케이스용) */
+  staticData?: PipelineStatusData;
 }
 
-export function PipelineMonitor({ jobId, onComplete, onRetry }: PipelineMonitorProps) {
-  const { data, isLoading } = usePipelineStatus(jobId);
+export function PipelineMonitor({
+  jobId,
+  onComplete,
+  onRetry,
+  readOnly,
+  staticData,
+}: PipelineMonitorProps) {
+  const liveResult = usePipelineStatus(staticData ? null : jobId);
+  const data = staticData ?? liveResult.data;
+  const isLoading = staticData ? false : liveResult.isLoading;
 
   // 완료 시 toast + 결과 전환
   const prevDoneRef = useRef(false);
@@ -159,6 +171,7 @@ export function PipelineMonitor({ jobId, onComplete, onRetry }: PipelineMonitorP
           isInProgress={isInProgress}
           isPaused={isPaused}
           jobId={jobId}
+          readOnly={readOnly}
         />
 
         {/* 실시간 통계 5열 */}
@@ -201,8 +214,8 @@ export function PipelineMonitor({ jobId, onComplete, onRetry }: PipelineMonitorP
           />
         )}
 
-        {/* 제어 버튼 */}
-        {isInProgress && jobId && (
+        {/* 제어 버튼 — readOnly 모드에서는 숨김 */}
+        {!readOnly && isInProgress && jobId && (
           <PipelineControls
             jobId={jobId}
             status={data.status}

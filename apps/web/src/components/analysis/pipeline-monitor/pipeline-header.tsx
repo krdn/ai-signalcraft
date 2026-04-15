@@ -25,6 +25,7 @@ interface PipelineHeaderProps {
   isInProgress: boolean;
   isPaused: boolean;
   jobId?: number | null;
+  readOnly?: boolean;
 }
 
 function statusVariant(status: string): 'destructive' | 'default' | 'secondary' | 'outline' {
@@ -62,9 +63,10 @@ export const PipelineHeader = memo(function PipelineHeader({
   isInProgress,
   isPaused,
   jobId,
+  readOnly,
 }: PipelineHeaderProps) {
   const terminalStatuses = ['completed', 'failed', 'partial_failure', 'cancelled'];
-  const canRetry = jobId != null && terminalStatuses.includes(status);
+  const canRetry = !readOnly && jobId != null && terminalStatuses.includes(status);
 
   const retryMutation = useMutation({
     mutationFn: () => trpcClient.analysis.retryAnalysis.mutate({ jobId: jobId! }),
