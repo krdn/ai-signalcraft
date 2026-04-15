@@ -220,10 +220,13 @@ export function AppSidebar({
   return (
     <aside className="flex h-screen w-60 shrink-0 flex-col border-r border-slate-200 bg-white dark:bg-slate-800 dark:border-slate-700">
       {/* 로고 */}
-      <div className="flex h-14 shrink-0 items-center gap-2 border-b border-slate-100 px-4">
+      <Link
+        href="/"
+        className="flex h-14 shrink-0 items-center gap-2 border-b border-slate-100 px-4 hover:opacity-80 transition-opacity"
+      >
         <Activity className="h-5 w-5 text-blue-600" />
         <span className="text-base font-bold text-slate-900 dark:text-slate-100">SignalCraft</span>
-      </div>
+      </Link>
 
       {/* 잡 선택기 */}
       <div className="pt-3">

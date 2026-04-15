@@ -452,7 +452,7 @@ export function JobDiagnosticModal({ jobId, keyword }: JobDiagnosticModalProps) 
         <Wrench className="h-3 w-3" />
       </span>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Wrench className="h-4 w-4" />
