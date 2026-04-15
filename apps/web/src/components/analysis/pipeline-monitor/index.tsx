@@ -71,6 +71,7 @@ export function PipelineMonitor({
   // 완료 시 toast + 결과 전환
   const prevDoneRef = useRef(false);
   useEffect(() => {
+    if (readOnly) return; // readOnly 모드에서는 완료 toast 발화 안 함
     if (!data) return;
 
     const analysisAllDone =
@@ -90,7 +91,7 @@ export function PipelineMonitor({
       prevDoneRef.current = true;
       toast.info('파이프라인이 중지되었습니다');
     }
-  }, [data?.status, data?.hasReport, data?.analysisModulesDetailed, onComplete]);
+  }, [data?.status, data?.hasReport, data?.analysisModulesDetailed, onComplete, readOnly]);
 
   const updateBreakpointsMutation = useMutation({
     mutationFn: (breakpoints: string[]) =>
@@ -264,10 +265,12 @@ export function PipelineMonitor({
                 <CheckCircle2 className="h-4 w-4" />
                 <span>분석이 완료되었습니다. 결과를 확인하세요.</span>
               </div>
-              <Button variant="outline" size="sm" className="gap-1" onClick={() => onComplete?.()}>
-                결과 보기
-                <ChevronRight className="h-3 w-3" />
-              </Button>
+              {onComplete && (
+                <Button variant="outline" size="sm" className="gap-1" onClick={() => onComplete()}>
+                  결과 보기
+                  <ChevronRight className="h-3 w-3" />
+                </Button>
+              )}
             </div>
           )}
 
@@ -281,8 +284,8 @@ export function PipelineMonitor({
                 {data.hasReport ? '부분 결과를 확인할 수 있습니다.' : ''}
               </span>
             </div>
-            {data.hasReport && (
-              <Button variant="outline" size="sm" className="gap-1" onClick={() => onComplete?.()}>
+            {data.hasReport && onComplete && (
+              <Button variant="outline" size="sm" className="gap-1" onClick={() => onComplete()}>
                 부분 결과 보기
                 <ChevronRight className="h-3 w-3" />
               </Button>

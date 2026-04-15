@@ -106,7 +106,12 @@ export default function ShowcaseDetailPage() {
       <div className="px-4 md:px-8 py-6">
         {/* 탭 0: 분석 실행 — 파이프라인 상세 (읽기 전용) */}
         {activeTab === 0 && (
-          <PipelineMonitor jobId={null} staticData={pipelineData ?? undefined} readOnly />
+          <PipelineMonitor
+            jobId={null}
+            staticData={pipelineData ?? undefined}
+            readOnly
+            onComplete={() => setActiveTab(1)}
+          />
         )}
 
         {/* 탭 1: 결과 대시보드 */}
