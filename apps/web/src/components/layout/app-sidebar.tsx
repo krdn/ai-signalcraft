@@ -47,12 +47,8 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { TeamSettings } from '@/components/team/team-settings';
-import { ModelSettings } from '@/components/settings/model-settings';
-import { ProviderKeys } from '@/components/settings/provider-keys';
-import { ConcurrencySettings } from '@/components/settings/concurrency-settings';
-import { CollectionLimitsSettings } from '@/components/settings/collection-limits-settings';
+import { SettingsDialog } from '@/components/settings/settings-dialog';
 import { useTheme } from '@/lib/theme';
 
 const RESULT_TAB_INDICES = [1, 2, 3, 5, 6, 7];
@@ -359,42 +355,14 @@ export function AppSidebar({
               </DialogContent>
             </Dialog>
             {userRole === 'admin' && (
-              <Dialog>
-                <DialogTrigger
-                  nativeButton={false}
-                  render={
-                    <div className="relative flex cursor-pointer select-none items-center gap-1.5 rounded-md px-1.5 py-1 text-sm outline-hidden hover:bg-accent hover:text-accent-foreground" />
-                  }
-                >
-                  <Settings className="h-4 w-4" />
-                  AI 설정
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-xl max-h-[85vh] flex flex-col">
-                  <DialogHeader>
-                    <DialogTitle>AI 설정</DialogTitle>
-                  </DialogHeader>
-                  <Tabs defaultValue="provider-keys" className="flex flex-col min-h-0 flex-1">
-                    <TabsList className="w-full shrink-0">
-                      <TabsTrigger value="provider-keys">API 키 관리</TabsTrigger>
-                      <TabsTrigger value="model-settings">모듈별 모델</TabsTrigger>
-                      <TabsTrigger value="concurrency">병렬처리</TabsTrigger>
-                      <TabsTrigger value="collection-limits">수집 한도</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="provider-keys" className="mt-4 overflow-y-auto min-h-0">
-                      <ProviderKeys />
-                    </TabsContent>
-                    <TabsContent value="model-settings" className="mt-4 overflow-y-auto min-h-0">
-                      <ModelSettings />
-                    </TabsContent>
-                    <TabsContent value="concurrency" className="mt-4 overflow-y-auto min-h-0">
-                      <ConcurrencySettings />
-                    </TabsContent>
-                    <TabsContent value="collection-limits" className="mt-4 overflow-y-auto min-h-0">
-                      <CollectionLimitsSettings />
-                    </TabsContent>
-                  </Tabs>
-                </DialogContent>
-              </Dialog>
+              <SettingsDialog
+                trigger={
+                  <div className="relative flex cursor-pointer select-none items-center gap-1.5 rounded-md px-1.5 py-1 text-sm outline-hidden hover:bg-accent hover:text-accent-foreground">
+                    <Settings className="h-4 w-4" />
+                    AI 설정
+                  </div>
+                }
+              />
             )}
             <DropdownMenuSeparator />
             <DropdownMenuItem
