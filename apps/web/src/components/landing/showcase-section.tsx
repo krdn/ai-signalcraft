@@ -7,12 +7,14 @@ import { ArrowRight, FileText, MessageSquare, FlaskConical } from 'lucide-react'
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { DomainBadge } from '@/components/analysis/domain-badge';
 import { trpcClient } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 
 interface ShowcaseItem {
   jobId: number;
   keyword: string;
+  domain?: string | null;
   startDate: string;
   endDate: string;
   featuredAt: string | null;
@@ -81,10 +83,13 @@ export function ShowcaseSection() {
                 {/* Gradient accent line */}
                 <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
 
-                {/* 키워드 Badge */}
-                <Badge className="mb-3 bg-gradient-to-r from-primary/80 to-primary text-primary-foreground border-0">
-                  {item.keyword}
-                </Badge>
+                {/* 키워드 + 분석 유형 Badge */}
+                <div className="flex items-center gap-2 mb-3">
+                  <Badge className="bg-gradient-to-r from-primary/80 to-primary text-primary-foreground border-0">
+                    {item.keyword}
+                  </Badge>
+                  <DomainBadge domain={item.domain} size="sm" />
+                </div>
 
                 {/* 한 줄 요약 */}
                 {item.oneLiner && (
