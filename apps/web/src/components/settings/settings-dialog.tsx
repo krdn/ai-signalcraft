@@ -47,7 +47,7 @@ export function SettingsDialog({ trigger }: Props) {
   return (
     <Dialog>
       <DialogTrigger render={trigger} />
-      <DialogContent className="flex max-h-[85vh] max-w-[860px] flex-col gap-0 p-0">
+      <DialogContent className="flex max-h-[85vh] w-[860px] max-w-[calc(100vw-2rem)] sm:max-w-[860px] flex-col gap-0 p-0">
         <DialogHeader className="shrink-0 border-b px-6 py-4">
           <DialogTitle className="flex items-center gap-2 text-base">
             <Settings className="h-4 w-4" />
