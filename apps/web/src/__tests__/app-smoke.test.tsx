@@ -25,6 +25,6 @@ describe('App smoke test', () => {
         <Page />
       </QueryClientProvider>,
     );
-    expect(screen.getByText(/SignalCraft/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/SignalCraft/i).length).toBeGreaterThan(0);
   });
 });
