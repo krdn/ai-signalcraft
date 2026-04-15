@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Loader2, Save } from 'lucide-react';
+import { HelpPopover } from './help-popover';
 import { trpcClient } from '@/lib/trpc';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -73,15 +74,35 @@ export function CollectionLimitsSettings() {
 
   return (
     <div className="space-y-4">
+      <div className="mb-4 flex items-center gap-2">
+        <h3 className="text-sm font-semibold">수집 한도</h3>
+        <HelpPopover>
+          <p className="text-muted-foreground leading-relaxed">
+            분석 트리거 시 각 플랫폼에서 수집할 최대 항목 수의{' '}
+            <strong className="text-foreground">기본값</strong>입니다.
+          </p>
+          <p className="mt-2 text-muted-foreground">
+            트리거 실행 폼에서 매번 조정 가능하며, 여기서 설정한 값이 초기값으로 사용됩니다.
+          </p>
+        </HelpPopover>
+      </div>
       <p className="text-sm text-muted-foreground">
         분석 실행 시 트리거 폼의 기본 수집 한도를 설정합니다. 개별 실행 시 변경할 수 있습니다.
       </p>
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <Label htmlFor="sl-naver" className="text-sm">
-            네이버 뉴스 (최대 기사수)
-          </Label>
+          <div className="flex items-center gap-1.5">
+            <Label htmlFor="sl-naver" className="text-sm">
+              네이버 뉴스 (최대 기사수)
+            </Label>
+            <HelpPopover side="top">
+              <p className="text-muted-foreground">네이버 뉴스에서 수집할 최대 기사 수입니다.</p>
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                범위: 10 ~ 5,000건 / 기본값: 500건
+              </p>
+            </HelpPopover>
+          </div>
           <Input
             id="sl-naver"
             type="number"
@@ -94,9 +115,15 @@ export function CollectionLimitsSettings() {
           <p className="text-xs text-muted-foreground">10 ~ 5,000건</p>
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="sl-youtube" className="text-sm">
-            유튜브 영상
-          </Label>
+          <div className="flex items-center gap-1.5">
+            <Label htmlFor="sl-youtube" className="text-sm">
+              유튜브 영상
+            </Label>
+            <HelpPopover side="top">
+              <p className="text-muted-foreground">유튜브에서 수집할 최대 영상 수입니다.</p>
+              <p className="mt-1.5 text-xs text-muted-foreground">범위: 5 ~ 500건 / 기본값: 50건</p>
+            </HelpPopover>
+          </div>
           <Input
             id="sl-youtube"
             type="number"
@@ -109,9 +136,17 @@ export function CollectionLimitsSettings() {
           <p className="text-xs text-muted-foreground">5 ~ 500건</p>
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="sl-community" className="text-sm">
-            커뮤니티 게시글
-          </Label>
+          <div className="flex items-center gap-1.5">
+            <Label htmlFor="sl-community" className="text-sm">
+              커뮤니티 게시글
+            </Label>
+            <HelpPopover side="top">
+              <p className="text-muted-foreground">
+                각 커뮤니티 플랫폼에서 수집할 최대 게시글 수입니다.
+              </p>
+              <p className="mt-1.5 text-xs text-muted-foreground">범위: 5 ~ 500건 / 기본값: 50건</p>
+            </HelpPopover>
+          </div>
           <Input
             id="sl-community"
             type="number"
@@ -124,9 +159,19 @@ export function CollectionLimitsSettings() {
           <p className="text-xs text-muted-foreground">5 ~ 500건</p>
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="sl-comments" className="text-sm">
-            항목당 댓글
-          </Label>
+          <div className="flex items-center gap-1.5">
+            <Label htmlFor="sl-comments" className="text-sm">
+              항목당 댓글
+            </Label>
+            <HelpPopover side="top">
+              <p className="text-muted-foreground">
+                각 기사/영상/게시글당 수집할 최대 댓글 수입니다.
+              </p>
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                범위: 10 ~ 2,000건 / 기본값: 500건
+              </p>
+            </HelpPopover>
+          </div>
           <Input
             id="sl-comments"
             type="number"
