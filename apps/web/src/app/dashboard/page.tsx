@@ -146,11 +146,13 @@ function CollectedDataTab({
   jobId,
   onGoToAnalysis,
   initialSourceFilter,
+  initialArticleId,
   onNavigateToExplore,
 }: {
   jobId: number | null;
   onGoToAnalysis: () => void;
   initialSourceFilter?: string | null;
+  initialArticleId?: number | null;
   onNavigateToExplore?: (source?: string) => void;
 }) {
   return (
@@ -158,6 +160,7 @@ function CollectedDataTab({
       <CollectedDataView
         jobId={jobId}
         initialSourceFilter={initialSourceFilter}
+        initialArticleId={initialArticleId}
         onNavigateToExplore={onNavigateToExplore}
       />
     </ResultTabWrapper>
@@ -228,10 +231,12 @@ export default function Home() {
   const [pendingCollectedSourceFilter, setPendingCollectedSourceFilter] = useState<string | null>(
     null,
   );
+  const [pendingCollectedArticleId, setPendingCollectedArticleId] = useState<number | null>(null);
   const [pendingExploreSourceFilter, setPendingExploreSourceFilter] = useState<string | null>(null);
 
-  const handleNavigateToCollected = useCallback((source?: string) => {
+  const handleNavigateToCollected = useCallback((source?: string, articleId?: number) => {
     setPendingCollectedSourceFilter(source ?? null);
+    setPendingCollectedArticleId(articleId ?? null);
     setActiveTab(2); // 수집 데이터 탭
   }, []);
 
@@ -242,7 +247,10 @@ export default function Home() {
 
   // 탭 전환 후 pendingFilter 소비 (탭이 2 또는 6에서 다른 탭으로 변경되면 초기화)
   useEffect(() => {
-    if (activeTab !== 2) setPendingCollectedSourceFilter(null);
+    if (activeTab !== 2) {
+      setPendingCollectedSourceFilter(null);
+      setPendingCollectedArticleId(null);
+    }
     if (activeTab !== 6) setPendingExploreSourceFilter(null);
   }, [activeTab]);
 
@@ -317,6 +325,7 @@ export default function Home() {
               jobId={activeJobId}
               onGoToAnalysis={handleGoToAnalysis}
               initialSourceFilter={pendingCollectedSourceFilter}
+              initialArticleId={pendingCollectedArticleId}
               onNavigateToExplore={handleNavigateToExplore}
             />,
             <ReportTab

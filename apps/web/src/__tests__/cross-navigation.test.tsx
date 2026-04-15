@@ -92,6 +92,46 @@ describe('CollectedDataView — initialSourceFilter', () => {
 });
 
 // ──────────────────────────────────────────────────────────────────
+// Test 1b: CollectedDataView — initialArticleId prop
+// ──────────────────────────────────────────────────────────────────
+describe('CollectedDataView — initialArticleId', () => {
+  it('initialArticleId prop이 전달되면 기사 뷰로 자동 전환되고 selectedArticleId 상태가 설정된다', async () => {
+    const { CollectedDataView } = await import('@/components/dashboard/collected-data-view');
+
+    render(
+      <QueryClientProvider client={makeQueryClient()}>
+        <CollectedDataView jobId={1} initialArticleId={42} />
+      </QueryClientProvider>,
+    );
+
+    // 기사 뷰로 자동 전환 — 기사 탭 버튼이 default(활성) 상태여야 함
+    // 기사 탭의 "기사" 버튼이 존재하는지 확인
+    const articlesBtn = screen.getByRole('button', { name: /기사/i });
+    expect(articlesBtn).toBeInTheDocument();
+
+    // articles 뷰가 활성화되어 있어야 하므로 소스 필터 UI(소스: 레이블)가 표시되어야 함
+    await waitFor(() => {
+      const sourceLabel = screen.queryByText('소스:');
+      expect(sourceLabel).not.toBeNull();
+    });
+  });
+
+  it('initialArticleId 없으면 기본 요약 뷰가 표시된다', async () => {
+    const { CollectedDataView } = await import('@/components/dashboard/collected-data-view');
+
+    render(
+      <QueryClientProvider client={makeQueryClient()}>
+        <CollectedDataView jobId={1} />
+      </QueryClientProvider>,
+    );
+
+    // 소스 필터 UI가 없어야 함 (요약 뷰에서는 미표시)
+    const sourceLabel = screen.queryByText('소스:');
+    expect(sourceLabel).toBeNull();
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────
 // Test 2: ScatterEngagement — onNavigateToArticle
 // Recharts 산점도 클릭은 jsdom에서 불가하므로
 // 모달 상태를 제어하는 래퍼 컴포넌트로 Dialog 내용을 직접 테스트

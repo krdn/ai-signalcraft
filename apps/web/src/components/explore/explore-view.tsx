@@ -16,7 +16,7 @@ import { Card, CardContent } from '@/components/ui/card';
 
 interface ExploreViewProps {
   jobId: number | null;
-  onNavigateToCollected?: (source?: string) => void;
+  onNavigateToCollected?: (source?: string, articleId?: number) => void;
   initialSourceFilter?: string | null;
 }
 
@@ -180,7 +180,9 @@ export function ExploreView({
           data={scatter.data}
           isLoading={scatter.isLoading}
           onNavigateToArticle={
-            onNavigateToCollected ? (_articleId) => onNavigateToCollected() : undefined
+            onNavigateToCollected
+              ? (articleId) => onNavigateToCollected(undefined, articleId)
+              : undefined
           }
         />
         <SourceSentimentMatrix

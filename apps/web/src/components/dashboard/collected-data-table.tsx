@@ -17,6 +17,7 @@ export interface ArticlesViewProps {
   page: number;
   onPageChange: (page: number) => void;
   source?: string | null;
+  initialExpandedId?: number | null;
 }
 
 export interface VideosViewProps {
@@ -193,8 +194,16 @@ function InlineVideoCommentsView({ jobId, videoId }: { jobId: number; videoId: n
 
 // --- 기사 목록 뷰 ---
 
-export function ArticlesView({ jobId, page, onPageChange, source }: ArticlesViewProps) {
-  const [expandedArticleId, setExpandedArticleId] = useState<number | null>(null);
+export function ArticlesView({
+  jobId,
+  page,
+  onPageChange,
+  source,
+  initialExpandedId,
+}: ArticlesViewProps) {
+  const [expandedArticleId, setExpandedArticleId] = useState<number | null>(
+    initialExpandedId ?? null,
+  );
   const { data, isLoading } = useQuery({
     queryKey: ['collectedData', 'getArticles', jobId, page, source],
     queryFn: () =>

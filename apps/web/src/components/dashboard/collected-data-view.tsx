@@ -13,12 +13,14 @@ import { Button } from '@/components/ui/button';
 interface CollectedDataViewProps {
   jobId: number | null;
   initialSourceFilter?: string | null;
+  initialArticleId?: number | null;
   onNavigateToExplore?: (source?: string) => void;
 }
 
 export function CollectedDataView({
   jobId,
   initialSourceFilter,
+  initialArticleId,
   onNavigateToExplore,
 }: CollectedDataViewProps) {
   const [view, setView] = useState<'summary' | 'articles' | 'videos' | 'comments' | 'search'>(
@@ -38,6 +40,14 @@ export function CollectedDataView({
       setArticlePage(1);
     }
   }, [initialSourceFilter]);
+
+  // initialArticleId가 있으면 기사 뷰로 전환 후 해당 기사의 인라인 댓글 펼침
+  useEffect(() => {
+    if (initialArticleId != null) {
+      setView('articles');
+      setSelectedArticleId(initialArticleId);
+    }
+  }, [initialArticleId]);
 
   // 사용 가능한 소스 목록 (요약 데이터 재사용)
   const { data: summary } = useQuery({
@@ -177,6 +187,7 @@ export function CollectedDataView({
           page={articlePage}
           onPageChange={setArticlePage}
           source={sourceFilter}
+          initialExpandedId={selectedArticleId}
         />
       )}
       {view === 'videos' && (
