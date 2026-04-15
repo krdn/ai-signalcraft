@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Telescope, AlertCircle } from 'lucide-react';
 import { ExploreFilters, DEFAULT_FILTERS, type ExploreFilterState } from './explore-filters';
@@ -16,10 +16,30 @@ import { Card, CardContent } from '@/components/ui/card';
 
 interface ExploreViewProps {
   jobId: number | null;
+  onNavigateToCollected?: (source?: string, articleId?: number) => void;
+  initialSourceFilter?: string | null;
 }
 
-export function ExploreView({ jobId }: ExploreViewProps) {
+export function ExploreView({
+  jobId,
+  onNavigateToCollected,
+  initialSourceFilter,
+}: ExploreViewProps) {
   const [filters, setFilters] = useState<ExploreFilterState>(DEFAULT_FILTERS);
+
+  // initialSourceFilter가 있으면 마운트 시 소스 필터 적용
+  useEffect(() => {
+    if (initialSourceFilter) {
+      setFilters((prev) => ({
+        ...prev,
+        sources: prev.sources.includes(initialSourceFilter)
+          ? prev.sources
+          : [...prev.sources, initialSourceFilter],
+      }));
+    } else {
+      setFilters((prev) => ({ ...prev, sources: DEFAULT_FILTERS.sources }));
+    }
+  }, [initialSourceFilter]);
 
   // 각 차트의 useQuery queryKey에 필터가 포함되어 자동 재요청
   const baseKey = ['explore', jobId, filters] as const;
@@ -140,19 +160,39 @@ export function ExploreView({ jobId }: ExploreViewProps) {
     }));
   };
 
+  const handleDrillDownToCollected = (source: string) => {
+    onNavigateToCollected?.(source);
+  };
+
   return (
     <div className="space-y-4">
       <ExploreFilters value={filters} onChange={setFilters} />
+      {onNavigateToCollected && (
+        <div className="flex justify-end">
+          <Button variant="outline" size="sm" onClick={() => onNavigateToCollected()}>
+            수집 데이터 보기 →
+          </Button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <StreamChart data={timeSeries.data} isLoading={timeSeries.isLoading} />
         <CalendarHeatmap data={timeSeries.data} isLoading={timeSeries.isLoading} />
-        <ScatterEngagement data={scatter.data} isLoading={scatter.isLoading} />
+        <ScatterEngagement
+          data={scatter.data}
+          isLoading={scatter.isLoading}
+          onNavigateToArticle={
+            onNavigateToCollected
+              ? (articleId) => onNavigateToCollected(undefined, articleId)
+              : undefined
+          }
+        />
         <SourceSentimentMatrix
           data={bySource.data}
           splitData={bySourceSplit.data}
           isLoading={bySource.isLoading || bySourceSplit.isLoading}
           onSelectSource={handleSelectSource}
+          onDrillDownToCollected={onNavigateToCollected ? handleDrillDownToCollected : undefined}
         />
         <ScoreHistogram data={scoreDist.data} isLoading={scoreDist.isLoading} />
         <KeywordTreemap data={keywords.data} isLoading={keywords.isLoading} />

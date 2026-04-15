@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { MessageSquare, ThumbsUp, ThumbsDown, ExternalLink, ArrowLeft, Eye } from 'lucide-react';
 import { SentimentBadge, SOURCE_LABELS, Pagination } from './collected-data-shared';
@@ -17,6 +17,7 @@ export interface ArticlesViewProps {
   page: number;
   onPageChange: (page: number) => void;
   source?: string | null;
+  initialExpandedId?: number | null;
 }
 
 export interface VideosViewProps {
@@ -193,8 +194,23 @@ function InlineVideoCommentsView({ jobId, videoId }: { jobId: number; videoId: n
 
 // --- 기사 목록 뷰 ---
 
-export function ArticlesView({ jobId, page, onPageChange, source }: ArticlesViewProps) {
-  const [expandedArticleId, setExpandedArticleId] = useState<number | null>(null);
+export function ArticlesView({
+  jobId,
+  page,
+  onPageChange,
+  source,
+  initialExpandedId,
+}: ArticlesViewProps) {
+  const [expandedArticleId, setExpandedArticleId] = useState<number | null>(
+    initialExpandedId ?? null,
+  );
+
+  useEffect(() => {
+    if (initialExpandedId != null) {
+      setExpandedArticleId(initialExpandedId);
+    }
+  }, [initialExpandedId]);
+
   const { data, isLoading } = useQuery({
     queryKey: ['collectedData', 'getArticles', jobId, page, source],
     queryFn: () =>
