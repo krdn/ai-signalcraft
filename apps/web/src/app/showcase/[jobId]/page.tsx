@@ -4,8 +4,9 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import type { LucideIcon } from 'lucide-react';
-import { ArrowLeft, Play, LayoutDashboard, Database, FileText, History, Brain } from 'lucide-react';
+import { Database } from 'lucide-react';
+import { AppShell } from '@/components/layout/app-shell';
+import { ShowcaseSidebar } from '@/components/layout/showcase-sidebar';
 import { DashboardView } from '@/components/dashboard/dashboard-view';
 import { ReportView } from '@/components/report/report-view';
 import { AdvancedView } from '@/components/advanced/advanced-view';
@@ -16,19 +17,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { trpcClient } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 
-// 쇼케이스 공개 페이지 탭 (읽기 전용)
-const TABS: { label: string; icon: LucideIcon; key: string }[] = [
-  { label: '분석 실행', icon: Play, key: 'pipeline' },
-  { label: '결과 대시보드', icon: LayoutDashboard, key: 'dashboard' },
-  { label: '수집 데이터', icon: Database, key: 'collected' },
-  { label: 'AI 리포트', icon: FileText, key: 'report' },
-  { label: '히스토리', icon: History, key: 'history' },
-  { label: '고급 분석', icon: Brain, key: 'advanced' },
-];
-
 // 공개용 데이터 페칭 함수
 const showcaseFetchResults = (jobId: number) => trpcClient.showcase.getResults.query({ jobId });
-
 const showcaseFetchReport = (jobId: number) => trpcClient.showcase.getReport.query({ jobId });
 
 export default function ShowcaseDetailPage() {
@@ -58,109 +48,82 @@ export default function ShowcaseDetailPage() {
     );
   }
 
+  const keyword = isLoading ? '로딩 중…' : (detail?.keyword ?? '');
+
   return (
-    <main className="min-h-screen bg-background">
-      {/* 네비게이션 바 */}
-      <nav className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="flex items-center h-14 px-4 md:px-8">
-          {/* 뒤로가기 */}
-          <Link href="/#showcase" className="mr-4">
-            <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground">
-              <ArrowLeft className="h-4 w-4" />
-              돌아가기
-            </Button>
-          </Link>
-
-          {/* 키워드 */}
-          {isLoading ? (
-            <Skeleton className="h-6 w-24 mr-6" />
-          ) : (
-            detail && <span className="font-semibold mr-6 text-sm">{detail.keyword}</span>
-          )}
-
-          {/* 탭 */}
-          <div className="flex items-center gap-1 overflow-x-auto">
-            {TABS.map((tab, idx) => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.key}
-                  onClick={() => setActiveTab(idx)}
-                  className={cn(
-                    'flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md whitespace-nowrap transition-colors',
-                    activeTab === idx
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted',
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  <span className="hidden md:inline">{tab.label}</span>
-                </button>
-              );
-            })}
+    <AppShell
+      sidebar={(_open, _onClose) => (
+        <ShowcaseSidebar keyword={keyword} activeTab={activeTab} onTabChange={setActiveTab} />
+      )}
+      header={(_onMenuClick) => (
+        /* 모바일용 상단 헤더 — 사이드바가 숨겨지는 md 미만에서만 표시 */
+        <header className="md:hidden shrink-0 border-b border-slate-200 bg-white">
+          <div className="flex h-12 items-center px-4 gap-3">
+            <button
+              onClick={_onMenuClick}
+              className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              </svg>
+            </button>
+            {isLoading ? (
+              <Skeleton className="h-5 w-24" />
+            ) : (
+              <span className="text-sm font-semibold text-slate-900 truncate">{keyword}</span>
+            )}
           </div>
-        </div>
-      </nav>
+        </header>
+      )}
+    >
+      {/* 탭 0: 분석 실행 — 파이프라인 상세 (읽기 전용) */}
+      {activeTab === 0 && (
+        <PipelineMonitor
+          jobId={null}
+          staticData={pipelineData ?? undefined}
+          readOnly
+          onComplete={() => setActiveTab(1)}
+        />
+      )}
 
-      {/* 탭 콘텐츠 */}
-      <div className="px-4 md:px-8 py-6">
-        {/* 탭 0: 분석 실행 — 파이프라인 상세 (읽기 전용) */}
-        {activeTab === 0 && (
-          <PipelineMonitor
-            jobId={null}
-            staticData={pipelineData ?? undefined}
-            readOnly
-            onComplete={() => setActiveTab(1)}
-          />
-        )}
+      {/* 탭 1: 결과 대시보드 */}
+      {activeTab === 1 && (
+        <DashboardView
+          jobId={jobId}
+          fetchFn={showcaseFetchResults}
+          readOnly
+          collectionStats={
+            detail?.stats
+              ? {
+                  totalArticles: detail.stats.totalArticles,
+                  totalComments: detail.stats.totalComments,
+                }
+              : null
+          }
+        />
+      )}
 
-        {/* 탭 1: 결과 대시보드 */}
-        {activeTab === 1 && (
-          <DashboardView
-            jobId={jobId}
-            fetchFn={showcaseFetchResults}
-            readOnly
-            collectionStats={
-              detail?.stats
-                ? {
-                    totalArticles: detail.stats.totalArticles,
-                    totalComments: detail.stats.totalComments,
-                  }
-                : null
-            }
-          />
-        )}
+      {/* 탭 2: 수집 데이터 — 공개 요약만 */}
+      {activeTab === 2 && (
+        <ShowcaseCollectedDataTab jobId={jobId} detail={detail} isLoading={isLoading} />
+      )}
 
-        {/* 탭 2: 수집 데이터 — 공개 요약만 */}
-        {activeTab === 2 && (
-          <ShowcaseCollectedDataTab jobId={jobId} detail={detail} isLoading={isLoading} />
-        )}
+      {/* 탭 3: AI 리포트 */}
+      {activeTab === 3 && <ReportView jobId={jobId} fetchFn={showcaseFetchReport} />}
 
-        {/* 탭 3: AI 리포트 */}
-        {activeTab === 3 && <ReportView jobId={jobId} fetchFn={showcaseFetchReport} />}
+      {/* 탭 4: 히스토리 — 쇼케이스 목록으로 대체 */}
+      {activeTab === 4 && <ShowcaseHistoryTab currentJobId={jobId} />}
 
-        {/* 탭 4: 히스토리 — 쇼케이스 목록으로 대체 */}
-        {activeTab === 4 && <ShowcaseHistoryTab currentJobId={jobId} />}
-
-        {/* 탭 5: 고급 분석 */}
-        {activeTab === 5 && (
-          <AdvancedView jobId={jobId} domain={detail?.domain} fetchFn={showcaseFetchResults} />
-        )}
-      </div>
-
-      {/* 하단 CTA */}
-      <div className="border-t bg-muted/30 py-8 text-center">
-        <p className="text-sm text-muted-foreground mb-3">
-          AI SignalCraft로 직접 분석을 실행해 보세요
-        </p>
-        <Link href="/demo">
-          <Button size="lg" className="gap-1.5">
-            무료 체험 시작
-            <ArrowLeft className="h-4 w-4 rotate-180" />
-          </Button>
-        </Link>
-      </div>
-    </main>
+      {/* 탭 5: 고급 분석 */}
+      {activeTab === 5 && (
+        <AdvancedView jobId={jobId} domain={detail?.domain} fetchFn={showcaseFetchResults} />
+      )}
+    </AppShell>
   );
 }
 
