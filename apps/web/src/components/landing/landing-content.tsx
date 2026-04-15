@@ -63,6 +63,9 @@ export function LandingContent() {
             <span className="text-lg font-bold">AI SignalCraft</span>
           </Link>
           <div className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
+            <Link href="/reports" className="hover:text-foreground">
+              분석 리포트
+            </Link>
             <a href="#showcase" className="hover:text-foreground">
               샘플 분석
             </a>
@@ -123,6 +126,14 @@ export function LandingContent() {
                   <SheetTitle>메뉴</SheetTitle>
                 </SheetHeader>
                 <nav className="mt-6 flex flex-col gap-1 px-4 text-base">
+                  <SheetClose
+                    nativeButton={false}
+                    render={
+                      <Link href="/reports" className="rounded-md px-2 py-2 hover:bg-accent" />
+                    }
+                  >
+                    분석 리포트
+                  </SheetClose>
                   <SheetClose
                     nativeButton={false}
                     render={<a href="#showcase" className="rounded-md px-2 py-2 hover:bg-accent" />}
