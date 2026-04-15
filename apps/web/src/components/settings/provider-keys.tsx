@@ -3,12 +3,14 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Loader2, Plus, MessageSquare, Send, PlusCircle } from 'lucide-react';
+import { Loader2, Plus, MessageSquare, Send, PlusCircle, ChevronDown } from 'lucide-react';
 import {
   PROVIDER_REGISTRY,
   getProvidersByAccess,
   type AIProvider,
 } from '@ai-signalcraft/core/ai-meta';
+import { HelpPopover } from './help-popover';
+import { cn } from '@/lib/utils';
 import { trpcClient } from '@/lib/trpc';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -475,24 +477,35 @@ function KeyCard({
             >
               Edit
             </Button>
-            <Button
-              variant={showModels ? 'secondary' : 'outline'}
-              size="sm"
-              className="h-7 px-2.5 text-xs"
-              onClick={() => {
-                if (showModels) {
-                  setShowModels(false);
-                } else {
-                  handleTest();
-                }
-                setEditing(false);
-                setShowPlayground(false);
-              }}
-              disabled={testing}
-            >
-              {testing ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : null}
-              {showModels ? 'Close' : 'Test & Select'}
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button
+                variant={showModels ? 'secondary' : 'outline'}
+                size="sm"
+                className="h-7 px-2.5 text-xs"
+                onClick={() => {
+                  if (showModels) {
+                    setShowModels(false);
+                  } else {
+                    handleTest();
+                  }
+                  setEditing(false);
+                  setShowPlayground(false);
+                }}
+                disabled={testing}
+              >
+                {testing ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : null}
+                {showModels ? 'Close' : 'Test & Select'}
+              </Button>
+              <HelpPopover side="top">
+                <p className="text-muted-foreground leading-relaxed">
+                  입력한 API 키로 실제 연결을 테스트하고, 사용 가능한 모델 목록을 가져옵니다.
+                </p>
+                <p className="mt-2 text-muted-foreground">
+                  선택한 모델이 해당 프로바이더의{' '}
+                  <strong className="text-foreground">기본 모델</strong>로 저장됩니다.
+                </p>
+              </HelpPopover>
+            </div>
             <Button
               variant="outline"
               size="sm"
@@ -590,21 +603,20 @@ function KeyCard({
         )}
 
         {/* LLM Playground 버튼 (하단) */}
-        <div className="mt-2 pt-2 border-t">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full justify-center gap-1 text-xs text-muted-foreground h-7"
-            onClick={() => {
-              setShowPlayground(!showPlayground);
-              setEditing(false);
-              setShowModels(false);
-            }}
-          >
-            <MessageSquare className="h-3 w-3" />
-            {showPlayground ? 'Close Playground' : 'Test Prompt (Playground)'}
-          </Button>
-        </div>
+        <button
+          onClick={() => {
+            setShowPlayground(!showPlayground);
+            setEditing(false);
+            setShowModels(false);
+          }}
+          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors mt-2"
+        >
+          <MessageSquare className="h-3 w-3" />
+          테스트 프롬프트 (Playground)
+          <ChevronDown
+            className={cn('h-3 w-3 transition-transform', showPlayground && 'rotate-180')}
+          />
+        </button>
 
         {showPlayground && (
           <div className="mt-2">
@@ -651,6 +663,22 @@ export function ProviderKeys() {
   return (
     <ScrollArea className="max-h-[70vh]">
       <div className="space-y-4 pr-4">
+        {/* 도움말 헤더 */}
+        <div className="mb-4 flex items-center gap-2">
+          <h3 className="text-sm font-semibold">API 키 &amp; 프로바이더</h3>
+          <HelpPopover>
+            <p className="text-muted-foreground leading-relaxed">
+              AI 분석에 사용할 프로바이더의 API 키를 등록합니다.{' '}
+              <strong className="text-foreground">최소 1개 이상 필요</strong>합니다.
+            </p>
+            <p className="mt-2 text-muted-foreground leading-relaxed">
+              키를 등록한 후 <strong className="text-foreground">테스트 &amp; 선택</strong>으로
+              연결을 확인하고 기본 모델을 선택하세요. 선택한 모델은 "모듈별 모델" 설정의 기본값으로
+              사용됩니다.
+            </p>
+          </HelpPopover>
+        </div>
+
         {/* 등록된 키 목록 */}
         {keys && keys.length > 0 && (
           <div className="space-y-2">
