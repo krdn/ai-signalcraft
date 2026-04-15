@@ -1,9 +1,8 @@
-'use client';
-
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { FileText, MessageSquare, Brain, ArrowRight } from 'lucide-react';
+import { FileText, MessageSquare, FlaskConical, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { DomainBadge, getDomainLabel } from '@/components/analysis/domain-badge';
 
 export interface ShowcaseItem {
   jobId: number;
@@ -16,23 +15,9 @@ export interface ShowcaseItem {
   totalArticles: number;
   totalComments: number;
   modulesCompleted: number;
+  featuredAt: string | null;
+  createdAt: string;
 }
-
-const DOMAIN_LABEL: Record<string, string> = {
-  political: '정치',
-  economic: '경제',
-  social: '사회',
-  cultural: '문화',
-  tech: '기술',
-};
-
-const DOMAIN_COLOR: Record<string, string> = {
-  political: 'bg-red-500/10 text-red-500 border-red-500/20',
-  economic: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
-  social: 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20',
-  cultural: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
-  tech: 'bg-sky-500/10 text-sky-500 border-sky-500/20',
-};
 
 interface ReportCardProps {
   item: ShowcaseItem;
@@ -41,8 +26,7 @@ interface ReportCardProps {
 
 export function ReportCard({ item, featured = false }: ReportCardProps) {
   const title = item.oneLiner ?? item.reportTitle ?? item.keyword;
-  const domainLabel = DOMAIN_LABEL[item.domain] ?? item.domain;
-  const domainColor = DOMAIN_COLOR[item.domain] ?? 'bg-muted text-muted-foreground border-border';
+  const domainLabel = getDomainLabel(item.domain);
 
   return (
     <Link
@@ -56,14 +40,9 @@ export function ReportCard({ item, featured = false }: ReportCardProps) {
     >
       <div className="flex-1 min-w-0">
         {/* 도메인 뱃지 */}
-        <span
-          className={cn(
-            'inline-block text-xs font-semibold px-2 py-0.5 rounded-full border mb-2',
-            domainColor,
-          )}
-        >
-          {domainLabel}
-        </span>
+        <div className="mb-2">
+          <DomainBadge domain={item.domain} />
+        </div>
 
         {/* 제목 */}
         <p
@@ -86,7 +65,7 @@ export function ReportCard({ item, featured = false }: ReportCardProps) {
             {item.totalComments}댓글
           </span>
           <span className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Brain className="h-3 w-3" />
+            <FlaskConical className="h-3 w-3" />
             {item.modulesCompleted}개 모듈
           </span>
           <span className="text-xs text-muted-foreground">
