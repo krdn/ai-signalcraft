@@ -31,6 +31,7 @@ export const showcaseRouter = router({
         createdAt: collectionJobs.createdAt,
         updatedAt: collectionJobs.updatedAt,
         progress: collectionJobs.progress,
+        domain: collectionJobs.domain,
         reportTitle: analysisReports.title,
         oneLiner: analysisReports.oneLiner,
         metadata: analysisReports.metadata,
@@ -50,6 +51,7 @@ export const showcaseRouter = router({
       return {
         jobId: item.jobId,
         keyword: item.keyword,
+        domain: item.domain,
         startDate: item.startDate,
         endDate: item.endDate,
         featuredAt: item.featuredAt,
