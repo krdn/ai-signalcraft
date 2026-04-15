@@ -1,19 +1,24 @@
 'use client';
 
-import { BrainCircuit } from 'lucide-react';
+import { BrainCircuit, Settings } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
+import { useSession } from 'next-auth/react';
 import { ModelOverviewTab } from './model-overview-tab';
 import { ProblemDiagnosisTab } from './problem-diagnosis-tab';
 import { UpgradeSuggestionsTab } from './upgrade-suggestions-tab';
 import { TokenCostTab } from './token-cost-tab';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { trpcClient } from '@/lib/trpc';
+import { SettingsDialog } from '@/components/settings/settings-dialog';
 
 interface LlmInsightsViewProps {
   jobId: number | null;
 }
 
 export function LlmInsightsView({ jobId }: LlmInsightsViewProps) {
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === 'admin';
+
   const modelsQuery = useQuery({
     queryKey: ['llmInsights', 'moduleModels', jobId],
     queryFn: () => trpcClient.llmInsights.getModuleModels.query({ jobId: jobId! }),
@@ -46,6 +51,17 @@ export function LlmInsightsView({ jobId }: LlmInsightsViewProps) {
         <BrainCircuit className="h-5 w-5 text-primary" />
         <h2 className="text-lg font-semibold">LLM 인사이트</h2>
         <span className="text-sm text-muted-foreground">— Job #{jobId}</span>
+        {isAdmin && (
+          <SettingsDialog
+            triggerClassName="ml-auto"
+            triggerContent={
+              <button className="ml-auto flex items-center gap-1.5 rounded-md border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                <Settings className="h-3.5 w-3.5" />
+                AI 설정
+              </button>
+            }
+          />
+        )}
       </div>
 
       {isLoading ? (
