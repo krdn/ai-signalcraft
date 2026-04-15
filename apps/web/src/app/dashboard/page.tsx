@@ -16,6 +16,7 @@ import { DashboardView } from '@/components/dashboard/dashboard-view';
 import { CollectedDataView } from '@/components/dashboard/collected-data-view';
 import { AdvancedView } from '@/components/advanced/advanced-view';
 import { ExploreView } from '@/components/explore/explore-view';
+import { LlmInsightsView } from '@/components/llm-insights/llm-insights-view';
 import { Button } from '@/components/ui/button';
 import { UpgradeModal } from '@/components/demo/upgrade-modal';
 import { trpcClient } from '@/lib/trpc';
@@ -169,6 +170,20 @@ function ExploreTab({
   );
 }
 
+function LlmInsightsTab({
+  jobId,
+  onGoToAnalysis,
+}: {
+  jobId: number | null;
+  onGoToAnalysis: () => void;
+}) {
+  return (
+    <ResultTabWrapper jobId={jobId} onGoToAnalysis={onGoToAnalysis}>
+      <LlmInsightsView jobId={jobId} />
+    </ResultTabWrapper>
+  );
+}
+
 function AdvancedTab({
   jobId,
   onGoToAnalysis,
@@ -278,6 +293,11 @@ export default function Home() {
               isShowcase={isShowcase}
             />,
             <ExploreTab key="explore" jobId={activeJobId} onGoToAnalysis={handleGoToAnalysis} />,
+            <LlmInsightsTab
+              key="llm-insights"
+              jobId={activeJobId}
+              onGoToAnalysis={handleGoToAnalysis}
+            />,
           ]}
         />
       </AppShell>
