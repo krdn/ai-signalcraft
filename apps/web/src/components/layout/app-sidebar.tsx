@@ -356,11 +356,12 @@ export function AppSidebar({
             </Dialog>
             {userRole === 'admin' && (
               <SettingsDialog
-                trigger={
-                  <div className="relative flex cursor-pointer select-none items-center gap-1.5 rounded-md px-1.5 py-1 text-sm outline-hidden hover:bg-accent hover:text-accent-foreground">
+                triggerClassName="relative flex cursor-pointer select-none items-center gap-1.5 rounded-md px-1.5 py-1 text-sm outline-hidden hover:bg-accent hover:text-accent-foreground"
+                triggerContent={
+                  <>
                     <Settings className="h-4 w-4" />
                     AI 설정
-                  </div>
+                  </>
                 }
               />
             )}
