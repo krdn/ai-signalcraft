@@ -1,6 +1,6 @@
 'use client';
 
-import { BrainCircuit, Settings } from 'lucide-react';
+import { BrainCircuit, BookOpen, Settings } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import { ModelOverviewTab } from './model-overview-tab';
@@ -51,11 +51,20 @@ export function LlmInsightsView({ jobId }: LlmInsightsViewProps) {
         <BrainCircuit className="h-5 w-5 text-primary" />
         <h2 className="text-lg font-semibold">LLM 인사이트</h2>
         <span className="text-sm text-muted-foreground">— Job #{jobId}</span>
+        <a
+          href="/docs/llm-model-recommendations.html"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 rounded-md border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+        >
+          <BookOpen className="h-3.5 w-3.5" />
+          모델 가이드
+        </a>
         {isAdmin && (
           <SettingsDialog
-            triggerClassName="ml-auto"
+            triggerClassName="ml-1"
             triggerContent={
-              <button className="ml-auto flex items-center gap-1.5 rounded-md border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+              <button className="flex items-center gap-1.5 rounded-md border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
                 <Settings className="h-3.5 w-3.5" />
                 AI 설정
               </button>
