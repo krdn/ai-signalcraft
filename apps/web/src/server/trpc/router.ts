@@ -17,6 +17,7 @@ import { featureRequestRouter } from './routers/feature-request';
 import { presetsRouter } from './routers/presets';
 import { searchRouter } from './routers/search';
 import { ontologyRouter } from './routers/ontology';
+import { llmInsightsRouter } from './routers/llm-insights';
 
 export const appRouter = router({
   analysis: analysisRouter,
@@ -37,5 +38,6 @@ export const appRouter = router({
   presets: presetsRouter,
   search: searchRouter,
   ontology: ontologyRouter,
+  llmInsights: llmInsightsRouter,
 });
 export type AppRouter = typeof appRouter;
