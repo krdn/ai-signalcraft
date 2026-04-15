@@ -11,6 +11,7 @@ import {
   History,
   LayoutDashboard,
   Play,
+  Telescope,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -22,6 +23,7 @@ const TABS: { label: string; icon: LucideIcon; key: string }[] = [
   { label: 'AI 리포트', icon: FileText, key: 'report' },
   { label: '히스토리', icon: History, key: 'history' },
   { label: '고급 분석', icon: Brain, key: 'advanced' },
+  { label: '탐색', icon: Telescope, key: 'explore' },
 ];
 
 interface ShowcaseSidebarProps {

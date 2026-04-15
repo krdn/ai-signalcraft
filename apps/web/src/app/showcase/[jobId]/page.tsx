@@ -10,6 +10,7 @@ import { ShowcaseSidebar } from '@/components/layout/showcase-sidebar';
 import { DashboardView } from '@/components/dashboard/dashboard-view';
 import { ReportView } from '@/components/report/report-view';
 import { AdvancedView } from '@/components/advanced/advanced-view';
+import { ExploreView } from '@/components/explore/explore-view';
 import { PipelineMonitor } from '@/components/analysis/pipeline-monitor';
 import { useShowcasePipelineStatus } from '@/hooks/use-showcase-pipeline-status';
 import { Button } from '@/components/ui/button';
@@ -123,6 +124,9 @@ export default function ShowcaseDetailPage() {
       {activeTab === 5 && (
         <AdvancedView jobId={jobId} domain={detail?.domain} fetchFn={showcaseFetchResults} />
       )}
+
+      {/* 탭 6: 탐색 */}
+      {activeTab === 6 && <ExploreView jobId={jobId} />}
     </AppShell>
   );
 }
