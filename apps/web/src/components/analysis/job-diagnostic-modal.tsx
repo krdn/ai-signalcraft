@@ -447,12 +447,18 @@ export function JobDiagnosticModal({ jobId, keyword }: JobDiagnosticModalProps) 
           e.stopPropagation();
           setOpen(true);
         }}
-        onKeyDown={(e) => e.key === 'Enter' && setOpen(true)}
+        onKeyDown={(e) => {
+          e.stopPropagation();
+          if (e.key === 'Enter') setOpen(true);
+        }}
       >
         <Wrench className="h-3 w-3" />
       </span>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+      <Dialog open={open} onOpenChange={setOpen} disablePointerDismissal>
+        <DialogContent
+          className="sm:max-w-3xl max-h-[90vh] overflow-y-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Wrench className="h-4 w-4" />
