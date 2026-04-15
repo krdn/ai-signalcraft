@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Loader2, Shield, Zap, Rocket, Info } from 'lucide-react';
+import { HelpPopover } from './help-popover';
 import { trpcClient } from '@/lib/trpc';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -118,6 +119,21 @@ export function ConcurrencySettings() {
 
   return (
     <div className="space-y-5">
+      <div className="mb-4 flex items-center gap-2">
+        <h3 className="text-sm font-semibold">병렬처리 &amp; 속도</h3>
+        <HelpPopover>
+          <p className="text-muted-foreground leading-relaxed">
+            분석 파이프라인의 처리 속도를 조정합니다. 값이 클수록 빠르지만, 프로바이더의{' '}
+            <strong className="text-foreground">RPM(분당 요청 수)</strong> 한도를 초과하면 429
+            오류가 발생합니다.
+          </p>
+          <p className="mt-2 text-muted-foreground">
+            무료 플랜 사용 시{' '}
+            <strong className="text-foreground">&ldquo;느리지만 안전&rdquo;</strong> 프리셋을
+            권장합니다.
+          </p>
+        </HelpPopover>
+      </div>
       {/* 프리셋 선택 */}
       <div>
         <div className="flex items-center gap-2 mb-2">
@@ -176,9 +192,22 @@ export function ConcurrencySettings() {
               return (
                 <div key={provider} className="space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium">
-                      {PROVIDER_LABELS[provider] ?? provider}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-medium">
+                        {PROVIDER_LABELS[provider] ?? provider}
+                      </span>
+                      <HelpPopover side="top">
+                        <p className="text-muted-foreground">
+                          해당 프로바이더에 동시에 보내는 API 요청 수입니다.
+                        </p>
+                        <p className="mt-1.5 text-xs text-muted-foreground">
+                          RPM 한도: {PROVIDER_RPM_INFO[provider] ?? '프로바이더별 상이'}
+                        </p>
+                        <p className="mt-1.5 text-xs text-muted-foreground">
+                          유료 플랜 권장값: OpenAI 3~5 / Anthropic 2~4 / Gemini 5~8
+                        </p>
+                      </HelpPopover>
+                    </div>
                     <Input
                       type="number"
                       min={1}
