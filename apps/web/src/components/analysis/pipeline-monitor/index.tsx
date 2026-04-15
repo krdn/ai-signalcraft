@@ -102,7 +102,7 @@ export function PipelineMonitor({
       }),
   });
 
-  if (!jobId) return null;
+  if (!jobId && !staticData) return null;
 
   if (isLoading) {
     return (
@@ -193,6 +193,7 @@ export function PipelineMonitor({
           pausedAtStage={data.pausedAtStage ?? null}
           isPaused={isPaused}
           onToggleBreakpoint={(stageKey) => {
+            if (!jobId || readOnly) return;
             const current = (data.breakpoints as string[]) ?? [];
             const next = current.includes(stageKey)
               ? current.filter((s: string) => s !== stageKey)
@@ -202,9 +203,9 @@ export function PipelineMonitor({
         />
 
         {/* BP 정지 제어 패널 — paused 상태일 때만 표시 */}
-        {isPaused && data.pausedAtStage && data.pausedAt && (
+        {isPaused && data.pausedAtStage && data.pausedAt && !readOnly && jobId != null && (
           <BreakpointControl
-            jobId={jobId!}
+            jobId={jobId}
             pausedAtStage={data.pausedAtStage}
             pausedAt={
               typeof data.pausedAt === 'string'
