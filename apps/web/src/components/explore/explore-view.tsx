@@ -36,6 +36,8 @@ export function ExploreView({
           ? prev.sources
           : [...prev.sources, initialSourceFilter],
       }));
+    } else {
+      setFilters((prev) => ({ ...prev, sources: DEFAULT_FILTERS.sources }));
     }
   }, [initialSourceFilter]);
 

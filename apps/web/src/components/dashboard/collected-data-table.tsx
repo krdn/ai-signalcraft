@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { MessageSquare, ThumbsUp, ThumbsDown, ExternalLink, ArrowLeft, Eye } from 'lucide-react';
 import { SentimentBadge, SOURCE_LABELS, Pagination } from './collected-data-shared';
@@ -204,6 +204,13 @@ export function ArticlesView({
   const [expandedArticleId, setExpandedArticleId] = useState<number | null>(
     initialExpandedId ?? null,
   );
+
+  useEffect(() => {
+    if (initialExpandedId != null) {
+      setExpandedArticleId(initialExpandedId);
+    }
+  }, [initialExpandedId]);
+
   const { data, isLoading } = useQuery({
     queryKey: ['collectedData', 'getArticles', jobId, page, source],
     queryFn: () =>
