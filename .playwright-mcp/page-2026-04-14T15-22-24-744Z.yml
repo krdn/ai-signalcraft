@@ -1,0 +1,822 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e4]: 2026-04-15 기준
+    - heading "🤖 LLM 모델 추천 가이드" [level=1] [ref=e5]
+    - paragraph [ref=e6]: 분석 모듈별 LLM 모델 추천 (최고/보통/최소 티어) · 한국어 성능 비교 · 시나리오 프리셋 업그레이드 근거
+  - generic [ref=e7]:
+    - strong [ref=e8]: 목차
+    - list [ref=e9]:
+      - listitem [ref=e10]:
+        - link "Part 1 — 2026년 LLM 시장 분류" [ref=e11] [cursor=pointer]:
+          - /url: "#part1"
+      - listitem [ref=e12]:
+        - link "Part 2 — 분석 모듈별 추천 매트릭스" [ref=e13] [cursor=pointer]:
+          - /url: "#part2"
+      - listitem [ref=e14]:
+        - link "Part 3 — 시나리오 프리셋 업그레이드 제안" [ref=e15] [cursor=pointer]:
+          - /url: "#part3"
+      - listitem [ref=e16]:
+        - link "참고 자료" [ref=e17] [cursor=pointer]:
+          - /url: "#refs"
+  - generic [ref=e18]:
+    - heading "📊 Part 1 — 2026년 LLM 시장 분류" [level=2] [ref=e19]
+    - generic [ref=e20]:
+      - strong [ref=e21]: 한국어 등급 기준
+      - text: ": 상 뉘앙스·감정·맥락 우수 (운영 추천) | 중 기본 분류·요약 가능 | 하 단순 작업만 가능"
+    - heading "1.1 지원 프로바이더 (현재 시스템)" [level=3] [ref=e22]
+    - table [ref=e24]:
+      - rowgroup [ref=e25]:
+        - row "프로바이더 모델 입력 ($/MTok) 출력 ($/MTok) 컨텍스트 한국어 구조화 출력 비고" [ref=e26]:
+          - columnheader "프로바이더" [ref=e27]
+          - columnheader "모델" [ref=e28]
+          - columnheader "입력 ($/MTok)" [ref=e29]
+          - columnheader "출력 ($/MTok)" [ref=e30]
+          - columnheader "컨텍스트" [ref=e31]
+          - columnheader "한국어" [ref=e32]
+          - columnheader "구조화 출력" [ref=e33]
+          - columnheader "비고" [ref=e34]
+      - rowgroup [ref=e35]:
+        - row "Anthropic Claude Opus 4.6 $5.00 $25.00 1M 상 상 최고 지능, 복잡한 추론 최적" [ref=e36]:
+          - cell "Anthropic" [ref=e37]
+          - cell "Claude Opus 4.6" [ref=e38]
+          - cell "$5.00" [ref=e39]
+          - cell "$25.00" [ref=e40]
+          - cell "1M" [ref=e41]
+          - cell "상" [ref=e42]
+          - cell "상" [ref=e43]
+          - cell "최고 지능, 복잡한 추론 최적" [ref=e44]
+        - row "Anthropic Claude Sonnet 4.6 $3.00 $15.00 1M 상 상 품질·비용 균형 최상, 캐싱 효과 큼" [ref=e45]:
+          - cell "Anthropic" [ref=e46]
+          - cell "Claude Sonnet 4.6" [ref=e47]
+          - cell "$3.00" [ref=e48]
+          - cell "$15.00" [ref=e49]
+          - cell "1M" [ref=e50]
+          - cell "상" [ref=e51]
+          - cell "상" [ref=e52]
+          - cell "품질·비용 균형 최상, 캐싱 효과 큼" [ref=e53]
+        - row "Anthropic Claude Haiku 4.5 $1.00 $5.00 200K 상 상 고속·저비용, 한국어 상급 유지" [ref=e54]:
+          - cell "Anthropic" [ref=e55]
+          - cell "Claude Haiku 4.5" [ref=e56]
+          - cell "$1.00" [ref=e57]
+          - cell "$5.00" [ref=e58]
+          - cell "200K" [ref=e59]
+          - cell "상" [ref=e60]
+          - cell "상" [ref=e61]
+          - cell "고속·저비용, 한국어 상급 유지" [ref=e62]
+        - row "Google Gemini 2.5 Pro $1.25~$2.50 $10~$15 1M 상 상 멀티모달, 할루시네이션 0.7%" [ref=e63]:
+          - cell "Google" [ref=e64]
+          - cell "Gemini 2.5 Pro" [ref=e65]
+          - cell "$1.25~$2.50" [ref=e66]
+          - cell "$10~$15" [ref=e67]
+          - cell "1M" [ref=e68]
+          - cell "상" [ref=e69]
+          - cell "상" [ref=e70]
+          - cell "멀티모달, 할루시네이션 0.7%" [ref=e71]
+        - row "Google Gemini 2.5 Flash $0.30 $2.50 1M 상 상 속도·비용 균형, 1M 컨텍스트" [ref=e72]:
+          - cell "Google" [ref=e73]
+          - cell "Gemini 2.5 Flash" [ref=e74]
+          - cell "$0.30" [ref=e75]
+          - cell "$2.50" [ref=e76]
+          - cell "1M" [ref=e77]
+          - cell "상" [ref=e78]
+          - cell "상" [ref=e79]
+          - cell "속도·비용 균형, 1M 컨텍스트" [ref=e80]
+        - row "Google Gemini 2.5 Flash-Lite $0.10 $0.40 1M 중 중 초저가, 배치 모드 $0.05/MTok" [ref=e81]:
+          - cell "Google" [ref=e82]
+          - cell "Gemini 2.5 Flash-Lite" [ref=e83]
+          - cell "$0.10" [ref=e84]
+          - cell "$0.40" [ref=e85]
+          - cell "1M" [ref=e86]
+          - cell "중" [ref=e87]
+          - cell "중" [ref=e88]
+          - cell "초저가, 배치 모드 $0.05/MTok" [ref=e89]
+        - row "OpenAI GPT-4.1 $2.00 $8.00 1M 상 상 한국어 고품질, 1M 컨텍스트" [ref=e90]:
+          - cell "OpenAI" [ref=e91]
+          - cell "GPT-4.1" [ref=e92]
+          - cell "$2.00" [ref=e93]
+          - cell "$8.00" [ref=e94]
+          - cell "1M" [ref=e95]
+          - cell "상" [ref=e96]
+          - cell "상" [ref=e97]
+          - cell "한국어 고품질, 1M 컨텍스트" [ref=e98]
+        - row "OpenAI GPT-4.1 Mini $0.40 $1.60 128K 상 상 빠른 분류·요약" [ref=e99]:
+          - cell "OpenAI" [ref=e100]
+          - cell "GPT-4.1 Mini" [ref=e101]
+          - cell "$0.40" [ref=e102]
+          - cell "$1.60" [ref=e103]
+          - cell "128K" [ref=e104]
+          - cell "상" [ref=e105]
+          - cell "상" [ref=e106]
+          - cell "빠른 분류·요약" [ref=e107]
+        - row "OpenAI GPT-4.1 Nano $0.10 $0.40 128K 중 중 최저가, 단순 작업 한정" [ref=e108]:
+          - cell "OpenAI" [ref=e109]
+          - cell "GPT-4.1 Nano" [ref=e110]
+          - cell "$0.10" [ref=e111]
+          - cell "$0.40" [ref=e112]
+          - cell "128K" [ref=e113]
+          - cell "중" [ref=e114]
+          - cell "중" [ref=e115]
+          - cell "최저가, 단순 작업 한정" [ref=e116]
+        - row "OpenAI o3 $2.00 $8.00 200K 상 상 고급 추론 특화" [ref=e117]:
+          - cell "OpenAI" [ref=e118]
+          - cell "o3" [ref=e119]
+          - cell "$2.00" [ref=e120]
+          - cell "$8.00" [ref=e121]
+          - cell "200K" [ref=e122]
+          - cell "상" [ref=e123]
+          - cell "상" [ref=e124]
+          - cell "고급 추론 특화" [ref=e125]
+        - row "OpenAI o4-mini $1.10 $4.40 200K 상 상 추론 모델, o3 대비 절반 가격" [ref=e126]:
+          - cell "OpenAI" [ref=e127]
+          - cell "o4-mini" [ref=e128]
+          - cell "$1.10" [ref=e129]
+          - cell "$4.40" [ref=e130]
+          - cell "200K" [ref=e131]
+          - cell "상" [ref=e132]
+          - cell "상" [ref=e133]
+          - cell "추론 모델, o3 대비 절반 가격" [ref=e134]
+        - row "DeepSeek DeepSeek V3 (Chat) $0.07 (캐시) / $0.27 $1.10 128K 중 중 캐시 히트 90% 절감" [ref=e135]:
+          - cell "DeepSeek" [ref=e136]
+          - cell "DeepSeek V3 (Chat)" [ref=e137]
+          - cell "$0.07 (캐시) / $0.27" [ref=e138]
+          - cell "$1.10" [ref=e139]
+          - cell "128K" [ref=e140]
+          - cell "중" [ref=e141]
+          - cell "중" [ref=e142]
+          - cell "캐시 히트 90% 절감" [ref=e143]
+        - row "DeepSeek DeepSeek V4 (최신) $0.03 (캐시) / $0.30 $0.50 128K 중 중 2026.03 출시, V3 대비 추가 절감" [ref=e144]:
+          - cell "DeepSeek" [ref=e145]
+          - cell "DeepSeek V4 (최신)" [ref=e146]
+          - cell "$0.03 (캐시) / $0.30" [ref=e147]
+          - cell "$0.50" [ref=e148]
+          - cell "128K" [ref=e149]
+          - cell "중" [ref=e150]
+          - cell "중" [ref=e151]
+          - cell "2026.03 출시, V3 대비 추가 절감" [ref=e152]
+        - row "DeepSeek DeepSeek R1 (Reasoner) $0.14 (캐시) / $0.55 $2.19 128K 중 중 추론 특화 (수학·코딩 강점)" [ref=e153]:
+          - cell "DeepSeek" [ref=e154]
+          - cell "DeepSeek R1 (Reasoner)" [ref=e155]
+          - cell "$0.14 (캐시) / $0.55" [ref=e156]
+          - cell "$2.19" [ref=e157]
+          - cell "128K" [ref=e158]
+          - cell "중" [ref=e159]
+          - cell "중" [ref=e160]
+          - cell "추론 특화 (수학·코딩 강점)" [ref=e161]
+    - generic [ref=e162]:
+      - strong [ref=e163]: DeepSeek 캐싱
+      - text: ": 공통 시스템 프롬프트 재활용 파이프라인에서 캐시 히트율 높으면 입력 비용 최대 90% 절감."
+      - strong [ref=e164]: o3/o4-mini 주의
+      - text: ": 내부 chain-of-thought로 출력 토큰 증가, 실제 비용은 표시보다 높을 수 있음."
+    - heading "1.2 확장 프로바이더 (OpenRouter 경유)" [level=3] [ref=e165]
+    - generic [ref=e166]:
+      - text: OpenRouter를 통해 단일 API 키로 접근.
+      - code [ref=e167]: ai-gateway
+      - text: 에
+      - code [ref=e168]: openrouter
+      - text: 프로바이더 추가 필요.
+    - table [ref=e170]:
+      - rowgroup [ref=e171]:
+        - row "프로바이더 모델 입력 ($/MTok) 출력 ($/MTok) 컨텍스트 한국어 비고" [ref=e172]:
+          - columnheader "프로바이더" [ref=e173]
+          - columnheader "모델" [ref=e174]
+          - columnheader "입력 ($/MTok)" [ref=e175]
+          - columnheader "출력 ($/MTok)" [ref=e176]
+          - columnheader "컨텍스트" [ref=e177]
+          - columnheader "한국어" [ref=e178]
+          - columnheader "비고" [ref=e179]
+      - rowgroup [ref=e180]:
+        - row "Meta Llama 4 Maverick $0.15 $0.60 1M 중 MoE 400B, 1M 컨텍스트 강점" [ref=e181]:
+          - cell "Meta" [ref=e182]
+          - cell "Llama 4 Maverick" [ref=e183]
+          - cell "$0.15" [ref=e184]
+          - cell "$0.60" [ref=e185]
+          - cell "1M" [ref=e186]:
+            - strong [ref=e187]: 1M
+          - cell "중" [ref=e188]
+          - cell "MoE 400B, 1M 컨텍스트 강점" [ref=e189]
+        - row "Meta Llama 3.3 70B $0.10 $0.32 65K 중 안정성·비용 균형" [ref=e190]:
+          - cell "Meta" [ref=e191]
+          - cell "Llama 3.3 70B" [ref=e192]
+          - cell "$0.10" [ref=e193]
+          - cell "$0.32" [ref=e194]
+          - cell "65K" [ref=e195]
+          - cell "중" [ref=e196]
+          - cell "안정성·비용 균형" [ref=e197]
+        - row "Alibaba Qwen3.6 Plus $0.33 $1.95 128K 중~상 아시아권 모델 중 한국어 최상" [ref=e198]:
+          - cell "Alibaba" [ref=e199]
+          - cell "Qwen3.6 Plus" [ref=e200]
+          - cell "$0.33" [ref=e201]
+          - cell "$1.95" [ref=e202]
+          - cell "128K" [ref=e203]
+          - cell "중~상" [ref=e204]
+          - cell "아시아권 모델 중 한국어 최상" [ref=e205]
+        - row "Alibaba Qwen2.5-72B $0.12 $0.39 32K 중~상 KMMLU 벤치마크 공식 평가됨" [ref=e206]:
+          - cell "Alibaba" [ref=e207]
+          - cell "Qwen2.5-72B" [ref=e208]
+          - cell "$0.12" [ref=e209]
+          - cell "$0.39" [ref=e210]
+          - cell "32K" [ref=e211]
+          - cell "중~상" [ref=e212]
+          - cell "KMMLU 벤치마크 공식 평가됨" [ref=e213]
+        - row "Mistral Mistral Large 3 $0.50 $1.50 262K 하 유럽어 특화, 한국어 부적합" [ref=e214]:
+          - cell "Mistral" [ref=e215]
+          - cell "Mistral Large 3" [ref=e216]
+          - cell "$0.50" [ref=e217]
+          - cell "$1.50" [ref=e218]
+          - cell "262K" [ref=e219]
+          - cell "하" [ref=e220]
+          - cell "유럽어 특화, 한국어 부적합" [ref=e221]
+        - row "Mistral Mistral Small 4 $0.15 $0.60 262K 하 추론+멀티모달 통합" [ref=e222]:
+          - cell "Mistral" [ref=e223]
+          - cell "Mistral Small 4" [ref=e224]
+          - cell "$0.15" [ref=e225]
+          - cell "$0.60" [ref=e226]
+          - cell "262K" [ref=e227]
+          - cell "하" [ref=e228]
+          - cell "추론+멀티모달 통합" [ref=e229]
+        - row "xAI Grok-3 $3.00 $15.00 131K 중 X 실시간 데이터 연동 가능성" [ref=e230]:
+          - cell "xAI" [ref=e231]
+          - cell "Grok-3" [ref=e232]
+          - cell "$3.00" [ref=e233]
+          - cell "$15.00" [ref=e234]
+          - cell "131K" [ref=e235]
+          - cell "중" [ref=e236]
+          - cell "X 실시간 데이터 연동 가능성" [ref=e237]
+        - row "xAI Grok-3 Mini $0.30 $0.50 131K 중 저비용 추론" [ref=e238]:
+          - cell "xAI" [ref=e239]
+          - cell "Grok-3 Mini" [ref=e240]
+          - cell "$0.30" [ref=e241]
+          - cell "$0.50" [ref=e242]
+          - cell "131K" [ref=e243]
+          - cell "중" [ref=e244]
+          - cell "저비용 추론" [ref=e245]
+    - heading "1.3 기타 프로바이더 (AWS Bedrock — 장기 로드맵 참고)" [level=3] [ref=e246]
+    - table [ref=e248]:
+      - rowgroup [ref=e249]:
+        - row "모델 입력 ($/MTok) 출력 ($/MTok) 컨텍스트 한국어 비고" [ref=e250]:
+          - columnheader "모델" [ref=e251]
+          - columnheader "입력 ($/MTok)" [ref=e252]
+          - columnheader "출력 ($/MTok)" [ref=e253]
+          - columnheader "컨텍스트" [ref=e254]
+          - columnheader "한국어" [ref=e255]
+          - columnheader "비고" [ref=e256]
+      - rowgroup [ref=e257]:
+        - row "Amazon Nova Pro $0.80 $3.20 300K 중~상 AWS Bedrock 전용, 멀티모달" [ref=e258]:
+          - cell "Amazon Nova Pro" [ref=e259]
+          - cell "$0.80" [ref=e260]
+          - cell "$3.20" [ref=e261]
+          - cell "300K" [ref=e262]
+          - cell "중~상" [ref=e263]
+          - cell "AWS Bedrock 전용, 멀티모달" [ref=e264]
+        - row "Amazon Nova Lite $0.06 $0.24 300K 중 초저가 멀티모달" [ref=e265]:
+          - cell "Amazon Nova Lite" [ref=e266]
+          - cell "$0.06" [ref=e267]
+          - cell "$0.24" [ref=e268]
+          - cell "300K" [ref=e269]
+          - cell "중" [ref=e270]
+          - cell "초저가 멀티모달" [ref=e271]
+        - row "Amazon Nova Micro $0.035 $0.14 128K 중 텍스트 전용 최저비용" [ref=e272]:
+          - cell "Amazon Nova Micro" [ref=e273]
+          - cell "$0.035" [ref=e274]
+          - cell "$0.14" [ref=e275]
+          - cell "128K" [ref=e276]
+          - cell "중" [ref=e277]
+          - cell "텍스트 전용 최저비용" [ref=e278]
+    - heading "1.4 한국어 성능 종합 순위" [level=3] [ref=e279]
+    - generic [ref=e280]:
+      - generic [ref=e281]:
+        - generic [ref=e282]: 🟢 상위권 (운영 추천)
+        - text: Claude Sonnet/Opus 4.6 > GPT-4.1 > Gemini 2.5 Pro/Flash
+      - generic [ref=e283]:
+        - generic [ref=e284]: 🟡 중위권 (보조 가능, 단순 분류·요약)
+        - text: Qwen3.x > Amazon Nova Pro > GPT-4.1 Mini > Gemini Flash-Lite
+      - generic [ref=e285]:
+        - generic [ref=e286]: 🔴 하위권 (단순 분류만 권장)
+        - text: DeepSeek V3/V4 > Grok-3 > Llama 4 Maverick > Mistral
+    - table [ref=e288]:
+      - rowgroup [ref=e289]:
+        - row "기준 순위" [ref=e290]:
+          - columnheader "기준" [ref=e291]
+          - columnheader "순위" [ref=e292]
+      - rowgroup [ref=e293]:
+        - row "한국어 뉘앙스 정확도 Claude 계열 > GPT-4.1 > Gemini (3강 외 격차 큼)" [ref=e294]:
+          - cell "한국어 뉘앙스 정확도" [ref=e295]
+          - cell "Claude 계열 > GPT-4.1 > Gemini (3강 외 격차 큼)" [ref=e296]
+        - row "구조화 출력 신뢰성 Claude = GPT-4.1 = Gemini Flash/Pro > 나머지" [ref=e297]:
+          - cell "구조화 출력 신뢰성" [ref=e298]
+          - cell "Claude = GPT-4.1 = Gemini Flash/Pro > 나머지" [ref=e299]
+        - row "비용 효율 (캐싱 포함) DeepSeek V4 > Gemini Flash-Lite > Haiku 4.5 > Flash" [ref=e300]:
+          - cell "비용 효율 (캐싱 포함)" [ref=e301]
+          - cell "DeepSeek V4 > Gemini Flash-Lite > Haiku 4.5 > Flash" [ref=e302]
+        - row "긴 컨텍스트(32K+) Claude 전체, Gemini 전체, GPT-4.1, Llama 4 Maverick" [ref=e303]:
+          - cell "긴 컨텍스트(32K+)" [ref=e304]
+          - cell "Claude 전체, Gemini 전체, GPT-4.1, Llama 4 Maverick" [ref=e305]
+  - generic [ref=e306]:
+    - heading "🧩 Part 2 — 분석 모듈별 추천 매트릭스" [level=2] [ref=e307]
+    - heading "2.1 모듈 그룹 분류" [level=3] [ref=e308]
+    - table [ref=e310]:
+      - rowgroup [ref=e311]:
+        - row "그룹 모듈 핵심 요구 특성" [ref=e312]:
+          - columnheader "그룹" [ref=e313]
+          - columnheader "모듈" [ref=e314]
+          - columnheader "핵심 요구 특성" [ref=e315]
+      - rowgroup [ref=e316]:
+        - row "A — 구조 분석 (Stage 1, 병렬) macro-view, segmentation, sentiment-framing, message-impact 넓은 컨텍스트, 한국어 이해력" [ref=e317]:
+          - cell "A — 구조 분석 (Stage 1, 병렬)" [ref=e318]:
+            - strong [ref=e319]: A — 구조 분석
+            - text: (Stage 1, 병렬)
+          - cell "macro-view, segmentation, sentiment-framing, message-impact" [ref=e320]:
+            - code [ref=e321]: macro-view
+            - text: ","
+            - code [ref=e322]: segmentation
+            - text: ","
+            - code [ref=e323]: sentiment-framing
+            - text: ","
+            - code [ref=e324]: message-impact
+          - cell "넓은 컨텍스트, 한국어 이해력" [ref=e325]
+        - row "B — 전략 심화 (Stage 2/3, 순차) risk-map, opportunity, strategy, final-summary 추론 능력, 이전 결과 통합, 긴 출력 품질" [ref=e326]:
+          - cell "B — 전략 심화 (Stage 2/3, 순차)" [ref=e327]:
+            - strong [ref=e328]: B — 전략 심화
+            - text: (Stage 2/3, 순차)
+          - cell "risk-map, opportunity, strategy, final-summary" [ref=e329]:
+            - code [ref=e330]: risk-map
+            - text: ","
+            - code [ref=e331]: opportunity
+            - text: ","
+            - code [ref=e332]: strategy
+            - text: ","
+            - code [ref=e333]: final-summary
+          - cell "추론 능력, 이전 결과 통합, 긴 출력 품질" [ref=e334]
+        - row "C — 고급 시뮬레이션 (Stage 4) approval-rating, frame-war, crisis-scenario, win-simulation + 도메인 모듈 전체 복잡한 시나리오 추론, 창의적 생성" [ref=e335]:
+          - cell "C — 고급 시뮬레이션 (Stage 4)" [ref=e336]:
+            - strong [ref=e337]: C — 고급 시뮬레이션
+            - text: (Stage 4)
+          - cell "approval-rating, frame-war, crisis-scenario, win-simulation + 도메인 모듈 전체" [ref=e338]:
+            - code [ref=e339]: approval-rating
+            - text: ","
+            - code [ref=e340]: frame-war
+            - text: ","
+            - code [ref=e341]: crisis-scenario
+            - text: ","
+            - code [ref=e342]: win-simulation
+            - text: + 도메인 모듈 전체
+          - cell "복잡한 시나리오 추론, 창의적 생성" [ref=e343]
+    - heading "2.2 그룹별 티어 추천" [level=3] [ref=e344]
+    - heading "그룹 A — 구조 분석 (Stage 1)" [level=4] [ref=e345]
+    - table [ref=e347]:
+      - rowgroup [ref=e348]:
+        - row "티어 추천 모델 예상 비용 선택 이유" [ref=e349]:
+          - columnheader "티어" [ref=e350]
+          - columnheader "추천 모델" [ref=e351]
+          - columnheader "예상 비용" [ref=e352]
+          - columnheader "선택 이유" [ref=e353]
+      - rowgroup [ref=e354]:
+        - row "최고 Gemini 2.5 Pro ~$1.25~2.50/MTok 1M 컨텍스트, 할루시네이션 0.7%, 한국어 상급" [ref=e355]:
+          - cell "최고" [ref=e356]
+          - cell "Gemini 2.5 Pro" [ref=e357]
+          - cell "~$1.25~2.50/MTok" [ref=e358]
+          - cell "1M 컨텍스트, 할루시네이션 0.7%, 한국어 상급" [ref=e359]
+        - row "보통 Gemini 2.5 Flash ~$0.30/MTok 속도·비용 균형, 1M 컨텍스트, 한국어 상급" [ref=e360]:
+          - cell "보통" [ref=e361]
+          - cell "Gemini 2.5 Flash" [ref=e362]
+          - cell "~$0.30/MTok" [ref=e363]
+          - cell "속도·비용 균형, 1M 컨텍스트, 한국어 상급" [ref=e364]
+        - row "최소 Gemini 2.5 Flash-Lite ~$0.10/MTok 초저가, 배치 모드 시 $0.05/MTok" [ref=e365]:
+          - cell "최소" [ref=e366]
+          - cell "Gemini 2.5 Flash-Lite" [ref=e367]
+          - cell "~$0.10/MTok" [ref=e368]
+          - cell "초저가, 배치 모드 시 $0.05/MTok" [ref=e369]
+        - row "대안 최고 Claude Sonnet 4.6 ~$3.00/MTok 한국어 최고 수준, JSON 신뢰성 최상" [ref=e370]:
+          - cell "대안 최고" [ref=e371]
+          - cell "Claude Sonnet 4.6" [ref=e372]
+          - cell "~$3.00/MTok" [ref=e373]
+          - cell "한국어 최고 수준, JSON 신뢰성 최상" [ref=e374]
+        - row "대안 최소 GPT-4.1 Nano ~$0.10/MTok 단순 분류용, 한국어 뉘앙스 제한" [ref=e375]:
+          - cell "대안 최소" [ref=e376]
+          - cell "GPT-4.1 Nano" [ref=e377]
+          - cell "~$0.10/MTok" [ref=e378]
+          - cell "단순 분류용, 한국어 뉘앙스 제한" [ref=e379]
+    - heading "그룹 B — 전략 심화 (Stage 2/3)" [level=4] [ref=e380]
+    - table [ref=e382]:
+      - rowgroup [ref=e383]:
+        - row "티어 추천 모델 예상 비용 선택 이유" [ref=e384]:
+          - columnheader "티어" [ref=e385]
+          - columnheader "추천 모델" [ref=e386]
+          - columnheader "예상 비용" [ref=e387]
+          - columnheader "선택 이유" [ref=e388]
+      - rowgroup [ref=e389]:
+        - row "최고 Claude Opus 4.6 ~$5.00/MTok 최고 지능, 복잡한 추론, 한국어 최상" [ref=e390]:
+          - cell "최고" [ref=e391]
+          - cell "Claude Opus 4.6" [ref=e392]
+          - cell "~$5.00/MTok" [ref=e393]
+          - cell "최고 지능, 복잡한 추론, 한국어 최상" [ref=e394]
+        - row "보통 Claude Sonnet 4.6 ~$3.00/MTok 품질·비용 균형 최적, 캐싱 효과 큼" [ref=e395]:
+          - cell "보통" [ref=e396]
+          - cell "Claude Sonnet 4.6" [ref=e397]
+          - cell "~$3.00/MTok" [ref=e398]
+          - cell "품질·비용 균형 최적, 캐싱 효과 큼" [ref=e399]
+        - row "최소 DeepSeek R1 ~$0.14/MTok (캐시) 추론 특화, 초저가 — 한국어 뉘앙스 한계 감안" [ref=e400]:
+          - cell "최소" [ref=e401]
+          - cell "DeepSeek R1" [ref=e402]
+          - cell "~$0.14/MTok (캐시)" [ref=e403]
+          - cell "추론 특화, 초저가 — 한국어 뉘앙스 한계 감안" [ref=e404]
+        - row "대안 최고 GPT-4.1 ~$2.00/MTok 한국어 상급, 1M 컨텍스트" [ref=e405]:
+          - cell "대안 최고" [ref=e406]
+          - cell "GPT-4.1" [ref=e407]
+          - cell "~$2.00/MTok" [ref=e408]
+          - cell "한국어 상급, 1M 컨텍스트" [ref=e409]
+        - row "대안 보통 o4-mini ~$1.10/MTok 추론 특화, o3 대비 절반 가격" [ref=e410]:
+          - cell "대안 보통" [ref=e411]
+          - cell "o4-mini" [ref=e412]
+          - cell "~$1.10/MTok" [ref=e413]
+          - cell "추론 특화, o3 대비 절반 가격" [ref=e414]
+    - heading "그룹 C — 고급 시뮬레이션 (Stage 4)" [level=4] [ref=e415]
+    - table [ref=e417]:
+      - rowgroup [ref=e418]:
+        - row "티어 추천 모델 예상 비용 선택 이유" [ref=e419]:
+          - columnheader "티어" [ref=e420]
+          - columnheader "추천 모델" [ref=e421]
+          - columnheader "예상 비용" [ref=e422]
+          - columnheader "선택 이유" [ref=e423]
+      - rowgroup [ref=e424]:
+        - row "최고 Claude Opus 4.6 ~$5.00/MTok 복잡한 시나리오 최적, 한국어 최상" [ref=e425]:
+          - cell "최고" [ref=e426]
+          - cell "Claude Opus 4.6" [ref=e427]
+          - cell "~$5.00/MTok" [ref=e428]
+          - cell "복잡한 시나리오 최적, 한국어 최상" [ref=e429]
+        - row "보통 Claude Sonnet 4.6 ~$3.00/MTok 시뮬레이션 품질 충분, 비용 합리적" [ref=e430]:
+          - cell "보통" [ref=e431]
+          - cell "Claude Sonnet 4.6" [ref=e432]
+          - cell "~$3.00/MTok" [ref=e433]
+          - cell "시뮬레이션 품질 충분, 비용 합리적" [ref=e434]
+        - row "최소 Claude Haiku 4.5 ~$1.00/MTok 200K 컨텍스트, 한국어 상급, 고속 처리" [ref=e435]:
+          - cell "최소" [ref=e436]
+          - cell "Claude Haiku 4.5" [ref=e437]
+          - cell "~$1.00/MTok" [ref=e438]
+          - cell "200K 컨텍스트, 한국어 상급, 고속 처리" [ref=e439]
+        - row "대안 최고 o4-mini ~$1.10/MTok 추론 특화 시뮬레이션, 상대적 저비용" [ref=e440]:
+          - cell "대안 최고" [ref=e441]
+          - cell "o4-mini" [ref=e442]
+          - cell "~$1.10/MTok" [ref=e443]
+          - cell "추론 특화 시뮬레이션, 상대적 저비용" [ref=e444]
+    - heading "2.3 전체 모듈 추천 매트릭스" [level=3] [ref=e445]
+    - heading "Stage 1 — 구조 분석 모듈" [level=4] [ref=e446]
+    - table [ref=e448]:
+      - rowgroup [ref=e449]:
+        - row "모듈 최고 보통 최소" [ref=e450]:
+          - columnheader "모듈" [ref=e451]
+          - columnheader "최고" [ref=e452]
+          - columnheader "보통" [ref=e453]
+          - columnheader "최소" [ref=e454]
+      - rowgroup [ref=e455]:
+        - row "macro-view Gemini 2.5 Pro Gemini 2.5 Flash Gemini 2.5 Flash-Lite" [ref=e456]:
+          - cell "macro-view" [ref=e457]:
+            - code [ref=e458]: macro-view
+          - cell "Gemini 2.5 Pro" [ref=e459]
+          - cell "Gemini 2.5 Flash" [ref=e460]
+          - cell "Gemini 2.5 Flash-Lite" [ref=e461]
+        - row "segmentation Gemini 2.5 Pro Gemini 2.5 Flash GPT-4.1 Nano" [ref=e462]:
+          - cell "segmentation" [ref=e463]:
+            - code [ref=e464]: segmentation
+          - cell "Gemini 2.5 Pro" [ref=e465]
+          - cell "Gemini 2.5 Flash" [ref=e466]
+          - cell "GPT-4.1 Nano" [ref=e467]
+        - row "sentiment-framing Claude Sonnet 4.6 Gemini 2.5 Flash Gemini 2.5 Flash-Lite" [ref=e468]:
+          - cell "sentiment-framing" [ref=e469]:
+            - code [ref=e470]: sentiment-framing
+          - cell "Claude Sonnet 4.6" [ref=e471]
+          - cell "Gemini 2.5 Flash" [ref=e472]
+          - cell "Gemini 2.5 Flash-Lite" [ref=e473]
+        - row "message-impact Claude Sonnet 4.6 GPT-4.1 Mini Gemini 2.5 Flash-Lite" [ref=e474]:
+          - cell "message-impact" [ref=e475]:
+            - code [ref=e476]: message-impact
+          - cell "Claude Sonnet 4.6" [ref=e477]
+          - cell "GPT-4.1 Mini" [ref=e478]
+          - cell "Gemini 2.5 Flash-Lite" [ref=e479]
+    - heading "Stage 2/3 — 전략 심화 및 최종 요약 모듈" [level=4] [ref=e480]
+    - generic [ref=e481]:
+      - code [ref=e482]: final-summary
+      - text: 는 파이프라인에서 Stage 3으로 단독 실행.
+      - code [ref=e483]: context-distillation
+      - text: 은 LLM 호출 없는 유틸리티로 제외.
+    - table [ref=e485]:
+      - rowgroup [ref=e486]:
+        - row "모듈 최고 보통 최소" [ref=e487]:
+          - columnheader "모듈" [ref=e488]
+          - columnheader "최고" [ref=e489]
+          - columnheader "보통" [ref=e490]
+          - columnheader "최소" [ref=e491]
+      - rowgroup [ref=e492]:
+        - row "risk-map Claude Opus 4.6 Claude Sonnet 4.6 DeepSeek R1" [ref=e493]:
+          - cell "risk-map" [ref=e494]:
+            - code [ref=e495]: risk-map
+          - cell "Claude Opus 4.6" [ref=e496]
+          - cell "Claude Sonnet 4.6" [ref=e497]
+          - cell "DeepSeek R1" [ref=e498]
+        - row "opportunity Claude Opus 4.6 Claude Sonnet 4.6 DeepSeek R1" [ref=e499]:
+          - cell "opportunity" [ref=e500]:
+            - code [ref=e501]: opportunity
+          - cell "Claude Opus 4.6" [ref=e502]
+          - cell "Claude Sonnet 4.6" [ref=e503]
+          - cell "DeepSeek R1" [ref=e504]
+        - row "strategy Claude Opus 4.6 Claude Sonnet 4.6 DeepSeek R1" [ref=e505]:
+          - cell "strategy" [ref=e506]:
+            - code [ref=e507]: strategy
+          - cell "Claude Opus 4.6" [ref=e508]
+          - cell "Claude Sonnet 4.6" [ref=e509]
+          - cell "DeepSeek R1" [ref=e510]
+        - row "final-summary Claude Opus 4.6 Claude Sonnet 4.6 Claude Haiku 4.5" [ref=e511]:
+          - cell "final-summary" [ref=e512]:
+            - code [ref=e513]: final-summary
+          - cell "Claude Opus 4.6" [ref=e514]
+          - cell "Claude Sonnet 4.6" [ref=e515]
+          - cell "Claude Haiku 4.5" [ref=e516]
+    - heading "Stage 4 — 고급 시뮬레이션 (공통)" [level=4] [ref=e517]
+    - table [ref=e519]:
+      - rowgroup [ref=e520]:
+        - row "모듈 최고 보통 최소" [ref=e521]:
+          - columnheader "모듈" [ref=e522]
+          - columnheader "최고" [ref=e523]
+          - columnheader "보통" [ref=e524]
+          - columnheader "최소" [ref=e525]
+      - rowgroup [ref=e526]:
+        - row "approval-rating Claude Opus 4.6 Claude Sonnet 4.6 Claude Haiku 4.5" [ref=e527]:
+          - cell "approval-rating" [ref=e528]:
+            - code [ref=e529]: approval-rating
+          - cell "Claude Opus 4.6" [ref=e530]
+          - cell "Claude Sonnet 4.6" [ref=e531]
+          - cell "Claude Haiku 4.5" [ref=e532]
+        - row "frame-war Claude Opus 4.6 Claude Sonnet 4.6 Claude Haiku 4.5" [ref=e533]:
+          - cell "frame-war" [ref=e534]:
+            - code [ref=e535]: frame-war
+          - cell "Claude Opus 4.6" [ref=e536]
+          - cell "Claude Sonnet 4.6" [ref=e537]
+          - cell "Claude Haiku 4.5" [ref=e538]
+        - row "crisis-scenario Claude Opus 4.6 o4-mini Claude Haiku 4.5" [ref=e539]:
+          - cell "crisis-scenario" [ref=e540]:
+            - code [ref=e541]: crisis-scenario
+          - cell "Claude Opus 4.6" [ref=e542]
+          - cell "o4-mini" [ref=e543]
+          - cell "Claude Haiku 4.5" [ref=e544]
+        - row "win-simulation Claude Opus 4.6 o4-mini Claude Haiku 4.5" [ref=e545]:
+          - cell "win-simulation" [ref=e546]:
+            - code [ref=e547]: win-simulation
+          - cell "Claude Opus 4.6" [ref=e548]
+          - cell "o4-mini" [ref=e549]
+          - cell "Claude Haiku 4.5" [ref=e550]
+    - heading "Stage 4 — 팬덤 도메인 모듈" [level=4] [ref=e551]
+    - table [ref=e553]:
+      - rowgroup [ref=e554]:
+        - row "모듈 최고 보통 최소" [ref=e555]:
+          - columnheader "모듈" [ref=e556]
+          - columnheader "최고" [ref=e557]
+          - columnheader "보통" [ref=e558]
+          - columnheader "최소" [ref=e559]
+      - rowgroup [ref=e560]:
+        - row "fan-loyalty-index Claude Sonnet 4.6 Gemini 2.5 Flash Claude Haiku 4.5" [ref=e561]:
+          - cell "fan-loyalty-index" [ref=e562]:
+            - code [ref=e563]: fan-loyalty-index
+          - cell "Claude Sonnet 4.6" [ref=e564]
+          - cell "Gemini 2.5 Flash" [ref=e565]
+          - cell "Claude Haiku 4.5" [ref=e566]
+        - row "fandom-narrative-war Claude Sonnet 4.6 Gemini 2.5 Flash Claude Haiku 4.5" [ref=e567]:
+          - cell "fandom-narrative-war" [ref=e568]:
+            - code [ref=e569]: fandom-narrative-war
+          - cell "Claude Sonnet 4.6" [ref=e570]
+          - cell "Gemini 2.5 Flash" [ref=e571]
+          - cell "Claude Haiku 4.5" [ref=e572]
+        - row "fandom-crisis-scenario Claude Opus 4.6 Claude Sonnet 4.6 Claude Haiku 4.5" [ref=e573]:
+          - cell "fandom-crisis-scenario" [ref=e574]:
+            - code [ref=e575]: fandom-crisis-scenario
+          - cell "Claude Opus 4.6" [ref=e576]
+          - cell "Claude Sonnet 4.6" [ref=e577]
+          - cell "Claude Haiku 4.5" [ref=e578]
+        - row "release-reception-prediction Claude Opus 4.6 Claude Sonnet 4.6 Claude Haiku 4.5" [ref=e579]:
+          - cell "release-reception-prediction" [ref=e580]:
+            - code [ref=e581]: release-reception-prediction
+          - cell "Claude Opus 4.6" [ref=e582]
+          - cell "Claude Sonnet 4.6" [ref=e583]
+          - cell "Claude Haiku 4.5" [ref=e584]
+    - heading "Stage 4 — 기타 도메인 (corporate, healthcare, sports, finance, education, pr)" [level=4] [ref=e585]
+    - generic [ref=e586]: 그룹 C 기준 동일 적용. 도메인 모듈은 모듈 특성에 따라 개별 검토 가능.
+    - table [ref=e588]:
+      - rowgroup [ref=e589]:
+        - row "티어 모델" [ref=e590]:
+          - columnheader "티어" [ref=e591]
+          - columnheader "모델" [ref=e592]
+      - rowgroup [ref=e593]:
+        - row "최고 Claude Opus 4.6" [ref=e594]:
+          - cell "최고" [ref=e595]
+          - cell "Claude Opus 4.6" [ref=e596]
+        - row "보통 Claude Sonnet 4.6" [ref=e597]:
+          - cell "보통" [ref=e598]
+          - cell "Claude Sonnet 4.6" [ref=e599]
+        - row "최소 Claude Haiku 4.5" [ref=e600]:
+          - cell "최소" [ref=e601]
+          - cell "Claude Haiku 4.5" [ref=e602]
+  - generic [ref=e603]:
+    - heading "⚙️ Part 3 — 시나리오 프리셋 업그레이드 제안" [level=2] [ref=e604]
+    - generic [ref=e605]:
+      - text: 현재
+      - code [ref=e606]: packages/core/src/analysis/model-config.ts
+      - text: 의
+      - code [ref=e607]: MODEL_SCENARIO_PRESETS
+      - text: 기준.
+    - heading "3.1 현재 시나리오 평가" [level=3] [ref=e608]
+    - table [ref=e610]:
+      - rowgroup [ref=e611]:
+        - row "시나리오 현재 구성 요약 평가 우선순위" [ref=e612]:
+          - columnheader "시나리오" [ref=e613]
+          - columnheader "현재 구성 요약" [ref=e614]
+          - columnheader "평가" [ref=e615]
+          - columnheader "우선순위" [ref=e616]
+      - rowgroup [ref=e617]:
+        - 'row "A: 최고 품질 Stage1=Gemini 2.5 Pro, 전략=Opus 4.6 ✅ 유효 — 거의 최적 낮음" [ref=e618]':
+          - 'cell "A: 최고 품질" [ref=e619]':
+            - strong [ref=e620]: "A: 최고 품질"
+          - cell "Stage1=Gemini 2.5 Pro, 전략=Opus 4.6" [ref=e621]
+          - cell "✅ 유효 — 거의 최적" [ref=e622]
+          - cell "낮음" [ref=e623]
+        - 'row "B: 가성비 최적 Stage1=Flash+Flash-Lite, 심화=Haiku, 핵심=Sonnet 4.6 ✅ 유효 — Flash-Lite 이미 적용됨 중간" [ref=e624]':
+          - 'cell "B: 가성비 최적" [ref=e625]':
+            - strong [ref=e626]: "B: 가성비 최적"
+          - cell "Stage1=Flash+Flash-Lite, 심화=Haiku, 핵심=Sonnet 4.6" [ref=e627]
+          - cell "✅ 유효 — Flash-Lite 이미 적용됨" [ref=e628]
+          - cell "중간" [ref=e629]
+        - 'row "C: 초저가 Stage1=GPT-4.1 Nano, Stage2=Flash ✅ 유효 — DeepSeek V4 전환으로 추가 절감 가능 중간" [ref=e630]':
+          - 'cell "C: 초저가" [ref=e631]':
+            - strong [ref=e632]: "C: 초저가"
+          - cell "Stage1=GPT-4.1 Nano, Stage2=Flash" [ref=e633]
+          - cell "✅ 유효 — DeepSeek V4 전환으로 추가 절감 가능" [ref=e634]
+          - cell "중간" [ref=e635]
+        - 'row "D: Gemini CLI 무료 Gemini CLI OAuth 전체 ✅ 유효 — 쿼터 주의 낮음" [ref=e636]':
+          - 'cell "D: Gemini CLI 무료" [ref=e637]':
+            - strong [ref=e638]: "D: Gemini CLI 무료"
+          - cell "Gemini CLI OAuth 전체" [ref=e639]
+          - cell "✅ 유효 — 쿼터 주의" [ref=e640]
+          - cell "낮음" [ref=e641]
+        - 'row "E: 완전 무료 Gemini CLI 전체 ✅ 유효 낮음" [ref=e642]':
+          - 'cell "E: 완전 무료" [ref=e643]':
+            - strong [ref=e644]: "E: 완전 무료"
+          - cell "Gemini CLI 전체" [ref=e645]
+          - cell "✅ 유효" [ref=e646]
+          - cell "낮음" [ref=e647]
+        - 'row "F: Claude+Gemini CLI CLI 혼합 ✅ 유효 낮음" [ref=e648]':
+          - 'cell "F: Claude+Gemini CLI" [ref=e649]':
+            - strong [ref=e650]: "F: Claude+Gemini CLI"
+          - cell "CLI 혼합" [ref=e651]
+          - cell "✅ 유효" [ref=e652]
+          - cell "낮음" [ref=e653]
+        - 'row "G: DeepSeek 혼합 Stage1=DeepSeek Chat, 추론=DeepSeek Reasoner, 핵심=Sonnet 4.6 ⚠️ 개선 필요 — DeepSeek V4 전환으로 캐시 히트 시 최대 57% 절감 높음" [ref=e654]':
+          - 'cell "G: DeepSeek 혼합" [ref=e655]':
+            - strong [ref=e656]: "G: DeepSeek 혼합"
+          - cell "Stage1=DeepSeek Chat, 추론=DeepSeek Reasoner, 핵심=Sonnet 4.6" [ref=e657]
+          - cell "⚠️ 개선 필요 — DeepSeek V4 전환으로 캐시 히트 시 최대 57% 절감" [ref=e658]
+          - cell "높음" [ref=e659]
+    - heading "3.2 시나리오 G 즉시 업그레이드 (DeepSeek V4 전환)" [level=3] [ref=e660]
+    - paragraph [ref=e661]:
+      - text: 현재 G 시나리오의
+      - code [ref=e662]: deepseek-chat
+      - text: (V3)을
+      - code [ref=e663]: deepseek-v4
+      - text: "로 교체 시:"
+    - list [ref=e664]:
+      - listitem [ref=e665]:
+        - text: "캐시 히트: $0.07/MTok → $0.03/MTok"
+        - strong [ref=e666]: (57% 절감)
+      - listitem [ref=e667]: "캐시 미스: $0.27/MTok → $0.30/MTok (소폭 증가)"
+    - code [ref=e669]: "// packages/core/src/analysis/model-config.ts — 시나리오 G // 변경 전 'macro-view': { provider: 'deepseek', model: 'deepseek-chat' }, 'segmentation': { provider: 'deepseek', model: 'deepseek-chat' }, 'sentiment-framing': { provider: 'deepseek', model: 'deepseek-chat' }, 'message-impact': { provider: 'deepseek', model: 'deepseek-chat' }, // 변경 후 'macro-view': { provider: 'deepseek', model: 'deepseek-v4' }, 'segmentation': { provider: 'deepseek', model: 'deepseek-v4' }, 'sentiment-framing': { provider: 'deepseek', model: 'deepseek-v4' }, 'message-impact': { provider: 'deepseek', model: 'deepseek-v4' },"
+    - generic [ref=e670]:
+      - strong [ref=e671]: 주의
+      - text: ": DeepSeek API에서 실제 모델 ID("
+      - code [ref=e672]: deepseek-v4
+      - text: 또는 다른 이름)를 확인 후 적용할 것.
+    - heading "3.3 신규 시나리오 제안" [level=3] [ref=e673]
+    - 'heading "시나리오 H: 2026 추론 특화 (신규 권장) — ~$0.45/실행" [level=4] [ref=e674]'
+    - table [ref=e676]:
+      - rowgroup [ref=e677]:
+        - row "모듈 프로바이더 모델 선택 이유" [ref=e678]:
+          - columnheader "모듈" [ref=e679]
+          - columnheader "프로바이더" [ref=e680]
+          - columnheader "모델" [ref=e681]
+          - columnheader "선택 이유" [ref=e682]
+      - rowgroup [ref=e683]:
+        - row "macro-view gemini gemini-2.5-flash 빠른 구조 파악" [ref=e684]:
+          - cell "macro-view" [ref=e685]:
+            - code [ref=e686]: macro-view
+          - cell "gemini" [ref=e687]
+          - cell "gemini-2.5-flash" [ref=e688]
+          - cell "빠른 구조 파악" [ref=e689]
+        - row "segmentation gemini gemini-2.5-flash 빠른 분류" [ref=e690]:
+          - cell "segmentation" [ref=e691]:
+            - code [ref=e692]: segmentation
+          - cell "gemini" [ref=e693]
+          - cell "gemini-2.5-flash" [ref=e694]
+          - cell "빠른 분류" [ref=e695]
+        - row "sentiment-framing anthropic claude-sonnet-4-6 한국어 감정 분석" [ref=e696]:
+          - cell "sentiment-framing" [ref=e697]:
+            - code [ref=e698]: sentiment-framing
+          - cell "anthropic" [ref=e699]
+          - cell "claude-sonnet-4-6" [ref=e700]
+          - cell "한국어 감정 분석" [ref=e701]
+        - row "message-impact anthropic claude-sonnet-4-6 메시지 영향 분석" [ref=e702]:
+          - cell "message-impact" [ref=e703]:
+            - code [ref=e704]: message-impact
+          - cell "anthropic" [ref=e705]
+          - cell "claude-sonnet-4-6" [ref=e706]
+          - cell "메시지 영향 분석" [ref=e707]
+        - row "risk-map anthropic claude-sonnet-4-6 리스크 맵핑" [ref=e708]:
+          - cell "risk-map" [ref=e709]:
+            - code [ref=e710]: risk-map
+          - cell "anthropic" [ref=e711]
+          - cell "claude-sonnet-4-6" [ref=e712]
+          - cell "리스크 맵핑" [ref=e713]
+        - row "opportunity anthropic claude-sonnet-4-6 기회 분석" [ref=e714]:
+          - cell "opportunity" [ref=e715]:
+            - code [ref=e716]: opportunity
+          - cell "anthropic" [ref=e717]
+          - cell "claude-sonnet-4-6" [ref=e718]
+          - cell "기회 분석" [ref=e719]
+        - row "strategy anthropic claude-sonnet-4-6 전략 수립" [ref=e720]:
+          - cell "strategy" [ref=e721]:
+            - code [ref=e722]: strategy
+          - cell "anthropic" [ref=e723]
+          - cell "claude-sonnet-4-6" [ref=e724]
+          - cell "전략 수립" [ref=e725]
+        - row "final-summary anthropic claude-sonnet-4-6 최종 요약" [ref=e726]:
+          - cell "final-summary" [ref=e727]:
+            - code [ref=e728]: final-summary
+          - cell "anthropic" [ref=e729]
+          - cell "claude-sonnet-4-6" [ref=e730]
+          - cell "최종 요약" [ref=e731]
+        - row "approval-rating openai o4-mini 추론 기반 지지율 분석" [ref=e732]:
+          - cell "approval-rating" [ref=e733]:
+            - code [ref=e734]: approval-rating
+          - cell "openai" [ref=e735]
+          - cell "o4-mini" [ref=e736]
+          - cell "추론 기반 지지율 분석" [ref=e737]
+        - row "frame-war openai o4-mini 추론 기반 프레임 분석" [ref=e738]:
+          - cell "frame-war" [ref=e739]:
+            - code [ref=e740]: frame-war
+          - cell "openai" [ref=e741]
+          - cell "o4-mini" [ref=e742]
+          - cell "추론 기반 프레임 분석" [ref=e743]
+        - row "crisis-scenario openai o4-mini 추론 기반 위기 시나리오" [ref=e744]:
+          - cell "crisis-scenario" [ref=e745]:
+            - code [ref=e746]: crisis-scenario
+          - cell "openai" [ref=e747]
+          - cell "o4-mini" [ref=e748]
+          - cell "추론 기반 위기 시나리오" [ref=e749]
+        - row "win-simulation openai o4-mini 추론 기반 승리 시뮬레이션" [ref=e750]:
+          - cell "win-simulation" [ref=e751]:
+            - code [ref=e752]: win-simulation
+          - cell "openai" [ref=e753]
+          - cell "o4-mini" [ref=e754]
+          - cell "추론 기반 승리 시뮬레이션" [ref=e755]
+    - 'heading "시나리오 I: OpenRouter 초저가 (미래 확장) — ~$0.08/실행" [level=4] [ref=e756]'
+    - generic [ref=e757]:
+      - code [ref=e758]: packages/ai-gateway
+      - text: 에 OpenRouter 프로바이더 추가 필요.
+    - table [ref=e760]:
+      - rowgroup [ref=e761]:
+        - row "모듈 그룹 프로바이더 모델" [ref=e762]:
+          - columnheader "모듈 그룹" [ref=e763]
+          - columnheader "프로바이더" [ref=e764]
+          - columnheader "모델" [ref=e765]
+      - rowgroup [ref=e766]:
+        - row "Stage 1 전체 openrouter meta-llama/llama-4-maverick" [ref=e767]:
+          - cell "Stage 1 전체" [ref=e768]
+          - cell "openrouter" [ref=e769]
+          - cell "meta-llama/llama-4-maverick" [ref=e770]
+        - row "Stage 2 전체 openrouter qwen/qwen3.6-plus" [ref=e771]:
+          - cell "Stage 2 전체" [ref=e772]
+          - cell "openrouter" [ref=e773]
+          - cell "qwen/qwen3.6-plus" [ref=e774]
+        - row "Stage 4 전체 gemini gemini-2.5-flash" [ref=e775]:
+          - cell "Stage 4 전체" [ref=e776]
+          - cell "gemini" [ref=e777]
+          - cell "gemini-2.5-flash" [ref=e778]
+  - generic [ref=e779]:
+    - heading "🔗 참고 자료" [level=2] [ref=e780]
+    - list [ref=e781]:
+      - listitem [ref=e782]:
+        - link "Claude Models Overview" [ref=e783] [cursor=pointer]:
+          - /url: https://platform.claude.com/docs/en/about-claude/models/overview
+      - listitem [ref=e784]:
+        - link "Gemini API Pricing" [ref=e785] [cursor=pointer]:
+          - /url: https://ai.google.dev/gemini-api/docs/pricing
+      - listitem [ref=e786]:
+        - link "OpenAI API Pricing" [ref=e787] [cursor=pointer]:
+          - /url: https://openai.com/api/pricing
+      - listitem [ref=e788]:
+        - link "DeepSeek API Pricing" [ref=e789] [cursor=pointer]:
+          - /url: https://api-docs.deepseek.com/quick_start/pricing
+      - listitem [ref=e790]:
+        - link "xAI Grok API" [ref=e791] [cursor=pointer]:
+          - /url: https://api.x.ai
+      - listitem [ref=e792]:
+        - link "OpenRouter — Model Listings" [ref=e793] [cursor=pointer]:
+          - /url: https://openrouter.ai/models
+      - listitem [ref=e794]:
+        - link "Amazon Nova Pricing" [ref=e795] [cursor=pointer]:
+          - /url: https://aws.amazon.com/nova/pricing/

@@ -1,0 +1,35 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - navigation [ref=e3]:
+      - generic [ref=e4]:
+        - link "SignalCraft" [ref=e5] [cursor=pointer]:
+          - /url: /
+        - generic [ref=e6]: 공개 분석 리포트
+        - generic [ref=e7]:
+          - link "홈" [ref=e8] [cursor=pointer]:
+            - /url: /
+            - button "홈" [ref=e9]
+          - link "리포트" [ref=e10] [cursor=pointer]:
+            - /url: /reports
+            - button "리포트" [ref=e11]
+          - link "체험하기" [ref=e12] [cursor=pointer]:
+            - /url: /demo
+            - button "체험하기" [ref=e13]
+          - link "로그인" [ref=e14] [cursor=pointer]:
+            - /url: /login
+            - button "로그인" [ref=e15]
+    - main [ref=e23]:
+      - generic [ref=e25]:
+        - heading "AI 분석 리포트" [level=1] [ref=e26]
+        - paragraph [ref=e27]: 실제 수행된 여론 분석 결과를 공개합니다
+    - generic [ref=e34]:
+      - paragraph [ref=e35]: AI SignalCraft로 직접 여론을 분석해 보세요
+      - link "무료 체험 시작" [ref=e36] [cursor=pointer]:
+        - /url: /demo
+        - button "무료 체험 시작" [ref=e37]:
+          - text: 무료 체험 시작
+          - img
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e43] [cursor=pointer]:
+    - img [ref=e44]
+  - alert [ref=e47]

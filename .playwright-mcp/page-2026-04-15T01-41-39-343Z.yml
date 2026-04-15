@@ -1,0 +1,47 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e4]:
+      - generic [ref=e5]:
+        - img [ref=e6]
+        - generic [ref=e8]: SignalCraft
+      - generic [ref=e9]:
+        - link "돌아가기" [ref=e10] [cursor=pointer]:
+          - /url: /#showcase
+          - button "돌아가기" [ref=e11]:
+            - img
+            - text: 돌아가기
+        - generic [ref=e12]:
+          - paragraph [ref=e13]: 분석 키워드
+          - paragraph [ref=e14]: 로딩 중…
+      - navigation [ref=e15]:
+        - paragraph [ref=e16]: 분석 결과
+        - button "분석 실행" [ref=e17]:
+          - img [ref=e18]
+          - generic [ref=e20]: 분석 실행
+        - button "결과 대시보드" [ref=e21]:
+          - img [ref=e22]
+          - generic [ref=e27]: 결과 대시보드
+        - button "수집 데이터" [ref=e28]:
+          - img [ref=e29]
+          - generic [ref=e33]: 수집 데이터
+        - button "AI 리포트" [ref=e34]:
+          - img [ref=e35]
+          - generic [ref=e38]: AI 리포트
+        - button "히스토리" [ref=e39]:
+          - img [ref=e40]
+          - generic [ref=e44]: 히스토리
+        - button "고급 분석" [ref=e45]:
+          - img [ref=e46]
+          - generic [ref=e54]: 고급 분석
+      - generic [ref=e55]:
+        - paragraph [ref=e56]: AI SignalCraft로 직접 분석해 보세요
+        - link "무료 체험 시작" [ref=e57] [cursor=pointer]:
+          - /url: /demo
+          - button "무료 체험 시작" [ref=e58]:
+            - text: 무료 체험 시작
+            - img
+    - main [ref=e60]
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e66] [cursor=pointer]:
+    - img [ref=e67]
+  - alert [ref=e70]

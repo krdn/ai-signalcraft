@@ -1,0 +1,131 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e1872]:
+    - navigation [ref=e1873]:
+      - generic [ref=e1874]:
+        - link "SignalCraft" [ref=e1875] [cursor=pointer]:
+          - /url: /
+        - generic [ref=e1876]: 공개 분석 리포트
+        - generic [ref=e1877]:
+          - link "홈" [ref=e1878] [cursor=pointer]:
+            - /url: /
+            - button "홈" [ref=e1879]
+          - link "리포트" [ref=e1880] [cursor=pointer]:
+            - /url: /reports
+            - button "리포트" [ref=e1881]
+          - link "체험하기" [ref=e1882] [cursor=pointer]:
+            - /url: /demo
+            - button "체험하기" [ref=e1883]
+          - link "로그인" [ref=e1884] [cursor=pointer]:
+            - /url: /login
+            - button "로그인" [ref=e1885]
+    - generic [ref=e1886]:
+      - complementary [ref=e1888]:
+        - generic [ref=e1889]:
+          - paragraph [ref=e1890]: 도메인 필터
+          - generic [ref=e1891]:
+            - button "전체 4" [pressed] [ref=e1892]:
+              - generic [ref=e1893]: 전체
+              - generic [ref=e1894]: "4"
+            - button "팬덤 1" [ref=e1895]:
+              - generic [ref=e1896]: 팬덤
+              - generic [ref=e1897]: "1"
+            - button "정책 1" [ref=e1898]:
+              - generic [ref=e1899]: 정책
+              - generic [ref=e1900]: "1"
+            - button "정치 2" [ref=e1901]:
+              - generic [ref=e1902]: 정치
+              - generic [ref=e1903]: "2"
+          - generic [ref=e1904]:
+            - generic [ref=e1905]:
+              - paragraph [ref=e1906]: 총 수집 데이터
+              - paragraph [ref=e1907]: 1,460건
+              - paragraph [ref=e1908]: 수집 기사 건수
+            - generic [ref=e1909]:
+              - paragraph [ref=e1910]: 48개 모듈
+              - paragraph [ref=e1911]: AI 분석 완료
+      - main [ref=e1912]:
+        - generic [ref=e1913]:
+          - generic [ref=e1914]:
+            - heading "AI 분석 리포트" [level=1] [ref=e1915]
+            - paragraph [ref=e1916]: 실제 수행된 여론 분석 결과를 공개합니다
+          - generic [ref=e1917]: 4건
+        - generic [ref=e1918]:
+          - 'link "팬덤 분석: [부친상 과잉 보도에 대한 여론 불만 속] -- [인간적 진정성으로 부정적 프레임 돌파]" [ref=e1919] [cursor=pointer]':
+            - /url: /showcase/145
+            - generic [ref=e1920]:
+              - generic [ref=e1922]: 팬덤
+              - paragraph [ref=e1923]: "[부친상 과잉 보도에 대한 여론 불만 속] -- [인간적 진정성으로 부정적 프레임 돌파]"
+              - generic [ref=e1924]:
+                - generic [ref=e1925]:
+                  - img [ref=e1926]
+                  - text: 500건
+                - generic [ref=e1929]:
+                  - img [ref=e1930]
+                  - text: 2437댓글
+                - generic [ref=e1932]:
+                  - img [ref=e1933]
+                  - text: 12개 모듈
+                - generic [ref=e1935]: 04.08~04.15
+            - img [ref=e1936]
+          - 'link "정책 분석: 노란봉투법 시행 초기 ''대혼란론'' 지배 속 부정적 여론 확산 -- 실용적 가이드라인 제시와 성공 사례 홍보로 ''법 연착륙'' 입증이 관건" [ref=e1938] [cursor=pointer]':
+            - /url: /showcase/139
+            - generic [ref=e1939]:
+              - generic [ref=e1941]: 정책
+              - paragraph [ref=e1942]: 노란봉투법 시행 초기 '대혼란론' 지배 속 부정적 여론 확산 -- 실용적 가이드라인 제시와 성공 사례 홍보로 '법 연착륙' 입증이 관건
+              - generic [ref=e1943]:
+                - generic [ref=e1944]:
+                  - img [ref=e1945]
+                  - text: 320건
+                - generic [ref=e1948]:
+                  - img [ref=e1949]
+                  - text: 1025댓글
+                - generic [ref=e1951]:
+                  - img [ref=e1952]
+                  - text: 12개 모듈
+                - generic [ref=e1954]: 04.07~04.14
+            - img [ref=e1955]
+          - 'link "정치 분석: 외교 발언으로 인한 여론 양극화와 ''외교 참사론'' 확산 -- 스윙보터 신뢰 회복 위한 안정적 리더십과 미래 비전 제시가 돌파구" [ref=e1957] [cursor=pointer]':
+            - /url: /showcase/143
+            - generic [ref=e1958]:
+              - generic [ref=e1960]: 정치
+              - paragraph [ref=e1961]: 외교 발언으로 인한 여론 양극화와 '외교 참사론' 확산 -- 스윙보터 신뢰 회복 위한 안정적 리더십과 미래 비전 제시가 돌파구
+              - generic [ref=e1962]:
+                - generic [ref=e1963]:
+                  - img [ref=e1964]
+                  - text: 320건
+                - generic [ref=e1967]:
+                  - img [ref=e1968]
+                  - text: 1469댓글
+                - generic [ref=e1970]:
+                  - img [ref=e1971]
+                  - text: 12개 모듈
+                - generic [ref=e1973]: 04.07~04.14
+            - img [ref=e1974]
+          - 'link "정치 분석: JTBC 여조 열세로 ''선거 위기론'' 확산 -- ''대정부 견제'' 및 성과 기반 ''정치 공세'' 프레이밍 강화로 돌파하라" [ref=e1976] [cursor=pointer]':
+            - /url: /showcase/144
+            - generic [ref=e1977]:
+              - generic [ref=e1979]: 정치
+              - paragraph [ref=e1980]: JTBC 여조 열세로 '선거 위기론' 확산 -- '대정부 견제' 및 성과 기반 '정치 공세' 프레이밍 강화로 돌파하라
+              - generic [ref=e1981]:
+                - generic [ref=e1982]:
+                  - img [ref=e1983]
+                  - text: 320건
+                - generic [ref=e1986]:
+                  - img [ref=e1987]
+                  - text: 2993댓글
+                - generic [ref=e1989]:
+                  - img [ref=e1990]
+                  - text: 12개 모듈
+                - generic [ref=e1992]: 04.07~04.14
+            - img [ref=e1993]
+    - generic [ref=e1996]:
+      - paragraph [ref=e1997]: AI SignalCraft로 직접 여론을 분석해 보세요
+      - link "무료 체험 시작" [ref=e1998] [cursor=pointer]:
+        - /url: /demo
+        - button "무료 체험 시작" [ref=e1999]:
+          - text: 무료 체험 시작
+          - img
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e1782] [cursor=pointer]:
+    - img [ref=e1783]
+  - alert [ref=e1871]: AI 분석 리포트 — AI SignalCraft
