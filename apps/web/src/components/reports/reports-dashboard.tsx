@@ -20,7 +20,7 @@ export function ReportsDashboard() {
     staleTime: Infinity,
   });
 
-  const allItems = (items ?? []) as ShowcaseItem[];
+  const allItems = useMemo(() => (items ?? []) as ShowcaseItem[], [items]);
 
   const filteredItems = useMemo(
     () =>
@@ -65,7 +65,7 @@ export function ReportsDashboard() {
       </nav>
 
       {/* 바디: 사이드바 + 메인 */}
-      <div className="flex flex-1">
+      <div className="flex flex-1 flex-col md:flex-row">
         {/* 모바일: 필터 칩 상단 / 데스크톱: 사이드바 */}
         {isLoading ? (
           <div className="w-52 border-r border-border bg-card p-4 hidden md:block">
@@ -98,7 +98,7 @@ export function ReportsDashboard() {
             >
               전체
             </button>
-            {[...new Set(allItems.map((i) => i.domain))].map((domain) => (
+            {[...new Set(allItems.map((i) => i.domain))].sort().map((domain) => (
               <button
                 key={domain}
                 onClick={() => setSelectedDomain(domain)}
