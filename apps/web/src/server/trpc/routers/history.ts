@@ -3,6 +3,7 @@ import {
   collectionJobs,
   users,
   teamMembers,
+  analysisSeries,
   deleteJob,
   deleteJobs,
   cleanupOldJobs,
@@ -112,9 +113,13 @@ export const historyRouter = router({
           domain: collectionJobs.domain,
           keywordType: collectionJobs.keywordType,
           userName: users.name,
+          seriesId: collectionJobs.seriesId,
+          seriesOrder: collectionJobs.seriesOrder,
+          seriesTitle: analysisSeries.title,
         })
         .from(collectionJobs)
-        .leftJoin(users, eq(collectionJobs.userId, users.id));
+        .leftJoin(users, eq(collectionJobs.userId, users.id))
+        .leftJoin(analysisSeries, eq(collectionJobs.seriesId, analysisSeries.id));
 
       const jobs = filter
         ? await baseQuery

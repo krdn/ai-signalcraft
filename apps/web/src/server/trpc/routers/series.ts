@@ -1,4 +1,4 @@
-import { eq, and, desc, ilike, sql } from 'drizzle-orm';
+import { eq, and, desc, ilike, sql, type SQL } from 'drizzle-orm';
 import { z } from 'zod';
 import {
   analysisSeries,
@@ -7,6 +7,12 @@ import {
   analysisResults,
 } from '@ai-signalcraft/core';
 import { protectedProcedure, router } from '../init';
+
+// teamId가 있으면 teamId, 없으면 userId로 소유권 필터
+function seriesOwnerCondition(ctx: { teamId?: number | null; userId?: string }): SQL {
+  if (ctx.teamId) return eq(analysisSeries.teamId, ctx.teamId);
+  return eq(analysisSeries.userId, ctx.userId!);
+}
 
 export const seriesRouter = router({
   list: protectedProcedure
@@ -18,7 +24,7 @@ export const seriesRouter = router({
       }),
     )
     .query(async ({ input, ctx }) => {
-      const conditions = [eq(analysisSeries.teamId, ctx.teamId!)];
+      const conditions = [seriesOwnerCondition(ctx)];
       if (input.status !== 'all') {
         conditions.push(eq(analysisSeries.status, input.status));
       }
@@ -46,7 +52,7 @@ export const seriesRouter = router({
       const [series] = await ctx.db
         .select()
         .from(analysisSeries)
-        .where(and(eq(analysisSeries.id, input.seriesId), eq(analysisSeries.teamId, ctx.teamId!)))
+        .where(and(eq(analysisSeries.id, input.seriesId), seriesOwnerCondition(ctx)))
         .limit(1);
       if (!series) return null;
 
@@ -76,7 +82,19 @@ export const seriesRouter = router({
   searchByKeyword: protectedProcedure
     .input(z.object({ keyword: z.string().min(1) }))
     .query(async ({ input, ctx }) => {
-      return ctx.db
+      // job이 실제 연결된 시리즈만 표시
+      // NOTE: raw SQL로 테이블명.컬럼명 직접 참조 (Drizzle가 서브쿼리 내 컬럼 참조를 바인딩 파라미터로 처리하는 문제 회피)
+      const hasJobs = sql`EXISTS (
+        SELECT 1 FROM collection_jobs cj
+        WHERE cj.series_id = "analysis_series"."id"
+      )`;
+
+      const jobCountSql = sql<number>`(
+        SELECT count(*)::int FROM collection_jobs cj
+        WHERE cj.series_id = "analysis_series"."id"
+      )`.mapWith(Number);
+
+      const rows = await ctx.db
         .select({
           id: analysisSeries.id,
           keyword: analysisSeries.keyword,
@@ -84,17 +102,24 @@ export const seriesRouter = router({
           title: analysisSeries.title,
           metadata: analysisSeries.metadata,
           updatedAt: analysisSeries.updatedAt,
+          jobCount: jobCountSql,
         })
         .from(analysisSeries)
         .where(
           and(
-            eq(analysisSeries.teamId, ctx.teamId!),
+            seriesOwnerCondition(ctx),
             eq(analysisSeries.status, 'active'),
             ilike(analysisSeries.keyword, `%${input.keyword}%`),
+            hasJobs,
           ),
         )
         .orderBy(desc(analysisSeries.updatedAt))
         .limit(5);
+
+      return rows.map(({ jobCount, metadata, ...rest }) => ({
+        ...rest,
+        metadata: { ...((metadata as any) ?? {}), totalJobs: jobCount },
+      }));
     }),
 
   getTimelineData: protectedProcedure
@@ -103,7 +128,7 @@ export const seriesRouter = router({
       const [series] = await ctx.db
         .select({ id: analysisSeries.id })
         .from(analysisSeries)
-        .where(and(eq(analysisSeries.id, input.seriesId), eq(analysisSeries.teamId, ctx.teamId!)))
+        .where(and(eq(analysisSeries.id, input.seriesId), seriesOwnerCondition(ctx)))
         .limit(1);
       if (!series) return null;
 
@@ -182,7 +207,7 @@ export const seriesRouter = router({
       await ctx.db
         .update(analysisSeries)
         .set({ status: 'archived', updatedAt: new Date() })
-        .where(and(eq(analysisSeries.id, input.seriesId), eq(analysisSeries.teamId, ctx.teamId!)));
+        .where(and(eq(analysisSeries.id, input.seriesId), seriesOwnerCondition(ctx)));
       return { success: true };
     }),
 

@@ -10,6 +10,7 @@ import {
   ChevronRight,
   Clock,
   FileText,
+  LinkIcon,
   MessageSquare,
   Trash2,
 } from 'lucide-react';
@@ -289,6 +290,12 @@ export function HistoryTable({ onViewResult }: HistoryTableProps) {
                       <div className="flex items-center gap-1.5">
                         <span className="font-medium">{job.keyword}</span>
                         <DomainBadge domain={(job as any).domain} size="xs" />
+                        {(job as any).seriesId && (
+                          <Badge variant="outline" className="text-[10px] px-1 py-0 gap-0.5">
+                            <LinkIcon className="h-2.5 w-2.5" />#
+                            {((job as any).seriesOrder ?? 0) + 1}
+                          </Badge>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>

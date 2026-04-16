@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { CalendarRange, Clock, FileText, MessageSquare, Star } from 'lucide-react';
+import { CalendarRange, Clock, FileText, LinkIcon, MessageSquare, Star } from 'lucide-react';
 import { SourceBadges, extractSources, summarizeCounts, formatDuration } from './source-icons';
 import { DomainBadge } from './domain-badge';
 import { JobDiagnosticModal } from './job-diagnostic-modal';
@@ -162,6 +162,12 @@ export function RecentJobs({ onSelectJob, onSelectShowcase }: RecentJobsProps) {
                       <div className="flex items-center gap-1.5">
                         <span className="font-medium">{job.keyword}</span>
                         <DomainBadge domain={(job as any).domain} size="xs" />
+                        {(job as any).seriesId && (
+                          <Badge variant="outline" className="text-[10px] px-1 py-0 gap-0.5">
+                            <LinkIcon className="h-2.5 w-2.5" />#
+                            {((job as any).seriesOrder ?? 0) + 1}
+                          </Badge>
+                        )}
                         <JobDiagnosticModal jobId={job.id} keyword={job.keyword} />
                       </div>
                     </TableCell>
