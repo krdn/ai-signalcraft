@@ -3,6 +3,7 @@ import { MDXRemote } from 'next-mdx-remote/rsc';
 import remarkGfm from 'remark-gfm';
 import { getDoc, getAdjacentDocs, getAllDocPaths } from '@/lib/docs';
 import { DocNav } from '@/components/docs/doc-nav';
+import { mdxComponents } from '@/components/docs/mdx-components';
 
 interface Props {
   params: Promise<{ category: string; slug: string }>;
@@ -41,8 +42,12 @@ export default async function DocPage({ params }: Props) {
       </div>
 
       {/* 마크다운 콘텐츠 */}
-      <div className="prose prose-neutral dark:prose-invert max-w-none">
-        <MDXRemote source={doc.content} options={{ mdxOptions: { remarkPlugins: [remarkGfm] } }} />
+      <div className="max-w-none">
+        <MDXRemote
+          source={doc.content}
+          options={{ mdxOptions: { remarkPlugins: [remarkGfm] } }}
+          components={mdxComponents}
+        />
       </div>
 
       {/* 이전/다음 네비게이션 */}
