@@ -1,3 +1,9 @@
+---
+title: 'AI 분석 키트 업그레이드 가이드'
+description: 'ai-analysis-kit 업그레이드 및 신규 프로젝트 연결 표준 절차'
+order: 2
+---
+
 # @krdn/ai-analysis-kit 업그레이드 & 신규 프로젝트 연결 가이드
 
 ai-signalcraft 및 신규 프로젝트에서 [`@krdn/ai-analysis-kit`](https://github.com/krdn/ai-analysis-kit)(이하 **kit**)을 안전하게 업그레이드·연결하기 위한 표준 절차.

@@ -15,8 +15,10 @@ import {
   HelpCircle,
   Handshake,
   Menu,
+  MessageSquare,
   Network,
   Search,
+  Settings2,
   Sparkles,
   Zap,
 } from 'lucide-react';
@@ -962,6 +964,136 @@ export function LandingContent() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Customization */}
+      <section className="border-t py-20 md:py-28">
+        <div className="mx-auto max-w-6xl px-4">
+          <div className="mb-12 text-center">
+            <Badge variant="outline" className="mb-4 gap-1.5">
+              <Settings2 className="size-3.5" />
+              고객 맞춤 구성
+            </Badge>
+            <h2 className="mb-4 text-3xl font-bold md:text-4xl">
+              우리 조직에 딱 맞는 분석 환경을
+              <br />
+              <span className="text-primary">요청하면 만들어 드립니다</span>
+            </h2>
+            <p className="mx-auto max-w-2xl text-muted-foreground">
+              AI SignalCraft는 표준 SaaS이면서 동시에 커스터마이징이 가능한 플랫폼입니다. 소스,
+              모듈, 프롬프트, 리포트 형식 등 필요한 부분을 고객 요청에 맞게 조정합니다.
+            </p>
+          </div>
+          <div className="grid gap-6 md:grid-cols-3">
+            <Card>
+              <CardHeader>
+                <div className="mb-2 flex size-10 items-center justify-center rounded-lg bg-blue-500/10">
+                  <Search className="size-5 text-blue-600" />
+                </div>
+                <CardTitle className="text-base">수집 소스 추가</CardTitle>
+                <CardDescription>
+                  기본 6개 소스 외에 특정 사이트, 내부 보고서, 해외 미디어 등 조직에서 모니터링하는
+                  채널을 수집 소스로 추가할 수 있습니다.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-1.5 text-sm text-muted-foreground">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="size-4 shrink-0 text-primary" />
+                    특정 언론사·블로그 타겟 수집
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="size-4 shrink-0 text-primary" />
+                    해외 미디어 모니터링
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="size-4 shrink-0 text-primary" />
+                    내부 설문·인터뷰 데이터 연동
+                  </li>
+                </ul>
+              </CardContent>
+            </Card>
+            <Card className="ring-2 ring-primary/20 md:scale-105">
+              <CardHeader>
+                <div className="mb-2 flex size-10 items-center justify-center rounded-lg bg-primary/10">
+                  <Brain className="size-5 text-primary" />
+                </div>
+                <CardTitle className="text-base">분석 모듈·프롬프트 조정</CardTitle>
+                <CardDescription>
+                  기존 59개 모듈의 분석 관점, 출력 형식, 사용 AI 모델을 조직의 목적에 맞게 세밀하게
+                  조정하거나 전용 모듈을 신규 제작합니다.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-1.5 text-sm text-muted-foreground">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="size-4 shrink-0 text-primary" />
+                    도메인 특화 분석 관점 적용
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="size-4 shrink-0 text-primary" />
+                    조직 내부 용어·분류 기준 반영
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="size-4 shrink-0 text-primary" />
+                    전용 AI 모듈 신규 개발
+                  </li>
+                </ul>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <div className="mb-2 flex size-10 items-center justify-center rounded-lg bg-emerald-500/10">
+                  <FileText className="size-5 text-emerald-600" />
+                </div>
+                <CardTitle className="text-base">리포트 형식 맞춤화</CardTitle>
+                <CardDescription>
+                  출력 리포트의 섹션 구성, 시각화 방식, 브랜딩, 배포 형태를 고객사의 보고 체계에
+                  맞게 커스터마이징합니다.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-1.5 text-sm text-muted-foreground">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="size-4 shrink-0 text-primary" />
+                    조직 브랜딩 적용 PDF
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="size-4 shrink-0 text-primary" />
+                    경영진용 요약본 별도 생성
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="size-4 shrink-0 text-primary" />
+                    슬랙·이메일 자동 발송 연동
+                  </li>
+                </ul>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* CTA */}
+          <div className="mt-12 rounded-xl border bg-primary/5 p-6 md:p-8 ring-1 ring-primary/20">
+            <div className="flex flex-col items-center gap-4 text-center md:flex-row md:text-left md:justify-between">
+              <div>
+                <div className="flex items-center gap-2 mb-1 justify-center md:justify-start">
+                  <MessageSquare className="size-4 text-primary" />
+                  <span className="text-sm font-semibold text-primary">커스터마이징 상담</span>
+                </div>
+                <p className="text-base font-semibold">어떤 부분을 바꾸고 싶으신지 말씀해 주세요</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  요구사항을 공유하시면 구현 가능 여부와 일정을 빠르게 안내해 드립니다.
+                </p>
+              </div>
+              <Link
+                href="mailto:krdn.net@gmail.com"
+                className={cn(buttonVariants({ size: 'lg' }), 'shrink-0 gap-1.5')}
+              >
+                <MessageSquare className="size-4" />
+                커스터마이징 문의하기
+              </Link>
+            </div>
           </div>
         </div>
       </section>

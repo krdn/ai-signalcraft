@@ -1,3 +1,9 @@
+---
+title: 'LLM 모델 추천 가이드'
+description: '분석 모듈별 LLM 모델 추천 및 시나리오 프리셋 가이드'
+order: 3
+---
+
 # AI SignalCraft — LLM 모델 추천 가이드
 
 > **최종 업데이트**: 2026-04-14  

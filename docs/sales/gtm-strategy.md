@@ -1,3 +1,9 @@
+---
+title: 'GTM 전략'
+description: 'AI SignalCraft Go-to-Market 전략 및 실행 계획'
+order: 1
+---
+
 # AI SignalCraft — GTM(Go-To-Market) 전략
 
 > 작성일: 2026-04-04 | 버전: 1.0

@@ -337,7 +337,7 @@ export function AppSidebar({
               <DropdownMenuItem className="p-0">
                 <Link href="/docs" className="flex w-full items-center gap-2 px-2 py-1.5 text-sm">
                   <Layers className="h-4 w-4" />
-                  기술 문서
+                  문서 허브
                 </Link>
               </DropdownMenuItem>
             )}

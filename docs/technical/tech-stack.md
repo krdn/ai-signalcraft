@@ -1,3 +1,9 @@
+---
+title: '기술 스택'
+description: 'AI SignalCraft 기술 스택 상세 레퍼런스 및 의사결정 근거'
+order: 1
+---
+
 # AI SignalCraft — Technology Stack Reference
 
 > CLAUDE.md에서 분리된 상세 기술 스택 문서. 의사결정 근거와 대안 비교 포함.

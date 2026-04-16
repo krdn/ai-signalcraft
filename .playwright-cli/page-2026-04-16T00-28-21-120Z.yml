@@ -1,0 +1,18 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - heading "www.adriel.com" [level=1] [ref=e5]
+      - heading "보안 확인 수행 중" [level=2] [ref=e6]
+      - paragraph [ref=e7]: 이 웹 사이트는 보안 서비스를 사용하여 악의적인 봇으로부터 보호합니다. 이 페이지는 웹 사이트에서 사용자가 봇이 아님을 확인하는 동안에만 표시됩니다.
+  - contentinfo [ref=e11]:
+    - generic [ref=e13]:
+      - generic [ref=e15]:
+        - text: "Ray ID:"
+        - code [ref=e16]: 9ecf11ac9f3bea8b
+      - generic [ref=e17]:
+        - generic [ref=e18]:
+          - link "Cloudflare" [ref=e19] [cursor=pointer]:
+            - /url: https://www.cloudflare.com?utm_source=challenge&utm_campaign=m
+          - text: 의 성능 및 보안
+        - link "개인 정보" [ref=e21] [cursor=pointer]:
+          - /url: https://www.cloudflare.com/ko-kr/privacypolicy/

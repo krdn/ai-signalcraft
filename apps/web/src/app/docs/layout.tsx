@@ -1,7 +1,11 @@
 import Link from 'next/link';
 import { BookOpen, Home } from 'lucide-react';
+import { getSidebarTree } from '@/lib/docs';
+import { DocsSidebar } from '@/components/docs/sidebar';
 
-export default function DocsLayout({ children }: { children: React.ReactNode }) {
+export default async function DocsLayout({ children }: { children: React.ReactNode }) {
+  const tree = await getSidebarTree();
+
   return (
     <div className="min-h-screen bg-background">
       {/* 헤더 */}
@@ -9,7 +13,7 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
         <div className="flex h-14 items-center gap-4 px-6 max-w-7xl mx-auto">
           <Link href="/docs" className="flex items-center gap-2 font-semibold">
             <BookOpen className="h-5 w-5 text-primary" />
-            <span>기술 문서</span>
+            <span>문서 허브</span>
           </Link>
           <span className="text-muted-foreground/50">|</span>
           <Link
@@ -22,8 +26,11 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
         </div>
       </header>
 
-      {/* 본문 */}
-      <main className="max-w-7xl mx-auto px-6 py-8">{children}</main>
+      {/* 본문: 사이드바 + 콘텐츠 */}
+      <div className="flex max-w-7xl mx-auto">
+        <DocsSidebar tree={tree} />
+        <main className="flex-1 px-8 py-8 min-w-0">{children}</main>
+      </div>
     </div>
   );
 }

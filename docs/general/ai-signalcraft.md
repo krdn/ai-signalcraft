@@ -1,3 +1,9 @@
+---
+title: 'AI SignalCraft 소개'
+description: 'AI SignalCraft 프로젝트 전체 개요 및 아키텍처'
+order: 1
+---
+
 > **원본 소스**: 프로젝트 디렉토리 `/home/gon/projects/ai/ai-signalcraft`
 > **작성일**: 2026-04-02
 

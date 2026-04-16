@@ -1,3 +1,9 @@
+---
+title: '분석 워크플로우'
+description: 'AI SignalCraft 분석 파이프라인 구조 및 워크플로우'
+order: 2
+---
+
 > **소스**: `/home/gon/projects/ai/ai-signalcraft` (프로젝트 분석)
 > **작성일**: 2026-04-13
 

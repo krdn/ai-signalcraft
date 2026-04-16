@@ -1,0 +1,119 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e5]:
+      - link [ref=e7] [cursor=pointer]:
+        - /url: https://some.co.kr/service/notice/detail/8ff8bcf0-e29e-43cc-9b59-d9f4347165d4
+        - img [ref=e8]
+      - link [ref=e10] [cursor=pointer]:
+        - /url: https://salesmap.kr/web-form/a1bb247d-830c-4fd3-9550-174eb18e41aa?utm_source=sometrend&utm_medium=banner&utm_campaign=mcp_webinar
+        - img [ref=e11]
+      - link [ref=e13] [cursor=pointer]:
+        - /url: https://some.co.kr/service/notice/detail/8ff8bcf0-e29e-43cc-9b59-d9f4347165d4
+        - img [ref=e14]
+      - link [ref=e16] [cursor=pointer]:
+        - /url: https://salesmap.kr/web-form/a1bb247d-830c-4fd3-9550-174eb18e41aa?utm_source=sometrend&utm_medium=banner&utm_campaign=mcp_webinar
+        - img [ref=e17]
+    - button "닫기" [ref=e18] [cursor=pointer]
+  - banner [ref=e19]:
+    - heading [level=1] [ref=e20]:
+      - link [ref=e21] [cursor=pointer]:
+        - /url: /
+        - img [ref=e22]
+    - navigation [ref=e32]:
+      - list [ref=e33]:
+        - listitem [ref=e34]:
+          - generic [ref=e35] [cursor=pointer]:
+            - text: 분석스튜디오
+            - img [ref=e36]
+          - list [ref=e39]:
+            - listitem [ref=e40]:
+              - link "간편 분석(분석센터)" [ref=e41] [cursor=pointer]:
+                - /url: /analysis/social/mention
+            - listitem [ref=e42]:
+              - link "통합 분석(유닛)" [ref=e43] [cursor=pointer]:
+                - /url: /analysis/dashboard
+        - listitem [ref=e44]:
+          - link "서비스" [ref=e45] [cursor=pointer]:
+            - /url: /service/sometrend
+        - listitem [ref=e46]:
+          - link "요금제" [ref=e47] [cursor=pointer]:
+            - /url: /service/pricing
+        - listitem [ref=e48]:
+          - link "AI 브리핑" [ref=e49] [cursor=pointer]:
+            - /url: /briefing
+    - generic [ref=e50]:
+      - button "알림 모달 열기" [ref=e52] [cursor=pointer]:
+        - generic [ref=e53]: 
+      - link "회원가입" [ref=e56] [cursor=pointer]:
+        - /url: https://sso.vaiv.kr/realms/VAIV/protocol/openid-connect/registrations?client_id=vaiv-sometrend-front&redirect_uri=https%3a%2f%2fsome.co.kr%2flogin%2foauth2%2fcode%2fvaiv-sso&response_type=code&scope=openid
+      - link "로그인" [ref=e57] [cursor=pointer]:
+        - /url: https://sso.vaiv.kr/realms/VAIV/protocol/openid-connect/auth?client_id=vaiv-sometrend-front&redirect_uri=https%3a%2f%2fsome.co.kr%2flogin%2foauth2%2fcode%2fvaiv-sso&response_type=code&scope=openid&state=0ggul0ODM-q2lScyqUMiUma2czWNsQkoSt0KN7upw0s%3d&nonce=-Xt7bbtbM8xWOUv0xU3lo2e3q5KKaApmzkGBbdbFcIU%3d
+        - generic [ref=e58]: 로그인
+  - main [ref=e59]:
+    - generic [ref=e61]:
+      - generic [ref=e62]: AI + Sometrend = Insight
+      - heading "AI로 인사이트를 더하다" [level=1] [ref=e63]
+      - paragraph [ref=e64]: 소비자 언어의 맥락을 읽고 기회를 발견해 보세요
+    - generic [ref=e69]:
+      - list [ref=e74]
+      - list [ref=e79]
+      - list [ref=e84]
+      - list [ref=e89]
+  - contentinfo [ref=e90]:
+    - generic [ref=e91]:
+      - heading [level=1] [ref=e92]:
+        - link [ref=e93] [cursor=pointer]:
+          - /url: /
+          - img [ref=e94]
+      - generic [ref=e104]:
+        - navigation [ref=e106]:
+          - list [ref=e107]:
+            - listitem [ref=e108]:
+              - paragraph [ref=e109]: 서비스 라인
+              - list [ref=e110]:
+                - listitem [ref=e111]:
+                  - link "썸트렌드 어스" [ref=e112] [cursor=pointer]:
+                    - /url: /service/sometrend
+                - listitem [ref=e113]:
+                  - link "썸트렌드 클라우드" [ref=e114] [cursor=pointer]:
+                    - /url: https://cloud.some.co.kr/
+                - listitem [ref=e115]:
+                  - link "썸트렌드 데이터+" [ref=e116] [cursor=pointer]:
+                    - /url: https://data.some.co.kr/
+                - listitem [ref=e117]:
+                  - link "썸트렌드 MCP" [ref=e118] [cursor=pointer]:
+                    - /url: https://apps.some.co.kr
+            - listitem [ref=e119]:
+              - paragraph [ref=e120]: 고객센터
+              - list [ref=e121]:
+                - listitem [ref=e122]:
+                  - link "고객센터" [ref=e123] [cursor=pointer]:
+                    - /url: /service/FAQ
+                - listitem [ref=e124]:
+                  - link "공지사항" [ref=e125] [cursor=pointer]:
+                    - /url: /service/notice
+            - listitem [ref=e126]:
+              - paragraph [ref=e127]: 정책
+              - list [ref=e128]:
+                - listitem [ref=e129]:
+                  - link "이용약관" [ref=e130] [cursor=pointer]:
+                    - /url: /service/terms
+                - listitem [ref=e131]:
+                  - link "개인정보처리방침" [ref=e132] [cursor=pointer]:
+                    - /url: /service/privacy
+        - generic [ref=e136] [cursor=pointer]: 패밀리사이트
+    - generic [ref=e138]:
+      - generic [ref=e140]:
+        - paragraph [ref=e141]:
+          - text: 서비스 문의
+          - link "help@some.co.kr" [ref=e142] [cursor=pointer]:
+            - /url: mailto:help@some.co.kr
+        - generic [ref=e143]:
+          - generic [ref=e144]: (주) 바이브컴퍼니
+          - generic [ref=e145]: "|서울특별시 용산구 독서당로 97"
+          - generic [ref=e146]: "|대표이사 김경서"
+          - generic [ref=e147]: "|사업자등록번호 120-86-08334"
+          - generic [ref=e148]: 통신판매업신고번호 제 2012-서울용산 - 00333호
+      - generic [ref=e150] [cursor=pointer]: CopyrightⓒVAIV. All Rights Reserved.
+  - button "챗봇" [ref=e151] [cursor=pointer]:
+    - img "챗봇" [ref=e153]
