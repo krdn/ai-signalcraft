@@ -1,0 +1,1201 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - navigation [ref=e3]:
+      - generic [ref=e4]:
+        - link "AI SignalCraft" [ref=e5] [cursor=pointer]:
+          - /url: /
+          - img [ref=e6]
+          - generic [ref=e9]: AI SignalCraft
+        - generic [ref=e10]:
+          - link "분석 리포트" [ref=e11] [cursor=pointer]:
+            - /url: /reports
+          - link "샘플 분석" [ref=e12] [cursor=pointer]:
+            - /url: "#showcase"
+          - link "기능" [ref=e13] [cursor=pointer]:
+            - /url: "#features"
+          - link "활용 사례" [ref=e14] [cursor=pointer]:
+            - /url: "#use-cases"
+          - link "가격" [ref=e15] [cursor=pointer]:
+            - /url: "#pricing"
+          - link "파트너" [ref=e16] [cursor=pointer]:
+            - /url: /programs
+          - link "제품 소개" [ref=e17] [cursor=pointer]:
+            - /url: /whitepaper
+          - link "상세 리포트" [ref=e18] [cursor=pointer]:
+            - /url: /whitepaper/report
+        - generic [ref=e19]:
+          - link "로그인" [ref=e20] [cursor=pointer]:
+            - /url: /login
+          - link "무료 체험" [ref=e21] [cursor=pointer]:
+            - /url: /demo
+    - generic [ref=e24]:
+      - generic [ref=e25]:
+        - img
+        - text: AI 분석 + 지식 그래프 + 시맨틱 검색
+      - heading "여론 수집에서 멈추지 마세요. 인사이트까지 자동으로." [level=1] [ref=e26]:
+        - text: 여론 수집에서 멈추지 마세요.
+        - text: 인사이트까지 자동으로.
+      - paragraph [ref=e27]: 한국 온라인 여론을 6개 소스에서 자동 수집하고, 18개 AI 모듈이 분석한 뒤 지식 그래프로 연결하여 실행 가능한 전략 리포트를 생성합니다.
+      - generic [ref=e28]:
+        - link "7일 무료 체험 시작" [ref=e29] [cursor=pointer]:
+          - /url: /demo
+          - text: 7일 무료 체험 시작
+          - img
+        - link "기능 살펴보기" [ref=e30] [cursor=pointer]:
+          - /url: "#features"
+        - link "제품 소개 (PDF)" [ref=e31] [cursor=pointer]:
+          - /url: /whitepaper
+          - img
+          - text: 제품 소개 (PDF)
+      - paragraph [ref=e32]: 카드 등록 없이 시작 · 설치 불필요 · 5분 안에 첫 분석
+    - generic [ref=e35]:
+      - generic [ref=e36]:
+        - generic [ref=e37]: 6개
+        - generic [ref=e38]: 데이터 소스
+      - generic [ref=e39]:
+        - generic [ref=e40]: 57개
+        - generic [ref=e41]: AI 분석 모듈
+      - generic [ref=e42]:
+        - generic [ref=e43]: 지식 그래프
+        - generic [ref=e44]: 온톨로지 시각화
+      - generic [ref=e45]:
+        - generic [ref=e46]: 시맨틱
+        - generic [ref=e47]: 의미 기반 검색
+      - generic [ref=e48]:
+        - generic [ref=e49]: 1~3시간
+        - generic [ref=e50]: 분석 완료
+    - generic [ref=e52]:
+      - generic [ref=e53]:
+        - generic [ref=e54]: 실제 분석 결과
+        - heading "AI가 생성한 분석 리포트를 직접 확인하세요" [level=2] [ref=e55]
+        - paragraph [ref=e56]: 실제 키워드로 수행된 여론 분석 결과입니다. 클릭하여 상세 내용을 미리 확인해 보세요.
+      - link "무료 체험으로 직접 분석하기" [ref=e63] [cursor=pointer]:
+        - /url: /demo
+        - button "무료 체험으로 직접 분석하기" [ref=e64]:
+          - text: 무료 체험으로 직접 분석하기
+          - img
+    - generic [ref=e66]:
+      - generic [ref=e67]:
+        - heading "기존 도구는 \"무슨 말이 있다\"에서 멈춥니다" [level=2] [ref=e68]
+        - paragraph [ref=e69]: AI SignalCraft는 "그래서 어떻게 할 것인가"까지 제시합니다.
+      - generic [ref=e70]:
+        - generic [ref=e71]:
+          - generic [ref=e73]: 기존 방식의 한계
+          - generic [ref=e74]:
+            - paragraph [ref=e75]: ✕ 수동 클리핑에 주 10~20시간
+            - paragraph [ref=e76]: ✕ 단순 감정 분석 (긍정/부정 비율)
+            - paragraph [ref=e77]: ✕ "그래서 뭘 해야 하는데?" 답변 못함
+            - paragraph [ref=e78]: ✕ 리포트 작성에 추가 2~3일
+        - generic [ref=e79]:
+          - generic [ref=e80]:
+            - generic [ref=e81]: AI SignalCraft
+            - generic [ref=e82]: 전략 도구
+          - generic [ref=e83]:
+            - paragraph [ref=e84]: ✓ 6개 소스 자동 수집 (클릭 한 번)
+            - paragraph [ref=e85]: ✓ 18개 모듈 심층 분석
+            - paragraph [ref=e86]:
+              - strong [ref=e87]: ✓ 지식 그래프로 인물·이슈 관계 자동 시각화
+            - paragraph [ref=e88]: ✓ 시맨틱 검색으로 의미 기반 탐색
+            - paragraph [ref=e89]: ✓ 전략·리스크·시나리오까지 제시
+            - paragraph [ref=e90]: ✓ 종합 리포트 자동 생성 (PDF)
+        - generic [ref=e91]:
+          - generic [ref=e93]: 기존 소셜 리스닝
+          - generic [ref=e94]:
+            - paragraph [ref=e95]: △ 자동 수집은 되지만
+            - paragraph [ref=e96]: △ 감정 분석까지만
+            - paragraph [ref=e97]: ✕ 전략 도출 없음
+            - paragraph [ref=e98]: ✕ 한국 커뮤니티 미지원
+    - generic [ref=e100]:
+      - generic [ref=e101]:
+        - generic [ref=e102]:
+          - heading "데이터 소스" [level=2] [ref=e103]
+          - paragraph [ref=e104]: 클릭 한 번으로 뉴스, 댓글, 영상, 커뮤니티를 동시에 수집합니다.
+        - generic [ref=e105]:
+          - generic [ref=e106]: 수집 중
+          - generic [ref=e107]: 현재 지원하는 6개 소스
+        - generic [ref=e109]:
+          - button "네이버 뉴스" [ref=e110] [cursor=pointer]:
+            - generic [ref=e112]:
+              - img [ref=e113]
+              - generic [ref=e116]: 네이버 뉴스
+          - button "네이버 댓글" [ref=e117] [cursor=pointer]:
+            - generic [ref=e119]:
+              - img [ref=e120]
+              - generic [ref=e122]: 네이버 댓글
+          - button "유튜브" [ref=e123] [cursor=pointer]:
+            - generic [ref=e125]:
+              - img [ref=e126]
+              - generic [ref=e128]: 유튜브
+          - button "DC갤러리" [ref=e129] [cursor=pointer]:
+            - generic [ref=e131]:
+              - img [ref=e132]
+              - generic [ref=e137]: DC갤러리
+          - button "FM코리아" [ref=e138] [cursor=pointer]:
+            - generic [ref=e140]:
+              - img [ref=e141]
+              - generic [ref=e144]: FM코리아
+          - button "클리앙" [ref=e145] [cursor=pointer]:
+            - generic [ref=e147]:
+              - img [ref=e148]
+              - generic [ref=e152]: 클리앙
+      - generic [ref=e153]:
+        - generic [ref=e154]:
+          - generic [ref=e155]: 추가 예정
+          - generic [ref=e156]: 확장 예정 소스
+        - generic [ref=e158]:
+          - generic [ref=e159]:
+            - heading "국내 SNS · 뉴스" [level=4] [ref=e160]
+            - generic [ref=e161]:
+              - button "X (트위터)" [ref=e162] [cursor=pointer]:
+                - img [ref=e163]
+                - generic [ref=e166]: X (트위터)
+              - button "인스타그램" [ref=e167] [cursor=pointer]:
+                - img [ref=e168]
+                - generic [ref=e171]: 인스타그램
+              - button "다음 뉴스" [ref=e172] [cursor=pointer]:
+                - img [ref=e173]
+                - generic [ref=e176]: 다음 뉴스
+              - button "네이버 블로그" [ref=e177] [cursor=pointer]:
+                - img [ref=e178]
+                - generic [ref=e180]: 네이버 블로그
+          - generic [ref=e181]:
+            - heading "국내 커뮤니티" [level=4] [ref=e182]
+            - generic [ref=e183]:
+              - button "네이버 카페" [ref=e184] [cursor=pointer]:
+                - img [ref=e185]
+                - generic [ref=e187]: 네이버 카페
+              - button "더쿠" [ref=e188] [cursor=pointer]:
+                - img [ref=e189]
+                - generic [ref=e192]: 더쿠
+              - button "뽐뿌" [ref=e193] [cursor=pointer]:
+                - img [ref=e194]
+                - generic [ref=e197]: 뽐뿌
+          - generic [ref=e198]:
+            - heading "해외 플랫폼" [level=4] [ref=e199]
+            - generic [ref=e200]:
+              - button "Reddit" [ref=e201] [cursor=pointer]:
+                - img [ref=e202]
+                - generic [ref=e205]: Reddit
+              - button "Google News" [ref=e206] [cursor=pointer]:
+                - img [ref=e207]
+                - generic [ref=e210]: Google News
+              - button "TikTok" [ref=e211] [cursor=pointer]:
+                - img [ref=e212]
+                - generic [ref=e215]: TikTok
+              - button "LinkedIn" [ref=e216] [cursor=pointer]:
+                - img [ref=e217]
+                - generic [ref=e220]: LinkedIn
+              - button "Threads" [ref=e221] [cursor=pointer]:
+                - img [ref=e222]
+                - generic [ref=e225]: Threads
+              - button "Facebook" [ref=e226] [cursor=pointer]:
+                - img [ref=e227]
+                - generic [ref=e232]: Facebook
+          - generic [ref=e233]:
+            - heading "특수 소스" [level=4] [ref=e234]
+            - generic [ref=e235]:
+              - button "국민청원" [ref=e236] [cursor=pointer]:
+                - img [ref=e237]
+                - generic [ref=e239]: 국민청원
+              - button "Podcast" [ref=e240] [cursor=pointer]:
+                - img [ref=e241]
+                - generic [ref=e243]: Podcast
+              - button "네이버 지식iN" [ref=e244] [cursor=pointer]:
+                - img [ref=e245]
+                - generic [ref=e248]: 네이버 지식iN
+              - button "앱 리뷰" [ref=e249] [cursor=pointer]:
+                - img [ref=e250]
+                - generic [ref=e252]: 앱 리뷰
+    - generic [ref=e254]:
+      - generic [ref=e255]:
+        - heading "59개 AI 분석 모듈" [level=2] [ref=e256]
+        - paragraph [ref=e257]: 단순 감정 분석을 넘어, 도메인별 전문 이론에 기반한 전략적 인사이트를 단계별로 도출합니다.
+      - generic [ref=e258]:
+        - generic [ref=e259]:
+          - generic [ref=e260]:
+            - generic [ref=e261]: Stage 1
+            - generic [ref=e262]: 초기 분석Foundation Analysis
+          - list [ref=e264]:
+            - listitem [ref=e265]:
+              - img [ref=e266]
+              - generic [ref=e274]:
+                - text: 거시 여론 구조
+                - generic [ref=e275]: Macro Opinion Structure
+              - button "거시 여론 구조 도움말" [ref=e276]:
+                - img [ref=e277]
+            - listitem [ref=e280]:
+              - img [ref=e281]
+              - generic [ref=e289]:
+                - text: 집단별 반응
+                - generic [ref=e290]: Segment Reaction
+              - button "집단별 반응 도움말" [ref=e291]:
+                - img [ref=e292]
+            - listitem [ref=e295]:
+              - img [ref=e296]
+              - generic [ref=e304]:
+                - text: 감정/프레임 분석
+                - generic [ref=e305]: Sentiment & Framing
+              - button "감정/프레임 분석 도움말" [ref=e306]:
+                - img [ref=e307]
+            - listitem [ref=e310]:
+              - img [ref=e311]
+              - generic [ref=e319]:
+                - text: 메시지 파급력
+                - generic [ref=e320]: Message Impact
+              - button "메시지 파급력 도움말" [ref=e321]:
+                - img [ref=e322]
+        - generic [ref=e325]:
+          - generic [ref=e326]:
+            - generic [ref=e327]: Stage 2
+            - generic [ref=e328]: 심화 분석Deep Analysis
+          - list [ref=e330]:
+            - listitem [ref=e331]:
+              - img [ref=e332]
+              - generic [ref=e340]:
+                - text: 리스크 지도
+                - generic [ref=e341]: Risk Map
+              - button "리스크 지도 도움말" [ref=e342]:
+                - img [ref=e343]
+            - listitem [ref=e346]:
+              - img [ref=e347]
+              - generic [ref=e355]:
+                - text: 기회 분석
+                - generic [ref=e356]: Opportunity Analysis
+              - button "기회 분석 도움말" [ref=e357]:
+                - img [ref=e358]
+            - listitem [ref=e361]:
+              - img [ref=e362]
+              - generic [ref=e370]:
+                - text: 전략 도출
+                - generic [ref=e371]: Strategy Derivation
+              - button "전략 도출 도움말" [ref=e372]:
+                - img [ref=e373]
+            - listitem [ref=e376]:
+              - img [ref=e377]
+              - generic [ref=e385]:
+                - text: 최종 요약
+                - generic [ref=e386]: Final Summary
+              - button "최종 요약 도움말" [ref=e387]:
+                - img [ref=e388]
+        - generic [ref=e391]:
+          - generic [ref=e392]:
+            - generic [ref=e393]: Stage 4
+            - generic [ref=e394]: 고급 분석Advanced Analysis
+          - list [ref=e396]:
+            - listitem [ref=e397]:
+              - img [ref=e398]
+              - generic [ref=e406]:
+                - text: 수용도/지지율 추정
+                - generic [ref=e407]: Approval & Acceptance Estimate
+              - button "수용도/지지율 추정 도움말" [ref=e408]:
+                - img [ref=e409]
+            - listitem [ref=e412]:
+              - img [ref=e413]
+              - generic [ref=e421]:
+                - text: 프레임 전쟁
+                - generic [ref=e422]: Frame War
+              - button "프레임 전쟁 도움말" [ref=e423]:
+                - img [ref=e424]
+            - listitem [ref=e427]:
+              - img [ref=e428]
+              - generic [ref=e436]:
+                - text: 위기 시나리오
+                - generic [ref=e437]: Crisis Scenario
+              - button "위기 시나리오 도움말" [ref=e438]:
+                - img [ref=e439]
+            - listitem [ref=e442]:
+              - img [ref=e443]
+              - generic [ref=e451]:
+                - text: 목표 달성 시뮬레이션
+                - generic [ref=e452]: Outcome Simulation
+              - button "목표 달성 시뮬레이션 도움말" [ref=e453]:
+                - img [ref=e454]
+        - generic [ref=e457]:
+          - generic [ref=e458]:
+            - generic [ref=e459]: System
+            - generic [ref=e460]: 지식 인프라Knowledge Infrastructure
+          - list [ref=e462]:
+            - listitem [ref=e463]:
+              - img [ref=e464]
+              - generic [ref=e472]:
+                - text: 지식 그래프
+                - generic [ref=e473]: Knowledge Graph
+              - button "지식 그래프 도움말" [ref=e474]:
+                - img [ref=e475]
+            - listitem [ref=e478]:
+              - img [ref=e479]
+              - generic [ref=e487]:
+                - text: 시맨틱 검색
+                - generic [ref=e488]: Semantic Search
+              - button "시맨틱 검색 도움말" [ref=e489]:
+                - img [ref=e490]
+            - listitem [ref=e493]:
+              - img [ref=e494]
+              - generic [ref=e502]:
+                - text: 통합 리포트
+                - generic [ref=e503]: Integrated Report
+              - button "통합 리포트 도움말" [ref=e504]:
+                - img [ref=e505]
+        - generic [ref=e508]:
+          - generic [ref=e509]:
+            - generic [ref=e510]: Stage 4-F
+            - generic [ref=e511]: 팬덤 분석Fandom Analysis
+          - list [ref=e513]:
+            - listitem [ref=e514]:
+              - img [ref=e515]
+              - generic [ref=e523]:
+                - text: 팬덤 충성도 지수
+                - generic [ref=e524]: Fandom Loyalty Index
+              - button "팬덤 충성도 지수 도움말" [ref=e525]:
+                - img [ref=e526]
+            - listitem [ref=e529]:
+              - img [ref=e530]
+              - generic [ref=e538]:
+                - text: 팬덤 내러티브 경쟁
+                - generic [ref=e539]: Fandom Narrative War
+              - button "팬덤 내러티브 경쟁 도움말" [ref=e540]:
+                - img [ref=e541]
+            - listitem [ref=e544]:
+              - img [ref=e545]
+              - generic [ref=e553]:
+                - text: 팬덤 위기 시나리오
+                - generic [ref=e554]: Fandom Crisis Scenario
+              - button "팬덤 위기 시나리오 도움말" [ref=e555]:
+                - img [ref=e556]
+            - listitem [ref=e559]:
+              - img [ref=e560]
+              - generic [ref=e568]:
+                - text: 컴백/신곡 반응 예측
+                - generic [ref=e569]: Release Reception Prediction
+              - button "컴백/신곡 반응 예측 도움말" [ref=e570]:
+                - img [ref=e571]
+        - generic [ref=e574]:
+          - generic [ref=e575]:
+            - generic [ref=e576]: Stage 4-PR
+            - generic [ref=e577]: PR/위기관리 분석PR & Crisis Management
+          - list [ref=e579]:
+            - listitem [ref=e580]:
+              - img [ref=e581]
+              - generic [ref=e589]:
+                - text: SCCT 위기 유형 분류
+                - generic [ref=e590]: SCCT Crisis Classifier
+              - button "SCCT 위기 유형 분류 도움말" [ref=e591]:
+                - img [ref=e592]
+            - listitem [ref=e595]:
+              - img [ref=e596]
+              - generic [ref=e604]:
+                - text: 평판 지수 측정
+                - generic [ref=e605]: Reputation Index
+              - button "평판 지수 측정 도움말" [ref=e606]:
+                - img [ref=e607]
+            - listitem [ref=e610]:
+              - img [ref=e611]
+              - generic [ref=e619]:
+                - text: 프레임 전쟁 분석 (PR)
+                - generic [ref=e620]: Frame War (PR)
+              - button "프레임 전쟁 분석 (PR) 도움말" [ref=e621]:
+                - img [ref=e622]
+            - listitem [ref=e625]:
+              - img [ref=e626]
+              - generic [ref=e634]:
+                - text: 위기 시나리오 (PR)
+                - generic [ref=e635]: Crisis Scenario (PR)
+              - button "위기 시나리오 (PR) 도움말" [ref=e636]:
+                - img [ref=e637]
+        - generic [ref=e640]:
+          - generic [ref=e641]:
+            - generic [ref=e642]: Stage 4-Corp
+            - generic [ref=e643]: 기업 평판 분석Corporate Reputation
+          - list [ref=e645]:
+            - listitem [ref=e646]:
+              - img [ref=e647]
+              - generic [ref=e655]:
+                - text: 이해관계자 영향력 지도
+                - generic [ref=e656]: Stakeholder Salience Map
+              - button "이해관계자 영향력 지도 도움말" [ref=e657]:
+                - img [ref=e658]
+            - listitem [ref=e661]:
+              - img [ref=e662]
+              - generic [ref=e670]:
+                - text: ESG 여론 분석
+                - generic [ref=e671]: ESG Sentiment Analysis
+              - button "ESG 여론 분석 도움말" [ref=e672]:
+                - img [ref=e673]
+            - listitem [ref=e676]:
+              - img [ref=e677]
+              - generic [ref=e685]:
+                - text: 평판 지수 측정
+                - generic [ref=e686]: Reputation Index (RepTrak)
+              - button "평판 지수 측정 도움말" [ref=e687]:
+                - img [ref=e688]
+            - listitem [ref=e691]:
+              - img [ref=e692]
+              - generic [ref=e700]:
+                - text: SCCT 위기 유형 분류
+                - generic [ref=e701]: Crisis Type Classifier (SCCT)
+              - button "SCCT 위기 유형 분류 도움말" [ref=e702]:
+                - img [ref=e703]
+            - listitem [ref=e706]:
+              - img [ref=e707]
+              - generic [ref=e715]:
+                - text: 미디어 프레임 의제 설정력
+                - generic [ref=e716]: Media Framing Dominance
+              - button "미디어 프레임 의제 설정력 도움말" [ref=e717]:
+                - img [ref=e718]
+            - listitem [ref=e721]:
+              - img [ref=e722]
+              - generic [ref=e730]:
+                - text: CSR 공약 진정성 간극
+                - generic [ref=e731]: CSR Communication Gap
+              - button "CSR 공약 진정성 간극 도움말" [ref=e732]:
+                - img [ref=e733]
+            - listitem [ref=e736]:
+              - img [ref=e737]
+              - generic [ref=e745]:
+                - text: 평판 회복 시뮬레이션
+                - generic [ref=e746]: Reputation Recovery Simulation
+              - button "평판 회복 시뮬레이션 도움말" [ref=e747]:
+                - img [ref=e748]
+        - generic [ref=e751]:
+          - generic [ref=e752]:
+            - generic [ref=e753]: Stage 4-HC
+            - generic [ref=e754]: 헬스케어 분석Healthcare Analysis
+          - list [ref=e756]:
+            - listitem [ref=e757]:
+              - img [ref=e758]
+              - generic [ref=e766]:
+                - text: 건강 위험 인식 분석
+                - generic [ref=e767]: Health Risk Perception
+              - button "건강 위험 인식 분석 도움말" [ref=e768]:
+                - img [ref=e769]
+            - listitem [ref=e772]:
+              - img [ref=e773]
+              - generic [ref=e781]:
+                - text: 의료 순응도 예측
+                - generic [ref=e782]: Compliance Predictor
+              - button "의료 순응도 예측 도움말" [ref=e783]:
+                - img [ref=e784]
+        - generic [ref=e787]:
+          - generic [ref=e788]:
+            - generic [ref=e789]: Stage 4-SP
+            - generic [ref=e790]: 스포츠 분석Sports Analysis
+          - list [ref=e792]:
+            - listitem [ref=e793]:
+              - img [ref=e794]
+              - generic [ref=e802]:
+                - text: 성과 내러티브 분석
+                - generic [ref=e803]: Performance Narrative
+              - button "성과 내러티브 분석 도움말" [ref=e804]:
+                - img [ref=e805]
+            - listitem [ref=e808]:
+              - img [ref=e809]
+              - generic [ref=e817]:
+                - text: 시즌 전망 예측
+                - generic [ref=e818]: Season Outlook Prediction
+              - button "시즌 전망 예측 도움말" [ref=e819]:
+                - img [ref=e820]
+        - generic [ref=e823]:
+          - generic [ref=e824]:
+            - generic [ref=e825]: Stage 4-Policy
+            - generic [ref=e826]: 정책 분석Policy Research
+          - list [ref=e828]:
+            - listitem [ref=e829]:
+              - img [ref=e830]
+              - generic [ref=e838]:
+                - text: 정책 수용도 추정
+                - generic [ref=e839]: Policy Acceptance Estimate
+              - button "정책 수용도 추정 도움말" [ref=e840]:
+                - img [ref=e841]
+            - listitem [ref=e844]:
+              - img [ref=e845]
+              - generic [ref=e853]:
+                - text: 프레임 전쟁 (정책)
+                - generic [ref=e854]: Policy Frame War
+              - button "프레임 전쟁 (정책) 도움말" [ref=e855]:
+                - img [ref=e856]
+            - listitem [ref=e859]:
+              - img [ref=e860]
+              - generic [ref=e868]:
+                - text: 정책 위기 시나리오
+                - generic [ref=e869]: Policy Crisis Scenario
+              - button "정책 위기 시나리오 도움말" [ref=e870]:
+                - img [ref=e871]
+            - listitem [ref=e874]:
+              - img [ref=e875]
+              - generic [ref=e883]:
+                - text: 정책 승인 시뮬레이션
+                - generic [ref=e884]: Policy Approval Simulation
+              - button "정책 승인 시뮬레이션 도움말" [ref=e885]:
+                - img [ref=e886]
+        - generic [ref=e889]:
+          - generic [ref=e890]:
+            - generic [ref=e891]: Stage 4-Edu
+            - generic [ref=e892]: 교육기관 분석Education Institution
+          - list [ref=e894]:
+            - listitem [ref=e895]:
+              - img [ref=e896]
+              - generic [ref=e904]:
+                - text: 기관 평판 지수
+                - generic [ref=e905]: Institutional Reputation Index
+              - button "기관 평판 지수 도움말" [ref=e906]:
+                - img [ref=e907]
+            - listitem [ref=e910]:
+              - img [ref=e911]
+              - generic [ref=e919]:
+                - text: 교육 여론 프레임
+                - generic [ref=e920]: Education Opinion Frame
+              - button "교육 여론 프레임 도움말" [ref=e921]:
+                - img [ref=e922]
+            - listitem [ref=e925]:
+              - img [ref=e926]
+              - generic [ref=e934]:
+                - text: 교육 위기 시나리오
+                - generic [ref=e935]: Education Crisis Scenario
+              - button "교육 위기 시나리오 도움말" [ref=e936]:
+                - img [ref=e937]
+            - listitem [ref=e940]:
+              - img [ref=e941]
+              - generic [ref=e949]:
+                - text: 교육기관 목표 달성 시뮬레이션
+                - generic [ref=e950]: Education Outcome Simulation
+              - button "교육기관 목표 달성 시뮬레이션 도움말" [ref=e951]:
+                - img [ref=e952]
+        - generic [ref=e955]:
+          - generic [ref=e956]:
+            - generic [ref=e957]: Stage 4-PS
+            - generic [ref=e958]: 공공기관 분석Public Sector
+          - list [ref=e960]:
+            - listitem [ref=e961]:
+              - img [ref=e962]
+              - generic [ref=e970]:
+                - text: 시민 신뢰도 추정
+                - generic [ref=e971]: Public Trust Estimate
+              - button "시민 신뢰도 추정 도움말" [ref=e972]:
+                - img [ref=e973]
+            - listitem [ref=e976]:
+              - img [ref=e977]
+              - generic [ref=e985]:
+                - text: 공공 프레임 전쟁
+                - generic [ref=e986]: Public Frame War
+              - button "공공 프레임 전쟁 도움말" [ref=e987]:
+                - img [ref=e988]
+            - listitem [ref=e991]:
+              - img [ref=e992]
+              - generic [ref=e1000]:
+                - text: 공공 위기 시나리오
+                - generic [ref=e1001]: Public Crisis Scenario
+              - button "공공 위기 시나리오 도움말" [ref=e1002]:
+                - img [ref=e1003]
+            - listitem [ref=e1006]:
+              - img [ref=e1007]
+              - generic [ref=e1015]:
+                - text: 기관 신뢰 회복 시뮬레이션
+                - generic [ref=e1016]: Public Trust Recovery Simulation
+              - button "기관 신뢰 회복 시뮬레이션 도움말" [ref=e1017]:
+                - img [ref=e1018]
+        - generic [ref=e1021]:
+          - generic [ref=e1022]:
+            - generic [ref=e1023]: Stage 4-Legal
+            - generic [ref=e1024]: 법률 분석Legal & Law Firm
+          - list [ref=e1026]:
+            - listitem [ref=e1027]:
+              - img [ref=e1028]
+              - generic [ref=e1036]:
+                - text: 법률 평판 지수
+                - generic [ref=e1037]: Legal Reputation Index
+              - button "법률 평판 지수 도움말" [ref=e1038]:
+                - img [ref=e1039]
+            - listitem [ref=e1042]:
+              - img [ref=e1043]
+              - generic [ref=e1051]:
+                - text: 법률 프레임 전쟁
+                - generic [ref=e1052]: Legal Frame War
+              - button "법률 프레임 전쟁 도움말" [ref=e1053]:
+                - img [ref=e1054]
+            - listitem [ref=e1057]:
+              - img [ref=e1058]
+              - generic [ref=e1066]:
+                - text: 법률 위기 시나리오
+                - generic [ref=e1067]: Legal Crisis Scenario
+              - button "법률 위기 시나리오 도움말" [ref=e1068]:
+                - img [ref=e1069]
+            - listitem [ref=e1072]:
+              - img [ref=e1073]
+              - generic [ref=e1081]:
+                - text: 법률 승리 시뮬레이션
+                - generic [ref=e1082]: Legal Win Simulation
+              - button "법률 승리 시뮬레이션 도움말" [ref=e1083]:
+                - img [ref=e1084]
+        - generic [ref=e1087]:
+          - generic [ref=e1088]:
+            - generic [ref=e1089]: Stage 4-Retail
+            - generic [ref=e1090]: 유통/브랜드 분석Retail & Brand
+          - list [ref=e1092]:
+            - listitem [ref=e1093]:
+              - img [ref=e1094]
+              - generic [ref=e1102]:
+                - text: 브랜드 평판 지수
+                - generic [ref=e1103]: Brand Equity Index
+              - button "브랜드 평판 지수 도움말" [ref=e1104]:
+                - img [ref=e1105]
+            - listitem [ref=e1108]:
+              - img [ref=e1109]
+              - generic [ref=e1117]:
+                - text: ESG 브랜드 여론
+                - generic [ref=e1118]: ESG Brand Sentiment
+              - button "ESG 브랜드 여론 도움말" [ref=e1119]:
+                - img [ref=e1120]
+            - listitem [ref=e1123]:
+              - img [ref=e1124]
+              - generic [ref=e1132]:
+                - text: 유통 위기 시나리오
+                - generic [ref=e1133]: Retail Crisis Scenario
+              - button "유통 위기 시나리오 도움말" [ref=e1134]:
+                - img [ref=e1135]
+            - listitem [ref=e1138]:
+              - img [ref=e1139]
+              - generic [ref=e1147]:
+                - text: 브랜드 승리 시뮬레이션
+                - generic [ref=e1148]: Brand Win Simulation
+              - button "브랜드 승리 시뮬레이션 도움말" [ref=e1149]:
+                - img [ref=e1150]
+        - generic [ref=e1153]:
+          - generic [ref=e1154]:
+            - generic [ref=e1155]: Stage 4-Fin
+            - generic [ref=e1156]: 금융 여론 분석Finance & Investment
+          - list [ref=e1158]:
+            - listitem [ref=e1159]:
+              - img [ref=e1160]
+              - generic [ref=e1168]:
+                - text: 투자 심리 지수
+                - generic [ref=e1169]: Investor Sentiment Index
+              - button "투자 심리 지수 도움말" [ref=e1170]:
+                - img [ref=e1171]
+            - listitem [ref=e1174]:
+              - img [ref=e1175]
+              - generic [ref=e1183]:
+                - text: 정보 비대칭 분석
+                - generic [ref=e1184]: Information Asymmetry
+              - button "정보 비대칭 분석 도움말" [ref=e1185]:
+                - img [ref=e1186]
+            - listitem [ref=e1189]:
+              - img [ref=e1190]
+              - generic [ref=e1198]:
+                - text: 시장 시나리오 분석
+                - generic [ref=e1199]: Market Scenario Analysis
+              - button "시장 시나리오 분석 도움말" [ref=e1200]:
+                - img [ref=e1201]
+            - listitem [ref=e1204]:
+              - img [ref=e1205]
+              - generic [ref=e1213]:
+                - text: 투자 신호 종합
+                - generic [ref=e1214]: Investment Signal Synthesis
+              - button "투자 신호 종합 도움말" [ref=e1215]:
+                - img [ref=e1216]
+    - generic [ref=e1220]:
+      - generic [ref=e1221]:
+        - generic [ref=e1222]:
+          - img
+          - text: NEW
+        - heading "단순한 분석을 넘어, 지식을 연결합니다" [level=2] [ref=e1223]
+        - paragraph [ref=e1224]: AI 분석 결과에서 인물·조직·이슈 간의 관계를 자동 추출하고, 의미 기반 검색으로 수천 건의 데이터에서 즉시 원하는 인사이트를 찾습니다.
+      - generic [ref=e1225]:
+        - generic [ref=e1226]:
+          - generic [ref=e1229]:
+            - img [ref=e1231]
+            - generic [ref=e1236]:
+              - generic [ref=e1237]: 지식 그래프 (Knowledge Graph)
+              - generic [ref=e1238]: 온톨로지 기반 관계 시각화
+          - generic [ref=e1239]:
+            - paragraph [ref=e1240]: 6개 분석 모듈의 결과에서 핵심 엔티티(인물·조직·이슈·키워드·프레임·주장)와 그들 간의 관계를 자동 추출합니다. 지지·대립·연쇄·위협·공동출현 등 관계 유형을 인터랙티브 네트워크 그래프로 시각화합니다.
+            - generic [ref=e1241]:
+              - generic [ref=e1242]:
+                - paragraph [ref=e1243]: 엔티티 타입
+                - paragraph [ref=e1244]: 인물·조직·이슈·키워드·프레임·주장
+              - generic [ref=e1245]:
+                - paragraph [ref=e1246]: 관계 매핑
+                - paragraph [ref=e1247]: 지지·대립·연쇄·위협·공동출현
+              - generic [ref=e1248]:
+                - paragraph [ref=e1249]: 시각화
+                - paragraph [ref=e1250]: 줌·드래그·필터·노드 상세
+              - generic [ref=e1251]:
+                - paragraph [ref=e1252]: 자동 추출
+                - paragraph [ref=e1253]: 분석 완료 시 즉시 생성
+            - list [ref=e1254]:
+              - listitem [ref=e1255]:
+                - img [ref=e1256]
+                - generic [ref=e1259]: 인물 간 지지·대립 관계를 한눈에 파악
+              - listitem [ref=e1260]:
+                - img [ref=e1261]
+                - generic [ref=e1264]: 이슈 확산 경로와 핵심 노드 식별
+              - listitem [ref=e1265]:
+                - img [ref=e1266]
+                - generic [ref=e1269]: 특정 엔티티 클릭으로 관련 문서 즉시 검색
+        - generic [ref=e1270]:
+          - generic [ref=e1273]:
+            - img [ref=e1275]
+            - generic [ref=e1278]:
+              - generic [ref=e1279]: 시맨틱 검색 (Semantic Search)
+              - generic [ref=e1280]: 의미 기반 지능형 문서 검색
+          - generic [ref=e1281]:
+            - paragraph [ref=e1282]: 키워드가 아닌 "의미"로 검색합니다. pgvector 기반 384차원 임베딩으로 수집된 기사와 댓글을 벡터화하고, 자연어 질의로 관련 문서를 즉시 찾습니다. 정확한 키워드를 몰라도 됩니다.
+            - generic [ref=e1283]:
+              - generic [ref=e1284]:
+                - paragraph [ref=e1285]: 임베딩
+                - paragraph [ref=e1286]: 384차원 (multilingual-e5-small)
+              - generic [ref=e1287]:
+                - paragraph [ref=e1288]: 검색 방식
+                - paragraph [ref=e1289]: 코사인 유사도 + HNSW 인덱스
+              - generic [ref=e1290]:
+                - paragraph [ref=e1291]: 검색 대상
+                - paragraph [ref=e1292]: 기사·댓글·엔티티 통합
+              - generic [ref=e1293]:
+                - paragraph [ref=e1294]: 필터링
+                - paragraph [ref=e1295]: 감정·소스·유사도 기준
+            - list [ref=e1296]:
+              - listitem [ref=e1297]:
+                - img [ref=e1298]
+                - generic [ref=e1301]: "\"경제에 미치는 영향\" 질의로 관련 기사와 댓글 즉시 검색"
+              - listitem [ref=e1302]:
+                - img [ref=e1303]
+                - generic [ref=e1306]: 수천 건 데이터에서도 밀리초 단위 응답
+              - listitem [ref=e1307]:
+                - img [ref=e1308]
+                - generic [ref=e1311]: 엔티티(인물·조직) 검색으로 관련 맥락 파악
+      - generic [ref=e1312]:
+        - heading "지식 그래프 + 시맨틱 검색이 만나는 방식" [level=3] [ref=e1313]
+        - generic [ref=e1314]:
+          - generic [ref=e1315]:
+            - img [ref=e1317]
+            - heading "1. AI 분석 완료" [level=4] [ref=e1325]
+            - paragraph [ref=e1326]: 18개 모듈이 인물·조직·이슈·프레임·주장을 자동 식별
+          - generic [ref=e1327]:
+            - img [ref=e1329]
+            - heading "2. 그래프 자동 생성" [level=4] [ref=e1334]
+            - paragraph [ref=e1335]: 엔티티 간 관계를 매핑하고 인터랙티브 네트워크로 시각화
+          - generic [ref=e1336]:
+            - img [ref=e1338]
+            - heading "3. 의미 검색으로 탐색" [level=4] [ref=e1341]
+            - paragraph [ref=e1342]: 자연어로 질의하여 그래프의 특정 노드와 관련 문서를 즉시 발견
+    - generic [ref=e1344]:
+      - generic [ref=e1345]:
+        - heading "클릭 한 번, 전략 리포트까지" [level=2] [ref=e1346]
+        - paragraph [ref=e1347]: 각 단계를 클릭하면 상세 워크플로우를 확인할 수 있습니다.
+      - generic [ref=e1348]:
+        - button "Step 1 키워드 입력 분석 대상과 기간 설정 클릭하여 자세히 보기" [ref=e1349] [cursor=pointer]:
+          - img [ref=e1351]
+          - generic [ref=e1354]: Step 1
+          - heading "키워드 입력" [level=3] [ref=e1355]
+          - paragraph [ref=e1356]: 분석 대상과 기간 설정
+          - generic [ref=e1357]: 클릭하여 자세히 보기
+        - button "Step 2 자동 수집 6개 소스 병렬 크롤링 클릭하여 자세히 보기" [ref=e1358] [cursor=pointer]:
+          - img [ref=e1360]
+          - generic [ref=e1362]: Step 2
+          - heading "자동 수집" [level=3] [ref=e1363]
+          - paragraph [ref=e1364]: 6개 소스 병렬 크롤링
+          - generic [ref=e1365]: 클릭하여 자세히 보기
+        - button "Step 3 AI 분석 18개 모듈 단계별 실행 클릭하여 자세히 보기" [ref=e1366] [cursor=pointer]:
+          - img [ref=e1368]
+          - generic [ref=e1376]: Step 3
+          - heading "AI 분석" [level=3] [ref=e1377]
+          - paragraph [ref=e1378]: 18개 모듈 단계별 실행
+          - generic [ref=e1379]: 클릭하여 자세히 보기
+        - button "Step 4 전략 리포트 실행 가능한 인사이트 클릭하여 자세히 보기" [ref=e1380] [cursor=pointer]:
+          - img [ref=e1382]
+          - generic [ref=e1384]: Step 4
+          - heading "전략 리포트" [level=3] [ref=e1385]
+          - paragraph [ref=e1386]: 실행 가능한 인사이트
+          - generic [ref=e1387]: 클릭하여 자세히 보기
+    - generic [ref=e1389]:
+      - generic [ref=e1390]:
+        - heading "누가 사용하나요?" [level=2] [ref=e1391]
+        - paragraph [ref=e1392]: 여론 분석이 필요한 모든 조직에서 활용할 수 있습니다.
+      - generic [ref=e1393]:
+        - generic [ref=e1394]:
+          - heading "핵심 활용" [level=3] [ref=e1396]
+          - generic [ref=e1398]:
+            - generic [ref=e1399] [cursor=pointer]:
+              - generic [ref=e1400]:
+                - img [ref=e1402]
+                - generic [ref=e1406]: 정치 캠프
+                - generic [ref=e1407]: 실시간 여론 추적, 지지율 추정, 프레임 전쟁 분석으로 선거 전략을 데이터 기반으로 수립합니다.
+              - generic [ref=e1409]:
+                - generic [ref=e1410]:
+                  - generic [ref=e1411]:
+                    - img
+                    - text: 의사결정 시간 수일 → 수시간
+                  - generic [ref=e1412]: 자세히 보기 →
+                - button "Framing Theory · Agenda-Setting Theory 기반" [ref=e1413]:
+                  - img [ref=e1414]
+                  - generic [ref=e1417]: Framing Theory · Agenda-Setting Theory 기반
+            - generic [ref=e1418] [cursor=pointer]:
+              - generic [ref=e1419]:
+                - img [ref=e1421]
+                - generic [ref=e1423]: PR / 위기관리
+                - generic [ref=e1424]: 위기 시나리오 3개와 대응 전략을 자동 생성합니다. 골든타임 안에 전략적 판단이 가능합니다.
+              - generic [ref=e1426]:
+                - generic [ref=e1427]:
+                  - generic [ref=e1428]:
+                    - img
+                    - text: 수동 클리핑 주 20시간 → 0
+                  - generic [ref=e1429]: 자세히 보기 →
+                - button "SCCT · Image Repair Theory 기반" [ref=e1430]:
+                  - img [ref=e1431]
+                  - generic [ref=e1434]: SCCT · Image Repair Theory 기반
+            - generic [ref=e1435] [cursor=pointer]:
+              - generic [ref=e1436]:
+                - img [ref=e1438]
+                - generic [ref=e1441]: 기업 평판 관리
+                - generic [ref=e1442]: 네이버·유튜브·커뮤니티 전체를 통합 분석하여 경영진 보고서를 자동 생성합니다.
+              - generic [ref=e1444]:
+                - generic [ref=e1445]:
+                  - generic [ref=e1446]:
+                    - img
+                    - text: 보고서 작성 3일 → 자동 생성
+                  - generic [ref=e1447]: 자세히 보기 →
+                - button "RepTrak · Stakeholder Theory 기반" [ref=e1448]:
+                  - img [ref=e1449]
+                  - generic [ref=e1452]: RepTrak · Stakeholder Theory 기반
+            - generic [ref=e1453] [cursor=pointer]:
+              - generic [ref=e1454]:
+                - img [ref=e1456]
+                - generic [ref=e1459]: 연예인 / 기획사
+                - generic [ref=e1460]: 아티스트·배우의 온라인 반응을 실시간 추적하고, 팬덤 동향과 리스크를 분석하여 매니지먼트 전략을 지원합니다.
+              - generic [ref=e1462]:
+                - generic [ref=e1463]:
+                  - generic [ref=e1464]:
+                    - img
+                    - text: 팬덤 여론 분석 자동화
+                  - generic [ref=e1465]: 자세히 보기 →
+                - button "Fan Engagement · Parasocial Relationship 기반" [ref=e1466]:
+                  - img [ref=e1467]
+                  - generic [ref=e1470]: Fan Engagement · Parasocial Relationship 기반
+        - generic [ref=e1471]:
+          - heading "산업 특화" [level=3] [ref=e1473]
+          - generic [ref=e1475]:
+            - generic [ref=e1476] [cursor=pointer]:
+              - generic [ref=e1477]:
+                - img [ref=e1479]
+                - generic [ref=e1481]: 정책 연구 / 싱크탱크
+                - generic [ref=e1482]: 특정 정책에 대한 국민 여론 구조를 파악하고, 정책 보고서의 실증 근거로 활용합니다.
+              - generic [ref=e1484]:
+                - generic [ref=e1485]:
+                  - generic [ref=e1486]:
+                    - img
+                    - text: 정책 수용도 분석 자동화
+                  - generic [ref=e1487]: 자세히 보기 →
+                - button "ACF · Punctuated Equilibrium · Policy Diffusion 기반" [ref=e1488]:
+                  - img [ref=e1489]
+                  - generic [ref=e1492]: ACF · Punctuated Equilibrium · Policy Diffusion 기반
+            - generic [ref=e1493] [cursor=pointer]:
+              - generic [ref=e1494]:
+                - img [ref=e1496]
+                - generic [ref=e1499]: 금융 / 투자 리서치
+                - generic [ref=e1500]: 기업·산업·경제 정책에 대한 시장 심리를 분석합니다. 뉴스 댓글과 커뮤니티 반응에서 선행 지표를 포착합니다.
+              - generic [ref=e1502]:
+                - generic [ref=e1503]:
+                  - generic [ref=e1504]:
+                    - img
+                    - text: 시장 심리 선행 지표 포착
+                  - generic [ref=e1505]: 자세히 보기 →
+                - button "Behavioral Finance · Information Cascade 기반" [ref=e1506]:
+                  - img [ref=e1507]
+                  - generic [ref=e1510]: Behavioral Finance · Information Cascade 기반
+            - generic [ref=e1511] [cursor=pointer]:
+              - generic [ref=e1512]:
+                - img [ref=e1514]
+                - generic [ref=e1516]: 제약 / 헬스케어
+                - generic [ref=e1517]: 신약 출시, 의료 이슈, 건강보험 정책 등에 대한 여론을 추적합니다. 약물 부작용 이슈를 조기에 감지합니다.
+              - generic [ref=e1519]:
+                - generic [ref=e1520]:
+                  - generic [ref=e1521]:
+                    - img
+                    - text: 의료 이슈 리스크 조기 감지
+                  - generic [ref=e1522]: 자세히 보기 →
+                - button "Health Belief Model · Risk Perception Theory 기반" [ref=e1523]:
+                  - img [ref=e1524]
+                  - generic [ref=e1527]: Health Belief Model · Risk Perception Theory 기반
+            - generic [ref=e1528] [cursor=pointer]:
+              - generic [ref=e1529]:
+                - img [ref=e1531]
+                - generic [ref=e1535]: 지자체 / 공공기관
+                - generic [ref=e1536]: 재개발, 교통, 환경 등 지역 현안에 대한 주민 여론을 사전에 파악하여 정책 소통에 활용합니다.
+              - generic [ref=e1538]:
+                - generic [ref=e1539]:
+                  - generic [ref=e1540]:
+                    - img
+                    - text: 주민 여론 → 정책 소통 전략
+                  - generic [ref=e1541]: 자세히 보기 →
+                - button "Participatory Governance · Public Trust Theory 기반" [ref=e1542]:
+                  - img [ref=e1543]
+                  - generic [ref=e1546]: Participatory Governance · Public Trust Theory 기반
+        - generic [ref=e1547]:
+          - heading "확장 영역" [level=3] [ref=e1549]
+          - generic [ref=e1551]:
+            - generic [ref=e1552] [cursor=pointer]:
+              - generic [ref=e1553]:
+                - img [ref=e1555]
+                - generic [ref=e1558]: 대학 / 교육기관
+                - generic [ref=e1559]: 입시 정책 변경, 대학 평판, 교육 이슈에 대한 학부모·학생 여론을 추적하고 대응 전략을 도출합니다.
+              - generic [ref=e1561]:
+                - generic [ref=e1562]:
+                  - generic [ref=e1563]:
+                    - img
+                    - text: 교육 정책 여론 즉시 파악
+                  - generic [ref=e1564]: 자세히 보기 →
+                - button "Institutional Reputation · Signaling Theory 기반" [ref=e1565]:
+                  - img [ref=e1566]
+                  - generic [ref=e1569]: Institutional Reputation · Signaling Theory 기반
+            - generic [ref=e1570] [cursor=pointer]:
+              - generic [ref=e1571]:
+                - img [ref=e1573]
+                - generic [ref=e1579]: 스포츠 / e스포츠
+                - generic [ref=e1580]: 선수 이적, 팀 성적에 따른 팬 반응을 실시간 추적합니다. 팬덤 관리와 스폰서 리포팅에 활용합니다.
+              - generic [ref=e1582]:
+                - generic [ref=e1583]:
+                  - generic [ref=e1584]:
+                    - img
+                    - text: 팬 반응 실시간 추적
+                  - generic [ref=e1585]: 자세히 보기 →
+                - button "BIRGing/CORFing · Sport Consumer Motivation 기반" [ref=e1586]:
+                  - img [ref=e1587]
+                  - generic [ref=e1590]: BIRGing/CORFing · Sport Consumer Motivation 기반
+            - generic [ref=e1591] [cursor=pointer]:
+              - generic [ref=e1592]:
+                - img [ref=e1594]
+                - generic [ref=e1597]: 법률 / 로펌
+                - generic [ref=e1598]: 소송 관련 여론전, 기업 분쟁 시 여론 동향을 파악하여 법적 전략 수립을 지원합니다.
+              - generic [ref=e1600]:
+                - generic [ref=e1601]:
+                  - generic [ref=e1602]:
+                    - img
+                    - text: 여론재판 리스크 모니터링
+                  - generic [ref=e1603]: 자세히 보기 →
+                - button "Legal Reputation · Social Proof Theory 기반" [ref=e1604]:
+                  - img [ref=e1605]
+                  - generic [ref=e1608]: Legal Reputation · Social Proof Theory 기반
+            - generic [ref=e1609] [cursor=pointer]:
+              - generic [ref=e1610]:
+                - img [ref=e1612]
+                - generic [ref=e1616]: 프랜차이즈 / 유통
+                - generic [ref=e1617]: 가맹점 이슈, 소비자 불매운동, 제품 리콜 등 브랜드 위기를 조기 감지하고 대응 전략을 생성합니다.
+              - generic [ref=e1619]:
+                - generic [ref=e1620]:
+                  - generic [ref=e1621]:
+                    - img
+                    - text: 불매운동 조기 감지 → 대응
+                  - generic [ref=e1622]: 자세히 보기 →
+                - button "CBBE Model · Franchise System Dynamics 기반" [ref=e1623]:
+                  - img [ref=e1624]
+                  - generic [ref=e1627]: CBBE Model · Franchise System Dynamics 기반
+    - generic [ref=e1629]:
+      - generic [ref=e1630]:
+        - generic [ref=e1631]:
+          - img
+          - text: 고객 맞춤 구성
+        - heading "우리 조직에 딱 맞는 분석 환경을 요청하면 만들어 드립니다" [level=2] [ref=e1632]:
+          - text: 우리 조직에 딱 맞는 분석 환경을
+          - text: 요청하면 만들어 드립니다
+        - paragraph [ref=e1633]: AI SignalCraft는 표준 SaaS이면서 동시에 커스터마이징이 가능한 플랫폼입니다. 소스, 모듈, 프롬프트, 리포트 형식 등 필요한 부분을 고객 요청에 맞게 조정합니다.
+      - generic [ref=e1634]:
+        - generic [ref=e1635]:
+          - generic [ref=e1636]:
+            - img [ref=e1638]
+            - generic [ref=e1641]: 수집 소스 추가
+            - generic [ref=e1642]: 기본 6개 소스 외에 특정 사이트, 내부 보고서, 해외 미디어 등 조직에서 모니터링하는 채널을 수집 소스로 추가할 수 있습니다.
+          - list [ref=e1644]:
+            - listitem [ref=e1645]:
+              - img [ref=e1646]
+              - text: 특정 언론사·블로그 타겟 수집
+            - listitem [ref=e1649]:
+              - img [ref=e1650]
+              - text: 해외 미디어 모니터링
+            - listitem [ref=e1653]:
+              - img [ref=e1654]
+              - text: 내부 설문·인터뷰 데이터 연동
+        - generic [ref=e1657]:
+          - generic [ref=e1658]:
+            - img [ref=e1660]
+            - generic [ref=e1668]: 분석 모듈·프롬프트 조정
+            - generic [ref=e1669]: 기존 59개 모듈의 분석 관점, 출력 형식, 사용 AI 모델을 조직의 목적에 맞게 세밀하게 조정하거나 전용 모듈을 신규 제작합니다.
+          - list [ref=e1671]:
+            - listitem [ref=e1672]:
+              - img [ref=e1673]
+              - text: 도메인 특화 분석 관점 적용
+            - listitem [ref=e1676]:
+              - img [ref=e1677]
+              - text: 조직 내부 용어·분류 기준 반영
+            - listitem [ref=e1680]:
+              - img [ref=e1681]
+              - text: 전용 AI 모듈 신규 개발
+        - generic [ref=e1684]:
+          - generic [ref=e1685]:
+            - img [ref=e1687]
+            - generic [ref=e1690]: 리포트 형식 맞춤화
+            - generic [ref=e1691]: 출력 리포트의 섹션 구성, 시각화 방식, 브랜딩, 배포 형태를 고객사의 보고 체계에 맞게 커스터마이징합니다.
+          - list [ref=e1693]:
+            - listitem [ref=e1694]:
+              - img [ref=e1695]
+              - text: 조직 브랜딩 적용 PDF
+            - listitem [ref=e1698]:
+              - img [ref=e1699]
+              - text: 경영진용 요약본 별도 생성
+            - listitem [ref=e1702]:
+              - img [ref=e1703]
+              - text: 슬랙·이메일 자동 발송 연동
+      - generic [ref=e1707]:
+        - generic [ref=e1708]:
+          - generic [ref=e1709]:
+            - img [ref=e1710]
+            - generic [ref=e1712]: 커스터마이징 상담
+          - paragraph [ref=e1713]: 어떤 부분을 바꾸고 싶으신지 말씀해 주세요
+          - paragraph [ref=e1714]: 요구사항을 공유하시면 구현 가능 여부와 일정을 빠르게 안내해 드립니다.
+        - link "커스터마이징 문의하기" [ref=e1715] [cursor=pointer]:
+          - /url: mailto:krdn.net@gmail.com
+          - img
+          - text: 커스터마이징 문의하기
+    - generic [ref=e1717]:
+      - generic [ref=e1718]:
+        - heading "투명한 가격" [level=2] [ref=e1719]
+        - paragraph [ref=e1720]: 7일 무료 체험 · 카드 등록 불필요 · 연간 결제 시 2개월 무료
+      - generic [ref=e1721]:
+        - generic [ref=e1722]:
+          - generic [ref=e1723]:
+            - generic [ref=e1725]: Starter
+            - generic [ref=e1726]: 소규모 팀과 컨설턴트
+          - generic [ref=e1727]:
+            - generic [ref=e1728]:
+              - generic [ref=e1729]: "49"
+              - generic [ref=e1730]: 만원/월
+            - list [ref=e1731]:
+              - listitem [ref=e1732]:
+                - img [ref=e1733]
+                - text: 분석 대상 1개
+              - listitem [ref=e1736]:
+                - img [ref=e1737]
+                - text: 3개 소스 수집
+              - listitem [ref=e1740]:
+                - img [ref=e1741]
+                - text: 기본 8개 모듈 (Stage 1+2)
+              - listitem [ref=e1744]:
+                - img [ref=e1745]
+                - text: 월 4회 분석
+              - listitem [ref=e1748]:
+                - img [ref=e1749]
+                - text: 팀원 3명
+            - link "7일 무료 체험" [ref=e1752] [cursor=pointer]:
+              - /url: /demo
+        - generic [ref=e1753]:
+          - generic [ref=e1754]:
+            - generic [ref=e1755]:
+              - generic [ref=e1756]: Professional
+              - generic [ref=e1757]: 추천
+            - generic [ref=e1758]: PR 에이전시와 기업 홍보팀
+          - generic [ref=e1759]:
+            - generic [ref=e1760]:
+              - generic [ref=e1761]: "129"
+              - generic [ref=e1762]: 만원/월
+            - list [ref=e1763]:
+              - listitem [ref=e1764]:
+                - img [ref=e1765]
+                - text: 분석 대상 3개
+              - listitem [ref=e1768]:
+                - img [ref=e1769]
+                - text: 전체 6개 소스 수집
+              - listitem [ref=e1772]:
+                - img [ref=e1773]
+                - text: 14개 전체 모듈
+              - listitem [ref=e1776]:
+                - img [ref=e1777]
+                - text: 월 12회 분석
+              - listitem [ref=e1780]:
+                - img [ref=e1781]
+                - text: 팀원 10명
+              - listitem [ref=e1784]:
+                - img [ref=e1785]
+                - text: PDF 리포트 내보내기
+            - link "7일 무료 체험" [ref=e1788] [cursor=pointer]:
+              - /url: /demo
+        - generic [ref=e1789]:
+          - generic [ref=e1790]:
+            - generic [ref=e1792]: Campaign
+            - generic [ref=e1793]: 정치 캠프와 대규모 조직
+          - generic [ref=e1794]:
+            - generic [ref=e1795]:
+              - generic [ref=e1796]: "249"
+              - generic [ref=e1797]: 만원/월
+            - list [ref=e1798]:
+              - listitem [ref=e1799]:
+                - img [ref=e1800]
+                - text: 분석 대상 5개
+              - listitem [ref=e1803]:
+                - img [ref=e1804]
+                - text: 무제한 분석
+              - listitem [ref=e1807]:
+                - img [ref=e1808]
+                - text: 14개 전체 모듈
+              - listitem [ref=e1811]:
+                - img [ref=e1812]
+                - text: API 접근
+              - listitem [ref=e1815]:
+                - img [ref=e1816]
+                - text: 전담 CSM
+              - listitem [ref=e1819]:
+                - img [ref=e1820]
+                - text: 맞춤 분석 모듈
+            - link "상담 신청" [ref=e1823] [cursor=pointer]:
+              - /url: mailto:krdn.net@gmail.com
+      - generic [ref=e1824]:
+        - heading "비용 비교" [level=3] [ref=e1825]
+        - generic [ref=e1826]:
+          - generic [ref=e1827]:
+            - generic [ref=e1828]:
+              - generic [ref=e1829]: 모니터링 주니어 인건비
+              - generic [ref=e1830]: 수집만
+            - generic [ref=e1831]: 250~350만원/월
+          - generic [ref=e1832]:
+            - generic [ref=e1833]:
+              - generic [ref=e1834]: 소셜 리스닝 도구
+              - generic [ref=e1835]: 수집 + 감정 분석
+            - generic [ref=e1836]: 50~300만원/월
+          - generic [ref=e1837]:
+            - generic [ref=e1838]:
+              - generic [ref=e1839]: AI SignalCraft
+              - generic [ref=e1840]: 수집 + 분석 + 전략
+            - generic [ref=e1841]: 129만원/월
+    - generic [ref=e1843]:
+      - generic [ref=e1844]:
+        - img
+        - text: 파트너 프로그램
+      - heading "함께 성장하는 비즈니스 파트너를 찾습니다" [level=2] [ref=e1845]
+      - paragraph [ref=e1846]: 초기 비용 0원, 최대 50% 수수료. AI SignalCraft를 영업하고 성과에 따른 수수료를 받으세요.
+      - generic [ref=e1847]:
+        - link "파트너 프로그램 자세히 보기" [ref=e1848] [cursor=pointer]:
+          - /url: /programs
+          - img
+          - text: 파트너 프로그램 자세히 보기
+        - link "파트너 신청하기" [ref=e1849] [cursor=pointer]:
+          - /url: /partner/apply
+          - text: 파트너 신청하기
+          - img
+    - generic [ref=e1851]:
+      - heading "여론 분석, 전략으로 바꿀 준비가 되셨나요?" [level=2] [ref=e1852]
+      - paragraph [ref=e1853]: 7일 무료 체험으로 시작하세요. 카드 등록 없이, 5분 안에 첫 분석을 실행할 수 있습니다.
+      - generic [ref=e1854]:
+        - link "무료 체험 시작" [ref=e1855] [cursor=pointer]:
+          - /url: /demo
+          - text: 무료 체험 시작
+          - img
+        - link "파트너 신청" [ref=e1856] [cursor=pointer]:
+          - /url: /partner/apply
+          - img
+          - text: 파트너 신청
+    - contentinfo [ref=e1857]:
+      - generic [ref=e1858]:
+        - generic [ref=e1859]:
+          - img [ref=e1860]
+          - generic [ref=e1863]: AI SignalCraft
+        - paragraph [ref=e1864]: © 2026 AI SignalCraft. All rights reserved.
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e1870] [cursor=pointer]:
+    - img [ref=e1871]

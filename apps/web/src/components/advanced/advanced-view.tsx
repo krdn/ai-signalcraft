@@ -1,6 +1,7 @@
 'use client';
 
 import { buildFrameWarGraph, buildRiskChainGraph } from '@ai-signalcraft/core/client';
+import { useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { AlertCircle, Brain } from 'lucide-react';
 import { AdvancedHelp, AdvancedCardHelp, ADVANCED_HELP } from './advanced-help';
@@ -32,6 +33,7 @@ import { InstitutionalReputationIndexCard } from './institutional-reputation-ind
 import { EducationOpinionFrameCard } from './education-opinion-frame-card';
 import { EducationCrisisScenarioCard } from './education-crisis-scenario-card';
 import { EducationOutcomeSimulationCard } from './education-outcome-simulation-card';
+import { PdfExportButton } from '@/components/ui/pdf-export-button';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -184,6 +186,7 @@ function detectDomain(
 }
 
 export function AdvancedView({ jobId, domain: domainProp, fetchFn }: AdvancedViewProps) {
+  const contentRef = useRef<HTMLDivElement>(null);
   const defaultFetch = (id: number) => trpcClient.analysis.getResults.query({ jobId: id });
   const queryFnToUse = fetchFn ?? defaultFetch;
 
@@ -293,446 +296,453 @@ export function AdvancedView({ jobId, domain: domainProp, fetchFn }: AdvancedVie
 
   return (
     <div className="space-y-4">
-      {/* 상단 가이드 버튼 */}
-      <div className="flex justify-end">
+      {/* 상단 가이드/PDF 버튼 */}
+      <div className="flex justify-end gap-2">
         <AdvancedHelp />
+        <PdfExportButton targetRef={contentRef} filename={`advanced-job${jobId}`} />
       </div>
 
-      {/* 도메인별 카드 그리드 */}
-      {domain === 'finance' ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <MarketSentimentIndexCard
-            data={parseModuleResult(moduleResults, 'market-sentiment-index') ?? null}
-          />
-          <InformationAsymmetryCard
-            data={parseModuleResult(moduleResults, 'information-asymmetry') ?? null}
-          />
-          <CatalystScenarioCard
-            data={parseModuleResult(moduleResults, 'catalyst-scenario') ?? null}
-          />
-          <InvestmentSignalCard
-            data={parseModuleResult(moduleResults, 'investment-signal') ?? null}
-          />
+      <div ref={contentRef} className="space-y-4">
+        {/* 도메인별 카드 그리드 */}
+        {domain === 'finance' ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <MarketSentimentIndexCard
+              data={parseModuleResult(moduleResults, 'market-sentiment-index') ?? null}
+            />
+            <InformationAsymmetryCard
+              data={parseModuleResult(moduleResults, 'information-asymmetry') ?? null}
+            />
+            <CatalystScenarioCard
+              data={parseModuleResult(moduleResults, 'catalyst-scenario') ?? null}
+            />
+            <InvestmentSignalCard
+              data={parseModuleResult(moduleResults, 'investment-signal') ?? null}
+            />
 
-          {/* 리스크 연쇄 그래프 */}
-          {(() => {
-            const riskData = parseModuleResult(moduleResults, 'risk-map');
-            if (!riskData) return null;
-            try {
-              const graphData = buildRiskChainGraph(riskData as any);
-              if (graphData.nodes.length === 0) return null;
-              return (
-                <Card className="min-h-[320px]">
-                  <CardHeader>
-                    <CardTitle className="text-lg font-semibold flex items-center gap-1.5">
-                      리스크 연쇄 다이어그램
-                      <AdvancedCardHelp {...ADVANCED_HELP.riskChainGraph} />
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <FrameWarGraph data={graphData} width={600} height={400} />
-                  </CardContent>
-                </Card>
-              );
-            } catch {
-              return null;
-            }
-          })()}
-        </div>
-      ) : domain === 'legal' ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <ReputationIndexCard
-            data={parseModuleResult(moduleResults, 'reputation-index') ?? null}
-          />
-          <FrameWarChart data={parseModuleResult(moduleResults, 'frame-war') ?? null} />
-          <CrisisScenarios data={parseModuleResult(moduleResults, 'crisis-scenario') ?? null} />
-          <WinSimulationCard data={parseModuleResult(moduleResults, 'win-simulation') ?? null} />
+            {/* 리스크 연쇄 그래프 */}
+            {(() => {
+              const riskData = parseModuleResult(moduleResults, 'risk-map');
+              if (!riskData) return null;
+              try {
+                const graphData = buildRiskChainGraph(riskData as any);
+                if (graphData.nodes.length === 0) return null;
+                return (
+                  <Card className="min-h-[320px]">
+                    <CardHeader>
+                      <CardTitle className="text-lg font-semibold flex items-center gap-1.5">
+                        리스크 연쇄 다이어그램
+                        <AdvancedCardHelp {...ADVANCED_HELP.riskChainGraph} />
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <FrameWarGraph data={graphData} width={600} height={400} />
+                    </CardContent>
+                  </Card>
+                );
+              } catch {
+                return null;
+              }
+            })()}
+          </div>
+        ) : domain === 'legal' ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <ReputationIndexCard
+              data={parseModuleResult(moduleResults, 'reputation-index') ?? null}
+            />
+            <FrameWarChart data={parseModuleResult(moduleResults, 'frame-war') ?? null} />
+            <CrisisScenarios data={parseModuleResult(moduleResults, 'crisis-scenario') ?? null} />
+            <WinSimulationCard data={parseModuleResult(moduleResults, 'win-simulation') ?? null} />
 
-          {/* 프레임 전쟁 네트워크 그래프 */}
-          {(() => {
-            const frameWarData = parseModuleResult(moduleResults, 'frame-war');
-            const sentimentData = parseModuleResult(moduleResults, 'sentiment-framing');
-            if (!frameWarData || !sentimentData) return null;
-            try {
-              const graphData = buildFrameWarGraph(frameWarData as any, sentimentData as any);
-              if (graphData.nodes.length === 0) return null;
-              return (
-                <Card className="min-h-[320px]">
-                  <CardHeader>
-                    <CardTitle className="text-lg font-semibold flex items-center gap-1.5">
-                      프레임 전쟁 네트워크
-                      <AdvancedCardHelp {...ADVANCED_HELP.frameWarGraph} />
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <FrameWarGraph data={graphData} width={600} height={400} />
-                  </CardContent>
-                </Card>
-              );
-            } catch {
-              return null;
-            }
-          })()}
+            {/* 프레임 전쟁 네트워크 그래프 */}
+            {(() => {
+              const frameWarData = parseModuleResult(moduleResults, 'frame-war');
+              const sentimentData = parseModuleResult(moduleResults, 'sentiment-framing');
+              if (!frameWarData || !sentimentData) return null;
+              try {
+                const graphData = buildFrameWarGraph(frameWarData as any, sentimentData as any);
+                if (graphData.nodes.length === 0) return null;
+                return (
+                  <Card className="min-h-[320px]">
+                    <CardHeader>
+                      <CardTitle className="text-lg font-semibold flex items-center gap-1.5">
+                        프레임 전쟁 네트워크
+                        <AdvancedCardHelp {...ADVANCED_HELP.frameWarGraph} />
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <FrameWarGraph data={graphData} width={600} height={400} />
+                    </CardContent>
+                  </Card>
+                );
+              } catch {
+                return null;
+              }
+            })()}
 
-          {/* 리스크 연쇄 그래프 */}
-          {(() => {
-            const riskData = parseModuleResult(moduleResults, 'risk-map');
-            if (!riskData) return null;
-            try {
-              const graphData = buildRiskChainGraph(riskData as any);
-              if (graphData.nodes.length === 0) return null;
-              return (
-                <Card className="min-h-[320px]">
-                  <CardHeader>
-                    <CardTitle className="text-lg font-semibold flex items-center gap-1.5">
-                      리스크 연쇄 다이어그램
-                      <AdvancedCardHelp {...ADVANCED_HELP.riskChainGraph} />
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <FrameWarGraph data={graphData} width={600} height={400} />
-                  </CardContent>
-                </Card>
-              );
-            } catch {
-              return null;
-            }
-          })()}
-        </div>
-      ) : domain === 'pr' ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <CrisisTypeClassifierCard
-            data={parseModuleResult(moduleResults, 'crisis-type-classifier') ?? null}
-          />
-          <ReputationIndexCard
-            data={parseModuleResult(moduleResults, 'reputation-index') ?? null}
-          />
-          <FrameWarChart data={parseModuleResult(moduleResults, 'frame-war') ?? null} />
-          <CrisisScenarios data={parseModuleResult(moduleResults, 'crisis-scenario') ?? null} />
+            {/* 리스크 연쇄 그래프 */}
+            {(() => {
+              const riskData = parseModuleResult(moduleResults, 'risk-map');
+              if (!riskData) return null;
+              try {
+                const graphData = buildRiskChainGraph(riskData as any);
+                if (graphData.nodes.length === 0) return null;
+                return (
+                  <Card className="min-h-[320px]">
+                    <CardHeader>
+                      <CardTitle className="text-lg font-semibold flex items-center gap-1.5">
+                        리스크 연쇄 다이어그램
+                        <AdvancedCardHelp {...ADVANCED_HELP.riskChainGraph} />
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <FrameWarGraph data={graphData} width={600} height={400} />
+                    </CardContent>
+                  </Card>
+                );
+              } catch {
+                return null;
+              }
+            })()}
+          </div>
+        ) : domain === 'pr' ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <CrisisTypeClassifierCard
+              data={parseModuleResult(moduleResults, 'crisis-type-classifier') ?? null}
+            />
+            <ReputationIndexCard
+              data={parseModuleResult(moduleResults, 'reputation-index') ?? null}
+            />
+            <FrameWarChart data={parseModuleResult(moduleResults, 'frame-war') ?? null} />
+            <CrisisScenarios data={parseModuleResult(moduleResults, 'crisis-scenario') ?? null} />
 
-          {/* 프레임 전쟁 네트워크 그래프 */}
-          {(() => {
-            const frameWarData = parseModuleResult(moduleResults, 'frame-war');
-            const sentimentData = parseModuleResult(moduleResults, 'sentiment-framing');
-            if (!frameWarData || !sentimentData) return null;
-            try {
-              const graphData = buildFrameWarGraph(frameWarData as any, sentimentData as any);
-              if (graphData.nodes.length === 0) return null;
-              return (
-                <Card className="min-h-[320px]">
-                  <CardHeader>
-                    <CardTitle className="text-lg font-semibold flex items-center gap-1.5">
-                      프레임 전쟁 네트워크
-                      <AdvancedCardHelp {...ADVANCED_HELP.frameWarGraph} />
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <FrameWarGraph data={graphData} width={600} height={400} />
-                  </CardContent>
-                </Card>
-              );
-            } catch {
-              return null;
-            }
-          })()}
+            {/* 프레임 전쟁 네트워크 그래프 */}
+            {(() => {
+              const frameWarData = parseModuleResult(moduleResults, 'frame-war');
+              const sentimentData = parseModuleResult(moduleResults, 'sentiment-framing');
+              if (!frameWarData || !sentimentData) return null;
+              try {
+                const graphData = buildFrameWarGraph(frameWarData as any, sentimentData as any);
+                if (graphData.nodes.length === 0) return null;
+                return (
+                  <Card className="min-h-[320px]">
+                    <CardHeader>
+                      <CardTitle className="text-lg font-semibold flex items-center gap-1.5">
+                        프레임 전쟁 네트워크
+                        <AdvancedCardHelp {...ADVANCED_HELP.frameWarGraph} />
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <FrameWarGraph data={graphData} width={600} height={400} />
+                    </CardContent>
+                  </Card>
+                );
+              } catch {
+                return null;
+              }
+            })()}
 
-          {/* 리스크 연쇄 그래프 */}
-          {(() => {
-            const riskData = parseModuleResult(moduleResults, 'risk-map');
-            if (!riskData) return null;
-            try {
-              const graphData = buildRiskChainGraph(riskData as any);
-              if (graphData.nodes.length === 0) return null;
-              return (
-                <Card className="min-h-[320px]">
-                  <CardHeader>
-                    <CardTitle className="text-lg font-semibold flex items-center gap-1.5">
-                      리스크 연쇄 다이어그램
-                      <AdvancedCardHelp {...ADVANCED_HELP.riskChainGraph} />
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <FrameWarGraph data={graphData} width={600} height={400} />
-                  </CardContent>
-                </Card>
-              );
-            } catch {
-              return null;
-            }
-          })()}
-        </div>
-      ) : domain === 'healthcare' ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <HealthRiskPerceptionCard
-            data={parseModuleResult(moduleResults, 'health-risk-perception') ?? null}
-          />
-          <CompliancePredictorCard
-            data={parseModuleResult(moduleResults, 'compliance-predictor') ?? null}
-          />
-          <CrisisScenarios data={parseModuleResult(moduleResults, 'crisis-scenario') ?? null} />
-          <OpportunityCard data={parseModuleResult(moduleResults, 'opportunity') ?? null} />
-        </div>
-      ) : domain === 'sports' ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <PerformanceNarrativeCard
-            data={parseModuleResult(moduleResults, 'performance-narrative') ?? null}
-          />
-          <SeasonOutlookPredictionCard
-            data={parseModuleResult(moduleResults, 'season-outlook-prediction') ?? null}
-          />
-          <FandomCrisisCard
-            data={parseModuleResult(moduleResults, 'fandom-crisis-scenario') ?? null}
-          />
-          <FrameWarChart data={parseModuleResult(moduleResults, 'frame-war') ?? null} />
-        </div>
-      ) : domain === 'fandom' ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <FanLoyaltyCard data={parseModuleResult(moduleResults, 'fan-loyalty-index') ?? null} />
-          <NarrativeWarChart
-            data={parseModuleResult(moduleResults, 'fandom-narrative-war') ?? null}
-          />
-          <FandomCrisisCard
-            data={parseModuleResult(moduleResults, 'fandom-crisis-scenario') ?? null}
-          />
-          <ReleasePredictionCard
-            data={parseModuleResult(moduleResults, 'release-reception-prediction') ?? null}
-          />
-        </div>
-      ) : domain === 'retail' ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <ReputationIndexCard
-            data={parseModuleResult(moduleResults, 'reputation-index') ?? null}
-          />
-          <EsgSentimentCard data={parseModuleResult(moduleResults, 'esg-sentiment') ?? null} />
-          <CrisisScenarios data={parseModuleResult(moduleResults, 'crisis-scenario') ?? null} />
-          <WinSimulationCard data={parseModuleResult(moduleResults, 'win-simulation') ?? null} />
+            {/* 리스크 연쇄 그래프 */}
+            {(() => {
+              const riskData = parseModuleResult(moduleResults, 'risk-map');
+              if (!riskData) return null;
+              try {
+                const graphData = buildRiskChainGraph(riskData as any);
+                if (graphData.nodes.length === 0) return null;
+                return (
+                  <Card className="min-h-[320px]">
+                    <CardHeader>
+                      <CardTitle className="text-lg font-semibold flex items-center gap-1.5">
+                        리스크 연쇄 다이어그램
+                        <AdvancedCardHelp {...ADVANCED_HELP.riskChainGraph} />
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <FrameWarGraph data={graphData} width={600} height={400} />
+                    </CardContent>
+                  </Card>
+                );
+              } catch {
+                return null;
+              }
+            })()}
+          </div>
+        ) : domain === 'healthcare' ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <HealthRiskPerceptionCard
+              data={parseModuleResult(moduleResults, 'health-risk-perception') ?? null}
+            />
+            <CompliancePredictorCard
+              data={parseModuleResult(moduleResults, 'compliance-predictor') ?? null}
+            />
+            <CrisisScenarios data={parseModuleResult(moduleResults, 'crisis-scenario') ?? null} />
+            <OpportunityCard data={parseModuleResult(moduleResults, 'opportunity') ?? null} />
+          </div>
+        ) : domain === 'sports' ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <PerformanceNarrativeCard
+              data={parseModuleResult(moduleResults, 'performance-narrative') ?? null}
+            />
+            <SeasonOutlookPredictionCard
+              data={parseModuleResult(moduleResults, 'season-outlook-prediction') ?? null}
+            />
+            <FandomCrisisCard
+              data={parseModuleResult(moduleResults, 'fandom-crisis-scenario') ?? null}
+            />
+            <FrameWarChart data={parseModuleResult(moduleResults, 'frame-war') ?? null} />
+          </div>
+        ) : domain === 'fandom' ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <FanLoyaltyCard data={parseModuleResult(moduleResults, 'fan-loyalty-index') ?? null} />
+            <NarrativeWarChart
+              data={parseModuleResult(moduleResults, 'fandom-narrative-war') ?? null}
+            />
+            <FandomCrisisCard
+              data={parseModuleResult(moduleResults, 'fandom-crisis-scenario') ?? null}
+            />
+            <ReleasePredictionCard
+              data={parseModuleResult(moduleResults, 'release-reception-prediction') ?? null}
+            />
+          </div>
+        ) : domain === 'retail' ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <ReputationIndexCard
+              data={parseModuleResult(moduleResults, 'reputation-index') ?? null}
+            />
+            <EsgSentimentCard data={parseModuleResult(moduleResults, 'esg-sentiment') ?? null} />
+            <CrisisScenarios data={parseModuleResult(moduleResults, 'crisis-scenario') ?? null} />
+            <WinSimulationCard data={parseModuleResult(moduleResults, 'win-simulation') ?? null} />
 
-          {/* 리스크 연쇄 그래프 */}
-          {(() => {
-            const riskData = parseModuleResult(moduleResults, 'risk-map');
-            if (!riskData) return null;
-            try {
-              const graphData = buildRiskChainGraph(riskData as any);
-              if (graphData.nodes.length === 0) return null;
-              return (
-                <Card className="min-h-[320px]">
-                  <CardHeader>
-                    <CardTitle className="text-lg font-semibold flex items-center gap-1.5">
-                      리스크 연쇄 다이어그램
-                      <AdvancedCardHelp {...ADVANCED_HELP.riskChainGraph} />
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <FrameWarGraph data={graphData} width={600} height={400} />
-                  </CardContent>
-                </Card>
-              );
-            } catch {
-              return null;
-            }
-          })()}
-        </div>
-      ) : domain === 'corporate' ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <ReputationIndexCard
-            data={parseModuleResult(moduleResults, 'reputation-index') ?? null}
-          />
-          <CrisisTypeClassifierCard
-            data={parseModuleResult(moduleResults, 'crisis-type-classifier') ?? null}
-          />
-          <MediaFramingDominanceCard
-            data={parseModuleResult(moduleResults, 'media-framing-dominance') ?? null}
-          />
-          <CsrCommunicationGapCard
-            data={parseModuleResult(moduleResults, 'csr-communication-gap') ?? null}
-          />
-          <CrisisScenarios data={parseModuleResult(moduleResults, 'crisis-scenario') ?? null} />
-          <ReputationRecoverySimulationCard
-            data={parseModuleResult(moduleResults, 'reputation-recovery-simulation') ?? null}
-          />
+            {/* 리스크 연쇄 그래프 */}
+            {(() => {
+              const riskData = parseModuleResult(moduleResults, 'risk-map');
+              if (!riskData) return null;
+              try {
+                const graphData = buildRiskChainGraph(riskData as any);
+                if (graphData.nodes.length === 0) return null;
+                return (
+                  <Card className="min-h-[320px]">
+                    <CardHeader>
+                      <CardTitle className="text-lg font-semibold flex items-center gap-1.5">
+                        리스크 연쇄 다이어그램
+                        <AdvancedCardHelp {...ADVANCED_HELP.riskChainGraph} />
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <FrameWarGraph data={graphData} width={600} height={400} />
+                    </CardContent>
+                  </Card>
+                );
+              } catch {
+                return null;
+              }
+            })()}
+          </div>
+        ) : domain === 'corporate' ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <ReputationIndexCard
+              data={parseModuleResult(moduleResults, 'reputation-index') ?? null}
+            />
+            <CrisisTypeClassifierCard
+              data={parseModuleResult(moduleResults, 'crisis-type-classifier') ?? null}
+            />
+            <MediaFramingDominanceCard
+              data={parseModuleResult(moduleResults, 'media-framing-dominance') ?? null}
+            />
+            <CsrCommunicationGapCard
+              data={parseModuleResult(moduleResults, 'csr-communication-gap') ?? null}
+            />
+            <CrisisScenarios data={parseModuleResult(moduleResults, 'crisis-scenario') ?? null} />
+            <ReputationRecoverySimulationCard
+              data={parseModuleResult(moduleResults, 'reputation-recovery-simulation') ?? null}
+            />
 
-          {/* 리스크 연쇄 그래프 */}
-          {(() => {
-            const riskData = parseModuleResult(moduleResults, 'risk-map');
-            if (!riskData) return null;
-            try {
-              const graphData = buildRiskChainGraph(riskData as any);
-              if (graphData.nodes.length === 0) return null;
-              return (
-                <Card className="min-h-[320px]">
-                  <CardHeader>
-                    <CardTitle className="text-lg font-semibold flex items-center gap-1.5">
-                      리스크 연쇄 다이어그램
-                      <AdvancedCardHelp {...ADVANCED_HELP.riskChainGraph} />
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <FrameWarGraph data={graphData} width={600} height={400} />
-                  </CardContent>
-                </Card>
-              );
-            } catch {
-              return null;
-            }
-          })()}
-        </div>
-      ) : domain === 'education' ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <InstitutionalReputationIndexCard
-            data={parseModuleResult(moduleResults, 'institutional-reputation-index') ?? null}
-          />
-          <EducationOpinionFrameCard
-            data={parseModuleResult(moduleResults, 'education-opinion-frame') ?? null}
-          />
-          <EducationCrisisScenarioCard
-            data={parseModuleResult(moduleResults, 'education-crisis-scenario') ?? null}
-          />
-          <EducationOutcomeSimulationCard
-            data={parseModuleResult(moduleResults, 'education-outcome-simulation') ?? null}
-          />
+            {/* 리스크 연쇄 그래프 */}
+            {(() => {
+              const riskData = parseModuleResult(moduleResults, 'risk-map');
+              if (!riskData) return null;
+              try {
+                const graphData = buildRiskChainGraph(riskData as any);
+                if (graphData.nodes.length === 0) return null;
+                return (
+                  <Card className="min-h-[320px]">
+                    <CardHeader>
+                      <CardTitle className="text-lg font-semibold flex items-center gap-1.5">
+                        리스크 연쇄 다이어그램
+                        <AdvancedCardHelp {...ADVANCED_HELP.riskChainGraph} />
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <FrameWarGraph data={graphData} width={600} height={400} />
+                    </CardContent>
+                  </Card>
+                );
+              } catch {
+                return null;
+              }
+            })()}
+          </div>
+        ) : domain === 'education' ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <InstitutionalReputationIndexCard
+              data={parseModuleResult(moduleResults, 'institutional-reputation-index') ?? null}
+            />
+            <EducationOpinionFrameCard
+              data={parseModuleResult(moduleResults, 'education-opinion-frame') ?? null}
+            />
+            <EducationCrisisScenarioCard
+              data={parseModuleResult(moduleResults, 'education-crisis-scenario') ?? null}
+            />
+            <EducationOutcomeSimulationCard
+              data={parseModuleResult(moduleResults, 'education-outcome-simulation') ?? null}
+            />
 
-          {/* 리스크 연쇄 그래프 */}
-          {(() => {
-            const riskData = parseModuleResult(moduleResults, 'risk-map');
-            if (!riskData) return null;
-            try {
-              const graphData = buildRiskChainGraph(riskData as any);
-              if (graphData.nodes.length === 0) return null;
-              return (
-                <Card className="min-h-[320px]">
-                  <CardHeader>
-                    <CardTitle className="text-lg font-semibold flex items-center gap-1.5">
-                      리스크 연쇄 다이어그램
-                      <AdvancedCardHelp {...ADVANCED_HELP.riskChainGraph} />
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <FrameWarGraph data={graphData} width={600} height={400} />
-                  </CardContent>
-                </Card>
-              );
-            } catch {
-              return null;
-            }
-          })()}
-        </div>
-      ) : domain === 'public-sector' || domain === 'policy' ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <ApprovalRatingCard data={parseModuleResult(moduleResults, 'approval-rating') ?? null} />
-          <FrameWarChart data={parseModuleResult(moduleResults, 'frame-war') ?? null} />
-          <CrisisScenarios data={parseModuleResult(moduleResults, 'crisis-scenario') ?? null} />
-          <WinSimulationCard data={parseModuleResult(moduleResults, 'win-simulation') ?? null} />
+            {/* 리스크 연쇄 그래프 */}
+            {(() => {
+              const riskData = parseModuleResult(moduleResults, 'risk-map');
+              if (!riskData) return null;
+              try {
+                const graphData = buildRiskChainGraph(riskData as any);
+                if (graphData.nodes.length === 0) return null;
+                return (
+                  <Card className="min-h-[320px]">
+                    <CardHeader>
+                      <CardTitle className="text-lg font-semibold flex items-center gap-1.5">
+                        리스크 연쇄 다이어그램
+                        <AdvancedCardHelp {...ADVANCED_HELP.riskChainGraph} />
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <FrameWarGraph data={graphData} width={600} height={400} />
+                    </CardContent>
+                  </Card>
+                );
+              } catch {
+                return null;
+              }
+            })()}
+          </div>
+        ) : domain === 'public-sector' || domain === 'policy' ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <ApprovalRatingCard
+              data={parseModuleResult(moduleResults, 'approval-rating') ?? null}
+            />
+            <FrameWarChart data={parseModuleResult(moduleResults, 'frame-war') ?? null} />
+            <CrisisScenarios data={parseModuleResult(moduleResults, 'crisis-scenario') ?? null} />
+            <WinSimulationCard data={parseModuleResult(moduleResults, 'win-simulation') ?? null} />
 
-          {/* 프레임 전쟁 네트워크 그래프 */}
-          {(() => {
-            const frameWarData = parseModuleResult(moduleResults, 'frame-war');
-            const sentimentData = parseModuleResult(moduleResults, 'sentiment-framing');
-            if (!frameWarData || !sentimentData) return null;
-            try {
-              const graphData = buildFrameWarGraph(frameWarData as any, sentimentData as any);
-              if (graphData.nodes.length === 0) return null;
-              return (
-                <Card className="min-h-[320px]">
-                  <CardHeader>
-                    <CardTitle className="text-lg font-semibold flex items-center gap-1.5">
-                      프레임 전쟁 네트워크
-                      <AdvancedCardHelp {...ADVANCED_HELP.frameWarGraph} />
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <FrameWarGraph data={graphData} width={600} height={400} />
-                  </CardContent>
-                </Card>
-              );
-            } catch {
-              return null;
-            }
-          })()}
+            {/* 프레임 전쟁 네트워크 그래프 */}
+            {(() => {
+              const frameWarData = parseModuleResult(moduleResults, 'frame-war');
+              const sentimentData = parseModuleResult(moduleResults, 'sentiment-framing');
+              if (!frameWarData || !sentimentData) return null;
+              try {
+                const graphData = buildFrameWarGraph(frameWarData as any, sentimentData as any);
+                if (graphData.nodes.length === 0) return null;
+                return (
+                  <Card className="min-h-[320px]">
+                    <CardHeader>
+                      <CardTitle className="text-lg font-semibold flex items-center gap-1.5">
+                        프레임 전쟁 네트워크
+                        <AdvancedCardHelp {...ADVANCED_HELP.frameWarGraph} />
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <FrameWarGraph data={graphData} width={600} height={400} />
+                    </CardContent>
+                  </Card>
+                );
+              } catch {
+                return null;
+              }
+            })()}
 
-          {/* 리스크 연쇄 그래프 */}
-          {(() => {
-            const riskData = parseModuleResult(moduleResults, 'risk-map');
-            if (!riskData) return null;
-            try {
-              const graphData = buildRiskChainGraph(riskData as any);
-              if (graphData.nodes.length === 0) return null;
-              return (
-                <Card className="min-h-[320px]">
-                  <CardHeader>
-                    <CardTitle className="text-lg font-semibold flex items-center gap-1.5">
-                      리스크 연쇄 다이어그램
-                      <AdvancedCardHelp {...ADVANCED_HELP.riskChainGraph} />
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <FrameWarGraph data={graphData} width={600} height={400} />
-                  </CardContent>
-                </Card>
-              );
-            } catch {
-              return null;
-            }
-          })()}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <ApprovalRatingCard data={parseModuleResult(moduleResults, 'approval-rating') ?? null} />
-          <FrameWarChart data={parseModuleResult(moduleResults, 'frame-war') ?? null} />
-          <CrisisScenarios data={parseModuleResult(moduleResults, 'crisis-scenario') ?? null} />
-          <WinSimulationCard data={parseModuleResult(moduleResults, 'win-simulation') ?? null} />
+            {/* 리스크 연쇄 그래프 */}
+            {(() => {
+              const riskData = parseModuleResult(moduleResults, 'risk-map');
+              if (!riskData) return null;
+              try {
+                const graphData = buildRiskChainGraph(riskData as any);
+                if (graphData.nodes.length === 0) return null;
+                return (
+                  <Card className="min-h-[320px]">
+                    <CardHeader>
+                      <CardTitle className="text-lg font-semibold flex items-center gap-1.5">
+                        리스크 연쇄 다이어그램
+                        <AdvancedCardHelp {...ADVANCED_HELP.riskChainGraph} />
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <FrameWarGraph data={graphData} width={600} height={400} />
+                    </CardContent>
+                  </Card>
+                );
+              } catch {
+                return null;
+              }
+            })()}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <ApprovalRatingCard
+              data={parseModuleResult(moduleResults, 'approval-rating') ?? null}
+            />
+            <FrameWarChart data={parseModuleResult(moduleResults, 'frame-war') ?? null} />
+            <CrisisScenarios data={parseModuleResult(moduleResults, 'crisis-scenario') ?? null} />
+            <WinSimulationCard data={parseModuleResult(moduleResults, 'win-simulation') ?? null} />
 
-          {/* 프레임 전쟁 네트워크 그래프 */}
-          {(() => {
-            const frameWarData = parseModuleResult(moduleResults, 'frame-war');
-            const sentimentData = parseModuleResult(moduleResults, 'sentiment-framing');
-            if (!frameWarData || !sentimentData) return null;
-            try {
-              const graphData = buildFrameWarGraph(frameWarData as any, sentimentData as any);
-              if (graphData.nodes.length === 0) return null;
-              return (
-                <Card className="min-h-[320px]">
-                  <CardHeader>
-                    <CardTitle className="text-lg font-semibold flex items-center gap-1.5">
-                      프레임 전쟁 네트워크
-                      <AdvancedCardHelp {...ADVANCED_HELP.frameWarGraph} />
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <FrameWarGraph data={graphData} width={600} height={400} />
-                  </CardContent>
-                </Card>
-              );
-            } catch {
-              return null;
-            }
-          })()}
+            {/* 프레임 전쟁 네트워크 그래프 */}
+            {(() => {
+              const frameWarData = parseModuleResult(moduleResults, 'frame-war');
+              const sentimentData = parseModuleResult(moduleResults, 'sentiment-framing');
+              if (!frameWarData || !sentimentData) return null;
+              try {
+                const graphData = buildFrameWarGraph(frameWarData as any, sentimentData as any);
+                if (graphData.nodes.length === 0) return null;
+                return (
+                  <Card className="min-h-[320px]">
+                    <CardHeader>
+                      <CardTitle className="text-lg font-semibold flex items-center gap-1.5">
+                        프레임 전쟁 네트워크
+                        <AdvancedCardHelp {...ADVANCED_HELP.frameWarGraph} />
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <FrameWarGraph data={graphData} width={600} height={400} />
+                    </CardContent>
+                  </Card>
+                );
+              } catch {
+                return null;
+              }
+            })()}
 
-          {/* 리스크 연쇄 그래프 */}
-          {(() => {
-            const riskData = parseModuleResult(moduleResults, 'risk-map');
-            if (!riskData) return null;
-            try {
-              const graphData = buildRiskChainGraph(riskData as any);
-              if (graphData.nodes.length === 0) return null;
-              return (
-                <Card className="min-h-[320px]">
-                  <CardHeader>
-                    <CardTitle className="text-lg font-semibold flex items-center gap-1.5">
-                      리스크 연쇄 다이어그램
-                      <AdvancedCardHelp {...ADVANCED_HELP.riskChainGraph} />
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <FrameWarGraph data={graphData} width={600} height={400} />
-                  </CardContent>
-                </Card>
-              );
-            } catch {
-              return null;
-            }
-          })()}
-        </div>
-      )}
+            {/* 리스크 연쇄 그래프 */}
+            {(() => {
+              const riskData = parseModuleResult(moduleResults, 'risk-map');
+              if (!riskData) return null;
+              try {
+                const graphData = buildRiskChainGraph(riskData as any);
+                if (graphData.nodes.length === 0) return null;
+                return (
+                  <Card className="min-h-[320px]">
+                    <CardHeader>
+                      <CardTitle className="text-lg font-semibold flex items-center gap-1.5">
+                        리스크 연쇄 다이어그램
+                        <AdvancedCardHelp {...ADVANCED_HELP.riskChainGraph} />
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <FrameWarGraph data={graphData} width={600} height={400} />
+                    </CardContent>
+                  </Card>
+                );
+              } catch {
+                return null;
+              }
+            })()}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

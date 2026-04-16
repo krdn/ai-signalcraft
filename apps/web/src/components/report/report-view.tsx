@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { FileDown, FileText } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import { SectionNav, type Section } from './section-nav';
 import { ReportViewer } from './report-viewer';
 import { ReportHelp } from './report-help';
+import { PdfExportButton } from '@/components/ui/pdf-export-button';
 import { trpcClient } from '@/lib/trpc';
-import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface ReportViewProps {
@@ -50,6 +50,7 @@ function parseSections(markdown: string): Section[] {
  */
 export function ReportView({ jobId, fetchFn }: ReportViewProps) {
   const [activeSection, setActiveSection] = useState('');
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const defaultFetch = (id: number) => trpcClient.report.getByJobId.query({ jobId: id });
   const queryFnToUse = fetchFn ?? defaultFetch;
@@ -65,11 +66,6 @@ export function ReportView({ jobId, fetchFn }: ReportViewProps) {
     if (!report?.markdownContent) return [];
     return parseSections(report.markdownContent);
   }, [report?.markdownContent]);
-
-  // PDF 내보내기 -- window.print() 기반 간이 PDF
-  const handleExportPdf = () => {
-    window.print();
-  };
 
   // jobId 미선택 상태
   if (jobId === null) {
@@ -155,15 +151,12 @@ export function ReportView({ jobId, fetchFn }: ReportViewProps) {
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <ReportHelp />
-          <Button variant="secondary" size="sm" onClick={handleExportPdf} className="gap-2">
-            <FileDown className="h-4 w-4" />
-            PDF 내보내기
-          </Button>
+          <PdfExportButton targetRef={contentRef} filename={`report-job${jobId}`} />
         </div>
       </div>
 
       {/* 본문: 섹션 네비 + 마크다운 뷰어 */}
-      <div className="flex flex-col md:flex-row">
+      <div className="flex flex-col md:flex-row" ref={contentRef}>
         <SectionNav sections={sections} activeSection={activeSection} />
         <ReportViewer
           markdownContent={report.markdownContent}

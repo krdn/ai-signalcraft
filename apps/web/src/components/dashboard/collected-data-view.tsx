@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Newspaper, FileText, BarChart3, Video, MessageSquare, Search } from 'lucide-react';
 import { SummaryView } from './collected-data-summary';
 import { ArticlesView, VideosView, CommentsView } from './collected-data-table';
 import { SemanticSearchPanel } from './semantic-search-panel';
 import { SOURCE_LABELS } from './collected-data-shared';
+import { PdfExportButton } from '@/components/ui/pdf-export-button';
 import { trpcClient } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 
@@ -31,6 +32,7 @@ export function CollectedDataView({
   const [commentPage, setCommentPage] = useState(1);
   const [selectedArticleId, setSelectedArticleId] = useState<number | null>(null);
   const [sourceFilter, setSourceFilter] = useState<string | null>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   // initialSourceFilter가 있으면 마운트 시 해당 소스 필터 적용 및 기사 뷰로 전환
   useEffect(() => {
@@ -136,15 +138,18 @@ export function CollectedDataView({
             의미 검색
           </Button>
         </div>
-        {onNavigateToExplore && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onNavigateToExplore(sourceFilter ?? undefined)}
-          >
-            {sourceFilter ? `이 소스 탐색에서 분석 →` : '탐색에서 분석 →'}
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {onNavigateToExplore && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onNavigateToExplore(sourceFilter ?? undefined)}
+            >
+              {sourceFilter ? `이 소스 탐색에서 분석 →` : '탐색에서 분석 →'}
+            </Button>
+          )}
+          <PdfExportButton targetRef={contentRef} filename={`collected-job${jobId}`} />
+        </div>
       </div>
 
       {/* 데이터 소스 필터 (요약/검색 뷰 제외) */}
@@ -180,38 +185,40 @@ export function CollectedDataView({
         </div>
       )}
 
-      {view === 'summary' && <SummaryView jobId={jobId} />}
-      {view === 'articles' && (
-        <ArticlesView
-          jobId={jobId}
-          page={articlePage}
-          onPageChange={setArticlePage}
-          source={sourceFilter}
-          initialExpandedId={selectedArticleId}
-        />
-      )}
-      {view === 'videos' && (
-        <VideosView
-          jobId={jobId}
-          page={videoPage}
-          onPageChange={setVideoPage}
-          source={sourceFilter}
-        />
-      )}
-      {view === 'comments' && (
-        <CommentsView
-          jobId={jobId}
-          articleId={selectedArticleId}
-          page={commentPage}
-          onPageChange={setCommentPage}
-          source={sourceFilter}
-          onBack={() => {
-            setSelectedArticleId(null);
-            setView('articles');
-          }}
-        />
-      )}
-      {view === 'search' && <SemanticSearchPanel jobId={jobId} />}
+      <div ref={contentRef} className="space-y-4">
+        {view === 'summary' && <SummaryView jobId={jobId} />}
+        {view === 'articles' && (
+          <ArticlesView
+            jobId={jobId}
+            page={articlePage}
+            onPageChange={setArticlePage}
+            source={sourceFilter}
+            initialExpandedId={selectedArticleId}
+          />
+        )}
+        {view === 'videos' && (
+          <VideosView
+            jobId={jobId}
+            page={videoPage}
+            onPageChange={setVideoPage}
+            source={sourceFilter}
+          />
+        )}
+        {view === 'comments' && (
+          <CommentsView
+            jobId={jobId}
+            articleId={selectedArticleId}
+            page={commentPage}
+            onPageChange={setCommentPage}
+            source={sourceFilter}
+            onBack={() => {
+              setSelectedArticleId(null);
+              setView('articles');
+            }}
+          />
+        )}
+        {view === 'search' && <SemanticSearchPanel jobId={jobId} />}
+      </div>
     </div>
   );
 }

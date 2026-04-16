@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Telescope, AlertCircle } from 'lucide-react';
 import { ExploreFilters, DEFAULT_FILTERS, type ExploreFilterState } from './explore-filters';
@@ -10,6 +10,7 @@ import { ScatterEngagement } from './scatter-engagement';
 import { SourceSentimentMatrix } from './source-sentiment-matrix';
 import { ScoreHistogram } from './score-histogram';
 import { KeywordTreemap } from './keyword-treemap';
+import { PdfExportButton } from '@/components/ui/pdf-export-button';
 import { trpcClient } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -25,6 +26,7 @@ export function ExploreView({
   onNavigateToCollected,
   initialSourceFilter,
 }: ExploreViewProps) {
+  const contentRef = useRef<HTMLDivElement>(null);
   const [filters, setFilters] = useState<ExploreFilterState>(DEFAULT_FILTERS);
 
   // initialSourceFilter가 있으면 마운트 시 소스 필터 적용
@@ -166,16 +168,19 @@ export function ExploreView({
 
   return (
     <div className="space-y-4">
-      <ExploreFilters value={filters} onChange={setFilters} />
-      {onNavigateToCollected && (
-        <div className="flex justify-end">
-          <Button variant="outline" size="sm" onClick={() => onNavigateToCollected()}>
-            수집 데이터 보기 →
-          </Button>
+      <div className="space-y-2">
+        <ExploreFilters value={filters} onChange={setFilters} />
+        <div className="flex justify-end items-center gap-2">
+          {onNavigateToCollected && (
+            <Button variant="outline" size="sm" onClick={() => onNavigateToCollected()}>
+              수집 데이터 보기 →
+            </Button>
+          )}
+          <PdfExportButton targetRef={contentRef} filename={`explore-job${jobId}`} />
         </div>
-      )}
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div ref={contentRef} className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <StreamChart data={timeSeries.data} isLoading={timeSeries.isLoading} />
         <CalendarHeatmap data={timeSeries.data} isLoading={timeSeries.isLoading} />
         <ScatterEngagement

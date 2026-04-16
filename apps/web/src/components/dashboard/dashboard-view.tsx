@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { buildKeywordNetwork } from '@ai-signalcraft/core/client';
 import { AlertCircle } from 'lucide-react';
@@ -17,6 +17,7 @@ import { CompareSelector } from './compare-selector';
 import { CompareView } from './compare-view';
 import { KnowledgeGraphView } from './knowledge-graph-view';
 import { CardHelp, DASHBOARD_HELP } from './card-help';
+import { PdfExportButton } from '@/components/ui/pdf-export-button';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -56,6 +57,7 @@ function KnowledgeGraphSection({ jobId }: { jobId: number }) {
 
 export function DashboardView({ jobId, fetchFn, readOnly, collectionStats }: DashboardViewProps) {
   const [compareJobId, setCompareJobId] = useState<number | null>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const defaultFetch = (id: number) => trpcClient.analysis.getResults.query({ jobId: id });
   const queryFn = fetchFn ?? defaultFetch;
@@ -277,82 +279,89 @@ export function DashboardView({ jobId, fetchFn, readOnly, collectionStats }: Das
 
   return (
     <div className="space-y-4">
-      {/* 비교 분석 셀렉터 */}
-      {!readOnly && (
-        <>
-          <CompareSelector
-            currentJobId={jobId}
-            compareJobId={compareJobId}
-            onSelect={setCompareJobId}
-          />
-          {compareJobId && <CompareView baseJobId={jobId} compareJobId={compareJobId} />}
-        </>
-      )}
-
-      {/* KPI 카드 행 */}
-      <KpiCards
-        totalMentions={totalMentions}
-        articleCount={dbArticleCount}
-        commentCount={dbCommentCount}
-        sentimentRatio={sentimentData ?? null}
-        topKeyword={topKeywordText}
-        overallDirection={overallDirection}
-      />
-
-      {/* AI 인사이트 요약 */}
-      <InsightSummary
-        oneLiner={insightOneLiner}
-        currentState={insightCurrentState}
-        criticalActions={insightActions}
-      />
-
-      {/* Bento Box 그리드 */}
-      <div className="grid grid-cols-12 gap-4">
-        {/* 트렌드 차트 — 7칸 */}
-        <div className="col-span-12 lg:col-span-7">
-          <TrendChart data={trendData} events={trendEvents} />
-        </div>
-        {/* 감성 도넛 — 5칸 */}
-        <div className="col-span-12 lg:col-span-5">
-          <SentimentChart data={sentimentData ?? null} />
-        </div>
-
-        {/* 워드 클라우드 — 4칸 */}
-        <div className="col-span-12 lg:col-span-4">
-          <WordCloud words={wordCloudData} />
-        </div>
-        {/* 키워드 네트워크 — 8칸 */}
-        {keywordNetworkData && keywordNetworkData.nodes.length > 0 && (
-          <div className="col-span-12 lg:col-span-8">
-            <Card className="h-full border-t-2 border-t-blue-400 border-slate-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-sm font-semibold">키워드 네트워크</h3>
-                  <CardHelp {...DASHBOARD_HELP.keywordNetwork} />
-                </div>
-                <KeywordNetworkGraph data={keywordNetworkData} />
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {/* 플랫폼 비교 — 6칸 */}
-        <div className="col-span-12 lg:col-span-6">
-          <PlatformCompare articles={platformArticles} comments={platformComments} />
-        </div>
-        {/* 리스크 카드 — 6칸 */}
-        <div className="col-span-12 lg:col-span-6">
-          <RiskCards risks={risks} />
-        </div>
-
-        {/* 기회 카드 — 전체 너비 */}
-        <div className="col-span-12">
-          <OpportunityCards opportunities={opportunities} />
-        </div>
+      {/* PDF 내보내기 버튼 */}
+      <div className="flex justify-end">
+        <PdfExportButton targetRef={contentRef} filename={`dashboard-job${jobId}`} />
       </div>
 
-      {/* 지식 그래프 */}
-      <KnowledgeGraphSection jobId={jobId} />
+      <div ref={contentRef} className="space-y-4">
+        {/* 비교 분석 셀렉터 */}
+        {!readOnly && (
+          <>
+            <CompareSelector
+              currentJobId={jobId}
+              compareJobId={compareJobId}
+              onSelect={setCompareJobId}
+            />
+            {compareJobId && <CompareView baseJobId={jobId} compareJobId={compareJobId} />}
+          </>
+        )}
+
+        {/* KPI 카드 행 */}
+        <KpiCards
+          totalMentions={totalMentions}
+          articleCount={dbArticleCount}
+          commentCount={dbCommentCount}
+          sentimentRatio={sentimentData ?? null}
+          topKeyword={topKeywordText}
+          overallDirection={overallDirection}
+        />
+
+        {/* AI 인사이트 요약 */}
+        <InsightSummary
+          oneLiner={insightOneLiner}
+          currentState={insightCurrentState}
+          criticalActions={insightActions}
+        />
+
+        {/* Bento Box 그리드 */}
+        <div className="grid grid-cols-12 gap-4">
+          {/* 트렌드 차트 — 7칸 */}
+          <div className="col-span-12 lg:col-span-7">
+            <TrendChart data={trendData} events={trendEvents} />
+          </div>
+          {/* 감성 도넛 — 5칸 */}
+          <div className="col-span-12 lg:col-span-5">
+            <SentimentChart data={sentimentData ?? null} />
+          </div>
+
+          {/* 워드 클라우드 — 4칸 */}
+          <div className="col-span-12 lg:col-span-4">
+            <WordCloud words={wordCloudData} />
+          </div>
+          {/* 키워드 네트워크 — 8칸 */}
+          {keywordNetworkData && keywordNetworkData.nodes.length > 0 && (
+            <div className="col-span-12 lg:col-span-8">
+              <Card className="h-full border-t-2 border-t-blue-400 border-slate-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-semibold">키워드 네트워크</h3>
+                    <CardHelp {...DASHBOARD_HELP.keywordNetwork} />
+                  </div>
+                  <KeywordNetworkGraph data={keywordNetworkData} />
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* 플랫폼 비교 — 6칸 */}
+          <div className="col-span-12 lg:col-span-6">
+            <PlatformCompare articles={platformArticles} comments={platformComments} />
+          </div>
+          {/* 리스크 카드 — 6칸 */}
+          <div className="col-span-12 lg:col-span-6">
+            <RiskCards risks={risks} />
+          </div>
+
+          {/* 기회 카드 — 전체 너비 */}
+          <div className="col-span-12">
+            <OpportunityCards opportunities={opportunities} />
+          </div>
+        </div>
+
+        {/* 지식 그래프 */}
+        <KnowledgeGraphSection jobId={jobId} />
+      </div>
     </div>
   );
 }
