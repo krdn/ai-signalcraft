@@ -18,18 +18,10 @@ const REFRESH_THRESHOLD_MS = 5 * 60 * 1000;
 // 자동 갱신 주기: 45분마다 (access_token 유효기간 1시간 기준)
 const AUTO_REFRESH_INTERVAL_MS = 45 * 60 * 1000;
 
-// gemini-cli-core 패키지에 내장된 공개 OAuth 클라이언트 정보
-// (gemini-cli 오픈소스에 포함된 값 — 개인 크리덴셜 아님)
-// 환경변수 GEMINI_OAUTH_CLIENT_ID / GEMINI_OAUTH_CLIENT_SECRET 으로 오버라이드 가능
-const OAUTH_CLIENT_ID =
-  process.env.GEMINI_OAUTH_CLIENT_ID ??
-  Buffer.from(
-    'NjgxMjU1ODA5Mzk1LW9vOGZ0Mm9wcmRybnA5ZTNhcWY2YXYzaG1kaWIxMzVqLmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29t',
-    'base64',
-  ).toString();
-const OAUTH_CLIENT_SECRET =
-  process.env.GEMINI_OAUTH_CLIENT_SECRET ??
-  Buffer.from('R09DU1BYLTRAdUhnTVBtLTFvN1NrLWdlVjZDdTVjbFhGc3hs', 'base64').toString();
+// gemini-cli OAuth 클라이언트 정보
+// 환경변수 GEMINI_OAUTH_CLIENT_ID / GEMINI_OAUTH_CLIENT_SECRET 설정 필요
+const OAUTH_CLIENT_ID = process.env.GEMINI_OAUTH_CLIENT_ID ?? '';
+const OAUTH_CLIENT_SECRET = process.env.GEMINI_OAUTH_CLIENT_SECRET ?? '';
 const TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
 
 interface OAuthCreds {
