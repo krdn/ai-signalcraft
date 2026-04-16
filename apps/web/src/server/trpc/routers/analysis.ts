@@ -1,11 +1,12 @@
 import { TRPCError } from '@trpc/server';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import {
   collectionJobs,
   analysisResults,
   analysisReports,
   analysisPresets,
+  analysisSeries,
   triggerCollection,
   triggerAnalysisResume,
   cleanupBeforeNewPipeline,
@@ -81,6 +82,8 @@ export const analysisRouter = router({
             'retail',
           ])
           .optional(),
+        seriesId: z.number().optional(),
+        createNewSeries: z.boolean().optional(),
       }),
     )
     .mutation(async ({ input, ctx }) => {
@@ -204,6 +207,32 @@ export const analysisRouter = router({
         // 정리 실패해도 새 작업 실행은 진행
       }
 
+      // 시리즈 처리
+      let seriesId: number | null = input.seriesId ?? null;
+      let seriesOrder: number | null = null;
+
+      if (input.createNewSeries && !seriesId) {
+        const [newSeries] = await ctx.db
+          .insert(analysisSeries)
+          .values({
+            teamId: ctx.teamId ?? null,
+            userId: ctx.userId,
+            keyword: input.keyword,
+            domain: input.domain ?? presetDomain ?? 'political',
+            title: `${input.keyword} 시리즈`,
+            metadata: { totalJobs: 0, lastJobId: null, lastAnalyzedAt: null },
+          })
+          .returning();
+        seriesId = newSeries.id;
+        seriesOrder = 0;
+      } else if (seriesId) {
+        const [last] = await ctx.db
+          .select({ maxOrder: sql<number>`COALESCE(MAX(${collectionJobs.seriesOrder}), -1)` })
+          .from(collectionJobs)
+          .where(eq(collectionJobs.seriesId, seriesId));
+        seriesOrder = (last?.maxOrder ?? -1) + 1;
+      }
+
       // 1. collectionJobs 레코드 생성 (팀 ID 포함)
       const [job] = await ctx.db
         .insert(collectionJobs)
@@ -222,6 +251,8 @@ export const analysisRouter = router({
           keywordType,
           appliedPreset,
           domain: input.domain ?? presetDomain ?? 'political',
+          seriesId,
+          seriesOrder,
         })
         .returning();
 
