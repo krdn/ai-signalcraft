@@ -15,6 +15,7 @@ import { RiskCards } from './risk-cards';
 import { OpportunityCards } from './opportunity-cards';
 import { CompareSelector } from './compare-selector';
 import { CompareView } from './compare-view';
+import { SeriesTimelineView } from './series-timeline-view';
 import { KnowledgeGraphView } from './knowledge-graph-view';
 import { CardHelp, DASHBOARD_HELP } from './card-help';
 import { PdfExportButton } from '@/components/ui/pdf-export-button';
@@ -78,6 +79,18 @@ export function DashboardView({ jobId, fetchFn, readOnly, collectionStats }: Das
   const { data: sentimentBySource } = useQuery({
     queryKey: ['explore', 'getSentimentBySourceSplit', jobId],
     queryFn: () => trpcClient.explore.getSentimentBySourceSplit.query({ jobId: jobId as number }),
+    enabled: !!jobId && !fetchFn,
+    staleTime: Infinity,
+  });
+
+  // 시리즈 델타 데이터 (시계열 뷰용) — fetchFn 없는 일반 모드에서만 조회
+  const { data: jobSeriesData } = useQuery({
+    queryKey: ['collectionJob', 'series', jobId],
+    queryFn: async () => {
+      if (!jobId) return null;
+      const delta = await trpcClient.series.getDelta.query({ jobId });
+      return delta ? { seriesId: delta.seriesId } : null;
+    },
     enabled: !!jobId && !fetchFn,
     staleTime: Infinity,
   });
@@ -295,6 +308,11 @@ export function DashboardView({ jobId, fetchFn, readOnly, collectionStats }: Das
             />
             {compareJobId && <CompareView baseJobId={jobId} compareJobId={compareJobId} />}
           </>
+        )}
+
+        {/* 시리즈 시계열 뷰 */}
+        {jobSeriesData?.seriesId && jobId && (
+          <SeriesTimelineView seriesId={jobSeriesData.seriesId} currentJobId={jobId} />
         )}
 
         {/* KPI 카드 행 */}
