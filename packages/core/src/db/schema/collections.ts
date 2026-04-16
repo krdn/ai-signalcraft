@@ -85,6 +85,8 @@ export const collectionJobs = pgTable(
       enableItemAnalysis: boolean;
       customized: boolean;
     }>(),
+    seriesId: integer('series_id'), // 시리즈 연결 (FK 없이 plain integer — 순환 참조 방지)
+    seriesOrder: integer('series_order'), // 시리즈 내 순서
     isFeatured: boolean('is_featured').notNull().default(false), // 쇼케이스 지정 여부
     featuredAt: timestamp('featured_at'), // 쇼케이스 선택 시점 (정렬용)
     createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -94,6 +96,7 @@ export const collectionJobs = pgTable(
     index('collection_jobs_user_id_idx').on(table.userId),
     index('collection_jobs_featured_idx').on(table.isFeatured),
     index('collection_jobs_paused_at_idx').on(table.pausedAt),
+    index('collection_jobs_series_id_idx').on(table.seriesId),
   ],
 );
 

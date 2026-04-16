@@ -9,3 +9,4 @@ export * from './customers';
 export * from './releases';
 export * from './presets';
 export * from './ontology';
+export * from './series';
