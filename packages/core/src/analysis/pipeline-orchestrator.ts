@@ -22,6 +22,7 @@ import { runWithProviderGrouping } from './concurrency';
 import { buildResult, generateFinalReport } from './report-builder';
 import { extractEntitiesFromResults } from './ontology-extractor';
 import { persistOntology } from './persist-ontology';
+import { runSeriesDeltaAnalysis } from './delta';
 import type { AnalysisModuleResult } from './types';
 import type { PipelineContext } from './pipeline-context';
 import {
@@ -347,6 +348,21 @@ export async function runAnalysisPipeline(
     }
   } catch (e) {
     console.error('[ontology] 추출 실패:', e);
+  }
+
+  // 시리즈에 속한 job이면 델타 분석 실행 (비차단)
+  try {
+    const [jobRow] = await getDb()
+      .select({ seriesId: collectionJobs.seriesId })
+      .from(collectionJobs)
+      .where(eq(collectionJobs.id, jobId))
+      .limit(1);
+
+    if (jobRow?.seriesId) {
+      await runSeriesDeltaAnalysis(jobRow.seriesId, jobId);
+    }
+  } catch (e) {
+    console.error('[delta] 델타 분석 실패:', e);
   }
 
   const completedModules = Object.values(ctx.allResults)
