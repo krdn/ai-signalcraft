@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
@@ -9,6 +9,7 @@ import { format, subDays, addDays } from 'date-fns';
 import { TriggerFormHelp } from './trigger-form-help';
 import { DomainBadge } from './domain-badge';
 import { BreakpointSection, type BreakpointValue } from './trigger-form/breakpoint-section';
+import { SeriesSelector } from './trigger-form/series-selector';
 import {
   type OptimizationPreset,
   type SourceId,
@@ -73,6 +74,14 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
   });
 
   const [keyword, setKeyword] = useState('');
+  const [selectedSeriesId, setSelectedSeriesId] = useState<number | null>(null);
+  const [createNewSeries, setCreateNewSeries] = useState(false);
+
+  const handleSeriesSelect = useCallback((seriesId: number | null, createNew: boolean) => {
+    setSelectedSeriesId(seriesId);
+    setCreateNewSeries(createNew);
+  }, []);
+
   const [sources, setSources] = useState<SourceId[]>([...ALL_SOURCES]);
   const [customSourceIds, setCustomSourceIds] = useState<string[]>([]);
 
@@ -212,6 +221,8 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
         commentsPerItem: maxCommentsPerItem,
       },
       breakpoints: breakpoints.length > 0 ? breakpoints : undefined,
+      ...(selectedSeriesId && { seriesId: selectedSeriesId }),
+      ...(createNewSeries && { createNewSeries: true }),
     });
   };
 
@@ -296,6 +307,14 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
               disabled={triggerMutation.isPending}
             />
           </div>
+
+          {/* 시리즈 연결 */}
+          <SeriesSelector
+            keyword={keyword}
+            onSeriesSelect={handleSeriesSelect}
+            selectedSeriesId={selectedSeriesId}
+            createNewSeries={createNewSeries}
+          />
 
           {/* 소스 선택 */}
           <div className="space-y-2">
