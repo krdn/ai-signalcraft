@@ -12,39 +12,6 @@ interface PdfExportButtonProps {
   className?: string;
 }
 
-const LAB_RE = /\b(?:oklab|oklch|lab|lch)\s*\(/i;
-
-/**
- * dom-to-image-more adjustClonedNode 콜백.
- *
- * dom-to-image-more의 copyUserComputedStyleFast는:
- *   targetValue = targetStyle.getPropertyValue(name)
- *   if (targetValue) return;   ← 이미 값이 있으면 건너뜀
- *
- * 따라서 isAfterCopy=false (스타일 복사 전) 시점에 클론에 미리 값을 설정하면
- * copyUserComputedStyleFast가 해당 property를 건너뛰어 oklab 값이 복사되지 않는다.
- */
-function adjustClonedNode(original: Element, clone: HTMLElement, isAfterCopy: boolean) {
-  if (isAfterCopy || !(clone instanceof HTMLElement)) return;
-
-  const cs = window.getComputedStyle(original);
-
-  // box-shadow에 oklab/lab 포함 → 미리 none 설정 (복사 차단)
-  if (LAB_RE.test(cs.getPropertyValue('box-shadow'))) {
-    clone.style.setProperty('box-shadow', 'none');
-  }
-
-  // border-color에 oklab/lab 포함 → transparent로 사전 설정
-  if (LAB_RE.test(cs.getPropertyValue('border-color'))) {
-    clone.style.setProperty('border-color', 'transparent');
-  }
-
-  // outline-color에 oklab/lab 포함 → transparent로 사전 설정
-  if (LAB_RE.test(cs.getPropertyValue('outline-color'))) {
-    clone.style.setProperty('outline-color', 'transparent');
-  }
-}
-
 export function PdfExportButton({
   targetRef,
   filename = 'report',
@@ -60,27 +27,19 @@ export function PdfExportButton({
 
     setIsExporting(true);
     try {
-      const domToImage = (await import('dom-to-image-more')).default;
+      const html2canvas = (await import('html2canvas-pro')).default;
       const { jsPDF } = await import('jspdf');
 
-      const scale = 2;
+      const canvas = await html2canvas(el, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+        logging: false,
+      });
+
+      const dataUrl = canvas.toDataURL('image/png');
       const width = el.scrollWidth;
       const height = el.scrollHeight;
-
-      const dataUrl = await (domToImage as unknown as {
-        toPng(node: HTMLElement, options: Record<string, unknown>): Promise<string>;
-      }).toPng(el, {
-        width: width * scale,
-        height: height * scale,
-        style: {
-          transform: `scale(${scale})`,
-          transformOrigin: 'top left',
-          width: `${width}px`,
-          height: `${height}px`,
-        },
-        bgcolor: '#ffffff',
-        adjustClonedNode,
-      });
 
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: 'a4' });
       const pdfWidth = pdf.internal.pageSize.getWidth();
