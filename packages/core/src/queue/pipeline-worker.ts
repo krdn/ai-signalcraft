@@ -20,6 +20,8 @@ import {
   persistVideos,
   persistComments,
   updateJobProgress,
+  linkArticleKeywords,
+  linkVideoKeywords,
 } from '../pipeline';
 import { getDb } from '../db';
 import { dataSources } from '../db/schema/sources';
@@ -309,6 +311,12 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
         return { cancelled: true };
       }
 
+      // TTL 재사용을 위해 신규 수집된 기사/영상 id 를 keyword 에 인덱싱
+      // (다음 실행에서 재사용 후보로 식별되도록)
+      const keywordForLink = job.data.keyword as string | undefined;
+      const newArticleIds: number[] = [];
+      const newVideoIds: number[] = [];
+
       // 자식 작업(normalize)의 결과를 가져와 DB에 저장
       const childValues = await job.getChildrenValues();
 
@@ -330,6 +338,7 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
           const persisted = await persistArticles(jobIdForDb, normalized);
           for (const row of persisted) {
             articleSourceToDbId.set(row.sourceId, row.id);
+            newArticleIds.push(row.id);
           }
         }
 
@@ -340,6 +349,7 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
           const persisted = await persistVideos(jobIdForDb, normalized);
           for (const row of persisted) {
             videoSourceToDbId.set(row.sourceId, row.id);
+            newVideoIds.push(row.id);
           }
         }
 
@@ -376,6 +386,7 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
           const communityArticleMap = new Map<string, number>();
           for (const row of persistedPosts) {
             communityArticleMap.set(row.sourceId, row.id);
+            newArticleIds.push(row.id);
           }
 
           // Step 5b: 댓글 persist -- 게시글 FK 연결
@@ -403,7 +414,8 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
             normalizeFeedArticle(item, snapshot),
           );
           if (normalized.length > 0) {
-            await persistArticles(jobIdForDb, normalized);
+            const persisted = await persistArticles(jobIdForDb, normalized);
+            for (const row of persisted) newArticleIds.push(row.id);
           }
           // lastCollectedAt 갱신 — 관리 UI에 표시
           try {
@@ -414,6 +426,19 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
           } catch (err) {
             logger.warn(`[persist] data_sources.lastCollectedAt 갱신 실패 (${snapshot.id}):`, err);
           }
+        }
+      }
+
+      // TTL 재사용 인덱스 갱신 — 신규 수집된 기사/영상을 keyword 에 연결
+      // 다음 실행에서 재사용 후보로 즉시 식별됨. 실패해도 파이프라인은 계속.
+      if (keywordForLink) {
+        try {
+          await Promise.all([
+            linkArticleKeywords(newArticleIds, keywordForLink),
+            linkVideoKeywords(newVideoIds, keywordForLink),
+          ]);
+        } catch (err) {
+          logger.warn('[persist] keyword linkage 실패:', err);
         }
       }
 

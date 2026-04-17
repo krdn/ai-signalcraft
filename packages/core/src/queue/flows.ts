@@ -1,10 +1,23 @@
 import { FlowProducer } from 'bullmq';
 import { and, eq, inArray } from 'drizzle-orm';
 import type { DataSourceSnapshot } from '@ai-signalcraft/collectors';
-import type { CollectionTrigger } from '../types';
+import type { CollectionTrigger, ReusePlanPayload } from '../types';
 import type { ResumeOptions } from '../analysis/pipeline-orchestrator';
 import { getDb } from '../db';
 import { dataSources } from '../db/schema/sources';
+import {
+  planArticleReuse,
+  planVideoReuse,
+  linkReusedArticlesToJob,
+  linkReusedVideosToJob,
+  linkReusedCommentsForArticles,
+  linkReusedCommentsForVideos,
+  linkArticleKeywords,
+  linkVideoKeywords,
+  type ArticleReusePlan,
+  type VideoReusePlan,
+} from '../pipeline/reuse-planner';
+import { appendJobEvent } from '../pipeline/persist';
 import { getBullMQOptions } from './connection';
 
 // FlowProducer를 lazy 초기화 -- import 시 Redis 연결 시도 방지
@@ -16,6 +29,58 @@ function getFlowProducer() {
     flowProducer = new FlowProducer(getBullMQOptions());
   }
   return flowProducer;
+}
+
+/**
+ * 소스별 planReuse 호출 — 하나의 소스가 실패해도 다른 소스 수집은 계속 진행.
+ * 실패·예외 시 빈 계획(전량 재수집)으로 폴백. 오류는 job 이벤트로만 기록.
+ */
+async function safePlanArticleReuse(
+  source: string,
+  keyword: string,
+  startDate: Date,
+  endDate: Date,
+  forceRefetch: boolean,
+  dbJobId: number,
+): Promise<ArticleReusePlan> {
+  try {
+    return await planArticleReuse({ source, keyword, startDate, endDate, forceRefetch });
+  } catch (err) {
+    await appendJobEvent(
+      dbJobId,
+      'warn',
+      `reuse plan failed (${source}): ${err instanceof Error ? err.message : String(err)}`,
+    ).catch(() => void 0);
+    return { reuseArticleIds: [], skipUrls: [], refetchCommentsFor: [], evaluated: 0 };
+  }
+}
+
+async function safePlanVideoReuse(
+  source: string,
+  keyword: string,
+  startDate: Date,
+  endDate: Date,
+  forceRefetch: boolean,
+  dbJobId: number,
+): Promise<VideoReusePlan> {
+  try {
+    return await planVideoReuse({ source, keyword, startDate, endDate, forceRefetch });
+  } catch (err) {
+    await appendJobEvent(
+      dbJobId,
+      'warn',
+      `reuse plan failed (${source}): ${err instanceof Error ? err.message : String(err)}`,
+    ).catch(() => void 0);
+    return { reuseVideoIds: [], skipVideoUrls: [], refetchCommentsFor: [], evaluated: 0 };
+  }
+}
+
+function toReusePlanPayload(plan: ArticleReusePlan | VideoReusePlan): ReusePlanPayload {
+  const skipUrls = 'skipUrls' in plan ? plan.skipUrls : plan.skipVideoUrls;
+  return {
+    skipUrls,
+    refetchCommentsFor: plan.refetchCommentsFor,
+  };
 }
 
 // dbJobId: collection_jobs 테이블의 정수 PK -- 호출자가 createCollectionJob() 후 전달
@@ -34,8 +99,90 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
   // INT-01: sources 필드 기반 조건부 수집기 실행
   const enabledSources = params.sources ?? ['naver', 'youtube', 'dcinside', 'fmkorea', 'clien'];
 
+  // -- TTL 기반 재사용 계획 프리스텝 --------------------------------------
+  // 각 소스에 대해 "이미 최근 수집된 기사/영상"을 찾아 스킵 목록과 재연결 대상을 계산.
+  // 재사용 대상은 여기서 article_jobs/comment_jobs 에 바로 연결 — 분석 단계가 N:M 조인으로 즉시 인식.
+  const startDate = new Date(params.startDate);
+  const endDate = new Date(params.endDate);
+  const forceRefetch = params.forceRefetch ?? false;
+
+  const articleReusePlans: Record<string, ArticleReusePlan> = {};
+  const videoReusePlans: Record<string, VideoReusePlan> = {};
+
+  // 소스별로 플랜 수립 (병렬)
+  const planPromises: Promise<void>[] = [];
+  for (const src of enabledSources) {
+    if (src === 'youtube') {
+      planPromises.push(
+        safePlanVideoReuse(src, params.keyword, startDate, endDate, forceRefetch, dbJobId).then(
+          (plan) => {
+            videoReusePlans[src] = plan;
+          },
+        ),
+      );
+    } else {
+      // naver, dcinside, fmkorea, clien — article 스키마
+      const dbSource = src === 'naver' ? 'naver' : src;
+      planPromises.push(
+        safePlanArticleReuse(
+          dbSource,
+          params.keyword,
+          startDate,
+          endDate,
+          forceRefetch,
+          dbJobId,
+        ).then((plan) => {
+          articleReusePlans[src] = plan;
+        }),
+      );
+    }
+  }
+  await Promise.all(planPromises);
+
+  // 재사용 대상 즉시 조인 테이블 연결 + 키워드 linkage 누적
+  // 수집 실패해도 재사용 기사는 분석에 포함됨 (안전한 분리)
+  const linkPromises: Promise<void>[] = [];
+  let totalReusedArticles = 0;
+  let totalReusedVideos = 0;
+  for (const plan of Object.values(articleReusePlans)) {
+    if (plan.reuseArticleIds.length === 0) continue;
+    totalReusedArticles += plan.reuseArticleIds.length;
+    linkPromises.push(linkReusedArticlesToJob(dbJobId, plan.reuseArticleIds));
+    linkPromises.push(linkReusedCommentsForArticles(dbJobId, plan.reuseArticleIds));
+    linkPromises.push(linkArticleKeywords(plan.reuseArticleIds, params.keyword));
+  }
+  for (const plan of Object.values(videoReusePlans)) {
+    if (plan.reuseVideoIds.length === 0) continue;
+    totalReusedVideos += plan.reuseVideoIds.length;
+    linkPromises.push(linkReusedVideosToJob(dbJobId, plan.reuseVideoIds));
+    linkPromises.push(linkReusedCommentsForVideos(dbJobId, plan.reuseVideoIds));
+    linkPromises.push(linkVideoKeywords(plan.reuseVideoIds, params.keyword));
+  }
+  try {
+    await Promise.all(linkPromises);
+  } catch (err) {
+    await appendJobEvent(
+      dbJobId,
+      'warn',
+      `reuse linkage failed: ${err instanceof Error ? err.message : String(err)}`,
+    ).catch(() => void 0);
+  }
+
+  // 재사용 요약 로깅
+  if (totalReusedArticles > 0 || totalReusedVideos > 0) {
+    await appendJobEvent(
+      dbJobId,
+      'info',
+      `reuse: articles=${totalReusedArticles}, videos=${totalReusedVideos} (forceRefetch=${forceRefetch})`,
+    ).catch(() => void 0);
+  }
+  // ---------------------------------------------------------------------
+
   const children = [];
   if (enabledSources.includes('naver')) {
+    const reusePlan = articleReusePlans['naver']
+      ? toReusePlanPayload(articleReusePlans['naver'])
+      : undefined;
     children.push({
       name: 'normalize-naver',
       queueName: 'pipeline',
@@ -51,12 +198,16 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
             maxComments: limits.commentsPerItem,
             flowId,
             dbJobId,
+            reusePlan,
           },
         },
       ],
     });
   }
   if (enabledSources.includes('youtube')) {
+    const reusePlan = videoReusePlans['youtube']
+      ? toReusePlanPayload(videoReusePlans['youtube'])
+      : undefined;
     children.push({
       name: 'normalize-youtube',
       queueName: 'pipeline',
@@ -78,6 +229,7 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
             maxItems: limits.youtubeVideos,
             flowId,
             dbJobId,
+            reusePlan,
           },
         },
       ],
@@ -85,6 +237,9 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
   }
   // 커뮤니티 수집기 -- 각 소스별 독립 실행 (부분 실패 허용)
   if (enabledSources.includes('dcinside')) {
+    const reusePlan = articleReusePlans['dcinside']
+      ? toReusePlanPayload(articleReusePlans['dcinside'])
+      : undefined;
     children.push({
       name: 'normalize-community-dcinside',
       queueName: 'pipeline',
@@ -100,12 +255,16 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
             maxComments: limits.commentsPerItem,
             flowId,
             dbJobId,
+            reusePlan,
           },
         },
       ],
     });
   }
   if (enabledSources.includes('fmkorea')) {
+    const reusePlan = articleReusePlans['fmkorea']
+      ? toReusePlanPayload(articleReusePlans['fmkorea'])
+      : undefined;
     children.push({
       name: 'normalize-community-fmkorea',
       queueName: 'pipeline',
@@ -121,12 +280,16 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
             maxComments: limits.commentsPerItem,
             flowId,
             dbJobId,
+            reusePlan,
           },
         },
       ],
     });
   }
   if (enabledSources.includes('clien')) {
+    const reusePlan = articleReusePlans['clien']
+      ? toReusePlanPayload(articleReusePlans['clien'])
+      : undefined;
     children.push({
       name: 'normalize-community-clien',
       queueName: 'pipeline',
@@ -142,6 +305,7 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
             maxComments: limits.commentsPerItem,
             flowId,
             dbJobId,
+            reusePlan,
           },
         },
       ],

@@ -3,3 +3,5 @@ export * from './persist';
 export * from './control';
 export * from './cleanup';
 export * from './expire-paused';
+export * from './reuse-config';
+export * from './reuse-planner';

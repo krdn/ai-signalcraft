@@ -123,8 +123,15 @@ export const articles = pgTable(
     rawData: jsonb('raw_data'),
     embedding: vector384('embedding'), // pgvector 임베딩 (multilingual-e5-small, 384차원)
     collectedAt: timestamp('collected_at').defaultNow().notNull(),
+    // TTL 기반 증분 수집용 타임스탬프 (본문/댓글 각각 별도 TTL)
+    lastFetchedAt: timestamp('last_fetched_at'),
+    lastCommentsFetchedAt: timestamp('last_comments_fetched_at'),
   },
-  (table) => [uniqueIndex('articles_source_id_idx').on(table.source, table.sourceId)],
+  (table) => [
+    uniqueIndex('articles_source_id_idx').on(table.source, table.sourceId),
+    index('articles_last_fetched_at_idx').on(table.lastFetchedAt),
+    index('articles_published_at_idx').on(table.publishedAt),
+  ],
 );
 
 // 영상 (유튜브)
@@ -149,8 +156,15 @@ export const videos = pgTable(
     publishedAt: timestamp('published_at'),
     rawData: jsonb('raw_data'),
     collectedAt: timestamp('collected_at').defaultNow().notNull(),
+    // TTL 기반 증분 수집용 타임스탬프
+    lastFetchedAt: timestamp('last_fetched_at'),
+    lastCommentsFetchedAt: timestamp('last_comments_fetched_at'),
   },
-  (table) => [uniqueIndex('videos_source_id_idx').on(table.source, table.sourceId)],
+  (table) => [
+    uniqueIndex('videos_source_id_idx').on(table.source, table.sourceId),
+    index('videos_last_fetched_at_idx').on(table.lastFetchedAt),
+    index('videos_published_at_idx').on(table.publishedAt),
+  ],
 );
 
 // 댓글 (네이버 + 유튜브 통합, D-07)
@@ -230,5 +244,37 @@ export const commentJobs = pgTable(
   (table) => [
     uniqueIndex('comment_jobs_pk').on(table.commentId, table.jobId),
     index('comment_jobs_job_id_idx').on(table.jobId),
+  ],
+);
+
+// 키워드 ↔ 기사/영상 N:M — TTL 기반 증분 수집 판정의 주 경로
+// 같은 키워드로 재실행되거나 시리즈(시계열) 반복 실행될 때 재사용 대상 탐색용
+export const articleKeywords = pgTable(
+  'article_keywords',
+  {
+    articleId: integer('article_id')
+      .references(() => articles.id, { onDelete: 'cascade' })
+      .notNull(),
+    keyword: text('keyword').notNull(), // 정규화된 키워드 (소문자, trim)
+    firstSeenAt: timestamp('first_seen_at').defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex('article_keywords_pk').on(table.articleId, table.keyword),
+    index('article_keywords_keyword_idx').on(table.keyword, table.articleId),
+  ],
+);
+
+export const videoKeywords = pgTable(
+  'video_keywords',
+  {
+    videoId: integer('video_id')
+      .references(() => videos.id, { onDelete: 'cascade' })
+      .notNull(),
+    keyword: text('keyword').notNull(),
+    firstSeenAt: timestamp('first_seen_at').defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex('video_keywords_pk').on(table.videoId, table.keyword),
+    index('video_keywords_keyword_idx').on(table.keyword, table.videoId),
   ],
 );

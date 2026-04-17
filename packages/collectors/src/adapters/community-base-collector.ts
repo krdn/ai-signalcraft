@@ -46,6 +46,11 @@ export abstract class CommunityBaseCollector extends BrowserCollector<CommunityP
     const maxComments = options.maxComments ?? 100;
     let totalCollected = 0;
 
+    // TTL 재사용: 완전 스킵 URL 집합과 댓글-only URL 집합 (Set 으로 O(1) 조회)
+    const skipUrlSet = new Set(options.reusePlan?.skipUrls ?? []);
+    const refetchCommentsOnlySet = new Set(options.reusePlan?.refetchCommentsFor ?? []);
+    let skippedCount = 0;
+
     for (let pageNum = 1; pageNum <= this.config.maxSearchPages; pageNum++) {
       if (totalCollected >= maxItems) break;
 
@@ -88,7 +93,21 @@ export abstract class CommunityBaseCollector extends BrowserCollector<CommunityP
       const posts: CommunityPost[] = [];
       for (const link of postLinks) {
         if (totalCollected >= maxItems) break;
+
+        // TTL 재사용: 이미 최근 수집된 URL 은 완전 스킵
+        // (재사용 article 은 flows.ts 프리스텝에서 이미 article_jobs 로 연결됨)
+        if (skipUrlSet.has(link.url)) {
+          skippedCount++;
+          continue;
+        }
+
         try {
+          // 댓글-only 경로: 본문은 스킵, 댓글만 refetch
+          // 현재 공통 base 는 fetchPost 가 본문+댓글을 함께 가져오는 구조 →
+          // 댓글 refetch 는 일단 일반 fetchPost 로 진행 (persist.ts 의 댓글 upsert + last_comments_fetched_at 갱신 경로가 동작)
+          // 향후 adapter 별 최적화 가능.
+          const _commentsOnly = refetchCommentsOnlySet.has(link.url);
+
           const post = await this.fetchPost(page, link.url, link.title, maxComments);
           if (post) {
             posts.push(post);
@@ -105,6 +124,10 @@ export abstract class CommunityBaseCollector extends BrowserCollector<CommunityP
       }
 
       await sleep(this.config.pageDelay.min, this.config.pageDelay.max);
+    }
+
+    if (skippedCount > 0) {
+      console.info(`${this.source} TTL 재사용으로 ${skippedCount}건 스킵`);
     }
   }
 }

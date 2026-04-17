@@ -56,6 +56,8 @@ export async function persistArticles(jobId: number, data: (typeof articles.$inf
           content: sql`excluded.content`,
           rawData: sql`excluded.raw_data`,
           collectedAt: sql`excluded.collected_at`,
+          // 본문을 새로 긁었으므로 last_fetched_at 갱신 (재사용 TTL 판정의 기준)
+          lastFetchedAt: sql`now()`,
         },
       })
       .returning();
@@ -92,6 +94,7 @@ export async function persistVideos(jobId: number, data: (typeof videos.$inferIn
           commentCount: sql`excluded.comment_count`,
           rawData: sql`excluded.raw_data`,
           collectedAt: sql`excluded.collected_at`,
+          lastFetchedAt: sql`now()`,
         },
       })
       .returning();
@@ -156,6 +159,26 @@ export async function persistComments(jobId: number, data: (typeof comments.$inf
     });
 
     allUpserted.push(...upserted);
+  }
+
+  // 댓글이 연결된 article/video 의 last_comments_fetched_at 갱신
+  const articleIdSet = new Set<number>();
+  const videoIdSet = new Set<number>();
+  for (const c of allUpserted) {
+    if (c.articleId != null) articleIdSet.add(c.articleId);
+    if (c.videoId != null) videoIdSet.add(c.videoId);
+  }
+  if (articleIdSet.size > 0) {
+    await getDb()
+      .update(articles)
+      .set({ lastCommentsFetchedAt: sql`now()` })
+      .where(sql`${articles.id} = ANY(${[...articleIdSet]})`);
+  }
+  if (videoIdSet.size > 0) {
+    await getDb()
+      .update(videos)
+      .set({ lastCommentsFetchedAt: sql`now()` })
+      .where(sql`${videos.id} = ANY(${[...videoIdSet]})`);
   }
 
   return allUpserted;

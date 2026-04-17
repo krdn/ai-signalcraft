@@ -46,6 +46,9 @@ export class YoutubeVideosCollector implements Collector<YoutubeVideo> {
     const maxItems = options.maxItems ?? DEFAULT_MAX_ITEMS;
     let totalCollected = 0;
     let nextPageToken: string | undefined;
+    // TTL 재사용: 완전 스킵 URL 은 videos.list 응답에서 제외 후 yield
+    const skipUrlSet = new Set(options.reusePlan?.skipUrls ?? []);
+    let skippedByReuse = 0;
 
     while (totalCollected < maxItems) {
       // Step 1: search.list -- 키워드로 영상 검색 (100유닛/요청)
@@ -99,12 +102,25 @@ export class YoutubeVideosCollector implements Collector<YoutubeVideo> {
         rawData: item as unknown as Record<string, unknown>,
       }));
 
-      totalCollected += videos.length;
-      yield videos;
+      // TTL 재사용: skipUrls 에 포함된 영상은 제외 (이미 flows 에서 video_jobs 재연결됨)
+      const filteredVideos = videos.filter((v) => {
+        if (skipUrlSet.has(v.url)) {
+          skippedByReuse++;
+          return false;
+        }
+        return true;
+      });
+
+      totalCollected += filteredVideos.length;
+      if (filteredVideos.length > 0) yield filteredVideos;
 
       // 다음 페이지 토큰 확인
       nextPageToken = searchResponse.data.nextPageToken ?? undefined;
       if (!nextPageToken) break;
+    }
+
+    if (skippedByReuse > 0) {
+      console.info(`youtube-videos TTL 재사용으로 ${skippedByReuse}건 메타데이터 수집 스킵`);
     }
   }
 }

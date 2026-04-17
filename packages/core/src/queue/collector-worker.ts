@@ -23,6 +23,9 @@ export function createCollectorHandler(): (job: Job) => Promise<CollectorResult>
   return async (job: Job): Promise<CollectorResult> => {
     const { source, keyword, startDate, endDate, maxItems, maxComments, dbJobId } = job.data;
     const dataSourceSnapshot = job.data.dataSourceSnapshot as DataSourceSnapshot | undefined;
+    const reusePlan = job.data.reusePlan as
+      | { skipUrls: string[]; refetchCommentsFor: string[] }
+      | undefined;
 
     // 동적 소스(RSS/HTML)면 factory로 인스턴스 생성, 아니면 기존 정적 registry 조회
     const collector = dataSourceSnapshot
@@ -54,6 +57,7 @@ export function createCollectorHandler(): (job: Job) => Promise<CollectorResult>
         endDate,
         maxItems,
         maxComments,
+        reusePlan,
       })) {
         // 취소 확인 — DB에서 cancelled 상태이면 즉시 중단
         if (dbJobId && (await isPipelineCancelled(dbJobId))) {

@@ -145,8 +145,19 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
       if (!progressedThisRound) break;
     }
 
+    // TTL 재사용: 완전 스킵 URL 은 Phase 2 본문 수집에서 제외
+    // 재사용 기사는 flows.ts 에서 article_jobs 로 이미 연결됨 → 분석 단계에서 자동 포함
+    const skipUrlSet = new Set(options.reusePlan?.skipUrls ?? []);
+    const refetchCommentsOnlySet = new Set(options.reusePlan?.refetchCommentsFor ?? []);
+    const preSkipCount = allArticles.length;
+    const filteredArticles = allArticles.filter((a) => !skipUrlSet.has(a.url));
+    const skippedByReuse = preSkipCount - filteredArticles.length;
+    if (skippedByReuse > 0) {
+      console.info(`naver-news TTL 재사용으로 ${skippedByReuse}건 본문 수집 스킵`);
+    }
+
     // maxItems 제한
-    const targetArticles = allArticles.slice(0, maxItems);
+    const targetArticles = filteredArticles.slice(0, maxItems);
     if (targetArticles.length === 0) return;
 
     // Phase 2: 기사 본문 수집 (Playwright — JS 렌더링 필요)
@@ -164,6 +175,13 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
 
         for (const article of batch) {
           if (totalCollected >= maxItems) break;
+
+          // 댓글-only refetch: 본문 fetch 생략 (기존 DB content 가 재사용되므로 null 로 두면
+          // persist 의 onConflictDoUpdate 가 excluded.content=null 로 덮어쓸 위험이 있음 →
+          // 대신 이 경로는 "댓글만 새로 수집" 의미이므로 일단 본문 fetch 는 진행.
+          // 최적화: refetchCommentsOnly 플래그를 normalizer/persist 로 전달해 본문 UPDATE 를 스킵하는 것이
+          // 더 안전 — 우선 기능 동등성 유지하고 후속 개선 대상으로 남김.
+          const _commentsOnly = refetchCommentsOnlySet.has(article.url);
 
           try {
             const content = await this.fetchArticleContent(page, article.url);
