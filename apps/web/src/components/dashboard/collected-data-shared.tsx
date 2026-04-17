@@ -50,7 +50,10 @@ export function SentimentBadge({
 // 소스 한글 라벨
 export const SOURCE_LABELS: Record<string, string> = {
   'naver-news': '네이버 뉴스',
+  'naver-comments': '네이버 댓글',
   youtube: '유튜브',
+  'youtube-videos': '유튜브',
+  'youtube-comments': '유튜브 댓글',
   dcinside: 'DC갤러리',
   fmkorea: '에펨코리아',
   clien: '클리앙',

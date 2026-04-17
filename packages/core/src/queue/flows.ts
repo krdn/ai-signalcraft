@@ -20,6 +20,7 @@ import {
 import { appendJobEvent, updateJobProgress } from '../pipeline/persist';
 import { cacheGetOrSet, keyReusePlan } from '../cache/redis-cache';
 import { getBullMQOptions } from './connection';
+import { applyPerDayInflation, computeDayCount } from './per-day-limits';
 
 // planReuse 결과의 Redis 캐시 TTL (5분) — 동시 flow 중복 DB 쿼리 방지 목적
 const REUSE_PLAN_CACHE_TTL_SEC = 300;
@@ -113,6 +114,19 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
     communityPosts: 50,
     commentsPerItem: 500,
   };
+
+  // 기간 모드에서 입력값을 '날짜별 한도'로 해석 → 수집기에는 (입력 × 일수)를 총량으로 전달.
+  // 이벤트 모드(= limitMode='total' 또는 미지정)에서는 기존처럼 총량 그대로 사용.
+  const limitMode = params.limitMode ?? 'total';
+  const dayCount = computeDayCount(params.startDate, params.endDate);
+  const effective = applyPerDayInflation(limits, dayCount, limitMode);
+  if (limitMode === 'perDay') {
+    await appendJobEvent(
+      dbJobId,
+      'info',
+      `per-day limits applied: dayCount=${dayCount}, naver=${effective.naverArticles}, youtube=${effective.youtubeVideos}, community=${effective.communityPosts}`,
+    ).catch(() => void 0);
+  }
 
   // D-05: 3단계 분리 -- collect -> normalize -> persist
   // D-01: 통합 키워드 수집 -- 모든 소스 동시 실행
@@ -239,7 +253,7 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
           data: {
             ...params,
             source: 'naver-news',
-            maxItems: limits.naverArticles,
+            maxItems: effective.naverArticles,
             maxComments: limits.commentsPerItem,
             flowId,
             dbJobId,
@@ -271,7 +285,7 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
           data: {
             ...params,
             source: 'youtube-videos',
-            maxItems: limits.youtubeVideos,
+            maxItems: effective.youtubeVideos,
             flowId,
             dbJobId,
             reusePlan,
@@ -296,7 +310,7 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
           data: {
             ...params,
             source: 'dcinside',
-            maxItems: limits.communityPosts,
+            maxItems: effective.communityPosts,
             maxComments: limits.commentsPerItem,
             flowId,
             dbJobId,
@@ -321,7 +335,7 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
           data: {
             ...params,
             source: 'fmkorea',
-            maxItems: limits.communityPosts,
+            maxItems: effective.communityPosts,
             maxComments: limits.commentsPerItem,
             flowId,
             dbJobId,
@@ -346,7 +360,7 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
           data: {
             ...params,
             source: 'clien',
-            maxItems: limits.communityPosts,
+            maxItems: effective.communityPosts,
             maxComments: limits.commentsPerItem,
             flowId,
             dbJobId,

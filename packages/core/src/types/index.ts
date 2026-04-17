@@ -15,6 +15,10 @@ export const CollectionTriggerSchema = z.object({
       commentsPerItem: z.number().default(500),
     })
     .optional(),
+  // 수집 한도 해석 방식. 'perDay' = 입력값을 날짜별 한도로 보고 수집기에는 (값 × 일수)를 전달.
+  // 'total' = 기간 전체 총량으로 해석. 미지정 시 'total'로 폴백하여 기존 잡과 하위 호환.
+  // commentsPerItem은 항목당 한도라 이 플래그의 영향을 받지 않음.
+  limitMode: z.enum(['perDay', 'total']).optional(),
   // TTL 기반 재사용 계획을 무시하고 전량 재수집 (롤백 스위치)
   forceRefetch: z.boolean().optional(),
 });

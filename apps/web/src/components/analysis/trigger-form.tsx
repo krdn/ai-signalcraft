@@ -135,7 +135,9 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
     }
   }, [defaultLimits]);
 
-  // 프리셋 기본값 적용
+  // 프리셋 기본값 적용.
+  // 참고: 기간 모드(dateMode === 'period')에서는 이 값들이 '날짜별 한도'로 해석되고
+  // 이벤트 중심 모드에서는 '총량'으로 해석됨. 프리셋 자체는 모드를 구분하지 않음.
   useEffect(() => {
     if (!preset) return;
     const enabledSources = Object.entries(preset.sources)
@@ -167,6 +169,7 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
         communityPosts: number;
         commentsPerItem: number;
       };
+      limitMode?: 'perDay' | 'total';
       breakpoints?: BreakpointValue[];
       forceRefetch?: boolean;
     }) => trpcClient.analysis.trigger.mutate(input as any),
@@ -222,12 +225,26 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
         communityPosts: maxCommunityPosts,
         commentsPerItem: maxCommentsPerItem,
       },
+      // 기간 모드: 입력값은 날짜별 한도. 이벤트 중심: 총량.
+      limitMode: dateMode === 'period' ? 'perDay' : 'total',
       breakpoints: breakpoints.length > 0 ? breakpoints : undefined,
       ...(selectedSeriesId && { seriesId: selectedSeriesId }),
       ...(createNewSeries && { createNewSeries: true }),
       ...(forceRefetch && { forceRefetch: true }),
     });
   };
+
+  // 기간 모드에서는 수집 한도를 '날짜별'로 해석하므로 도움말 문구를 모드별로 전환한다.
+  const isPerDay = dateMode === 'period';
+  const perDaySuffix = isPerDay
+    ? ' 기간 모드에서는 이 값이 날짜별 한도이며, 실제 수집 총량 = 값 × 일수입니다.'
+    : '';
+  const sectionHeaderTooltip = isPerDay
+    ? '수집할 데이터의 날짜별 수량과 AI 처리 전략을 설정합니다. 값을 줄이면 분석 비용과 시간이 절감됩니다.'
+    : '수집할 데이터 양과 AI 처리 전략을 설정합니다. 값을 줄이면 분석 비용과 시간이 절감됩니다.';
+  const limitsDescription = isPerDay
+    ? '소스별 날짜당 수집 건수를 조절합니다. 줄이면 비용과 시간이 절약됩니다.'
+    : '소스별 최대 수집 건수를 조절합니다. 줄이면 비용과 시간이 절약됩니다.';
 
   return (
     <Card className="mx-auto max-w-xl">
@@ -541,8 +558,7 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
                       <HelpCircle className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
                     </TooltipTrigger>
                     <TooltipContent side="right" className="max-w-[220px] text-center">
-                      수집할 데이터 양과 AI 처리 전략을 설정합니다. 값을 줄이면 분석 비용과 시간이
-                      절감됩니다.
+                      {sectionHeaderTooltip}
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -562,9 +578,7 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
             <CollapsibleContent>
               <TooltipProvider>
                 <div className="mt-2 space-y-3 rounded-lg border p-3">
-                  <p className="text-xs text-muted-foreground">
-                    소스별 최대 수집 건수를 조절합니다. 줄이면 비용과 시간이 절약됩니다.
-                  </p>
+                  <p className="text-xs text-muted-foreground">{limitsDescription}</p>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <Label htmlFor="maxNaver" className="text-xs flex items-center gap-1">
@@ -575,7 +589,7 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
                           </TooltipTrigger>
                           <TooltipContent side="top" className="max-w-[200px]">
                             수집할 네이버 뉴스 기사의 최대 건수입니다. 키워드와 기간에 따라 실제
-                            수집량은 이보다 적을 수 있습니다. (범위: 10 ~ 5,000건)
+                            수집량은 이보다 적을 수 있습니다.{perDaySuffix} (범위: 10 ~ 5,000건)
                           </TooltipContent>
                         </Tooltip>
                       </Label>
@@ -599,7 +613,7 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
                           </TooltipTrigger>
                           <TooltipContent side="top" className="max-w-[200px]">
                             수집할 유튜브 영상의 최대 건수입니다. 영상 제목·설명·댓글을 분석합니다.
-                            (범위: 5 ~ 500건)
+                            {perDaySuffix} (범위: 5 ~ 500건)
                           </TooltipContent>
                         </Tooltip>
                       </Label>
@@ -623,7 +637,7 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
                           </TooltipTrigger>
                           <TooltipContent side="top" className="max-w-[200px]">
                             DC갤러리·에펨코리아·클리앙 등 선택한 커뮤니티에서 수집할 게시글
-                            수입니다. (범위: 5 ~ 500건)
+                            수입니다.{perDaySuffix} (범위: 5 ~ 500건)
                           </TooltipContent>
                         </Tooltip>
                       </Label>

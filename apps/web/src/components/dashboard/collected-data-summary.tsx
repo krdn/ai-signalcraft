@@ -3,6 +3,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { Newspaper, MessageSquare, Video, Users } from 'lucide-react';
 import { SOURCE_LABELS } from './collected-data-shared';
+import { CollectionTimeline } from './summary-widgets/collection-timeline';
+import { LimitProgress } from './summary-widgets/limit-progress';
+import { SourceTypeBreakdown } from './summary-widgets/source-type-breakdown';
 import { trpcClient } from '@/lib/trpc';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -16,6 +19,11 @@ export function SummaryView({ jobId }: SummaryViewProps) {
   const { data, isLoading } = useQuery({
     queryKey: ['collectedData', 'getSummary', jobId],
     queryFn: () => trpcClient.collectedData.getSummary.query({ jobId }),
+  });
+
+  const { data: stats, isLoading: statsLoading } = useQuery({
+    queryKey: ['collectedData', 'getCollectionStats', jobId],
+    queryFn: () => trpcClient.collectedData.getCollectionStats.query({ jobId }),
   });
 
   if (isLoading) {
@@ -91,6 +99,38 @@ export function SummaryView({ jobId }: SummaryViewProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* 신규: 날짜별 수집 타임라인 */}
+      {statsLoading ? (
+        <Card>
+          <CardContent className="p-6">
+            <Skeleton className="h-[240px]" />
+          </CardContent>
+        </Card>
+      ) : stats ? (
+        <CollectionTimeline timeline={stats.timeline} />
+      ) : null}
+
+      {/* 신규: 한도 대비 실제 + 매체×타입 */}
+      {statsLoading ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <Card>
+            <CardContent className="p-6">
+              <Skeleton className="h-48" />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-6">
+              <Skeleton className="h-48" />
+            </CardContent>
+          </Card>
+        </div>
+      ) : stats ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <LimitProgress limits={stats.limits} limitsSource={stats.limitsSource} />
+          <SourceTypeBreakdown byTypeAndSource={stats.byTypeAndSource} />
+        </div>
+      ) : null}
 
       {/* 소스별 분포 */}
       <Card>

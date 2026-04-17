@@ -52,6 +52,9 @@ export const analysisRouter = router({
             commentsPerItem: z.number().min(10).max(2000),
           })
           .optional(),
+        // 수집 한도 해석 방식. 기간 모드에서는 'perDay'(날짜별 한도),
+        // 이벤트 중심 모드에서는 'total'(총량). 미지정 시 'total'로 폴백하여 기존 잡과 하위 호환.
+        limitMode: z.enum(['perDay', 'total']).optional(),
         breakpoints: z
           .array(
             z.enum([
@@ -116,6 +119,9 @@ export const analysisRouter = router({
         skippedModules = guard.skippedModules;
         costLimitUsd = guard.costLimitUsd;
       }
+
+      // 데모 롤은 기간 모드 입력에 의한 쿼터 팽창(최대 30배)을 방지하기 위해 항상 total로 강제.
+      const limitMode = userRole === 'demo' ? 'total' : (input.limitMode ?? 'total');
 
       // 프리셋 조회 및 스냅샷 생성
       let keywordType: string | null = null;
@@ -234,6 +240,11 @@ export const analysisRouter = router({
         seriesOrder = (last?.maxOrder ?? -1) + 1;
       }
 
+      // limitMode를 options JSONB에 병합하여 DB에 함께 저장 (감사/재실행 시 모드 복원 가능)
+      const persistedOptions = effectiveOptions
+        ? { ...effectiveOptions, limitMode }
+        : { limitMode };
+
       // 1. collectionJobs 레코드 생성 (팀 ID 포함)
       const [job] = await ctx.db
         .insert(collectionJobs)
@@ -244,7 +255,7 @@ export const analysisRouter = router({
           status: 'pending',
           teamId: ctx.teamId ?? null,
           userId: ctx.userId,
-          options: effectiveOptions,
+          options: persistedOptions,
           limits: effectiveLimits,
           skippedModules,
           costLimitUsd,
@@ -266,6 +277,7 @@ export const analysisRouter = router({
           sources: input.sources,
           customSourceIds: input.customSourceIds,
           limits: effectiveLimits ?? undefined,
+          limitMode,
           forceRefetch: input.forceRefetch,
         },
         job.id,
