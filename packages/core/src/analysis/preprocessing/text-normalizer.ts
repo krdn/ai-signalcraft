@@ -127,7 +127,7 @@ export function normalizeText(
   // 개체명: 단일 alternation regex로 한 번에 치환
   if (entitiesRegex) {
     const before = result;
-    result = result.replace(entitiesRegex, (m) => aliasToCanonical.get(m) ?? m);
+    result = result.replace(entitiesRegex, (match) => aliasToCanonical.get(match) ?? match);
     if (before !== result) matchCount++;
   }
 

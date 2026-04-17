@@ -1,0 +1,95 @@
+{
+  "title": "AI SignalCraft Pipeline",
+  "schemaVersion": 38,
+  "version": 1,
+  "tags": ["ai-signalcraft", "pipeline"],
+  "refresh": "30s",
+  "time": { "from": "now-6h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Stage Latency (p50/p95/p99)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 8 },
+      "targets": [
+        {
+          "expr": "ais_stage_duration_ms{quantile=\"0.5\"}",
+          "legendFormat": "{{stage}} p50"
+        },
+        {
+          "expr": "ais_stage_duration_ms{quantile=\"0.95\"}",
+          "legendFormat": "{{stage}} p95"
+        },
+        {
+          "expr": "ais_stage_duration_ms{quantile=\"0.99\"}",
+          "legendFormat": "{{stage}} p99"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "ms" }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Stage Success/Failure Rate",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "rate(ais_stage_total{status=\"completed\"}[5m])",
+          "legendFormat": "{{stage}} success/s"
+        },
+        {
+          "expr": "rate(ais_stage_total{status=\"failed\"}[5m])",
+          "legendFormat": "{{stage}} failed/s"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Module Duration Heatmap",
+      "type": "heatmap",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "ais_stage_duration_ms{stage=~\"module:.*\"}",
+          "legendFormat": "{{stage}}"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Failure Count (last hour)",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 16, "w": 8, "h": 4 },
+      "targets": [
+        {
+          "expr": "sum by (stage) (increase(ais_stage_total{status=\"failed\"}[1h]))"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Pipeline p95 (overall)",
+      "type": "stat",
+      "gridPos": { "x": 8, "y": 16, "w": 8, "h": 4 },
+      "targets": [
+        {
+          "expr": "max(ais_stage_duration_ms{quantile=\"0.95\",stage=\"pipeline\"})"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ms" } }
+    },
+    {
+      "id": 6,
+      "title": "Active Stages (24h count)",
+      "type": "bargauge",
+      "gridPos": { "x": 16, "y": 16, "w": 8, "h": 4 },
+      "targets": [
+        {
+          "expr": "sum by (stage) (increase(ais_stage_total{status=\"completed\"}[24h]))"
+        }
+      ]
+    }
+  ]
+}
