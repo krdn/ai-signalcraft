@@ -3,6 +3,7 @@ import { sql, eq } from 'drizzle-orm';
 import { getDb } from '../db';
 import { analysisResults, analysisReports } from '../db/schema/analysis';
 import { collectionJobs } from '../db/schema/collections';
+import { recordTokenUsage, recordStageDuration } from '../metrics';
 
 /**
  * 분석 모듈 결과 upsert (jobId + module unique)
@@ -41,6 +42,34 @@ export async function persistAnalysisResult(data: typeof analysisResults.$inferI
       },
     })
     .returning();
+
+  // 메트릭 기록: completed 상태일 때만 토큰/stage 레이턴시 기록
+  if (data.status === 'completed' && data.usage) {
+    const usage = data.usage as {
+      provider?: string;
+      model?: string;
+      inputTokens?: number;
+      outputTokens?: number;
+    };
+    if (usage.provider && usage.model) {
+      recordTokenUsage(
+        usage.provider,
+        usage.model,
+        usage.inputTokens ?? 0,
+        usage.outputTokens ?? 0,
+      ).catch(() => undefined);
+    }
+    // 모듈 단위 stage duration (createdAt → now)
+    if (result?.createdAt && result?.updatedAt) {
+      const dur = new Date(result.updatedAt).getTime() - new Date(result.createdAt).getTime();
+      if (dur >= 0 && dur < 10 * 60 * 1000 && data.module) {
+        recordStageDuration(`module:${data.module}`, dur, 'completed').catch(() => undefined);
+      }
+    }
+  } else if (data.status === 'failed' && data.module) {
+    recordStageDuration(`module:${data.module}`, 0, 'failed').catch(() => undefined);
+  }
+
   return result;
 }
 

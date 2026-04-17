@@ -5,6 +5,7 @@ import { awaitStageGate } from '../pipeline/pipeline-checks';
 import { appendJobEvent, updateJobProgress } from '../pipeline/persist';
 import { getDb } from '../db';
 import { collectionJobs } from '../db/schema/collections';
+import { recordStageDuration, withSpan } from '../metrics';
 import { finalSummaryModule } from './modules';
 import {
   runModule,
@@ -134,35 +135,47 @@ export async function runAnalysisPipeline(
   };
 
   // 도메인 특화 정규화 (은어/반어/개체명 통합) — 토큰 최적화 유무와 무관하게 항상 적용
-  try {
-    await updateJobProgress(jobId, {
-      normalization: { status: 'running', domain: input.domain ?? 'default' },
-    }).catch(() => {});
-    const { input: normalizedInput, stats: normStats } = normalizeAnalysisInput(
-      input,
-      input.domain,
-    );
-    input = normalizedInput;
-    ctx.input = input;
-    await updateJobProgress(jobId, {
-      normalization: { status: 'completed', ...normStats },
-    }).catch(() => {});
-  } catch (error) {
-    console.error(`[pipeline] 도메인 정규화 실패 (원본 유지):`, error);
-    await updateJobProgress(jobId, {
-      normalization: { status: 'failed' },
-    }).catch(() => {});
-  }
+  await withSpan(
+    'normalization',
+    async () => {
+      const normStart = Date.now();
+      try {
+        await updateJobProgress(jobId, {
+          normalization: { status: 'running', domain: input.domain ?? 'default' },
+        }).catch(() => {});
+        const { input: normalizedInput, stats: normStats } = normalizeAnalysisInput(
+          input,
+          input.domain,
+        );
+        input = normalizedInput;
+        ctx.input = input;
+        await updateJobProgress(jobId, {
+          normalization: { status: 'completed', ...normStats },
+        }).catch(() => {});
+        await recordStageDuration('normalization', Date.now() - normStart, 'completed');
+      } catch (error) {
+        console.error(`[pipeline] 도메인 정규화 실패 (원본 유지):`, error);
+        await updateJobProgress(jobId, {
+          normalization: { status: 'failed' },
+        }).catch(() => {});
+        await recordStageDuration('normalization', Date.now() - normStart, 'failed');
+      }
+    },
+    { domain: input.domain ?? 'default' },
+  );
 
   // 토큰 최적화 전처리 (정규화는 이미 적용됨 — preprocessAnalysisInput 내부에서
   // 한 번 더 호출되지만 멱등하므로 안전. 단 매칭 카운트만 0에 가깝게 나옴)
   const tokenOptimization = (jobRow?.options?.tokenOptimization ?? 'none') as OptimizationPreset;
   if (tokenOptimization !== 'none') {
+    const tokenStart = Date.now();
     try {
       await updateJobProgress(jobId, {
         'token-optimization': { status: 'running', preset: tokenOptimization },
       }).catch(() => {});
-      const preprocessed = await preprocessAnalysisInput(input, tokenOptimization, jobId);
+      const preprocessed = await preprocessAnalysisInput(input, tokenOptimization, jobId, {
+        skipNormalization: true,
+      });
       input = preprocessed.input;
       ctx.input = input;
       await updateJobProgress(jobId, {
@@ -172,11 +185,13 @@ export async function runAnalysisPipeline(
           ...preprocessed.stats,
         },
       }).catch(() => {});
+      await recordStageDuration('token-optimization', Date.now() - tokenStart, 'completed');
     } catch (error) {
       console.error(`[pipeline] 토큰 최적화 실패:`, error);
       await updateJobProgress(jobId, {
         'token-optimization': { status: 'failed', phase: 'error' },
       }).catch(() => {});
+      await recordStageDuration('token-optimization', Date.now() - tokenStart, 'failed');
     }
   } else {
     await updateJobProgress(jobId, { 'token-optimization': { status: 'skipped' } }).catch(() => {});

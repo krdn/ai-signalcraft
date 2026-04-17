@@ -1,5 +1,5 @@
 // 개별 기사/댓글 감정 분석 (경량 BERT 모델 단일 패스)
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { getDb } from '../db';
 import {
   articles,
@@ -10,7 +10,43 @@ import {
 } from '../db/schema/collections';
 import { updateJobProgress, appendJobEvent } from '../pipeline/persist';
 import { isPipelineCancelled } from '../pipeline/control';
-import { classifySentiment, initClassifier } from './sentiment-classifier';
+import { classifySentiment, initClassifier, type SentimentResult } from './sentiment-classifier';
+import { applySarcasmAdjustments } from './sarcasm-postprocess';
+import { applyKoreanSentimentRulesAll } from './korean-sentiment-rules';
+
+/**
+ * N건의 감정 결과를 단일 UPDATE로 DB에 반영.
+ * 256건 기준 ~8초 → ~300ms
+ */
+async function bulkUpdateSentiment(
+  table: 'articles' | 'comments',
+  rows: Array<{ id: number; result: SentimentResult }>,
+): Promise<void> {
+  if (rows.length === 0) return;
+  const db = getDb();
+
+  // SQL injection 회피: label은 enum 화이트리스트, score는 숫자, id는 숫자
+  const allowedLabels = new Set(['positive', 'negative', 'neutral']);
+  const valuesSql = rows
+    .map((r) => {
+      const label = allowedLabels.has(r.result.label) ? r.result.label : 'neutral';
+      const score = Number.isFinite(r.result.score) ? r.result.score : 0;
+      const id = Number(r.id);
+      if (!Number.isFinite(id)) throw new Error(`invalid id: ${r.id}`);
+      return `(${id}, '${label}', ${score})`;
+    })
+    .join(',');
+
+  await db.execute(
+    sql.raw(`
+    UPDATE ${table} AS t
+    SET sentiment = v.sentiment,
+        sentiment_score = v.score
+    FROM (VALUES ${valuesSql}) AS v(id, sentiment, score)
+    WHERE t.id = v.id
+  `),
+  );
+}
 
 /**
  * 개별 기사/댓글 감정 분석 실행 (경량 BERT 모델 단일 패스)
@@ -40,19 +76,19 @@ export async function analyzeItems(jobId: number): Promise<{
   // 경량 모델 초기화
   await initClassifier();
 
-  // 기사 로드
-  const articleRows = await db
-    .select({ id: articles.id, title: articles.title, content: articles.content })
-    .from(articles)
-    .innerJoin(articleJobs, eq(articles.id, articleJobs.articleId))
-    .where(eq(articleJobs.jobId, jobId));
-
-  // 댓글 로드
-  const commentRows = await db
-    .select({ id: comments.id, content: comments.content })
-    .from(comments)
-    .innerJoin(commentJobs, eq(comments.id, commentJobs.commentId))
-    .where(eq(commentJobs.jobId, jobId));
+  // 기사/댓글 병렬 로드
+  const [articleRows, commentRows] = await Promise.all([
+    db
+      .select({ id: articles.id, title: articles.title, content: articles.content })
+      .from(articles)
+      .innerJoin(articleJobs, eq(articles.id, articleJobs.articleId))
+      .where(eq(articleJobs.jobId, jobId)),
+    db
+      .select({ id: comments.id, content: comments.content })
+      .from(comments)
+      .innerJoin(commentJobs, eq(comments.id, commentJobs.commentId))
+      .where(eq(commentJobs.jobId, jobId)),
+  ]);
 
   const articlesTotal = articleRows.length;
   const commentsTotal = commentRows.length;
@@ -85,15 +121,14 @@ export async function analyzeItems(jobId: number): Promise<{
     for (let c = 0; c < articleRows.length; c += CHUNK_SIZE) {
       const chunk = articleRows.slice(c, c + CHUNK_SIZE);
       const texts = chunk.map((a) => `${a.title} ${(a.content ?? '').slice(0, 150)}`);
-      const results = await classifySentiment(texts);
+      const rawResults = await classifySentiment(texts);
+      // 한국어 패턴 보정 → 반어/조롱 마커 보정 순서로 적용
+      const koreanAdjusted = applyKoreanSentimentRulesAll(texts, rawResults);
+      const results = applySarcasmAdjustments(texts, koreanAdjusted);
 
-      await Promise.all(
-        chunk.map((row, i) =>
-          db
-            .update(articles)
-            .set({ sentiment: results[i].label, sentimentScore: results[i].score })
-            .where(eq(articles.id, row.id)),
-        ),
+      await bulkUpdateSentiment(
+        'articles',
+        chunk.map((row, i) => ({ id: row.id, result: results[i] })),
       );
 
       articlesAnalyzed += chunk.length;
@@ -142,15 +177,14 @@ export async function analyzeItems(jobId: number): Promise<{
 
       const chunk = commentRows.slice(c, c + CHUNK_SIZE);
       const texts = chunk.map((r) => r.content);
-      const results = await classifySentiment(texts);
+      const rawResults = await classifySentiment(texts);
+      // 한국어 패턴 보정 → 반어/조롱 마커 보정
+      const koreanAdjusted = applyKoreanSentimentRulesAll(texts, rawResults);
+      const results = applySarcasmAdjustments(texts, koreanAdjusted);
 
-      await Promise.all(
-        chunk.map((row, i) =>
-          db
-            .update(comments)
-            .set({ sentiment: results[i].label, sentimentScore: results[i].score })
-            .where(eq(comments.id, row.id)),
-        ),
+      await bulkUpdateSentiment(
+        'comments',
+        chunk.map((row, i) => ({ id: row.id, result: results[i] })),
       );
 
       commentsAnalyzed += chunk.length;

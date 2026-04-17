@@ -36,48 +36,48 @@ export async function loadAnalysisInput(jobId: number): Promise<AnalysisInput> {
     throw new Error(`Collection job not found: ${jobId}`);
   }
 
-  // 기사 로드 (조인 테이블 경유)
-  const articleRows = await getDb()
-    .select({
-      title: articles.title,
-      content: articles.content,
-      publisher: articles.publisher,
-      publishedAt: articles.publishedAt,
-      source: articles.source,
-    })
-    .from(articles)
-    .innerJoin(articleJobs, eq(articles.id, articleJobs.articleId))
-    .where(eq(articleJobs.jobId, jobId));
+  const db = getDb();
 
-  // 영상 로드 (조인 테이블 경유)
-  const videoRows = await getDb()
-    .select({
-      title: videos.title,
-      description: videos.description,
-      channelTitle: videos.channelTitle,
-      viewCount: videos.viewCount,
-      likeCount: videos.likeCount,
-      publishedAt: videos.publishedAt,
-    })
-    .from(videos)
-    .innerJoin(videoJobs, eq(videos.id, videoJobs.videoId))
-    .where(eq(videoJobs.jobId, jobId));
-
-  // 댓글 로드 (조인 테이블 경유, 좋아요순 상위 N개)
-  const commentRows = await getDb()
-    .select({
-      content: comments.content,
-      source: comments.source,
-      author: comments.author,
-      likeCount: comments.likeCount,
-      dislikeCount: comments.dislikeCount,
-      publishedAt: comments.publishedAt,
-    })
-    .from(comments)
-    .innerJoin(commentJobs, eq(comments.id, commentJobs.commentId))
-    .where(eq(commentJobs.jobId, jobId))
-    .orderBy(desc(comments.likeCount))
-    .limit(MAX_COMMENTS);
+  // 기사/영상/댓글 병렬 로드 (DB RTT 3회 → 1회 수준으로 단축)
+  const [articleRows, videoRows, commentRows] = await Promise.all([
+    db
+      .select({
+        title: articles.title,
+        content: articles.content,
+        publisher: articles.publisher,
+        publishedAt: articles.publishedAt,
+        source: articles.source,
+      })
+      .from(articles)
+      .innerJoin(articleJobs, eq(articles.id, articleJobs.articleId))
+      .where(eq(articleJobs.jobId, jobId)),
+    db
+      .select({
+        title: videos.title,
+        description: videos.description,
+        channelTitle: videos.channelTitle,
+        viewCount: videos.viewCount,
+        likeCount: videos.likeCount,
+        publishedAt: videos.publishedAt,
+      })
+      .from(videos)
+      .innerJoin(videoJobs, eq(videos.id, videoJobs.videoId))
+      .where(eq(videoJobs.jobId, jobId)),
+    db
+      .select({
+        content: comments.content,
+        source: comments.source,
+        author: comments.author,
+        likeCount: comments.likeCount,
+        dislikeCount: comments.dislikeCount,
+        publishedAt: comments.publishedAt,
+      })
+      .from(comments)
+      .innerJoin(commentJobs, eq(comments.id, commentJobs.commentId))
+      .where(eq(commentJobs.jobId, jobId))
+      .orderBy(desc(comments.likeCount))
+      .limit(MAX_COMMENTS),
+  ]);
 
   // Drizzle ORM이 timestamp 컬럼을 문자열로 반환할 수 있으므로 Date 객체로 보장
   const ensureDate = (d: Date | string): Date => (d instanceof Date ? d : new Date(d));

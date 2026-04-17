@@ -15,6 +15,7 @@ import { isPipelineCancelled, waitIfPaused } from '../pipeline/control';
 import { appendJobEvent } from '../pipeline/persist';
 import { getModuleModelConfig, getModuleModelConfigForPreset } from './model-config';
 import { persistAnalysisResult } from './persist-analysis';
+import { hashAnalysisInput, getCachedModuleResult, setCachedModuleResult } from './module-cache';
 import type { AnalysisModule, AnalysisInput, AnalysisModuleResult } from './types';
 import type { AnalysisDomain } from './domain';
 import { getDomainConfig } from './domain';
@@ -223,6 +224,32 @@ export async function runModule<T>(
   priorResults?: Record<string, unknown>,
   configAdapter?: ModelConfigAdapter,
 ): Promise<AnalysisModuleResult<T>> {
+  // 캐시 조회: 동일 (module, input) 조합은 LLM 호출 스킵
+  const priorHashKey = priorResults ? JSON.stringify(Object.keys(priorResults).sort()) : undefined;
+  const inputHash = hashAnalysisInput(input, `${module.name}|${priorHashKey ?? ''}`);
+
+  if (process.env.AIS_MODULE_CACHE !== 'off') {
+    const cached = await getCachedModuleResult<T>(module.name, inputHash);
+    if (cached && cached.usage) {
+      // DB에도 기록 (UI 일관성)
+      try {
+        const maybePromise = persistCallback({
+          jobId: input.jobId,
+          module: module.name,
+          status: 'completed',
+          result: cached.result as never,
+          usage: cached.usage,
+        });
+        if (maybePromise && typeof (maybePromise as Promise<void>).catch === 'function') {
+          await (maybePromise as Promise<void>).catch(() => undefined);
+        }
+      } catch {
+        // ignore
+      }
+      return cached;
+    }
+  }
+
   const result = await kitRunModule<AnalysisInput, T>(
     module as unknown as KitAnalysisModule<AnalysisInput, T>,
     input,
@@ -234,6 +261,15 @@ export async function runModule<T>(
     },
     priorResults,
   );
+
+  if (process.env.AIS_MODULE_CACHE !== 'off') {
+    await setCachedModuleResult(
+      module.name,
+      inputHash,
+      result as unknown as AnalysisModuleResult<T>,
+    );
+  }
+
   return result as unknown as AnalysisModuleResult<T>;
 }
 

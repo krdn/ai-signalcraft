@@ -33,20 +33,24 @@ export interface PreprocessingResult {
   };
 }
 
+export interface PreprocessOptions {
+  /** 이미 정규화된 input이면 true (pipeline-orchestrator에서 선행된 경우) */
+  skipNormalization?: boolean;
+}
+
 export async function preprocessAnalysisInput(
   input: AnalysisInput,
   preset: OptimizationPreset,
   _jobId: number,
+  options: PreprocessOptions = {},
 ): Promise<PreprocessingResult> {
   const originalArticles = input.articles.length;
   const originalComments = input.comments.length;
 
-  // 0. 도메인 특화 텍스트 정규화 (은어/반어/개체명 통합)
-  // input.domain이 없으면 공통 규칙만 적용된다.
-  const { input: normalizedInput, stats: normalizationStats } = normalizeAnalysisInput(
-    input,
-    input.domain,
-  );
+  // 0. 도메인 특화 텍스트 정규화 (skipNormalization=true면 건너뜀 — orchestrator에서 선행)
+  const { input: normalizedInput, stats: normalizationStats } = options.skipNormalization
+    ? { input, stats: undefined as NormalizationStats | undefined }
+    : normalizeAnalysisInput(input, input.domain);
 
   // RAG 모드: DB 임베딩 기반 의미 검색으로 선별
   if (isRAGPreset(preset)) {
