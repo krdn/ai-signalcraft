@@ -2,12 +2,21 @@
 
 import { memo } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { CheckCircle2, Loader2, XCircle, Clock, ChevronDown, Info, Ban } from 'lucide-react';
+import {
+  CheckCircle2,
+  Loader2,
+  XCircle,
+  Clock,
+  ChevronDown,
+  Info,
+  Ban,
+  Recycle,
+} from 'lucide-react';
 import { AnimatedNumber } from './animated-number';
 import { ItemDetailsSection } from './collection-tab';
 import { SOURCE_HELP } from './constants';
 import { calcRate } from './utils';
-import type { SourceDetail } from './types';
+import type { SourceDetail, ReuseSummary } from './types';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
@@ -15,6 +24,7 @@ interface CollectionLanesProps {
   sourceDetails: Record<string, SourceDetail>;
   errorDetails: unknown;
   elapsedSeconds: number;
+  reuseSummary?: ReuseSummary | null;
 }
 
 function sourceIcon(status: string) {
@@ -51,9 +61,12 @@ export const CollectionLanes = memo(function CollectionLanes({
   sourceDetails,
   errorDetails,
   elapsedSeconds,
+  reuseSummary,
 }: CollectionLanesProps) {
   const sources = Object.entries(sourceDetails);
   const errors = errorDetails as Record<string, string> | null;
+  const totalReused = (reuseSummary?.articles ?? 0) + (reuseSummary?.videos ?? 0);
+  const bySource = reuseSummary?.bySource ?? {};
 
   if (sources.length === 0) {
     return <div className="text-sm text-muted-foreground py-2 text-center">수집 대기 중...</div>;
@@ -74,6 +87,7 @@ export const CollectionLanes = memo(function CollectionLanes({
             (detail.articleDetails?.length ?? 0) > 0 || (detail.videoDetails?.length ?? 0) > 0;
           const error = errors?.[key];
           const barPercent = Math.max((detail.count / maxCount) * 100, 3);
+          const sourceReused = bySource[key] ?? 0;
 
           return (
             <motion.div
@@ -124,6 +138,24 @@ export const CollectionLanes = memo(function CollectionLanes({
                         <div className="absolute inset-0 animate-shimmer rounded-full" />
                       )}
                     </div>
+
+                    {/* 재사용 뱃지 */}
+                    {sourceReused > 0 && (
+                      <TooltipProvider delay={300}>
+                        <Tooltip>
+                          <TooltipTrigger className="cursor-help">
+                            <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 px-1.5 py-0.5 text-[10px] font-medium shrink-0">
+                              <Recycle className="h-2.5 w-2.5" />
+                              {sourceReused}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="text-xs max-w-[200px]">
+                            이전 수집에서 본문 {sourceReused}건 재사용 (TTL 내 동일 콘텐츠). 연결된
+                            댓글도 자동 포함됩니다.
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
 
                     {/* 건수: 본문/댓글 분리 */}
                     <div className="flex items-center gap-1.5 shrink-0 text-[11px] font-mono">
@@ -212,10 +244,19 @@ export const CollectionLanes = memo(function CollectionLanes({
             </span>
             <span className="font-mono">
               본문 <AnimatedNumber value={totalArts} className="font-mono font-medium" />건
+              {totalReused > 0 && (
+                <span className="text-amber-600 dark:text-amber-400"> (재사용 {totalReused})</span>
+              )}
               {totalCmts > 0 && (
                 <>
                   {' '}
                   · 댓글 <AnimatedNumber value={totalCmts} className="font-mono font-medium" />건
+                  {(reuseSummary?.comments ?? 0) > 0 && (
+                    <span className="text-amber-600 dark:text-amber-400">
+                      {' '}
+                      (재사용 {reuseSummary?.comments})
+                    </span>
+                  )}
                 </>
               )}
             </span>

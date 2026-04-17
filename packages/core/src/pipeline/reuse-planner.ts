@@ -1,6 +1,6 @@
 // TTL 기반 수집 재사용 판정
 // 같은 키워드/기간으로 이미 최근 수집된 article/video 를 찾아 재연결 대상으로 분류
-import { sql, and, eq, gte, lte, gt, isNotNull } from 'drizzle-orm';
+import { and, eq, gte, lte, gt, isNotNull, inArray } from 'drizzle-orm';
 import { getDb } from '../db';
 import { articles, articleKeywords, videos, videoKeywords } from '../db/schema/collections';
 import {
@@ -238,38 +238,39 @@ export async function linkReusedVideosToJob(jobId: number, videoIds: number[]): 
 export async function linkReusedCommentsForArticles(
   jobId: number,
   articleIds: number[],
-): Promise<void> {
-  if (articleIds.length === 0) return;
+): Promise<number> {
+  if (articleIds.length === 0) return 0;
   const { comments, commentJobs } = await import('../db/schema/collections');
   const db = getDb();
-  // 해당 기사들에 달린 모든 댓글 id 조회
   const rows = await db
     .select({ id: comments.id })
     .from(comments)
-    .where(sql`${comments.articleId} = ANY(${articleIds})`);
-  if (rows.length === 0) return;
+    .where(inArray(comments.articleId, articleIds));
+  if (rows.length === 0) return 0;
   await db
     .insert(commentJobs)
     .values(rows.map((r) => ({ commentId: r.id, jobId })))
     .onConflictDoNothing();
+  return rows.length;
 }
 
 export async function linkReusedCommentsForVideos(
   jobId: number,
   videoIds: number[],
-): Promise<void> {
-  if (videoIds.length === 0) return;
+): Promise<number> {
+  if (videoIds.length === 0) return 0;
   const { comments, commentJobs } = await import('../db/schema/collections');
   const db = getDb();
   const rows = await db
     .select({ id: comments.id })
     .from(comments)
-    .where(sql`${comments.videoId} = ANY(${videoIds})`);
-  if (rows.length === 0) return;
+    .where(inArray(comments.videoId, videoIds));
+  if (rows.length === 0) return 0;
   await db
     .insert(commentJobs)
     .values(rows.map((r) => ({ commentId: r.id, jobId })))
     .onConflictDoNothing();
+  return rows.length;
 }
 
 /**

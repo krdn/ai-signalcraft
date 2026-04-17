@@ -1,10 +1,67 @@
 // 파이프라인 상태 조회 공유 함수 — tRPC 라우터 + SSE Route에서 공유
 
-import { collectionJobs, analysisResults, analysisReports, getDb } from '@ai-signalcraft/core';
+import {
+  collectionJobs,
+  analysisResults,
+  analysisReports,
+  getDb,
+  getWorkerStatus,
+  getQueueStatus,
+} from '@ai-signalcraft/core';
 import { eq } from 'drizzle-orm';
 import { MODULE_LABELS, SOURCE_LABELS, MODULE_STAGE } from './labels';
 import { buildEventLog } from './events';
 import { estimateCostUsd } from '@/components/analysis/pipeline-monitor/constants';
+
+const STALLED_THRESHOLD_MS = 10 * 60 * 1000; // 10분 이상 active → stalled 의심
+
+let workerStatusCache: { data: any; ts: number } | null = null;
+const WORKER_CACHE_TTL = 5_000;
+
+async function getCachedWorkerStatus() {
+  const now = Date.now();
+  if (workerStatusCache && now - workerStatusCache.ts < WORKER_CACHE_TTL) {
+    return workerStatusCache.data;
+  }
+  try {
+    const [healthStatus, queueDetail] = await Promise.all([getWorkerStatus(), getQueueStatus()]);
+
+    const enriched = healthStatus.map((q) => {
+      const detail = queueDetail.queues.find((d) => d.name === q.queue);
+      const stalledJobs = (detail?.jobs ?? [])
+        .filter((j) => {
+          if (j.state !== 'active' || !j.processedOn) return false;
+          return now - j.processedOn > STALLED_THRESHOLD_MS;
+        })
+        .map((j) => ({
+          queue: q.queue,
+          bullmqId: j.id,
+          name: j.name,
+          dbJobId: j.dbJobId ?? null,
+          elapsedSeconds: j.processedOn ? Math.round((now - j.processedOn) / 1000) : 0,
+        }));
+
+      return {
+        queue: q.queue,
+        health: stalledJobs.length > 0 && q.health !== 'down' ? ('warn' as const) : q.health,
+        workerCount: q.workerCount,
+        counts: {
+          active: q.counts.active,
+          waiting: q.counts.waiting,
+          delayed: q.counts.delayed,
+          failed: q.counts.failed,
+        },
+        stalledJobs,
+        isPaused: q.isPaused,
+      };
+    });
+
+    workerStatusCache = { data: enriched, ts: now };
+    return enriched;
+  } catch {
+    return workerStatusCache?.data ?? null;
+  }
+}
 
 export type SourceDetailStatus =
   | 'pending'
@@ -240,6 +297,9 @@ export async function getPipelineStatus(jobId: number) {
     reportCompletedAt: report?.createdAt ? new Date(report.createdAt).toISOString() : null,
   };
 
+  // 워커 상태 (5초 캐시)
+  const workerStatus = await getCachedWorkerStatus();
+
   // 이벤트 로그
   const reportMeta = report?.metadata as {
     reportModel?: { provider: string; model: string };
@@ -288,6 +348,7 @@ export async function getPipelineStatus(jobId: number) {
     analysisModuleCount: { total: analysisRows.length, completed: completedModulesCount },
     hasReport: reportDone,
     sourceDetails,
+    reuseSummary: (job.progress as Record<string, any> | null)?._reuse ?? null,
     analysisModules,
     elapsedSeconds,
     overallProgress,
@@ -295,6 +356,7 @@ export async function getPipelineStatus(jobId: number) {
     timeline,
     analysisModulesDetailed,
     events,
+    workerStatus,
     itemAnalysis: itemAnalysisProgress
       ? {
           articlesTotal: itemAnalysisProgress.articlesTotal ?? 0,
@@ -430,7 +492,7 @@ function buildSourceDetails(
   const sourceDetails: Record<string, SourceDetailResult> = {};
   if (progress) {
     for (const [key, val] of Object.entries(progress)) {
-      if (key === '_events' || key === 'report') continue;
+      if (key.startsWith('_') || key === 'report') continue;
       const label = SOURCE_LABELS[key] ?? key;
       const articles = val.articles ?? 0;
       const videos = val.videos ?? 0;

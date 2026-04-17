@@ -1,6 +1,6 @@
 // 정규화된 데이터를 DB에 upsert (D-07: 중복 제거)
 // N:M 조인 테이블을 사용하여 기사/영상/댓글이 여러 job에서 공유 가능
-import { sql, eq, and, notInArray } from 'drizzle-orm';
+import { sql, eq, and, notInArray, inArray } from 'drizzle-orm';
 import { getDb } from '../db';
 import {
   articles,
@@ -172,13 +172,13 @@ export async function persistComments(jobId: number, data: (typeof comments.$inf
     await getDb()
       .update(articles)
       .set({ lastCommentsFetchedAt: sql`now()` })
-      .where(sql`${articles.id} = ANY(${[...articleIdSet]})`);
+      .where(inArray(articles.id, [...articleIdSet]));
   }
   if (videoIdSet.size > 0) {
     await getDb()
       .update(videos)
       .set({ lastCommentsFetchedAt: sql`now()` })
-      .where(sql`${videos.id} = ANY(${[...videoIdSet]})`);
+      .where(inArray(videos.id, [...videoIdSet]));
   }
 
   return allUpserted;

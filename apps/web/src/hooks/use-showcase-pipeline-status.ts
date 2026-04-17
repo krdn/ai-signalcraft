@@ -99,6 +99,7 @@ export function useShowcasePipelineStatus(jobId: number) {
         reportCompletedAt: null,
       },
       analysisModulesDetailed,
+      reuseSummary: null,
       events: [],
       itemAnalysis: null,
     };

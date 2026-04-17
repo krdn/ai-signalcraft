@@ -143,7 +143,7 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
       );
     } else {
       // naver, dcinside, fmkorea, clien — article 스키마
-      const dbSource = src === 'naver' ? 'naver' : src;
+      const dbSource = src === 'naver' ? 'naver-news' : src;
       planPromises.push(
         safePlanArticleReuse(
           dbSource,
@@ -162,25 +162,31 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
 
   // 재사용 대상 즉시 조인 테이블 연결 + 키워드 linkage 누적
   // 수집 실패해도 재사용 기사는 분석에 포함됨 (안전한 분리)
-  const linkPromises: Promise<void>[] = [];
+  const linkPromises: Promise<unknown>[] = [];
+  const commentCountPromises: Promise<number>[] = [];
   let totalReusedArticles = 0;
   let totalReusedVideos = 0;
   for (const plan of Object.values(articleReusePlans)) {
     if (plan.reuseArticleIds.length === 0) continue;
     totalReusedArticles += plan.reuseArticleIds.length;
     linkPromises.push(linkReusedArticlesToJob(dbJobId, plan.reuseArticleIds));
-    linkPromises.push(linkReusedCommentsForArticles(dbJobId, plan.reuseArticleIds));
+    commentCountPromises.push(linkReusedCommentsForArticles(dbJobId, plan.reuseArticleIds));
     linkPromises.push(linkArticleKeywords(plan.reuseArticleIds, params.keyword));
   }
   for (const plan of Object.values(videoReusePlans)) {
     if (plan.reuseVideoIds.length === 0) continue;
     totalReusedVideos += plan.reuseVideoIds.length;
     linkPromises.push(linkReusedVideosToJob(dbJobId, plan.reuseVideoIds));
-    linkPromises.push(linkReusedCommentsForVideos(dbJobId, plan.reuseVideoIds));
+    commentCountPromises.push(linkReusedCommentsForVideos(dbJobId, plan.reuseVideoIds));
     linkPromises.push(linkVideoKeywords(plan.reuseVideoIds, params.keyword));
   }
+  let totalReusedComments = 0;
   try {
-    await Promise.all(linkPromises);
+    const [, commentCounts] = await Promise.all([
+      Promise.all(linkPromises),
+      Promise.all(commentCountPromises),
+    ]);
+    totalReusedComments = commentCounts.reduce((s, n) => s + n, 0);
   } catch (err) {
     await appendJobEvent(
       dbJobId,
@@ -190,17 +196,26 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
   }
 
   // 재사용 요약 로깅 (이벤트 + progress._reuse 필드)
-  // UI 에서 "재사용 N건" 배지로 빠르게 표시할 수 있도록 별도 필드로 기록
   if (totalReusedArticles > 0 || totalReusedVideos > 0) {
     await appendJobEvent(
       dbJobId,
       'info',
-      `reuse: articles=${totalReusedArticles}, videos=${totalReusedVideos} (forceRefetch=${forceRefetch})`,
+      `reuse: articles=${totalReusedArticles}, videos=${totalReusedVideos}, comments=${totalReusedComments} (forceRefetch=${forceRefetch})`,
     ).catch(() => void 0);
 
+    const bySource: Record<string, number> = {};
+    for (const [src, plan] of Object.entries(articleReusePlans)) {
+      if (plan.reuseArticleIds.length > 0) bySource[src] = plan.reuseArticleIds.length;
+    }
+    for (const [src, plan] of Object.entries(videoReusePlans)) {
+      if (plan.reuseVideoIds.length > 0)
+        bySource[src] = (bySource[src] ?? 0) + plan.reuseVideoIds.length;
+    }
     const reuseSummary = {
       articles: totalReusedArticles,
       videos: totalReusedVideos,
+      comments: totalReusedComments,
+      bySource,
       forceRefetch,
       evaluatedAt: new Date().toISOString(),
     };

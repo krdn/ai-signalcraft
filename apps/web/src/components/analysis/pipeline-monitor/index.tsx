@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { PipelineHeader } from './pipeline-header';
 import { LiveStatsBar } from './live-stats-bar';
+import { WorkerStatusBar } from './worker-status-bar';
 import { StageFlow } from './stage-flow';
 import { BreakpointControl } from './breakpoint-control';
 import { CollectionLanes } from './collection-lanes';
@@ -185,7 +186,12 @@ export function PipelineMonitor({
           elapsedSeconds={data.elapsedSeconds ?? 0}
         />
 
-        {/* 파이프라인 4단계 플로우 */}
+        {/* 워커 상태 */}
+        {data.workerStatus && data.workerStatus.length > 0 && (
+          <WorkerStatusBar workerStatus={data.workerStatus} jobId={jobId} />
+        )}
+
+        {/* 파이프라인 6단계 플로우 */}
         <StageFlow
           stages={data.pipelineStages ?? {}}
           timeline={statusData.timeline}
@@ -233,6 +239,7 @@ export function PipelineMonitor({
           sourceDetails={data.sourceDetails ?? {}}
           errorDetails={data.errorDetails}
           elapsedSeconds={data.elapsedSeconds ?? 0}
+          reuseSummary={data.reuseSummary}
         />
 
         {/* 개별 감정 분석 진행 */}

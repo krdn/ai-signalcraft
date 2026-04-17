@@ -97,6 +97,37 @@ export type BreakpointStage =
   | 'analysis-stage2'
   | 'analysis-stage4';
 
+export interface ReuseSummary {
+  articles: number;
+  videos: number;
+  comments?: number;
+  bySource?: Record<string, number>;
+  forceRefetch?: boolean;
+  evaluatedAt?: string;
+}
+
+export interface StalledJobInfo {
+  queue: string;
+  bullmqId: string;
+  name: string;
+  dbJobId: number | null;
+  elapsedSeconds: number;
+}
+
+export interface WorkerQueueStatus {
+  queue: string;
+  health: 'healthy' | 'idle' | 'stuck' | 'down' | 'warn';
+  workerCount: number;
+  counts: {
+    active: number;
+    waiting: number;
+    delayed: number;
+    failed: number;
+  };
+  stalledJobs: StalledJobInfo[];
+  isPaused: boolean;
+}
+
 export interface PipelineStatusData {
   status: string;
   keyword: string;
@@ -110,6 +141,7 @@ export interface PipelineStatusData {
   sourceDetails: Record<string, SourceDetail>;
   analysisModules: Array<{ module: string; status: ModuleStatus; label: string }>;
   elapsedSeconds: number;
+  reuseSummary: ReuseSummary | null;
   // 제어 관련 필드
   costLimitUsd: number | null;
   skippedModules: string[];
@@ -120,4 +152,5 @@ export interface PipelineStatusData {
   analysisModulesDetailed: AnalysisModuleDetailed[];
   events: PipelineEvent[];
   itemAnalysis: ItemAnalysisData | null;
+  workerStatus?: WorkerQueueStatus[] | null;
 }

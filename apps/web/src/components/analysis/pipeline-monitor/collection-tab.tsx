@@ -142,10 +142,7 @@ export function CollectionTab({ data }: CollectionTabProps) {
   const sources = Object.entries(data.sourceDetails);
   const errorDetails = data.errorDetails as Record<string, string> | null;
 
-  // TTL 기반 재사용 요약 (progress._reuse 에 flows.ts 가 기록)
-  const reuseSummary = (data.progress as Record<string, unknown> | null)?._reuse as
-    | { articles: number; videos: number; forceRefetch?: boolean; evaluatedAt?: string }
-    | undefined;
+  const reuseSummary = data.reuseSummary;
   const totalReused = (reuseSummary?.articles ?? 0) + (reuseSummary?.videos ?? 0);
 
   if (sources.length === 0) {
@@ -163,8 +160,10 @@ export function CollectionTab({ data }: CollectionTabProps) {
           <div className="text-xs text-amber-800 dark:text-amber-300">
             <span className="font-medium">TTL 재사용</span>
             <span className="ml-1">
-              이전 수집 결과를 재활용했습니다 — 기사 {reuseSummary?.articles ?? 0}건, 영상{' '}
-              {reuseSummary?.videos ?? 0}건{reuseSummary?.forceRefetch ? ' (forceRefetch=on)' : ''}
+              이전 수집 결과를 재활용했습니다 — 본문{' '}
+              {(reuseSummary?.articles ?? 0) + (reuseSummary?.videos ?? 0)}건
+              {(reuseSummary?.comments ?? 0) > 0 && <>, 댓글 {reuseSummary?.comments}건</>}
+              {reuseSummary?.forceRefetch ? ' (forceRefetch=on)' : ''}
             </span>
           </div>
         </div>

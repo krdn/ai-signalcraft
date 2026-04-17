@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
-import { Loader2, ChevronDown, Lock, HelpCircle } from 'lucide-react';
+import { Loader2, ChevronDown, Lock, HelpCircle, RefreshCw } from 'lucide-react';
 import { format, subDays, addDays } from 'date-fns';
 import { TriggerFormHelp } from './trigger-form-help';
 import { DomainBadge } from './domain-badge';
@@ -108,6 +108,7 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
   const [maxCommentsPerItem, setMaxCommentsPerItem] = useState(500);
   const [optimizationPreset, setOptimizationPreset] = useState<OptimizationPreset>('rag-standard');
   const [breakpoints, setBreakpoints] = useState<BreakpointValue[]>([]);
+  const [forceRefetch, setForceRefetch] = useState(false);
 
   // 클라이언트 마운트 후 실제 날짜 설정 (hydration mismatch 방지)
   useEffect(() => {
@@ -167,6 +168,7 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
         commentsPerItem: number;
       };
       breakpoints?: BreakpointValue[];
+      forceRefetch?: boolean;
     }) => trpcClient.analysis.trigger.mutate(input as any),
     onSuccess: (data) => {
       toast.success('분석이 시작되었습니다');
@@ -223,6 +225,7 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
       breakpoints: breakpoints.length > 0 ? breakpoints : undefined,
       ...(selectedSeriesId && { seriesId: selectedSeriesId }),
       ...(createNewSeries && { createNewSeries: true }),
+      ...(forceRefetch && { forceRefetch: true }),
     });
   };
 
@@ -797,6 +800,28 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
               </TooltipProvider>
             </CollapsibleContent>
           </Collapsible>
+
+          {/* 전량 재수집 옵션 — 데모 사용자에게는 표시하지 않음 */}
+          {!isDemo && (
+            <label className="flex items-start gap-2 rounded-lg border p-3 transition-colors cursor-pointer hover:bg-accent/50">
+              <Checkbox
+                checked={forceRefetch}
+                onCheckedChange={(checked) => setForceRefetch(!!checked)}
+                disabled={triggerMutation.isPending}
+                className="mt-0.5"
+              />
+              <div className="space-y-1">
+                <span className="text-sm font-medium flex items-center gap-1.5">
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  전량 재수집
+                </span>
+                <p className="text-xs text-muted-foreground">
+                  이전에 수집한 동일 기사/댓글을 무시하고 전부 새로 수집합니다. 일반적으로
+                  불필요하며, 최신 데이터가 반드시 필요한 경우에만 사용하세요.
+                </p>
+              </div>
+            </label>
+          )}
 
           {/* 단계별 검수 정지 — 데모 사용자는 표시하지 않음 */}
           {!isDemo && <BreakpointSection value={breakpoints} onChange={setBreakpoints} />}

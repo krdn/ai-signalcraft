@@ -84,6 +84,7 @@ export const analysisRouter = router({
           .optional(),
         seriesId: z.number().optional(),
         createNewSeries: z.boolean().optional(),
+        forceRefetch: z.boolean().optional(),
       }),
     )
     .mutation(async ({ input, ctx }) => {
@@ -265,6 +266,7 @@ export const analysisRouter = router({
           sources: input.sources,
           customSourceIds: input.customSourceIds,
           limits: effectiveLimits ?? undefined,
+          forceRefetch: input.forceRefetch,
         },
         job.id,
       );
