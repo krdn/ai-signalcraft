@@ -74,46 +74,39 @@ export async function analyzeItems(jobId: number): Promise<{
     },
   });
 
-  // --- 기사 분류 ---
+  const CHUNK_SIZE = 256;
+
+  // --- 기사 분류 (청크 단위: 분류 → 즉시 DB 저장 → progress) ---
   let articlesAnalyzed = 0;
 
   if (articlesTotal > 0) {
     console.log(`[item-analyzer] 기사 경량 분류 시작: ${articlesTotal}건`);
-    const articleTexts = articleRows.map((a) => `${a.title} ${(a.content ?? '').slice(0, 150)}`);
-    const articleResults = await classifySentiment(articleTexts);
 
-    // sentiment별 그룹화하여 배치 UPDATE
-    const groups: Record<string, { ids: number[]; scores: Map<number, number> }> = {
-      positive: { ids: [], scores: new Map() },
-      negative: { ids: [], scores: new Map() },
-      neutral: { ids: [], scores: new Map() },
-    };
+    for (let c = 0; c < articleRows.length; c += CHUNK_SIZE) {
+      const chunk = articleRows.slice(c, c + CHUNK_SIZE);
+      const texts = chunk.map((a) => `${a.title} ${(a.content ?? '').slice(0, 150)}`);
+      const results = await classifySentiment(texts);
 
-    for (let i = 0; i < articleRows.length; i++) {
-      const result = articleResults[i];
-      const group = groups[result.label];
-      if (group) {
-        group.ids.push(articleRows[i].id);
-        group.scores.set(articleRows[i].id, result.score);
-      }
-    }
-
-    // 배치 UPDATE (sentiment별로 한번에, score는 개별 UPDATE 필요)
-    for (const [sentiment, group] of Object.entries(groups)) {
-      if (group.ids.length === 0) continue;
-      // score가 개별적이므로 Promise.all로 병렬 처리
       await Promise.all(
-        group.ids.map((id) =>
+        chunk.map((row, i) =>
           db
             .update(articles)
-            .set({
-              sentiment,
-              sentimentScore: group.scores.get(id) ?? 0,
-            })
-            .where(eq(articles.id, id)),
+            .set({ sentiment: results[i].label, sentimentScore: results[i].score })
+            .where(eq(articles.id, row.id)),
         ),
       );
-      articlesAnalyzed += group.ids.length;
+
+      articlesAnalyzed += chunk.length;
+      await updateJobProgress(jobId, {
+        'item-analysis': {
+          status: 'running',
+          phase: 'lightweight',
+          articlesTotal,
+          commentsTotal,
+          articlesAnalyzed,
+          commentsAnalyzed: 0,
+        },
+      });
     }
 
     console.log(`[item-analyzer] 기사 분류 완료: ${articlesAnalyzed}건`);
@@ -135,44 +128,42 @@ export async function analyzeItems(jobId: number): Promise<{
     return { articlesAnalyzed, commentsAnalyzed: 0 };
   }
 
-  // --- 댓글 분류 ---
+  // --- 댓글 분류 (청크 단위: 분류 → 즉시 DB 저장 → progress) ---
   let commentsAnalyzed = 0;
 
   if (commentsTotal > 0) {
     console.log(`[item-analyzer] 댓글 경량 분류 시작: ${commentsTotal}건`);
-    const commentTexts = commentRows.map((c) => c.content);
-    const commentResults = await classifySentiment(commentTexts);
 
-    // sentiment별 그룹화
-    const groups: Record<string, { ids: number[]; scores: Map<number, number> }> = {
-      positive: { ids: [], scores: new Map() },
-      negative: { ids: [], scores: new Map() },
-      neutral: { ids: [], scores: new Map() },
-    };
-
-    for (let i = 0; i < commentRows.length; i++) {
-      const result = commentResults[i];
-      const group = groups[result.label];
-      if (group) {
-        group.ids.push(commentRows[i].id);
-        group.scores.set(commentRows[i].id, result.score);
+    for (let c = 0; c < commentRows.length; c += CHUNK_SIZE) {
+      if (await isPipelineCancelled(jobId)) {
+        console.log(`[item-analyzer] 취소 감지 (댓글 분류 중, ${commentsAnalyzed}건 완료)`);
+        break;
       }
-    }
 
-    for (const [sentiment, group] of Object.entries(groups)) {
-      if (group.ids.length === 0) continue;
+      const chunk = commentRows.slice(c, c + CHUNK_SIZE);
+      const texts = chunk.map((r) => r.content);
+      const results = await classifySentiment(texts);
+
       await Promise.all(
-        group.ids.map((id) =>
+        chunk.map((row, i) =>
           db
             .update(comments)
-            .set({
-              sentiment,
-              sentimentScore: group.scores.get(id) ?? 0,
-            })
-            .where(eq(comments.id, id)),
+            .set({ sentiment: results[i].label, sentimentScore: results[i].score })
+            .where(eq(comments.id, row.id)),
         ),
       );
-      commentsAnalyzed += group.ids.length;
+
+      commentsAnalyzed += chunk.length;
+      await updateJobProgress(jobId, {
+        'item-analysis': {
+          status: 'running',
+          phase: 'lightweight',
+          articlesTotal,
+          commentsTotal,
+          articlesAnalyzed,
+          commentsAnalyzed,
+        },
+      });
     }
 
     console.log(`[item-analyzer] 댓글 분류 완료: ${commentsAnalyzed}건`);

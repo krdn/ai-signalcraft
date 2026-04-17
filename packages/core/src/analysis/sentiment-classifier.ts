@@ -58,37 +58,69 @@ function normalizeSentiment(raw: { label: string; score: number }): SentimentRes
   return { label: 'neutral', score: raw.score };
 }
 
+const BATCH_TIMEOUT_MS = 30_000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`배치 타임아웃 (${ms}ms)`)), ms);
+    promise.then(
+      (v) => {
+        clearTimeout(timer);
+        resolve(v);
+      },
+      (e) => {
+        clearTimeout(timer);
+        reject(e);
+      },
+    );
+  });
+}
+
 /**
- * 텍스트 배열을 한 번에 감정 분류
- * @param texts 분석 대상 텍스트 (댓글/기사 제목 등)
- * @param batchSize 내부 배치 크기 (메모리 관리, 기본 64)
- * @returns 입력 순서 그대로 분류 결과
+ * 텍스트 배열을 배치 단위로 감정 분류
+ * @param texts 분석 대상 텍스트
+ * @param options.batchSize 배치 크기 (기본 64)
+ * @param options.onBatchDone 배치 완료 콜백 (진행률 추적용)
+ * @returns 입력 순서 그대로 분류 결과 (타임아웃 배치는 neutral 처리)
  */
 export async function classifySentiment(
   texts: string[],
-  batchSize = 64,
+  options?: { batchSize?: number; onBatchDone?: (processed: number, total: number) => void },
 ): Promise<SentimentResult[]> {
+  const batchSize = options?.batchSize ?? 64;
   if (!classifier) await initClassifier();
   if (!classifier) throw new Error('감정 분류 모델 초기화 실패');
 
   const results: SentimentResult[] = [];
 
-  // 메모리 관리를 위해 내부적으로 배치 분할
   for (let i = 0; i < texts.length; i += batchSize) {
-    const batch = texts.slice(i, i + batchSize).map(
-      // 모델 입력 최대 512 토큰 — 한국어 약 200자
-      (t) => (t.length > 200 ? t.slice(0, 200) : t),
-    );
-    const rawResults = await classifier(batch, { topk: 1 });
+    const batch = texts.slice(i, i + batchSize).map((t) => (t.length > 200 ? t.slice(0, 200) : t));
 
-    // 결과 정규화: 단일 입력이면 배열이 아닌 객체로 올 수 있음
-    const normalized = Array.isArray(rawResults[0])
-      ? (rawResults as Array<Array<{ label: string; score: number }>>).map((r) =>
-          normalizeSentiment(r[0]),
-        )
-      : (rawResults as Array<{ label: string; score: number }>).map((r) => normalizeSentiment(r));
+    try {
+      const rawResults:
+        | Array<{ label: string; score: number }>
+        | Array<Array<{ label: string; score: number }>> = await withTimeout(
+        classifier(batch, { topk: 1 }),
+        BATCH_TIMEOUT_MS,
+      );
 
-    results.push(...normalized);
+      const normalized = Array.isArray(rawResults[0])
+        ? (rawResults as Array<Array<{ label: string; score: number }>>).map((r) =>
+            normalizeSentiment(r[0]),
+          )
+        : (rawResults as Array<{ label: string; score: number }>).map((r) => normalizeSentiment(r));
+
+      results.push(...normalized);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn(
+        `[sentiment-classifier] 배치 ${i / batchSize + 1} 실패 (${batch.length}건): ${msg}`,
+      );
+      // 실패 배치는 neutral/score 0으로 채워서 인덱스 정합성 유지
+      results.push(...batch.map(() => ({ label: 'neutral' as const, score: 0 })));
+    }
+
+    options?.onBatchDone?.(Math.min(i + batchSize, texts.length), texts.length);
   }
 
   return results;
