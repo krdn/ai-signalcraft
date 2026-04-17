@@ -17,8 +17,12 @@ import {
   type ArticleReusePlan,
   type VideoReusePlan,
 } from '../pipeline/reuse-planner';
-import { appendJobEvent } from '../pipeline/persist';
+import { appendJobEvent, updateJobProgress } from '../pipeline/persist';
+import { cacheGetOrSet, keyReusePlan } from '../cache/redis-cache';
 import { getBullMQOptions } from './connection';
+
+// planReuse 결과의 Redis 캐시 TTL (5분) — 동시 flow 중복 DB 쿼리 방지 목적
+const REUSE_PLAN_CACHE_TTL_SEC = 300;
 
 // FlowProducer를 lazy 초기화 -- import 시 Redis 연결 시도 방지
 let flowProducer: FlowProducer | null = null;
@@ -44,7 +48,17 @@ async function safePlanArticleReuse(
   dbJobId: number,
 ): Promise<ArticleReusePlan> {
   try {
-    return await planArticleReuse({ source, keyword, startDate, endDate, forceRefetch });
+    // forceRefetch 시에는 캐시 경유하지 않음 (항상 빈 계획)
+    if (forceRefetch) {
+      return await planArticleReuse({ source, keyword, startDate, endDate, forceRefetch });
+    }
+    const cacheKey = keyReusePlan(source, keyword, startDate.toISOString(), endDate.toISOString());
+    const { value } = await cacheGetOrSet<ArticleReusePlan>(
+      cacheKey,
+      REUSE_PLAN_CACHE_TTL_SEC,
+      () => planArticleReuse({ source, keyword, startDate, endDate, forceRefetch }),
+    );
+    return value;
   } catch (err) {
     await appendJobEvent(
       dbJobId,
@@ -64,7 +78,14 @@ async function safePlanVideoReuse(
   dbJobId: number,
 ): Promise<VideoReusePlan> {
   try {
-    return await planVideoReuse({ source, keyword, startDate, endDate, forceRefetch });
+    if (forceRefetch) {
+      return await planVideoReuse({ source, keyword, startDate, endDate, forceRefetch });
+    }
+    const cacheKey = keyReusePlan(source, keyword, startDate.toISOString(), endDate.toISOString());
+    const { value } = await cacheGetOrSet<VideoReusePlan>(cacheKey, REUSE_PLAN_CACHE_TTL_SEC, () =>
+      planVideoReuse({ source, keyword, startDate, endDate, forceRefetch }),
+    );
+    return value;
   } catch (err) {
     await appendJobEvent(
       dbJobId,
@@ -168,13 +189,22 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
     ).catch(() => void 0);
   }
 
-  // 재사용 요약 로깅
+  // 재사용 요약 로깅 (이벤트 + progress._reuse 필드)
+  // UI 에서 "재사용 N건" 배지로 빠르게 표시할 수 있도록 별도 필드로 기록
   if (totalReusedArticles > 0 || totalReusedVideos > 0) {
     await appendJobEvent(
       dbJobId,
       'info',
       `reuse: articles=${totalReusedArticles}, videos=${totalReusedVideos} (forceRefetch=${forceRefetch})`,
     ).catch(() => void 0);
+
+    const reuseSummary = {
+      articles: totalReusedArticles,
+      videos: totalReusedVideos,
+      forceRefetch,
+      evaluatedAt: new Date().toISOString(),
+    };
+    await updateJobProgress(dbJobId, { _reuse: reuseSummary }).catch(() => void 0);
   }
   // ---------------------------------------------------------------------
 

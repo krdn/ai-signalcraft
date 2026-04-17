@@ -142,6 +142,12 @@ export function CollectionTab({ data }: CollectionTabProps) {
   const sources = Object.entries(data.sourceDetails);
   const errorDetails = data.errorDetails as Record<string, string> | null;
 
+  // TTL 기반 재사용 요약 (progress._reuse 에 flows.ts 가 기록)
+  const reuseSummary = (data.progress as Record<string, unknown> | null)?._reuse as
+    | { articles: number; videos: number; forceRefetch?: boolean; evaluatedAt?: string }
+    | undefined;
+  const totalReused = (reuseSummary?.articles ?? 0) + (reuseSummary?.videos ?? 0);
+
   if (sources.length === 0) {
     return (
       <p className="text-sm text-muted-foreground py-4 text-center">수집 데이터가 없습니다.</p>
@@ -150,6 +156,20 @@ export function CollectionTab({ data }: CollectionTabProps) {
 
   return (
     <div className="space-y-3">
+      {/* 재사용 배지 — 이전 수집 결과를 재활용한 경우 표시 */}
+      {totalReused > 0 && (
+        <div className="flex items-center gap-2 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 px-3 py-2">
+          <Info className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+          <div className="text-xs text-amber-800 dark:text-amber-300">
+            <span className="font-medium">TTL 재사용</span>
+            <span className="ml-1">
+              이전 수집 결과를 재활용했습니다 — 기사 {reuseSummary?.articles ?? 0}건, 영상{' '}
+              {reuseSummary?.videos ?? 0}건{reuseSummary?.forceRefetch ? ' (forceRefetch=on)' : ''}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* 소스별 카드 */}
       <div className="space-y-2">
         {sources.map(([key, detail]: [string, SourceDetail]) => {
