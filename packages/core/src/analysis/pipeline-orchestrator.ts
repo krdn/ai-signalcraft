@@ -15,7 +15,11 @@ import {
 } from './runner';
 import { runModuleMapReduce } from './map-reduce';
 import { loadAnalysisInput } from './data-loader';
-import { preprocessAnalysisInput, type OptimizationPreset } from './preprocessing';
+import {
+  preprocessAnalysisInput,
+  normalizeAnalysisInput,
+  type OptimizationPreset,
+} from './preprocessing';
 import { analyzeItems } from './item-analyzer';
 import { getConcurrencyConfig } from './concurrency-config';
 import { runWithProviderGrouping } from './concurrency';
@@ -129,7 +133,29 @@ export async function runAnalysisPipeline(
     modelAdapter,
   };
 
-  // 토큰 최적화 전처리
+  // 도메인 특화 정규화 (은어/반어/개체명 통합) — 토큰 최적화 유무와 무관하게 항상 적용
+  try {
+    await updateJobProgress(jobId, {
+      normalization: { status: 'running', domain: input.domain ?? 'default' },
+    }).catch(() => {});
+    const { input: normalizedInput, stats: normStats } = normalizeAnalysisInput(
+      input,
+      input.domain,
+    );
+    input = normalizedInput;
+    ctx.input = input;
+    await updateJobProgress(jobId, {
+      normalization: { status: 'completed', ...normStats },
+    }).catch(() => {});
+  } catch (error) {
+    console.error(`[pipeline] 도메인 정규화 실패 (원본 유지):`, error);
+    await updateJobProgress(jobId, {
+      normalization: { status: 'failed' },
+    }).catch(() => {});
+  }
+
+  // 토큰 최적화 전처리 (정규화는 이미 적용됨 — preprocessAnalysisInput 내부에서
+  // 한 번 더 호출되지만 멱등하므로 안전. 단 매칭 카운트만 0에 가깝게 나옴)
   const tokenOptimization = (jobRow?.options?.tokenOptimization ?? 'none') as OptimizationPreset;
   if (tokenOptimization !== 'none') {
     try {
