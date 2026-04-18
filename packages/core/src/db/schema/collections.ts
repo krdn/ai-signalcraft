@@ -155,6 +155,8 @@ export const videos = pgTable(
     viewCount: integer('view_count'),
     likeCount: integer('like_count'),
     commentCount: integer('comment_count'),
+    transcript: text('transcript'),
+    transcriptLang: text('transcript_lang'),
     publishedAt: timestamp('published_at'),
     rawData: jsonb('raw_data'),
     collectedAt: timestamp('collected_at').defaultNow().notNull(),
