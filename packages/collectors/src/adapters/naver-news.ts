@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import type { Browser, Page } from 'playwright';
 import * as cheerio from 'cheerio';
 import { buildNaverSearchUrl, parseNaverArticleUrl } from '../utils/naver-parser';
-import { parseDateTextOrNull } from '../utils/community-parser';
+import { parseDateTextOrNull, splitIntoDaysKst } from '../utils/community-parser';
 import { getRandomUserAgent, launchBrowser, createBrowserContext, sleep } from '../utils/browser';
 import type { Collector, CollectionOptions } from './base';
 
@@ -26,6 +26,23 @@ const SEARCH_HEADERS: Record<string, string> = {
   'Cache-Control': 'no-cache',
   Referer: 'https://search.naver.com/',
 };
+
+/**
+ * 네이버 검색 결과 블록 텍스트에서 작성일을 추출.
+ * 지원: "N분/시간/일/주/달/개월/년 전", "YYYY.MM.DD." (절대일자)
+ * 상대시간만 매칭하던 기존 로직은 7일 이상 지난 기사("1주 전")나 절대 일자 표기를 모두 놓쳤다.
+ */
+function extractNaverPublishedAt(blockText: string): Date | null {
+  const relMatch = blockText.match(/(\d+)\s*(분|시간|일|주|달|개월|년)\s*전/);
+  if (relMatch) {
+    return parseDateTextOrNull(`${relMatch[1]}${relMatch[2]} 전`);
+  }
+  const absMatch = blockText.match(/(\d{4})\.(\d{1,2})\.(\d{1,2})\.?/);
+  if (absMatch) {
+    return parseDateTextOrNull(`${absMatch[1]}.${absMatch[2]}.${absMatch[3]}`);
+  }
+  return null;
+}
 
 /**
  * NaverNewsCollector (하이브리드)
@@ -54,28 +71,28 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
     // 전체 수집 동안 sourceId 중복 제거 (cross-page/cross-day)
     const globalSeenSourceIds = new Set<string>();
     const days = this.splitIntoDays(options.startDate, options.endDate);
-    const perDayLimit = Math.ceil(maxItems / days.length);
-    // 네이버 단일 날짜 검색 한계(~40페이지)까지 허용.
-    // 이전 `maxSearchPages/days.length` 공식은 긴 기간에서 날짜당 2~4페이지로 극도 제한되어
-    // Pass 2 보충 시 페이지 여유가 없어 maxItems 미달이 발생했음.
+    // perDayLimit 우선순위:
+    //   1) options.maxItemsPerDay (flows.ts가 perDay 모드일 때 사용자 원본 한도를 명시 전달)
+    //   2) 미지정 시 maxItems / dayCount의 floor — total 모드 등에서도 일자 편중 방지.
+    // ⚠️ 한도 초과 금지: 절대 perDayLimit을 넘기지 않는다.
+    // ⚠️ 부족분 보충 금지: 한 일자가 모자라도 다른 일자에서 채우지 않는다.
+    const perDayLimit = options.maxItemsPerDay ?? Math.max(1, Math.floor(maxItems / days.length));
     const maxPagesPerDay = 40;
 
-    // 날짜별로 수집한 페이지 진행 상태 추적 (2-패스 보충을 위해)
+    // 날짜별 페이지 진행 상태 (단일 패스, 보충 없음)
     const dayProgress = new Map<number, { nextPage: number; exhausted: boolean }>();
     days.forEach((_, idx) => dayProgress.set(idx, { nextPage: 1, exhausted: false }));
 
-    // 단일 날짜에서 지정한 수만큼 수집하는 헬퍼 (page 진행 상태 유지)
-    const collectFromDay = async (dayIdx: number, targetCount: number): Promise<number> => {
+    // 단일 날짜에서 perDayLimit 까지만 수집 (절대 초과 금지)
+    const collectFromDay = async (dayIdx: number): Promise<number> => {
       const progress = dayProgress.get(dayIdx)!;
       if (progress.exhausted) return 0;
 
       const day = days[dayIdx];
       const dayStr = day.toISOString();
-      let collected = 0;
+      let collectedThisDay = 0;
 
-      while (collected < targetCount && progress.nextPage <= maxPagesPerDay) {
-        if (allArticles.length >= maxItems) break;
-
+      while (collectedThisDay < perDayLimit && progress.nextPage <= maxPagesPerDay) {
         const searchUrl = buildNaverSearchUrl({
           keyword: options.keyword,
           startDate: dayStr,
@@ -106,8 +123,11 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
             return true;
           });
 
-          allArticles.push(...fresh);
-          collected += fresh.length;
+          // perDayLimit을 절대 넘지 않도록 잘라내서 push
+          const room = perDayLimit - collectedThisDay;
+          const accepted = fresh.slice(0, room);
+          allArticles.push(...accepted);
+          collectedThisDay += accepted.length;
           progress.nextPage++;
         } catch {
           progress.exhausted = true;
@@ -118,31 +138,12 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
       }
 
       if (progress.nextPage > maxPagesPerDay) progress.exhausted = true;
-      return collected;
+      return collectedThisDay;
     };
 
-    // Pass 1: 각 날짜에서 perDayLimit까지 시도
+    // 단일 패스: 각 날짜에서 perDayLimit까지만 수집. 부족분은 보충하지 않음.
     for (let dayIdx = 0; dayIdx < days.length; dayIdx++) {
-      if (allArticles.length >= maxItems) break;
-      await collectFromDay(dayIdx, perDayLimit);
-    }
-
-    // Pass 2: 부족분을 아직 고갈되지 않은 날짜들에서 보충
-    // round-robin 방식으로 페이지 단위(~10건)씩 돌며 maxItems 도달 또는 모든 날짜 고갈될 때까지
-    while (allArticles.length < maxItems) {
-      const availableDays = Array.from(dayProgress.entries())
-        .filter(([, p]) => !p.exhausted)
-        .map(([idx]) => idx);
-      if (availableDays.length === 0) break;
-
-      let progressedThisRound = false;
-      for (const dayIdx of availableDays) {
-        if (allArticles.length >= maxItems) break;
-        const need = maxItems - allArticles.length;
-        const got = await collectFromDay(dayIdx, Math.min(need, 10));
-        if (got > 0) progressedThisRound = true;
-      }
-      if (!progressedThisRound) break;
+      await collectFromDay(dayIdx);
     }
 
     // TTL 재사용: 완전 스킵 URL 은 Phase 2 본문 수집에서 제외
@@ -156,8 +157,39 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
       console.info(`naver-news TTL 재사용으로 ${skippedByReuse}건 본문 수집 스킵`);
     }
 
+    // ⚠️ yield 직전 일자별 cap 최후 검증 — 사전 cap이 어떤 이유로 누락되어도 절대 한도 초과 X.
+    // 네이버는 일자별 분할 검색이라 사전에 cap이 잘 보장되지만, 안전망으로 한 번 더 잘라낸다.
+    const KST_OFFSET = 9 * 60 * 60 * 1000;
+    const dayKeyMs = (d: Date | null): number | null => {
+      if (!d) return null;
+      const t = d.getTime();
+      return Math.floor((t + KST_OFFSET) / 86400000) * 86400000 - KST_OFFSET;
+    };
+    const enforced = new Map<number, number>();
+    const enforcedArticles: NaverArticle[] = [];
+    let droppedByEnforce = 0;
+    for (const a of filteredArticles) {
+      const k = dayKeyMs(a.publishedAt);
+      if (k === null) {
+        enforcedArticles.push(a);
+        continue;
+      }
+      const cur = enforced.get(k) ?? 0;
+      if (cur >= perDayLimit) {
+        droppedByEnforce++;
+        continue;
+      }
+      enforced.set(k, cur + 1);
+      enforcedArticles.push(a);
+    }
+    if (droppedByEnforce > 0) {
+      console.warn(
+        `naver-news ⚠️ enforcePerDayCap: ${droppedByEnforce}건 추가 제거 (한도 ${perDayLimit}/일)`,
+      );
+    }
+
     // maxItems 제한
-    const targetArticles = filteredArticles.slice(0, maxItems);
+    const targetArticles = enforcedArticles.slice(0, maxItems);
     if (targetArticles.length === 0) return;
 
     // Phase 2: 기사 본문 수집 (Playwright — JS 렌더링 필요)
@@ -184,8 +216,11 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
           const _commentsOnly = refetchCommentsOnlySet.has(article.url);
 
           try {
-            const content = await this.fetchArticleContent(page, article.url);
+            const { content, publishedAt } = await this.fetchArticleContent(page, article.url);
             article.content = content;
+            // 본문 페이지의 정확한 게시 시각(KST 초 단위)으로 교체.
+            // 검색 결과의 "N일 전" 상대시간은 하루 단위로 뭉뚱그려져 날짜가 오판되기 쉬움.
+            if (publishedAt) article.publishedAt = publishedAt;
           } catch (err) {
             article.content = null;
             article.rawData.fetchError = err instanceof Error ? err.message : String(err);
@@ -246,10 +281,7 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
       }
 
       const blockText = $block.text();
-      const dateMatch = blockText.match(/(\d+)(분|시간|일)\s*전/);
-      const publishedAt = dateMatch
-        ? parseDateTextOrNull(`${dateMatch[1]}${dateMatch[2]} 전`)
-        : null;
+      const publishedAt = extractNaverPublishedAt(blockText);
 
       let naverUrl: string | null = null;
       $block.find('a[href*="n.news.naver.com"]').each((_, a) => {
@@ -317,13 +349,10 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
 
       const blockText = block.text();
       const pubMatch = blockText.match(
-        /([가-힣A-Za-z0-9\s]+?)(?:\d+(?:분|시간|일)\s*전|네이버뉴스)/,
+        /([가-힣A-Za-z0-9\s]+?)(?:\d+\s*(?:분|시간|일|주|달|개월|년)\s*전|\d{4}\.\d{1,2}\.\d{1,2}|네이버뉴스)/,
       );
       const publisher = pubMatch?.[1]?.trim() || '알 수 없음';
-      const dateMatch = blockText.match(/(\d+)(분|시간|일)\s*전/);
-      const publishedAt = dateMatch
-        ? parseDateTextOrNull(`${dateMatch[1]}${dateMatch[2]} 전`)
-        : null;
+      const publishedAt = extractNaverPublishedAt(blockText);
 
       articles.push({
         sourceId,
@@ -375,24 +404,11 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
   }
 
   /**
-   * 날짜 범위를 일별로 분할 (과거 → 최신 순서)
-   * 각 날짜에서 균등하게 기사를 수집하여 일별 트렌드 분석 정확도 향상
+   * 날짜 범위를 일별로 분할 (KST 자정 기준).
+   * 컨테이너 TZ가 UTC인 운영 환경에서도 사용자(한국)가 보는 일자와 정확히 일치한다.
    */
   private splitIntoDays(startDate: string, endDate: string): Date[] {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    start.setHours(0, 0, 0, 0);
-    end.setHours(23, 59, 59, 999);
-
-    const days: Date[] = [];
-    const current = new Date(start);
-    while (current <= end) {
-      days.push(new Date(current));
-      current.setDate(current.getDate() + 1);
-    }
-
-    if (days.length === 0) days.push(new Date(start));
-    return days;
+    return splitIntoDaysKst(startDate, endDate);
   }
 
   /**
@@ -410,14 +426,36 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
   }
 
   /**
-   * 기사 페이지에서 본문 추출 (Playwright 사용)
+   * 기사 페이지에서 본문 + 정확한 게시 시각 추출 (Playwright 사용)
+   * n.news.naver.com은 `data-date-time="YYYY-MM-DD HH:MM:SS"` 속성(KST)을 제공하므로
+   * 이를 우선 사용해 검색 결과의 상대시간 파싱 오차를 제거한다.
    */
-  private async fetchArticleContent(page: Page, url: string): Promise<string | null> {
+  private async fetchArticleContent(
+    page: Page,
+    url: string,
+  ): Promise<{ content: string | null; publishedAt: Date | null }> {
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15000 });
     await page.waitForTimeout(500);
 
     const html = await page.content();
     const $ = cheerio.load(html);
+
+    // 정확한 게시 시각 (KST 기준 "YYYY-MM-DD HH:MM:SS")
+    let publishedAt: Date | null = null;
+    const dateAttr =
+      $('[data-date-time]').first().attr('data-date-time') ??
+      $('._ARTICLE_DATE_TIME').first().attr('data-date-time');
+    if (dateAttr) {
+      const m = dateAttr.match(
+        /^(\d{4})-(\d{1,2})-(\d{1,2})\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?$/,
+      );
+      if (m) {
+        // KST(+09:00)를 명시해 ISO 문자열 생성 — 로컬 TZ 영향 제거
+        const iso = `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}T${m[4].padStart(2, '0')}:${m[5].padStart(2, '0')}:${(m[6] ?? '00').padStart(2, '0')}+09:00`;
+        const d = new Date(iso);
+        if (!Number.isNaN(d.getTime())) publishedAt = d;
+      }
+    }
 
     const contentSelectors = [
       '#newsct_article',
@@ -441,10 +479,10 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
     for (const selector of contentSelectors) {
       const content = $(selector).text().trim();
       if (content && content.length > 50) {
-        return content;
+        return { content, publishedAt };
       }
     }
 
-    return null;
+    return { content: null, publishedAt };
   }
 }

@@ -120,6 +120,19 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
   const limitMode = params.limitMode ?? 'total';
   const dayCount = computeDayCount(params.startDate, params.endDate);
   const effective = applyPerDayInflation(limits, dayCount, limitMode);
+
+  // perDay 모드에서만 일자별 cap을 어댑터에 명시 전달.
+  // 모든 수집기는 maxItemsPerDay를 받으면 각 일자에서 이 값을 절대 넘기지 않으며,
+  // 한 일자가 부족해도 다른 일자에서 보충하지 않는다.
+  // total 모드에서는 미전달 → 어댑터는 fallback(maxItems/dayCount의 floor)으로 일자 편중만 방지.
+  const perDayLimits =
+    limitMode === 'perDay' && dayCount > 1
+      ? {
+          naverArticles: limits.naverArticles,
+          youtubeVideos: limits.youtubeVideos,
+          communityPosts: limits.communityPosts,
+        }
+      : undefined;
   if (limitMode === 'perDay') {
     await appendJobEvent(
       dbJobId,
@@ -254,6 +267,7 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
             ...params,
             source: 'naver-news',
             maxItems: effective.naverArticles,
+            maxItemsPerDay: perDayLimits?.naverArticles,
             maxComments: limits.commentsPerItem,
             flowId,
             dbJobId,
@@ -286,6 +300,7 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
             ...params,
             source: 'youtube-videos',
             maxItems: effective.youtubeVideos,
+            maxItemsPerDay: perDayLimits?.youtubeVideos,
             flowId,
             dbJobId,
             reusePlan,
@@ -311,6 +326,7 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
             ...params,
             source: 'dcinside',
             maxItems: effective.communityPosts,
+            maxItemsPerDay: perDayLimits?.communityPosts,
             maxComments: limits.commentsPerItem,
             flowId,
             dbJobId,
@@ -336,6 +352,7 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
             ...params,
             source: 'fmkorea',
             maxItems: effective.communityPosts,
+            maxItemsPerDay: perDayLimits?.communityPosts,
             maxComments: limits.commentsPerItem,
             flowId,
             dbJobId,
@@ -361,6 +378,7 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
             ...params,
             source: 'clien',
             maxItems: effective.communityPosts,
+            maxItemsPerDay: perDayLimits?.communityPosts,
             maxComments: limits.commentsPerItem,
             flowId,
             dbJobId,
@@ -385,6 +403,13 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
         config: row.config ?? null,
         defaultLimit: row.defaultLimit,
       };
+      // 동적 소스도 perDay 모드일 때는 일자별 cap 적용 (defaultLimit는 1일 한도로 해석).
+      // 어댑터(rss/html 등 향후 추가될 모든 소스)가 maxItemsPerDay를 받으면 그 값을 절대 넘기지 않고,
+      // 부족분을 다른 일자에서 채우지 않아야 한다.
+      const customMaxItems =
+        limitMode === 'perDay' && dayCount > 1 ? row.defaultLimit * dayCount : row.defaultLimit;
+      const customMaxItemsPerDay =
+        limitMode === 'perDay' && dayCount > 1 ? row.defaultLimit : undefined;
       children.push({
         name: `normalize-feed-${row.id}`,
         queueName: 'pipeline',
@@ -402,7 +427,8 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
               ...params,
               source: row.adapterType,
               dataSourceSnapshot: snapshot,
-              maxItems: row.defaultLimit,
+              maxItems: customMaxItems,
+              maxItemsPerDay: customMaxItemsPerDay,
               flowId,
               dbJobId,
             },

@@ -17,8 +17,22 @@ import type { TimelinePoint } from './helpers';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
+export type TimelineBasis = 'published' | 'collected';
+
+export interface OutOfRangeSummary {
+  articles: number;
+  videos: number;
+  comments: number;
+  days: number;
+}
+
 interface Props {
   timeline: TimelinePoint[];
+  basis?: TimelineBasis;
+  onBasisChange?: (basis: TimelineBasis) => void;
+  outOfRange?: OutOfRangeSummary;
+  executionKstDate?: string | null;
+  futureDates?: string[];
 }
 
 type Series = 'articles' | 'videos' | 'comments';
@@ -39,7 +53,16 @@ function fmt(n: number): string {
   return n.toLocaleString('ko-KR');
 }
 
-export function CollectionTimeline({ timeline }: Props) {
+export function CollectionTimeline({
+  timeline,
+  basis = 'published',
+  onBasisChange,
+  outOfRange,
+  executionKstDate,
+  futureDates,
+}: Props) {
+  const oorTotal = outOfRange ? outOfRange.articles + outOfRange.videos + outOfRange.comments : 0;
+  const futureCount = futureDates?.length ?? 0;
   const [visible, setVisible] = useState<Record<Series, boolean>>({
     articles: true,
     videos: true,
@@ -87,9 +110,35 @@ export function CollectionTimeline({ timeline }: Props) {
           <CardTitle className="text-base flex items-center gap-2">
             <Calendar className="h-4 w-4" />
             날짜별 수집량
-            <span className="text-xs font-normal text-muted-foreground ml-2">KST 기준</span>
+            <span className="text-xs font-normal text-muted-foreground ml-2">
+              KST · {basis === 'published' ? '작성일' : '수집일'} 기준
+            </span>
           </CardTitle>
           <div className="flex items-center gap-2 flex-wrap">
+            {/* 기준(Basis) 토글 -- 작성일/수집일 */}
+            {onBasisChange && (
+              <div className="flex gap-1">
+                {[
+                  { v: 'published' as const, label: '작성일' },
+                  { v: 'collected' as const, label: '수집일' },
+                ].map((opt) => (
+                  <Button
+                    key={opt.v}
+                    size="sm"
+                    variant={basis === opt.v ? 'default' : 'outline'}
+                    className="h-7 text-xs"
+                    onClick={() => onBasisChange(opt.v)}
+                    title={
+                      opt.v === 'published'
+                        ? '콘텐츠 원본 작성일 기준 (published_at)'
+                        : '수집 실행 시점 기준 (collected_at)'
+                    }
+                  >
+                    {opt.label}
+                  </Button>
+                ))}
+              </div>
+            )}
             {/* 시리즈 토글 */}
             <div className="flex gap-1">
               {(Object.keys(SERIES_META) as Series[]).map((s) => {
@@ -292,6 +341,32 @@ export function CollectionTimeline({ timeline }: Props) {
           {mode === 'log' && '로그 스케일 — 단위가 크게 다른 시리즈를 한 축에 비교'}
           {mode === 'normalized' && '각 시리즈의 전체 합을 100%로 정규화한 상대 분포'}
         </p>
+
+        {futureCount > 0 && (
+          <div className="mt-2 flex items-start gap-2 rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-[11px] text-sky-900 dark:border-sky-900/50 dark:bg-sky-950/30 dark:text-sky-200">
+            <span className="font-medium">ℹ 수집 이후 날짜</span>
+            <span>
+              분석 실행 시점({executionKstDate}) 이후인 {futureCount}일
+              {futureDates && futureDates.length <= 3 ? ` (${futureDates.join(', ')})` : ''}은 수집
+              당시 아직 콘텐츠가 존재하지 않아 0으로 표시됩니다. 해당 기간의 데이터를 보려면
+              재분석이 필요합니다.
+            </span>
+          </div>
+        )}
+
+        {outOfRange && oorTotal > 0 && basis === 'published' && (
+          <div className="mt-2 flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
+            <span className="font-medium">⚠ 기간 외 데이터</span>
+            <span>
+              요청 기간을 벗어난 작성일의 데이터 {fmt(oorTotal)}건(
+              {outOfRange.articles > 0 && `기사 ${fmt(outOfRange.articles)} `}
+              {outOfRange.videos > 0 && `영상 ${fmt(outOfRange.videos)} `}
+              {outOfRange.comments > 0 && `댓글 ${fmt(outOfRange.comments)} `}/ {outOfRange.days}
+              일)가 수집되어 차트에서는 제외했습니다. "수집일" 기준으로 전환하면 전체 분포를 볼 수
+              있습니다.
+            </span>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

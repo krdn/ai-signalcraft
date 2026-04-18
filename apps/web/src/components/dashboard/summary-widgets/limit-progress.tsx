@@ -23,6 +23,15 @@ interface Props {
     commentsPerItem: CommentLimitCell;
   };
   limitsSource: 'job' | 'default';
+  limitMode?: 'perDay' | 'total';
+  dayCount?: number;
+  rawLimits?: {
+    naverArticles: number;
+    youtubeVideos: number;
+    communityPosts: number;
+    commentsPerItem: number;
+  };
+  activeCommunityCount?: number;
 }
 
 function barColor(pct: number, hasLimit: boolean): string {
@@ -70,20 +79,46 @@ function LimitRow({ icon: Icon, label, actualText, limitText, pct, hasLimit }: R
   );
 }
 
-export function LimitProgress({ limits, limitsSource }: Props) {
+export function LimitProgress({
+  limits,
+  limitsSource,
+  limitMode,
+  dayCount,
+  rawLimits,
+  activeCommunityCount,
+}: Props) {
   const fmt = (n: number) => n.toLocaleString('ko-KR');
+  const isPerDay = limitMode === 'perDay' && (dayCount ?? 1) > 1;
+
+  const limitLabel = (effective: number, raw?: number, sourceMultiplier = 1): string => {
+    if (isPerDay && raw !== undefined && dayCount !== undefined) {
+      const multiplierText = sourceMultiplier > 1 ? ` × ${sourceMultiplier}매체` : '';
+      return `${fmt(effective)} (${fmt(raw)}/일 × ${dayCount}일${multiplierText})`;
+    }
+    if (sourceMultiplier > 1 && raw !== undefined) {
+      return `${fmt(effective)} (${fmt(raw)} × ${sourceMultiplier}매체)`;
+    }
+    return fmt(effective);
+  };
 
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-base">수집 한도 대비 실제</CardTitle>
+        <CardTitle className="text-base">
+          수집 한도 대비 실제
+          {isPerDay && (
+            <span className="ml-2 text-xs font-normal text-muted-foreground">
+              (날짜별 한도 × {dayCount}일 환산)
+            </span>
+          )}
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <LimitRow
           icon={Newspaper}
           label="네이버 뉴스"
           actualText={fmt(limits.naverArticles.actual)}
-          limitText={fmt(limits.naverArticles.limit)}
+          limitText={limitLabel(limits.naverArticles.limit, rawLimits?.naverArticles)}
           pct={limits.naverArticles.pct}
           hasLimit={limits.naverArticles.limit > 0}
         />
@@ -91,7 +126,7 @@ export function LimitProgress({ limits, limitsSource }: Props) {
           icon={Video}
           label="유튜브 영상"
           actualText={fmt(limits.youtubeVideos.actual)}
-          limitText={fmt(limits.youtubeVideos.limit)}
+          limitText={limitLabel(limits.youtubeVideos.limit, rawLimits?.youtubeVideos)}
           pct={limits.youtubeVideos.pct}
           hasLimit={limits.youtubeVideos.limit > 0}
         />
@@ -99,7 +134,11 @@ export function LimitProgress({ limits, limitsSource }: Props) {
           icon={Users}
           label="커뮤니티 게시글"
           actualText={fmt(limits.communityPosts.actual)}
-          limitText={fmt(limits.communityPosts.limit)}
+          limitText={limitLabel(
+            limits.communityPosts.limit,
+            rawLimits?.communityPosts,
+            activeCommunityCount ?? 1,
+          )}
           pct={limits.communityPosts.pct}
           hasLimit={limits.communityPosts.limit > 0}
         />

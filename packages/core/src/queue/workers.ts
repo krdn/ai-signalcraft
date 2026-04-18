@@ -7,15 +7,20 @@ import { getBullMQOptions } from './connection';
 export function createCollectorWorker(processJob: (job: Job) => Promise<any>) {
   return new Worker('collectors', processJob, {
     ...getBullMQOptions(),
-    concurrency: 2,
+    // ⚠️ concurrency=1: 같은 워커 프로세스 안에서 잡이 동시에 실행되면 일자별 cap의
+    //   dayCount Map이 잡마다 별개라도 stalled 재실행과 결합 시 중복 누적 가능.
+    //   안전을 위해 직렬 실행. 처리량은 한 잡당 페이스가 결정적이라 큰 손해 없음.
+    concurrency: 1,
     limiter: {
       max: 8,
-      duration: 10000, // 10초당 최대 8개 작업 (각 수집기 내부 딜레이가 rate limit 대응)
+      duration: 10000,
     },
-    // 수집은 분 단위 소요 (네이버 200기사 + 댓글 수집은 수분) — 기본 30초 lockDuration은 stall 발생
-    lockDuration: 600_000, // 10분
-    stalledInterval: 300_000, // 5분마다 stall check
-    maxStalledCount: 2,
+    // lockDuration을 길게 잡아 fmkorea 같은 안티봇 사이트의 분 단위 지연에서도 stalled를 방지.
+    // stalled는 dayCount Map 리셋으로 cap을 우회시키는 결정적 위반 원인이 되므로 보수적으로 30분.
+    lockDuration: 1_800_000, // 30분
+    stalledInterval: 600_000, // 10분마다 stall check
+    // ⚠️ stalled 재실행은 dayCount 리셋 → 한도 초과 위험. 0으로 비활성화.
+    maxStalledCount: 0,
   });
 }
 

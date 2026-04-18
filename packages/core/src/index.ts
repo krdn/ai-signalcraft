@@ -17,5 +17,11 @@ export * from './utils';
 export * from './search';
 export { getWorkerStatus, type QueueHealth, type WorkerHealth } from './queue/worker-health';
 export { setupWorkerProcess } from './queue/worker-config';
+export {
+  applyPerDayInflation,
+  computeDayCount,
+  type LimitMode,
+  type CollectionLimitValues,
+} from './queue/per-day-limits';
 export { analysisSeries, seriesDeltaResults } from './db/schema/series';
 export { runSeriesDeltaAnalysis } from './analysis/delta';

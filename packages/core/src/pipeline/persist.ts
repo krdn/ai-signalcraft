@@ -47,6 +47,9 @@ export async function persistArticles(jobId: number, data: (typeof articles.$inf
           content: sql`excluded.content`,
           rawData: sql`excluded.raw_data`,
           collectedAt: sql`excluded.collected_at`,
+          // 정확한 published_at이 새로 파싱됐을 때만 갱신 (null일 땐 기존 값 유지).
+          // 네이버 본문 페이지의 data-date-time은 검색 결과의 "N일 전" 상대시간보다 정밀함.
+          publishedAt: sql`coalesce(excluded.published_at, ${articles.publishedAt})`,
           // 본문을 새로 긁었으므로 last_fetched_at 갱신 (재사용 TTL 판정의 기준)
           lastFetchedAt: sql`now()`,
         },

@@ -17,10 +17,12 @@ export class FMKoreaCollector extends CommunityBaseCollector {
   protected readonly baseUrl = 'https://www.fmkorea.com';
 
   protected readonly config: BrowserCollectorConfig = {
-    pageDelay: { min: 1500, max: 3000 },
-    postDelay: { min: 800, max: 1500 },
+    // ⚠️ v3: 검색 페이지도 fetch 전환 (쿠키 확보 후) → pageDelay 대폭 단축 가능.
+    // 본문/검색 모두 fetch이면 페이지당 ~500ms fetch + 2-3초 delay = 훨씬 빠름.
+    pageDelay: { min: 2000, max: 3500 },
+    postDelay: { min: 400, max: 800 },
     defaultMaxItems: 50,
-    maxSearchPages: 20,
+    maxSearchPages: 80,
   };
 
   protected readonly selectors: SiteSelectors = {
@@ -34,13 +36,21 @@ export class FMKoreaCollector extends CommunityBaseCollector {
     comment: ['.fdb_lst_ul .xe_content', '.comment_content .xe_content'],
   };
 
-  // 차단 감지 override (에펨코리아 전용)
+  // 차단 감지 override (에펨코리아 전용) — 다양한 차단 신호를 폭넓게 검출
   protected detectBlocked(html: string): boolean {
+    if (!html) return true;
+    // 응답이 비정상적으로 짧으면 차단/에러 페이지로 간주 (정상 검색결과는 보통 50KB+)
+    if (html.length < 2000) return true;
     return (
       html.includes('자동등록방지') ||
       html.includes('captcha') ||
       html.includes('접근이 제한') ||
-      html.includes('에펨코리아 보안 시스템')
+      html.includes('에펨코리아 보안 시스템') ||
+      html.includes('Too Many Requests') ||
+      html.includes('429') ||
+      html.includes('일시적으로 접근이 차단') ||
+      // 검색결과 컨테이너가 아예 없으면 차단 또는 비정상 응답
+      (!html.includes('searchResult') && !html.includes('search_list'))
     );
   }
 
@@ -78,16 +88,150 @@ export class FMKoreaCollector extends CommunityBaseCollector {
     return true;
   }
 
-  protected buildSearchUrl(keyword: string, page: number): string {
+  protected buildSearchUrl(
+    keyword: string,
+    page: number,
+    _dateRange?: { start: string; end: string },
+  ): string {
     return buildSearchUrl('fmkorea', keyword, page);
   }
 
-  /** 검색 결과 HTML에서 게시글 링크 목록 추출 */
-  protected parseSearchResults(html: string): { url: string; title: string }[] {
-    const $ = cheerio.load(html);
-    const results: { url: string; title: string }[] = [];
+  // 에펨은 URL 레벨 날짜 필터 미지원 → 레거시 순차 + 사전 날짜 필터 경로 사용
+  protected override supportsDateRangeSearch(): boolean {
+    return false;
+  }
 
-    // 1차: 전용 셀렉터 시도
+  /**
+   * 🚀 속도 개선: 검색 페이지도 fetch로 전환 (Playwright 대체).
+   *
+   * 전략:
+   * 1. 첫 페이지: Playwright로 방문해 lite_year 쿠키 확보 (WASM 챌린지 통과)
+   * 2. 이후 페이지: 획득한 쿠키를 fetch 헤더에 실어 HTTP 직접 호출
+   *    - fetch는 Playwright 대비 10배 빠름
+   *    - 차단 감지(HTTP 430 등) 시 Playwright fallback
+   */
+  private fmCookies = new Map<string, string>();
+  private fmCookiesReady = false;
+
+  protected override async loadSearchPage(
+    page: import('playwright').Page,
+    searchUrl: string,
+    pageNum: number,
+  ): Promise<{ url: string; title: string; publishedAt?: Date | null }[] | null> {
+    // 1차: fetch 시도 (쿠키 확보 후)
+    if (this.fmCookiesReady) {
+      const result = await this.fetchSearchPage(searchUrl, pageNum);
+      if (result) return result;
+      // fetch 실패 → Playwright fallback (쿠키 갱신 포함)
+      console.warn(`[fmkorea] fetch 실패 → Playwright fallback (page ${pageNum})`);
+      this.fmCookiesReady = false;
+    }
+    // 2차: Playwright 경로 (첫 방문 또는 fetch 실패 복구)
+    const result = await super.loadSearchPage(page, searchUrl, pageNum);
+    // Playwright가 성공했으면 쿠키 수집해서 이후 fetch에 사용
+    if (result) {
+      try {
+        const cookies = await page.context().cookies('https://www.fmkorea.com');
+        this.fmCookies.clear();
+        for (const c of cookies) this.fmCookies.set(c.name, c.value);
+        if (this.fmCookies.has('lite_year') || this.fmCookies.size > 0) {
+          this.fmCookiesReady = true;
+          console.info(`[fmkorea] 쿠키 확보 완료 (${this.fmCookies.size}개) — 이후 fetch 사용`);
+        }
+      } catch {
+        /* 쿠키 획득 실패 → Playwright 계속 사용 */
+      }
+    }
+    return result;
+  }
+
+  /**
+   * fetch 기반 검색 페이지 로드 (쿠키 확보 후에만 호출).
+   * 차단/실패 시 null 반환하여 상위에서 Playwright fallback 처리.
+   */
+  private async fetchSearchPage(
+    searchUrl: string,
+    pageNum: number,
+  ): Promise<{ url: string; title: string; publishedAt?: Date | null }[] | null> {
+    try {
+      const cookieHeader = Array.from(this.fmCookies.entries())
+        .map(([k, v]) => `${k}=${v}`)
+        .join('; ');
+      const response = await fetch(searchUrl, {
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+          Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'ko-KR,ko;q=0.9',
+          Referer: 'https://www.fmkorea.com/',
+          ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+        },
+      });
+      if (!response.ok) {
+        console.warn(`[fmkorea] fetch HTTP ${response.status} (page ${pageNum})`);
+        return null;
+      }
+      const html = await response.text();
+      // 응답 쿠키 갱신 (Set-Cookie 헤더가 오면)
+      const setCookies = response.headers.get('set-cookie');
+      if (setCookies) {
+        for (const part of setCookies.split(/,(?=[^;]+=)/)) {
+          const m = part.trim().match(/^([^=;]+)=([^;]*)/);
+          if (m) this.fmCookies.set(m[1].trim(), m[2].trim());
+        }
+      }
+      // 차단 감지
+      if (this.detectBlocked(html)) {
+        console.warn(`[fmkorea] fetch 차단 감지 (page ${pageNum}, size=${html.length})`);
+        return null;
+      }
+      return this.parseSearchResults(html);
+    } catch (err) {
+      console.warn(
+        `[fmkorea] fetch 예외 (page ${pageNum}):`,
+        err instanceof Error ? err.message : err,
+      );
+      return null;
+    }
+  }
+
+  /**
+   * 검색 결과 HTML에서 게시글 링크/제목/날짜 추출.
+   * 에펨 검색 결과는 `<li>` 단위로 묶여 `<a href="/번호">제목</a>` + `<span class="time">YYYY-MM-DD HH:MM</span>`
+   * 형태. 날짜를 함께 추출하면 본문 요청 전에 기간 필터링이 가능해져 안티봇 부담을 줄인다.
+   */
+  protected parseSearchResults(
+    html: string,
+  ): { url: string; title: string; publishedAt?: Date | null }[] {
+    const $ = cheerio.load(html);
+    const results: { url: string; title: string; publishedAt?: Date | null }[] = [];
+
+    const parseFmTime = (text: string): Date | null => {
+      // "YYYY-MM-DD HH:MM" (에펨 기본) 또는 "YYYY.MM.DD HH:MM"
+      const m = text.trim().match(/(\d{4})[-.](\d{1,2})[-.](\d{1,2})\s+(\d{1,2}):(\d{1,2})/);
+      if (!m) return null;
+      // 로컬 타임존(컨테이너는 UTC지만 에펨 서버 시각은 KST)이라
+      // +09:00을 명시해 안전하게 Date 생성.
+      const iso = `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}T${m[4].padStart(2, '0')}:${m[5].padStart(2, '0')}:00+09:00`;
+      const d = new Date(iso);
+      return Number.isNaN(d.getTime()) ? null : d;
+    };
+
+    // 1차: 검색 결과 <li> 블록을 통째로 순회하며 link + title + time 동시 추출
+    $('ul.searchResult > li').each((_, li) => {
+      const $li = $(li);
+      const $a = $li.find('dt > a').first();
+      const href = $a.attr('href');
+      const title = $a.text().trim();
+      if (!href || !title) return;
+      const url = href.startsWith('http') ? href : `${this.baseUrl}${href}`;
+      const timeText = $li.find('address .time').first().text().trim();
+      const publishedAt = parseFmTime(timeText);
+      results.push({ url, title, publishedAt });
+    });
+    if (results.length > 0) return results;
+
+    // 2차: 전용 셀렉터 시도 (구조 변경 대응용 폴백)
     for (const selector of this.selectors.list) {
       $(selector).each((_, el) => {
         const href = $(el).attr('href');
@@ -100,15 +244,13 @@ export class FMKoreaCollector extends CommunityBaseCollector {
       if (results.length > 0) break;
     }
 
-    // 2차: 셀렉터 매칭 실패 시, 게시글 링크 패턴으로 폴백
+    // 3차: 셀렉터 매칭 실패 시, 게시글 링크 패턴으로 폴백
     if (results.length === 0) {
       $('a[href]').each((_, el) => {
         const href = $(el).attr('href') ?? '';
         const title = $(el).text().trim();
-        // 에펨코리아 게시글 URL 패턴: /숫자 또는 /index.php?document_srl=숫자
         if (title.length > 5 && (href.match(/\/\d{6,}/) || href.includes('document_srl='))) {
           const url = href.startsWith('http') ? href : `${this.baseUrl}${href}`;
-          // 중복 제거
           if (!results.some((r) => r.url === url)) {
             results.push({ url, title });
           }
@@ -119,17 +261,48 @@ export class FMKoreaCollector extends CommunityBaseCollector {
     return results;
   }
 
-  /** 게시글 상세 페이지에서 본문 + 댓글 수집 */
+  /**
+   * 게시글 상세 페이지 — 🚀 fetch 우선 (Playwright 대체, 10배 빠름).
+   * 차단 감지 시 Playwright fallback (WASM lite_year 챌린지 필요 케이스).
+   */
   protected async fetchPost(
     page: import('playwright').Page,
     url: string,
     title: string,
     maxComments: number,
   ): Promise<CommunityPost | null> {
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
-    await page.waitForTimeout(1000);
-
-    const html = await page.content();
+    let html = '';
+    // 1차: fetch로 빠르게 시도
+    try {
+      const cookies = await page
+        .context()
+        .cookies('https://www.fmkorea.com')
+        .catch(() => []);
+      const cookieHeader = cookies.map((c) => `${c.name}=${c.value}`).join('; ');
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+          Accept: 'text/html,application/xhtml+xml',
+          'Accept-Language': 'ko-KR,ko;q=0.9',
+          Referer: 'https://www.fmkorea.com/',
+          ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+        },
+      });
+      if (response.ok) {
+        html = await response.text();
+        // 차단 감지 → Playwright fallback
+        if (this.detectBlocked(html) || html.length < 3000) html = '';
+      }
+    } catch {
+      /* fetch 실패 시 Playwright fallback */
+    }
+    // 2차: Playwright fallback (WASM 챌린지 등 브라우저 필요 케이스)
+    if (!html) {
+      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
+      await page.waitForTimeout(1000);
+      html = await page.content();
+    }
     const $ = cheerio.load(html);
 
     // 본문 추출
@@ -141,7 +314,17 @@ export class FMKoreaCollector extends CommunityBaseCollector {
 
     // 메타데이터 추출
     const author = $('.member_plate, .author').first().text().trim() || '익명';
-    const dateText = $('.date, .regdate, .side .date').first().text().trim();
+    // 실제 fmkorea 본문: <span class="date m_no">2026.04.18 14:16</span>
+    const dateText =
+      $('.date').first().text().trim() ||
+      $('.regdate').first().text().trim() ||
+      $('.side .date').first().text().trim();
+    // ⚠️ dateText가 비면 new Date() fallback 대신 null → post=null 반환으로 스킵
+    //    (clien과 동일: 파싱 실패 시 현재 시각 저장으로 인한 일자 몰림 방지)
+    if (!dateText) {
+      console.warn(`[fmkorea] 본문 date 없음 — 스킵: ${url}`);
+      return null;
+    }
     const publishedAt = parseDateText(dateText);
     const viewCount = parseInt($('.count').text().replace(/[^\d]/g, '') || '0', 10);
     const likeCount = parseInt(

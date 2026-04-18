@@ -1,5 +1,6 @@
 // YouTube 영상 메타데이터 수집기 (YouTube Data API v3)
 import { getYoutubeClient } from '../utils/youtube-client';
+import { splitIntoDaysKst } from '../utils/community-parser';
 import type { Collector, CollectionOptions } from './base';
 
 /** 수집된 YouTube 영상 메타데이터 */
@@ -37,86 +38,120 @@ export class YoutubeVideosCollector implements Collector<YoutubeVideo> {
   readonly source = 'youtube-videos';
 
   /**
-   * 키워드 기반 YouTube 영상 메타데이터 수집
-   * 페이지 단위(최대 50건)로 yield
+   * 키워드 기반 YouTube 영상 메타데이터 수집.
+   * 일자별로 publishedAfter/publishedBefore를 잘라 검색해 일자별 cap을 보장.
+   *
+   * ⚠️ 한도 초과 금지: 각 일자에서 perDayLimit을 절대 넘기지 않는다.
+   * ⚠️ 부족분 보충 금지: 한 일자가 모자라도 다른 일자에서 채우지 않는다.
+   *
+   * perDayLimit 우선순위:
+   *   1) options.maxItemsPerDay (flows.ts가 perDay 모드일 때 사용자 원본 한도를 명시 전달)
+   *   2) 미지정 시 maxItems / dayCount의 floor — total 모드 등 일자 분배가 없는 경우.
    */
   async *collect(options: CollectionOptions): AsyncGenerator<YoutubeVideo[], void, unknown> {
     const youtube = getYoutubeClient();
-    if (!youtube) return; // API 키 미설정 시 빈 결과
+    if (!youtube) return;
     const maxItems = options.maxItems ?? DEFAULT_MAX_ITEMS;
-    let totalCollected = 0;
-    let nextPageToken: string | undefined;
-    // TTL 재사용: 완전 스킵 URL 은 videos.list 응답에서 제외 후 yield
+    const days = splitIntoDaysKst(options.startDate, options.endDate);
+    const perDayLimit = options.maxItemsPerDay ?? Math.max(1, Math.floor(maxItems / days.length));
     const skipUrlSet = new Set(options.reusePlan?.skipUrls ?? []);
+    const globalSeenIds = new Set<string>();
     let skippedByReuse = 0;
 
-    while (totalCollected < maxItems) {
-      // Step 1: search.list -- 키워드로 영상 검색 (100유닛/요청)
-      const remaining = maxItems - totalCollected;
-      const pageSize = Math.min(remaining, SEARCH_PAGE_SIZE);
+    for (const day of days) {
+      // 일자별 검색 윈도우: KST 자정~익일 자정 (UTC ISO로 변환해 API에 전달)
+      // day는 이미 KST 자정 시각 → +24h가 익일 KST 자정
+      const publishedAfter = day.toISOString();
+      const publishedBefore = new Date(day.getTime() + 86400000 - 1).toISOString();
 
-      const searchResponse = await youtube.search.list({
-        part: ['id'],
-        q: options.keyword,
-        type: ['video'],
-        publishedAfter: options.startDate,
-        publishedBefore: options.endDate,
-        maxResults: pageSize,
-        order: 'date',
-        regionCode: 'KR',
-        relevanceLanguage: 'ko',
-        pageToken: nextPageToken,
-      });
+      let collectedThisDay = 0;
+      let nextPageToken: string | undefined;
 
-      const searchItems = searchResponse.data.items;
-      if (!searchItems || searchItems.length === 0) break;
+      while (collectedThisDay < perDayLimit) {
+        const remaining = perDayLimit - collectedThisDay;
+        const pageSize = Math.min(remaining, SEARCH_PAGE_SIZE);
 
-      // videoId 목록 추출
-      const videoIds = searchItems
-        .map((item) => item.id?.videoId)
-        .filter((id): id is string => Boolean(id));
+        const searchResponse = await youtube.search.list({
+          part: ['id'],
+          q: options.keyword,
+          type: ['video'],
+          publishedAfter,
+          publishedBefore,
+          maxResults: pageSize,
+          order: 'date',
+          regionCode: 'KR',
+          relevanceLanguage: 'ko',
+          pageToken: nextPageToken,
+        });
 
-      if (videoIds.length === 0) break;
+        const searchItems = searchResponse.data.items;
+        if (!searchItems || searchItems.length === 0) break;
 
-      // Step 2: videos.list -- 상세 정보 조회 (1유닛/요청, 최대 50개)
-      const videosResponse = await youtube.videos.list({
-        part: ['snippet', 'statistics'],
-        id: videoIds,
-      });
+        const videoIds = searchItems
+          .map((item) => item.id?.videoId)
+          .filter((id): id is string => Boolean(id))
+          .filter((id) => !globalSeenIds.has(id));
+        videoIds.forEach((id) => globalSeenIds.add(id));
 
-      const videoItems = videosResponse.data.items;
-      if (!videoItems || videoItems.length === 0) break;
-
-      // YoutubeVideo 객체로 변환
-      const videos: YoutubeVideo[] = videoItems.map((item) => ({
-        sourceId: item.id ?? '',
-        url: `https://www.youtube.com/watch?v=${item.id}`,
-        title: item.snippet?.title ?? '',
-        description: item.snippet?.description ?? null,
-        channelId: item.snippet?.channelId ?? '',
-        channelTitle: item.snippet?.channelTitle ?? '',
-        viewCount: parseInt(item.statistics?.viewCount ?? '0', 10),
-        likeCount: parseInt(item.statistics?.likeCount ?? '0', 10),
-        commentCount: parseInt(item.statistics?.commentCount ?? '0', 10),
-        publishedAt: item.snippet?.publishedAt ? new Date(item.snippet.publishedAt) : null,
-        rawData: item as unknown as Record<string, unknown>,
-      }));
-
-      // TTL 재사용: skipUrls 에 포함된 영상은 제외 (이미 flows 에서 video_jobs 재연결됨)
-      const filteredVideos = videos.filter((v) => {
-        if (skipUrlSet.has(v.url)) {
-          skippedByReuse++;
-          return false;
+        if (videoIds.length === 0) {
+          nextPageToken = searchResponse.data.nextPageToken ?? undefined;
+          if (!nextPageToken) break;
+          continue;
         }
-        return true;
-      });
 
-      totalCollected += filteredVideos.length;
-      if (filteredVideos.length > 0) yield filteredVideos;
+        const videosResponse = await youtube.videos.list({
+          part: ['snippet', 'statistics'],
+          id: videoIds,
+        });
 
-      // 다음 페이지 토큰 확인
-      nextPageToken = searchResponse.data.nextPageToken ?? undefined;
-      if (!nextPageToken) break;
+        const videoItems = videosResponse.data.items;
+        if (!videoItems || videoItems.length === 0) {
+          nextPageToken = searchResponse.data.nextPageToken ?? undefined;
+          if (!nextPageToken) break;
+          continue;
+        }
+
+        const videos: YoutubeVideo[] = videoItems.map((item) => ({
+          sourceId: item.id ?? '',
+          url: `https://www.youtube.com/watch?v=${item.id}`,
+          title: item.snippet?.title ?? '',
+          description: item.snippet?.description ?? null,
+          channelId: item.snippet?.channelId ?? '',
+          channelTitle: item.snippet?.channelTitle ?? '',
+          viewCount: parseInt(item.statistics?.viewCount ?? '0', 10),
+          likeCount: parseInt(item.statistics?.likeCount ?? '0', 10),
+          commentCount: parseInt(item.statistics?.commentCount ?? '0', 10),
+          publishedAt: item.snippet?.publishedAt ? new Date(item.snippet.publishedAt) : null,
+          rawData: item as unknown as Record<string, unknown>,
+        }));
+
+        const filteredVideos = videos.filter((v) => {
+          if (skipUrlSet.has(v.url)) {
+            skippedByReuse++;
+            return false;
+          }
+          return true;
+        });
+
+        // ⚠️ 일자별 cap 강제: publishedAfter/Before로 일자 윈도우를 좁혔지만
+        // YouTube가 경계 시각(KST 자정) 양쪽 글을 함께 반환할 수 있으므로 KST 일자 일치 검사.
+        const KST_OFFSET = 9 * 60 * 60 * 1000;
+        const expectedKstDay = Math.floor((day.getTime() + KST_OFFSET) / 86400000);
+        const sameDay = filteredVideos.filter((v) => {
+          if (!v.publishedAt) return true;
+          const k = Math.floor((v.publishedAt.getTime() + KST_OFFSET) / 86400000);
+          return k === expectedKstDay;
+        });
+
+        // perDayLimit을 절대 넘지 않도록 잘라내기
+        const room = perDayLimit - collectedThisDay;
+        const accepted = sameDay.slice(0, room);
+        collectedThisDay += accepted.length;
+        if (accepted.length > 0) yield accepted;
+
+        nextPageToken = searchResponse.data.nextPageToken ?? undefined;
+        if (!nextPageToken) break;
+      }
     }
 
     if (skippedByReuse > 0) {

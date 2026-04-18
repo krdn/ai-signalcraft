@@ -21,7 +21,8 @@ interface CollectorResult {
 
 export function createCollectorHandler(): (job: Job) => Promise<CollectorResult> {
   return async (job: Job): Promise<CollectorResult> => {
-    const { source, keyword, startDate, endDate, maxItems, maxComments, dbJobId } = job.data;
+    const { source, keyword, startDate, endDate, maxItems, maxItemsPerDay, maxComments, dbJobId } =
+      job.data;
     const dataSourceSnapshot = job.data.dataSourceSnapshot as DataSourceSnapshot | undefined;
     const reusePlan = job.data.reusePlan as
       | { skipUrls: string[]; refetchCommentsFor: string[] }
@@ -56,6 +57,7 @@ export function createCollectorHandler(): (job: Job) => Promise<CollectorResult>
         startDate,
         endDate,
         maxItems,
+        maxItemsPerDay,
         maxComments,
         reusePlan,
       })) {
@@ -82,6 +84,29 @@ export function createCollectorHandler(): (job: Job) => Promise<CollectorResult>
         await updateJobProgress(dbJobId, {
           [pKey]: { status: 'completed', ...countBySourceType(source, allItems) },
         });
+        // 옵션 1: 어댑터가 보고한 종료 통계를 events에 기록 (운영 진단용).
+        // getLastRunStats를 구현한 어댑터(BrowserCollector 계열)에서만 동작.
+        const stats = (collector as { getLastRunStats?: () => unknown }).getLastRunStats?.();
+        if (stats) {
+          const s = stats as {
+            endReason: string;
+            lastPage: number;
+            perDayCount: Record<string, number>;
+            perDayCapSkip?: number;
+            preFilterSkip?: number;
+            outOfRange?: number;
+            pageEmptyCount?: number;
+          };
+          const distStr = Object.entries(s.perDayCount)
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([d, n]) => `${d}=${n}`)
+            .join(' ');
+          appendJobEvent(
+            dbJobId,
+            'info',
+            `[${source}] 종료: reason=${s.endReason} lastPage=${s.lastPage} 분포(KST)={${distStr}} capSkip=${s.perDayCapSkip ?? 0} preFilterSkip=${s.preFilterSkip ?? 0} outOfRange=${s.outOfRange ?? 0} pageEmpty=${s.pageEmptyCount ?? 0}`,
+          ).catch(() => {});
+        }
       }
 
       return { source, items: allItems, count: allItems.length };
