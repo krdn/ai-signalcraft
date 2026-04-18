@@ -2,6 +2,7 @@
 import { getYoutubeClient } from '../utils/youtube-client';
 import { splitIntoDaysKst } from '../utils/community-parser';
 import type { Collector, CollectionOptions } from './base';
+import type { YoutubeComment } from './youtube-comments';
 
 /** 수집된 YouTube 영상 메타데이터 */
 export interface YoutubeVideo {
@@ -16,6 +17,9 @@ export interface YoutubeVideo {
   commentCount: number;
   publishedAt: Date | null;
   rawData: Record<string, unknown>;
+  comments: YoutubeComment[];
+  transcript: string | null;
+  transcriptLang: string | null;
 }
 
 // 기본 최대 수집 건수
@@ -123,6 +127,9 @@ export class YoutubeVideosCollector implements Collector<YoutubeVideo> {
           commentCount: parseInt(item.statistics?.commentCount ?? '0', 10),
           publishedAt: item.snippet?.publishedAt ? new Date(item.snippet.publishedAt) : null,
           rawData: item as unknown as Record<string, unknown>,
+          comments: [],
+          transcript: null,
+          transcriptLang: null,
         }));
 
         const filteredVideos = videos.filter((v) => {
