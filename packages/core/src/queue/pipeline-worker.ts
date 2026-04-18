@@ -4,6 +4,7 @@ import { NaverCommentsCollector, YoutubeCommentsCollector } from '@ai-signalcraf
 import type {
   NaverComment,
   YoutubeComment,
+  YoutubeVideo,
   CommunityPost,
   DataSourceSnapshot,
 } from '@ai-signalcraft/collectors';
@@ -175,8 +176,43 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
         }
       }
 
-      // normalize-youtube: 영상 수집 결과에서 videoId 추출 후 댓글 병렬 수집
-      if (job.name === 'normalize-youtube' && results['youtube-videos']) {
+      // normalize-youtube: 일체형 수집기 결과 처리 (영상+댓글 분리)
+      if (job.name === 'normalize-youtube' && results['youtube']) {
+        const videos = (results['youtube'] as { items: YoutubeVideo[] }).items;
+        const allComments: YoutubeComment[] = [];
+
+        for (const video of videos) {
+          allComments.push(...(video.comments ?? []));
+          video.comments = [];
+        }
+
+        results['youtube-videos'] = {
+          source: 'youtube-videos',
+          items: videos,
+          count: videos.length,
+        };
+
+        if (allComments.length > 0) {
+          results['youtube-comments'] = {
+            source: 'youtube-comments',
+            items: allComments,
+            count: allComments.length,
+          };
+        }
+
+        if (dbJobId) {
+          await updateJobProgress(dbJobId, {
+            youtube: {
+              status: 'completed',
+              videos: videos.length,
+              comments: allComments.length,
+            },
+          });
+        }
+      }
+
+      // 하위 호환: 기존 YoutubeVideosCollector로 수집된 결과 처리
+      if (job.name === 'normalize-youtube' && results['youtube-videos'] && !results['youtube']) {
         const videos = (
           results['youtube-videos'] as { items: Array<{ sourceId: string; title?: string }> }
         ).items;
