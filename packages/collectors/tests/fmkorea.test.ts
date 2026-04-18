@@ -16,6 +16,10 @@ class TestFMKoreaCollector extends FMKoreaCollector {
   public testParseSearchResults(html: string) {
     return (this as any).parseSearchResults(html);
   }
+
+  public testExtractContent($: cheerio.CheerioAPI): string {
+    return (this as any).extractContent($);
+  }
 }
 
 describe('FMKoreaCollector', () => {
@@ -104,5 +108,35 @@ describe('FMKoreaCollector cpage 파싱', () => {
     const $ = cheerio.load('<html><body><div class="fdb_lst_ul"></div></body></html>');
     const collector = new TestFMKoreaCollector();
     expect(collector.testParseCpageMax($)).toBe(1);
+  });
+});
+
+describe('FMKoreaCollector 본문 추출', () => {
+  const collector = new TestFMKoreaCollector();
+
+  it('이미지만 있는 게시글에서 img alt/src 텍스트 추출', () => {
+    const html =
+      '<div class="xe_content"><img src="https://img.fmkorea.com/test.jpg" alt="테스트 이미지 설명"><img src="https://img.fmkorea.com/test2.jpg"></div>';
+    const $ = cheerio.load(html);
+    const content = collector.testExtractContent($);
+    expect(content.length).toBeGreaterThan(20);
+    expect(content).toContain('테스트 이미지 설명');
+  });
+
+  it('동영상 URL이 있는 게시글에서 URL 추출', () => {
+    const html =
+      '<div class="xe_content"><iframe src="https://www.youtube.com/embed/abc123"></iframe></div>';
+    const $ = cheerio.load(html);
+    const content = collector.testExtractContent($);
+    expect(content).toContain('youtube.com');
+  });
+
+  it('텍스트가 충분한 게시글은 기존대로 텍스트만 반환', () => {
+    const html =
+      '<div class="xe_content"><p>이것은 충분히 긴 본문 내용입니다. 여러 문장이 포함되어 있어 본문으로 적합합니다.</p></div>';
+    const $ = cheerio.load(html);
+    const content = collector.testExtractContent($);
+    expect(content).toContain('충분히 긴 본문');
+    expect(content).not.toContain('[이미지');
   });
 });

@@ -200,9 +200,7 @@ export class FMKoreaCollector extends CommunityBaseCollector {
    * 에펨 검색 결과는 `<li>` 단위로 묶여 `<a href="/번호">제목</a>` + `<span class="time">YYYY-MM-DD HH:MM</span>`
    * 형태. 날짜를 함께 추출하면 본문 요청 전에 기간 필터링이 가능해져 안티봇 부담을 줄인다.
    */
-  protected parseSearchResults(
-    html: string,
-  ): {
+  protected parseSearchResults(html: string): {
     url: string;
     title: string;
     publishedAt?: Date | null;
@@ -326,12 +324,8 @@ export class FMKoreaCollector extends CommunityBaseCollector {
     }
     const $ = cheerio.load(html);
 
-    // 본문 추출
-    let content = '';
-    for (const selector of this.selectors.content) {
-      content = sanitizeContent($(selector).first().html() ?? '');
-      if (content.length > 10) break;
-    }
+    // 본문 추출 (이미지/영상만 글은 미디어 참조 보강)
+    const content = this.extractContent($);
 
     // 메타데이터 추출
     const author = $('.member_plate, .author').first().text().trim() || '익명';
@@ -411,7 +405,11 @@ export class FMKoreaCollector extends CommunityBaseCollector {
       viewCount,
       commentCount: comments.length,
       likeCount,
-      rawData: { dateText, originalUrl: url },
+      rawData: {
+        dateText,
+        originalUrl: url,
+        contentFallback: content === title || content.length < 20,
+      },
       comments,
     };
   }
@@ -478,6 +476,46 @@ export class FMKoreaCollector extends CommunityBaseCollector {
     });
 
     return comments;
+  }
+
+  /** xe_content에서 텍스트 + 미디어 참조 추출 (이미지/영상만 글 대응) */
+  private extractContent($: cheerio.CheerioAPI): string {
+    let content = '';
+    for (const selector of this.selectors.content) {
+      const $el = $(selector).first();
+      if (!$el.length) continue;
+
+      content = sanitizeContent($el.html() ?? '');
+      if (content.length > 20) return content;
+
+      const mediaParts: string[] = [];
+      if (content) mediaParts.push(content);
+
+      $el.find('img').each((_, img) => {
+        const alt = $(img).attr('alt')?.trim();
+        const src = $(img).attr('src') ?? '';
+        if (alt && alt.length > 2) {
+          mediaParts.push(alt);
+        } else if (src) {
+          mediaParts.push(`[이미지: ${src}]`);
+        }
+      });
+
+      $el.find('iframe').each((_, iframe) => {
+        const src = $(iframe).attr('src') ?? '';
+        if (src) mediaParts.push(`[영상: ${src}]`);
+      });
+
+      $el.find('video source, video[src]').each((_, v) => {
+        const src = $(v).attr('src') ?? '';
+        if (src) mediaParts.push(`[영상: ${src}]`);
+      });
+
+      const joined = mediaParts.join(' ').trim();
+      if (joined.length > content.length) content = joined;
+      if (content.length > 10) break;
+    }
+    return content;
   }
 
   /** URL에서 게시글 ID 추출 */
