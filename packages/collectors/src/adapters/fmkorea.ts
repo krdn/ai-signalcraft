@@ -200,11 +200,23 @@ export class FMKoreaCollector extends CommunityBaseCollector {
    * 에펨 검색 결과는 `<li>` 단위로 묶여 `<a href="/번호">제목</a>` + `<span class="time">YYYY-MM-DD HH:MM</span>`
    * 형태. 날짜를 함께 추출하면 본문 요청 전에 기간 필터링이 가능해져 안티봇 부담을 줄인다.
    */
-  protected parseSearchResults(
-    html: string,
-  ): { url: string; title: string; publishedAt?: Date | null }[] {
+  protected parseSearchResults(html: string): {
+    url: string;
+    title: string;
+    publishedAt?: Date | null;
+    author?: string;
+    recomCount?: number;
+    commentCount?: number;
+  }[] {
     const $ = cheerio.load(html);
-    const results: { url: string; title: string; publishedAt?: Date | null }[] = [];
+    const results: {
+      url: string;
+      title: string;
+      publishedAt?: Date | null;
+      author?: string;
+      recomCount?: number;
+      commentCount?: number;
+    }[] = [];
 
     const parseFmTime = (text: string): Date | null => {
       // "YYYY-MM-DD HH:MM" (에펨 기본) 또는 "YYYY.MM.DD HH:MM"
@@ -227,7 +239,14 @@ export class FMKoreaCollector extends CommunityBaseCollector {
       const url = href.startsWith('http') ? href : `${this.baseUrl}${href}`;
       const timeText = $li.find('address .time').first().text().trim();
       const publishedAt = parseFmTime(timeText);
-      results.push({ url, title, publishedAt });
+
+      const author = $li.find('address > strong').first().text().trim() || undefined;
+      const recomText = $li.find('.recomNum').first().text().trim();
+      const recomCount = recomText ? parseInt(recomText, 10) : undefined;
+      const commentText = $li.find('.reply em').first().text().trim();
+      const commentCount = commentText ? parseInt(commentText, 10) : undefined;
+
+      results.push({ url, title, publishedAt, author, recomCount, commentCount });
     });
     if (results.length > 0) return results;
 
@@ -305,12 +324,8 @@ export class FMKoreaCollector extends CommunityBaseCollector {
     }
     const $ = cheerio.load(html);
 
-    // 본문 추출
-    let content = '';
-    for (const selector of this.selectors.content) {
-      content = sanitizeContent($(selector).first().html() ?? '');
-      if (content.length > 10) break;
-    }
+    // 본문 추출 (이미지/영상만 글은 미디어 참조 보강)
+    const content = this.extractContent($);
 
     // 메타데이터 추출
     const author = $('.member_plate, .author').first().text().trim() || '익명';
@@ -338,8 +353,46 @@ export class FMKoreaCollector extends CommunityBaseCollector {
     // 게시글 ID 추출
     const sourceId = this.extractSourceId(url);
 
-    // 댓글 수집
-    const comments = this.parseComments($, sourceId, maxComments);
+    // 댓글 수집 — 1페이지(현재 HTML) + cpage 2~N 추가 fetch
+    let comments = this.parseComments($, sourceId, maxComments);
+    const maxCpage = this.parseCpageMax($);
+    if (maxCpage > 1 && comments.length < maxComments) {
+      const docSrlMatch = url.match(/\/(\d+)/);
+      const docSrl = docSrlMatch ? docSrlMatch[1] : null;
+      if (docSrl) {
+        for (let cp = 2; cp <= maxCpage; cp++) {
+          if (comments.length >= maxComments) break;
+          try {
+            const cpageUrl = `${url}?document_srl=${docSrl}&cpage=${cp}`;
+            const cookies = await page
+              .context()
+              .cookies('https://www.fmkorea.com')
+              .catch(() => []);
+            const cookieHeader = cookies.map((c) => `${c.name}=${c.value}`).join('; ');
+            const cpRes = await fetch(cpageUrl, {
+              headers: {
+                'User-Agent':
+                  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+                Accept: 'text/html,application/xhtml+xml',
+                'Accept-Language': 'ko-KR,ko;q=0.9',
+                Referer: url,
+                ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+              },
+            });
+            if (cpRes.ok) {
+              const cpHtml = await cpRes.text();
+              const cp$ = cheerio.load(cpHtml);
+              const remaining = maxComments - comments.length;
+              const pageComments = this.parseComments(cp$, sourceId, remaining);
+              comments = comments.concat(pageComments);
+            }
+          } catch {
+            console.warn(`[fmkorea] 댓글 cpage=${cp} fetch 실패: ${url}`);
+          }
+          await new Promise((r) => setTimeout(r, 300 + Math.random() * 200));
+        }
+      }
+    }
 
     return {
       sourceId,
@@ -352,49 +405,117 @@ export class FMKoreaCollector extends CommunityBaseCollector {
       viewCount,
       commentCount: comments.length,
       likeCount,
-      rawData: { dateText, originalUrl: url },
+      rawData: {
+        dateText,
+        originalUrl: url,
+        contentFallback: content === title || content.length < 20,
+      },
       comments,
     };
   }
 
-  /** HTML에서 댓글 파싱 */
+  /** 본문 HTML에서 댓글 최대 cpage 추출 */
+  private parseCpageMax($: cheerio.CheerioAPI): number {
+    let max = 1;
+    $('a[href*="cpage="]').each((_, el) => {
+      const href = $(el).attr('href') ?? '';
+      const m = href.match(/cpage=(\d+)/);
+      if (m) {
+        const n = parseInt(m[1], 10);
+        if (n > max) max = n;
+      }
+    });
+    return max;
+  }
+
+  /** HTML에서 댓글 파싱 — re 클래스로 대댓글 감지, id 속성으로 부모 추적 */
   private parseComments(
     $: cheerio.CheerioAPI,
     postSourceId: string,
     maxComments: number,
   ): CommunityComment[] {
     const comments: CommunityComment[] = [];
+    const $items = $('.fdb_lst_ul > li.fdb_itm');
+    if ($items.length === 0) return comments;
 
-    for (const selector of this.selectors.comment) {
-      $(selector).each((i, el) => {
-        if (comments.length >= maxComments) return;
+    $items.each((_, el) => {
+      if (comments.length >= maxComments) return;
+      const $li = $(el);
 
-        const $el = $(el);
-        const $parent = $el.closest('li, .fdb_itm');
-        const content = sanitizeContent($el.html() ?? '');
-        if (!content) return;
+      const content = sanitizeContent($li.find('.xe_content').first().html() ?? '');
+      if (!content) return;
 
-        const author = $parent.find('.member_plate, .author').first().text().trim() || '익명';
-        const dateText = $parent.find('.date, .regdate').text().trim();
-        const commentId = $parent.attr('id')?.replace('comment_', '') || `${postSourceId}_c${i}`;
-        const depth = $parent.hasClass('fdb_itm_answer') ? '1' : '0';
-        const parentCommentId = depth === '1' ? $parent.attr('data-parent') || null : null;
+      const classAttr = $li.attr('class') ?? '';
+      const srlMatch = classAttr.match(/comment-(\d+)/);
+      const commentSrl = srlMatch ? srlMatch[1] : `${postSourceId}_c${comments.length}`;
 
-        comments.push({
-          sourceId: `fm_comment_${commentId}`,
-          parentId: parentCommentId ? `fm_comment_${parentCommentId}` : null,
-          content,
-          author,
-          likeCount: parseInt($parent.find('.voted_count').text() || '0', 10),
-          dislikeCount: 0,
-          publishedAt: parseDateText(dateText),
-          rawData: { dateText },
-        });
+      const isReply = $li.hasClass('re');
+
+      let parentId: string | null = null;
+      if (isReply) {
+        const idAttr = $li.attr('id') ?? '';
+        const parentMatch = idAttr.match(/comment_(\d+)/);
+        if (parentMatch) {
+          parentId = `fm_comment_${parentMatch[1]}`;
+        }
+      }
+
+      const author = $li.find('.member_plate, .author').first().text().trim() || '익명';
+      const dateText = $li.find('.date, .regdate').first().text().trim();
+
+      comments.push({
+        sourceId: `fm_comment_${commentSrl}`,
+        parentId,
+        content,
+        author,
+        likeCount: parseInt($li.find('.voted_count').first().text() || '0', 10),
+        dislikeCount: 0,
+        publishedAt: parseDateText(dateText),
+        rawData: { dateText, isReply },
       });
-      if (comments.length > 0) break;
-    }
+    });
 
     return comments;
+  }
+
+  /** xe_content에서 텍스트 + 미디어 참조 추출 (이미지/영상만 글 대응) */
+  private extractContent($: cheerio.CheerioAPI): string {
+    let content = '';
+    for (const selector of this.selectors.content) {
+      const $el = $(selector).first();
+      if (!$el.length) continue;
+
+      content = sanitizeContent($el.html() ?? '');
+      if (content.length > 20) return content;
+
+      const mediaParts: string[] = [];
+      if (content) mediaParts.push(content);
+
+      $el.find('img').each((_, img) => {
+        const alt = $(img).attr('alt')?.trim();
+        const src = $(img).attr('src') ?? '';
+        if (alt && alt.length > 2) {
+          mediaParts.push(alt);
+        } else if (src) {
+          mediaParts.push(`[이미지: ${src}]`);
+        }
+      });
+
+      $el.find('iframe').each((_, iframe) => {
+        const src = $(iframe).attr('src') ?? '';
+        if (src) mediaParts.push(`[영상: ${src}]`);
+      });
+
+      $el.find('video source, video[src]').each((_, v) => {
+        const src = $(v).attr('src') ?? '';
+        if (src) mediaParts.push(`[영상: ${src}]`);
+      });
+
+      const joined = mediaParts.join(' ').trim();
+      if (joined.length > content.length) content = joined;
+      if (content.length > 10) break;
+    }
+    return content;
   }
 
   /** URL에서 게시글 ID 추출 */
