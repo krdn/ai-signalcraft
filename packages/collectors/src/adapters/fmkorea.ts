@@ -17,10 +17,13 @@ export class FMKoreaCollector extends CommunityBaseCollector {
   protected readonly baseUrl = 'https://www.fmkorea.com';
 
   protected readonly config: BrowserCollectorConfig = {
-    pageDelay: { min: 1500, max: 3000 },
+    // 에펨은 최신순 페이지네이션이 깊게 내려가야 과거 기사에 도달 (페이지 40~50 이상).
+    // 무작위성 있는 딜레이로 안티봇 차단 회피.
+    pageDelay: { min: 2500, max: 4500 },
     postDelay: { min: 800, max: 1500 },
     defaultMaxItems: 50,
-    maxSearchPages: 20,
+    // 검색 결과 단계에서 publishedAt 사전 필터가 있으므로 페이지 많이 순회해도 본문 요청은 제한적.
+    maxSearchPages: 80,
   };
 
   protected readonly selectors: SiteSelectors = {
@@ -78,16 +81,59 @@ export class FMKoreaCollector extends CommunityBaseCollector {
     return true;
   }
 
-  protected buildSearchUrl(keyword: string, page: number): string {
+  protected buildSearchUrl(
+    keyword: string,
+    page: number,
+    _dateRange?: { start: string; end: string },
+  ): string {
+    // 에펨 `s_date/e_date` 파라미터는 서버측에서 무시됨(실험으로 확인).
+    // 모든 요청이 동일한 "관련도순 최신 결과"를 반환하므로 일자별 분할이 의미 없음.
+    // 대신 페이지네이션으로 과거까지 내려가며 사전 날짜 필터를 사용.
     return buildSearchUrl('fmkorea', keyword, page);
   }
 
-  /** 검색 결과 HTML에서 게시글 링크 목록 추출 */
-  protected parseSearchResults(html: string): { url: string; title: string }[] {
-    const $ = cheerio.load(html);
-    const results: { url: string; title: string }[] = [];
+  // 에펨은 URL 레벨 날짜 필터 미지원 → 레거시 순차 + 사전 날짜 필터 경로 사용
+  protected override supportsDateRangeSearch(): boolean {
+    return false;
+  }
 
-    // 1차: 전용 셀렉터 시도
+  /**
+   * 검색 결과 HTML에서 게시글 링크/제목/날짜 추출.
+   * 에펨 검색 결과는 `<li>` 단위로 묶여 `<a href="/번호">제목</a>` + `<span class="time">YYYY-MM-DD HH:MM</span>`
+   * 형태. 날짜를 함께 추출하면 본문 요청 전에 기간 필터링이 가능해져 안티봇 부담을 줄인다.
+   */
+  protected parseSearchResults(
+    html: string,
+  ): { url: string; title: string; publishedAt?: Date | null }[] {
+    const $ = cheerio.load(html);
+    const results: { url: string; title: string; publishedAt?: Date | null }[] = [];
+
+    const parseFmTime = (text: string): Date | null => {
+      // "YYYY-MM-DD HH:MM" (에펨 기본) 또는 "YYYY.MM.DD HH:MM"
+      const m = text.trim().match(/(\d{4})[-.](\d{1,2})[-.](\d{1,2})\s+(\d{1,2}):(\d{1,2})/);
+      if (!m) return null;
+      // 로컬 타임존(컨테이너는 UTC지만 에펨 서버 시각은 KST)이라
+      // +09:00을 명시해 안전하게 Date 생성.
+      const iso = `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}T${m[4].padStart(2, '0')}:${m[5].padStart(2, '0')}:00+09:00`;
+      const d = new Date(iso);
+      return Number.isNaN(d.getTime()) ? null : d;
+    };
+
+    // 1차: 검색 결과 <li> 블록을 통째로 순회하며 link + title + time 동시 추출
+    $('ul.searchResult > li').each((_, li) => {
+      const $li = $(li);
+      const $a = $li.find('dt > a').first();
+      const href = $a.attr('href');
+      const title = $a.text().trim();
+      if (!href || !title) return;
+      const url = href.startsWith('http') ? href : `${this.baseUrl}${href}`;
+      const timeText = $li.find('address .time').first().text().trim();
+      const publishedAt = parseFmTime(timeText);
+      results.push({ url, title, publishedAt });
+    });
+    if (results.length > 0) return results;
+
+    // 2차: 전용 셀렉터 시도 (구조 변경 대응용 폴백)
     for (const selector of this.selectors.list) {
       $(selector).each((_, el) => {
         const href = $(el).attr('href');
@@ -100,15 +146,13 @@ export class FMKoreaCollector extends CommunityBaseCollector {
       if (results.length > 0) break;
     }
 
-    // 2차: 셀렉터 매칭 실패 시, 게시글 링크 패턴으로 폴백
+    // 3차: 셀렉터 매칭 실패 시, 게시글 링크 패턴으로 폴백
     if (results.length === 0) {
       $('a[href]').each((_, el) => {
         const href = $(el).attr('href') ?? '';
         const title = $(el).text().trim();
-        // 에펨코리아 게시글 URL 패턴: /숫자 또는 /index.php?document_srl=숫자
         if (title.length > 5 && (href.match(/\/\d{6,}/) || href.includes('document_srl='))) {
           const url = href.startsWith('http') ? href : `${this.baseUrl}${href}`;
-          // 중복 제거
           if (!results.some((r) => r.url === url)) {
             results.push({ url, title });
           }

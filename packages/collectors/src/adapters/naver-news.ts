@@ -28,6 +28,23 @@ const SEARCH_HEADERS: Record<string, string> = {
 };
 
 /**
+ * 네이버 검색 결과 블록 텍스트에서 작성일을 추출.
+ * 지원: "N분/시간/일/주/달/개월/년 전", "YYYY.MM.DD." (절대일자)
+ * 상대시간만 매칭하던 기존 로직은 7일 이상 지난 기사("1주 전")나 절대 일자 표기를 모두 놓쳤다.
+ */
+function extractNaverPublishedAt(blockText: string): Date | null {
+  const relMatch = blockText.match(/(\d+)\s*(분|시간|일|주|달|개월|년)\s*전/);
+  if (relMatch) {
+    return parseDateTextOrNull(`${relMatch[1]}${relMatch[2]} 전`);
+  }
+  const absMatch = blockText.match(/(\d{4})\.(\d{1,2})\.(\d{1,2})\.?/);
+  if (absMatch) {
+    return parseDateTextOrNull(`${absMatch[1]}.${absMatch[2]}.${absMatch[3]}`);
+  }
+  return null;
+}
+
+/**
  * NaverNewsCollector (하이브리드)
  *
  * 검색 결과 목록: fetch + Cheerio (브라우저 불필요, ~200ms/페이지)
@@ -184,8 +201,11 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
           const _commentsOnly = refetchCommentsOnlySet.has(article.url);
 
           try {
-            const content = await this.fetchArticleContent(page, article.url);
+            const { content, publishedAt } = await this.fetchArticleContent(page, article.url);
             article.content = content;
+            // 본문 페이지의 정확한 게시 시각(KST 초 단위)으로 교체.
+            // 검색 결과의 "N일 전" 상대시간은 하루 단위로 뭉뚱그려져 날짜가 오판되기 쉬움.
+            if (publishedAt) article.publishedAt = publishedAt;
           } catch (err) {
             article.content = null;
             article.rawData.fetchError = err instanceof Error ? err.message : String(err);
@@ -246,10 +266,7 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
       }
 
       const blockText = $block.text();
-      const dateMatch = blockText.match(/(\d+)(분|시간|일)\s*전/);
-      const publishedAt = dateMatch
-        ? parseDateTextOrNull(`${dateMatch[1]}${dateMatch[2]} 전`)
-        : null;
+      const publishedAt = extractNaverPublishedAt(blockText);
 
       let naverUrl: string | null = null;
       $block.find('a[href*="n.news.naver.com"]').each((_, a) => {
@@ -317,13 +334,10 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
 
       const blockText = block.text();
       const pubMatch = blockText.match(
-        /([가-힣A-Za-z0-9\s]+?)(?:\d+(?:분|시간|일)\s*전|네이버뉴스)/,
+        /([가-힣A-Za-z0-9\s]+?)(?:\d+\s*(?:분|시간|일|주|달|개월|년)\s*전|\d{4}\.\d{1,2}\.\d{1,2}|네이버뉴스)/,
       );
       const publisher = pubMatch?.[1]?.trim() || '알 수 없음';
-      const dateMatch = blockText.match(/(\d+)(분|시간|일)\s*전/);
-      const publishedAt = dateMatch
-        ? parseDateTextOrNull(`${dateMatch[1]}${dateMatch[2]} 전`)
-        : null;
+      const publishedAt = extractNaverPublishedAt(blockText);
 
       articles.push({
         sourceId,
@@ -410,14 +424,36 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
   }
 
   /**
-   * 기사 페이지에서 본문 추출 (Playwright 사용)
+   * 기사 페이지에서 본문 + 정확한 게시 시각 추출 (Playwright 사용)
+   * n.news.naver.com은 `data-date-time="YYYY-MM-DD HH:MM:SS"` 속성(KST)을 제공하므로
+   * 이를 우선 사용해 검색 결과의 상대시간 파싱 오차를 제거한다.
    */
-  private async fetchArticleContent(page: Page, url: string): Promise<string | null> {
+  private async fetchArticleContent(
+    page: Page,
+    url: string,
+  ): Promise<{ content: string | null; publishedAt: Date | null }> {
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15000 });
     await page.waitForTimeout(500);
 
     const html = await page.content();
     const $ = cheerio.load(html);
+
+    // 정확한 게시 시각 (KST 기준 "YYYY-MM-DD HH:MM:SS")
+    let publishedAt: Date | null = null;
+    const dateAttr =
+      $('[data-date-time]').first().attr('data-date-time') ??
+      $('._ARTICLE_DATE_TIME').first().attr('data-date-time');
+    if (dateAttr) {
+      const m = dateAttr.match(
+        /^(\d{4})-(\d{1,2})-(\d{1,2})\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?$/,
+      );
+      if (m) {
+        // KST(+09:00)를 명시해 ISO 문자열 생성 — 로컬 TZ 영향 제거
+        const iso = `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}T${m[4].padStart(2, '0')}:${m[5].padStart(2, '0')}:${(m[6] ?? '00').padStart(2, '0')}+09:00`;
+        const d = new Date(iso);
+        if (!Number.isNaN(d.getTime())) publishedAt = d;
+      }
+    }
 
     const contentSelectors = [
       '#newsct_article',
@@ -441,10 +477,10 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
     for (const selector of contentSelectors) {
       const content = $(selector).text().trim();
       if (content && content.length > 50) {
-        return content;
+        return { content, publishedAt };
       }
     }
 
-    return null;
+    return { content: null, publishedAt };
   }
 }

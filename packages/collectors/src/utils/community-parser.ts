@@ -7,8 +7,8 @@
 export function parseDateText(text: string): Date {
   if (!text) return new Date();
 
-  // "N시간 전", "N분 전", "N일 전" 형식
-  const relativeMatch = text.match(/(\d+)(시간|분|일)\s*전/);
+  // "N시간 전", "N분 전", "N일 전", "N주 전", "N달/개월 전", "N년 전" 형식
+  const relativeMatch = text.match(/(\d+)\s*(시간|분|일|주|달|개월|년)\s*전/);
   if (relativeMatch) {
     const now = new Date();
     const amount = parseInt(relativeMatch[1], 10);
@@ -16,6 +16,9 @@ export function parseDateText(text: string): Date {
     if (unit === '시간') now.setHours(now.getHours() - amount);
     else if (unit === '분') now.setMinutes(now.getMinutes() - amount);
     else if (unit === '일') now.setDate(now.getDate() - amount);
+    else if (unit === '주') now.setDate(now.getDate() - amount * 7);
+    else if (unit === '달' || unit === '개월') now.setMonth(now.getMonth() - amount);
+    else if (unit === '년') now.setFullYear(now.getFullYear() - amount);
     return now;
   }
 
@@ -96,8 +99,8 @@ export function sanitizeContent(html: string): string {
 export function parseDateTextOrNull(text: string): Date | null {
   if (!text) return null;
 
-  // "N시간 전", "N분 전", "N일 전" 형식
-  const relativeMatch = text.match(/(\d+)(시간|분|일)\s*전/);
+  // "N시간 전", "N분 전", "N일 전", "N주 전", "N달/개월 전", "N년 전" 형식
+  const relativeMatch = text.match(/(\d+)\s*(시간|분|일|주|달|개월|년)\s*전/);
   if (relativeMatch) {
     const now = new Date();
     const amount = parseInt(relativeMatch[1], 10);
@@ -105,10 +108,14 @@ export function parseDateTextOrNull(text: string): Date | null {
     if (unit === '시간') now.setHours(now.getHours() - amount);
     else if (unit === '분') now.setMinutes(now.getMinutes() - amount);
     else if (unit === '일') now.setDate(now.getDate() - amount);
+    else if (unit === '주') now.setDate(now.getDate() - amount * 7);
+    else if (unit === '달' || unit === '개월') now.setMonth(now.getMonth() - amount);
+    else if (unit === '년') now.setFullYear(now.getFullYear() - amount);
     return now;
   }
 
   // "YYYY.MM.DD" 형식 (시간 포함 가능: "YYYY.MM.DD HH:mm")
+  // 네이버 뉴스 검색은 "YYYY.MM.DD." 처럼 trailing dot이 붙는 경우도 있음 — 정규식이 허용함.
   const fullDateMatch = text.match(/(\d{4})\.(\d{1,2})\.(\d{1,2})(?:\s+(\d{1,2}):(\d{1,2}))?/);
   if (fullDateMatch) {
     const year = parseInt(fullDateMatch[1], 10);
@@ -155,6 +162,7 @@ export function buildSearchUrl(
   site: 'dcinside' | 'fmkorea' | 'clien',
   keyword: string,
   page: number,
+  dateRange?: { start: string; end: string }, // ISO 문자열, 선택적 날짜 필터 (지원 사이트만 사용)
 ): string {
   const encoded = encodeURIComponent(keyword);
 
@@ -162,9 +170,25 @@ export function buildSearchUrl(
     case 'dcinside':
       return `https://search.dcinside.com/post/p/${page}/sort/accuracy/q/${encoded}`;
 
-    case 'fmkorea':
-      // search.php 직접 사용 (index.php는 302→search.php 리다이렉트 발생, Playwright에서 ERR_ABORTED)
-      return `https://www.fmkorea.com/search.php?act=IS&is_keyword=${encoded}&where=document&page=${page}`;
+    case 'fmkorea': {
+      // search.php는 s_date/e_date(YYYY-MM-DD) + search_target=1로 날짜 필터 지원.
+      // 기본 URL은 관련도순 전체 검색이라 최신순으로 정렬되어 과거 일자가 묻히는 문제가 있음.
+      let url = `https://www.fmkorea.com/search.php?act=IS&is_keyword=${encoded}&where=document&page=${page}`;
+      if (dateRange) {
+        const toYmd = (iso: string) => {
+          const d = new Date(iso);
+          if (Number.isNaN(d.getTime())) return null;
+          const pad = (n: number) => String(n).padStart(2, '0');
+          return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+        };
+        const s = toYmd(dateRange.start);
+        const e = toYmd(dateRange.end);
+        if (s && e) {
+          url += `&search_target=1&s_date=${s}&e_date=${e}`;
+        }
+      }
+      return url;
+    }
 
     case 'clien':
       return `https://www.clien.net/service/search?q=${encoded}&sort=recency&p=${page - 1}`;

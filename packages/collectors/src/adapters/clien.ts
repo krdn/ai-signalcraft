@@ -39,7 +39,12 @@ export class ClienCollector extends CommunityBaseCollector {
     return html.includes('접근이 제한') || html.includes('403') || html.includes('차단');
   }
 
-  protected buildSearchUrl(keyword: string, page: number): string {
+  protected buildSearchUrl(
+    keyword: string,
+    page: number,
+    _dateRange?: { start: string; end: string },
+  ): string {
+    // Clien은 검색 URL에 날짜 필터 미지원 → dateRange 무시, 사후 필터링으로 처리
     return buildSearchUrl('clien', keyword, page);
   }
 

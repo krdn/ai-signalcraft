@@ -30,6 +30,10 @@ export function buildObjectId(oid: string, aid: string): string {
  * 네이버 뉴스 검색 URL 생성
  * 검색 파라미터: query(키워드), ds/de(시작/종료 날짜 YYYY.MM.DD),
  * start(페이지 오프셋), sort(0=관련도, 1=최신, 2=오래된순)
+ *
+ * 중요: ds/de 만으로는 기간 필터가 적용되지 않는다. 반드시 `pd=3`(기간 상세) 및
+ * `nso=so:r,p:fromYYYYMMDDtoYYYYMMDD`를 함께 넣어야 네이버가 기간 필터를 실제로 적용한다.
+ * 이 파라미터가 없으면 최신 기사만 반환되어 날짜별 분할 수집이 무의미해진다.
  */
 export function buildNaverSearchUrl(params: {
   keyword: string;
@@ -41,14 +45,33 @@ export function buildNaverSearchUrl(params: {
   const startD = new Date(params.startDate);
   const endD = new Date(params.endDate);
 
-  // YYYY.MM.DD 형식으로 변환
-  const ds = `${startD.getFullYear()}.${String(startD.getMonth() + 1).padStart(2, '0')}.${String(startD.getDate()).padStart(2, '0')}`;
-  const de = `${endD.getFullYear()}.${String(endD.getMonth() + 1).padStart(2, '0')}.${String(endD.getDate()).padStart(2, '0')}`;
+  // YYYY.MM.DD (ds/de용), YYYYMMDD (nso용) 두 형식 모두 필요
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const ds = `${startD.getFullYear()}.${pad(startD.getMonth() + 1)}.${pad(startD.getDate())}`;
+  const de = `${endD.getFullYear()}.${pad(endD.getMonth() + 1)}.${pad(endD.getDate())}`;
+  const nsoStart = `${startD.getFullYear()}${pad(startD.getMonth() + 1)}${pad(startD.getDate())}`;
+  const nsoEnd = `${endD.getFullYear()}${pad(endD.getMonth() + 1)}${pad(endD.getDate())}`;
 
   const start = (params.page - 1) * 10 + 1;
   const sort = params.sort ?? 1; // 기본 최신순
+  // nso의 sort(so): r=관련도, da=최신, ddate=오래된순. 여기선 sort=1(최신)=da, 그 외는 r.
+  const nsoSort = sort === 1 ? 'da' : sort === 2 ? 'ddate' : 'r';
+  const nso = `so:${nsoSort},p:from${nsoStart}to${nsoEnd}`;
 
-  return `https://search.naver.com/search.naver?where=news&query=${encodeURIComponent(params.keyword)}&sm=tab_opt&sort=${sort}&ds=${ds}&de=${de}&start=${start}`;
+  const qs = new URLSearchParams({
+    where: 'news',
+    ssc: 'tab.news.all',
+    query: params.keyword,
+    sm: 'tab_opt',
+    sort: String(sort),
+    pd: '3', // 기간 상세 필터 활성화 — 반드시 필요
+    ds,
+    de,
+    nso, // ds/de와 반드시 함께 전달
+    start: String(start),
+  });
+
+  return `https://search.naver.com/search.naver?${qs.toString()}`;
 }
 
 /**

@@ -1,9 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Newspaper, MessageSquare, Video, Users } from 'lucide-react';
 import { SOURCE_LABELS } from './collected-data-shared';
-import { CollectionTimeline } from './summary-widgets/collection-timeline';
+import { CollectionTimeline, type TimelineBasis } from './summary-widgets/collection-timeline';
 import { LimitProgress } from './summary-widgets/limit-progress';
 import { SourceTypeBreakdown } from './summary-widgets/source-type-breakdown';
 import { trpcClient } from '@/lib/trpc';
@@ -16,14 +17,16 @@ export interface SummaryViewProps {
 
 // 수집 통계 요약
 export function SummaryView({ jobId }: SummaryViewProps) {
+  const [timelineBasis, setTimelineBasis] = useState<TimelineBasis>('published');
+
   const { data, isLoading } = useQuery({
     queryKey: ['collectedData', 'getSummary', jobId],
     queryFn: () => trpcClient.collectedData.getSummary.query({ jobId }),
   });
 
   const { data: stats, isLoading: statsLoading } = useQuery({
-    queryKey: ['collectedData', 'getCollectionStats', jobId],
-    queryFn: () => trpcClient.collectedData.getCollectionStats.query({ jobId }),
+    queryKey: ['collectedData', 'getCollectionStats', jobId, timelineBasis],
+    queryFn: () => trpcClient.collectedData.getCollectionStats.query({ jobId, timelineBasis }),
   });
 
   if (isLoading) {
@@ -108,7 +111,14 @@ export function SummaryView({ jobId }: SummaryViewProps) {
           </CardContent>
         </Card>
       ) : stats ? (
-        <CollectionTimeline timeline={stats.timeline} />
+        <CollectionTimeline
+          timeline={stats.timeline}
+          basis={timelineBasis}
+          onBasisChange={setTimelineBasis}
+          outOfRange={stats.outOfRange}
+          executionKstDate={stats.executionKstDate}
+          futureDates={stats.futureDates}
+        />
       ) : null}
 
       {/* 신규: 한도 대비 실제 + 매체×타입 */}
@@ -127,7 +137,14 @@ export function SummaryView({ jobId }: SummaryViewProps) {
         </div>
       ) : stats ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <LimitProgress limits={stats.limits} limitsSource={stats.limitsSource} />
+          <LimitProgress
+            limits={stats.limits}
+            limitsSource={stats.limitsSource}
+            limitMode={stats.limitMode}
+            dayCount={stats.dayCount}
+            rawLimits={stats.rawLimits}
+            activeCommunityCount={stats.activeCommunityCount}
+          />
           <SourceTypeBreakdown byTypeAndSource={stats.byTypeAndSource} />
         </div>
       ) : null}

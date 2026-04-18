@@ -29,7 +29,12 @@ export class DCInsideCollector extends CommunityBaseCollector {
     comment: ['.reply_content .usertxt', '.cmt_txt_cont .usertxt'],
   };
 
-  protected buildSearchUrl(keyword: string, page: number): string {
+  protected buildSearchUrl(
+    keyword: string,
+    page: number,
+    _dateRange?: { start: string; end: string },
+  ): string {
+    // DC는 검색 URL에 날짜 필터 미지원 → dateRange 무시, 사후 필터링으로 처리
     return buildSearchUrl('dcinside', keyword, page);
   }
 
@@ -63,7 +68,14 @@ export class DCInsideCollector extends CommunityBaseCollector {
     maxComments: number,
   ): Promise<CommunityPost | null> {
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
-    await page.waitForTimeout(1000);
+
+    // DC 댓글은 AJAX로 지연 로드됨 -- 셀렉터 등장 또는 networkidle까지 대기
+    // (댓글이 없는 게시글도 존재하므로 미등장은 에러가 아님)
+    const commentSelector = this.selectors.comment.join(', ');
+    await page
+      .waitForSelector(commentSelector, { timeout: 4000, state: 'attached' })
+      .catch(() => undefined);
+    await page.waitForLoadState('networkidle', { timeout: 3000 }).catch(() => undefined);
 
     const html = await page.content();
     const $ = cheerio.load(html);
