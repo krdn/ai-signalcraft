@@ -95,6 +95,8 @@ export function normalizeYoutubeVideo(video: YoutubeVideo): typeof videos.$infer
     commentCount: video.commentCount,
     publishedAt: toDate(video.publishedAt),
     rawData: video.rawData,
+    transcript: video.transcript ?? null,
+    transcriptLang: video.transcriptLang ?? null,
   };
 }
 

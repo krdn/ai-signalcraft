@@ -96,15 +96,23 @@ export function createCollectorHandler(): (job: Job) => Promise<CollectorResult>
             preFilterSkip?: number;
             outOfRange?: number;
             pageEmptyCount?: number;
+            quotaUsed?: number;
+            quotaRemaining?: number;
+            usedFallback?: boolean;
           };
           const distStr = Object.entries(s.perDayCount)
             .sort(([a], [b]) => a.localeCompare(b))
             .map(([d, n]) => `${d}=${n}`)
             .join(' ');
+          const quotaInfo =
+            s.quotaUsed != null
+              ? ` quota=${s.quotaUsed}/${s.quotaUsed + (s.quotaRemaining ?? 0)}`
+              : '';
+          const fallbackInfo = s.usedFallback ? ' [innertube-fallback]' : '';
           appendJobEvent(
             dbJobId,
             'info',
-            `[${source}] 종료: reason=${s.endReason} lastPage=${s.lastPage} 분포(KST)={${distStr}} capSkip=${s.perDayCapSkip ?? 0} preFilterSkip=${s.preFilterSkip ?? 0} outOfRange=${s.outOfRange ?? 0} pageEmpty=${s.pageEmptyCount ?? 0}`,
+            `[${source}] 종료: reason=${s.endReason} lastPage=${s.lastPage}${quotaInfo}${fallbackInfo} 분포(KST)={${distStr}} capSkip=${s.perDayCapSkip ?? 0} preFilterSkip=${s.preFilterSkip ?? 0} outOfRange=${s.outOfRange ?? 0} pageEmpty=${s.pageEmptyCount ?? 0}`,
           ).catch(() => {});
         }
       }

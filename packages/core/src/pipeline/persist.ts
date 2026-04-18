@@ -103,6 +103,8 @@ export async function persistVideos(jobId: number, data: (typeof videos.$inferIn
           rawData: sql`excluded.raw_data`,
           collectedAt: sql`excluded.collected_at`,
           lastFetchedAt: sql`now()`,
+          transcript: sql`excluded.transcript`,
+          transcriptLang: sql`excluded.transcript_lang`,
         },
       })
       .returning();
