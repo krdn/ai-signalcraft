@@ -202,9 +202,23 @@ export class FMKoreaCollector extends CommunityBaseCollector {
    */
   protected parseSearchResults(
     html: string,
-  ): { url: string; title: string; publishedAt?: Date | null }[] {
+  ): {
+    url: string;
+    title: string;
+    publishedAt?: Date | null;
+    author?: string;
+    recomCount?: number;
+    commentCount?: number;
+  }[] {
     const $ = cheerio.load(html);
-    const results: { url: string; title: string; publishedAt?: Date | null }[] = [];
+    const results: {
+      url: string;
+      title: string;
+      publishedAt?: Date | null;
+      author?: string;
+      recomCount?: number;
+      commentCount?: number;
+    }[] = [];
 
     const parseFmTime = (text: string): Date | null => {
       // "YYYY-MM-DD HH:MM" (에펨 기본) 또는 "YYYY.MM.DD HH:MM"
@@ -227,7 +241,14 @@ export class FMKoreaCollector extends CommunityBaseCollector {
       const url = href.startsWith('http') ? href : `${this.baseUrl}${href}`;
       const timeText = $li.find('address .time').first().text().trim();
       const publishedAt = parseFmTime(timeText);
-      results.push({ url, title, publishedAt });
+
+      const author = $li.find('address > strong').first().text().trim() || undefined;
+      const recomText = $li.find('.recomNum').first().text().trim();
+      const recomCount = recomText ? parseInt(recomText, 10) : undefined;
+      const commentText = $li.find('.reply em').first().text().trim();
+      const commentCount = commentText ? parseInt(commentText, 10) : undefined;
+
+      results.push({ url, title, publishedAt, author, recomCount, commentCount });
     });
     if (results.length > 0) return results;
 

@@ -12,6 +12,10 @@ class TestFMKoreaCollector extends FMKoreaCollector {
   public testParseCpageMax($: cheerio.CheerioAPI): number {
     return (this as any).parseCpageMax($);
   }
+
+  public testParseSearchResults(html: string) {
+    return (this as any).parseSearchResults(html);
+  }
 }
 
 describe('FMKoreaCollector', () => {
@@ -65,6 +69,25 @@ describe('FMKoreaCollector parseComments', () => {
   it('maxComments 제한이 동작', () => {
     const comments = collector.testParseComments($, 'fm_test', 3);
     expect(comments.length).toBe(3);
+  });
+});
+
+describe('FMKoreaCollector parseSearchResults', () => {
+  const collector = new TestFMKoreaCollector();
+
+  it('작성자, 추천수, 댓글수를 추출', () => {
+    const html = readFileSync(resolve(__dirname, 'fixtures/fmkorea-search.html'), 'utf-8');
+    const results = collector.testParseSearchResults(html);
+    expect(results.length).toBe(2);
+
+    expect(results[0].author).toBe('작성자A');
+    expect(results[0].recomCount).toBe(52);
+    expect(results[0].commentCount).toBe(20);
+    expect(results[0].publishedAt).toBeInstanceOf(Date);
+
+    expect(results[1].author).toBe('작성자B');
+    expect(results[1].recomCount).toBe(3);
+    expect(results[1].commentCount).toBe(3);
   });
 });
 
