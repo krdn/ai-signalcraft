@@ -1,7 +1,12 @@
 // DC갤러리 수집기 -- CommunityBaseCollector 상속
 import * as cheerio from 'cheerio';
 import type { CommunityPost, CommunityComment } from '../types/community';
-import { parseDateText, sanitizeContent, buildSearchUrl } from '../utils/community-parser';
+import {
+  parseDateText,
+  parseDateTextOrNull,
+  sanitizeContent,
+  buildSearchUrl,
+} from '../utils/community-parser';
 import { CommunityBaseCollector, type SiteSelectors } from './community-base-collector';
 import type { BrowserCollectorConfig } from './browser-collector';
 
@@ -38,18 +43,39 @@ export class DCInsideCollector extends CommunityBaseCollector {
     return buildSearchUrl('dcinside', keyword, page);
   }
 
-  /** 검색 결과 HTML에서 게시글 링크 목록 추출 */
-  protected parseSearchResults(html: string): { url: string; title: string }[] {
+  /**
+   * 검색 결과 HTML에서 게시글 링크 + 작성일 추출.
+   * search.dcinside.com 결과 구조: `<ul class="sch_result_list"><li>` 단위로
+   *   - 제목/링크: `a.tit_txt`
+   *   - 작성일: `<span class="date_time">YYYY.MM.DD HH:mm</span>` (KST)
+   * 작성일을 동반 추출하면 본문 요청 전 사전 필터 + per-day cap이 활성화된다.
+   */
+  protected parseSearchResults(
+    html: string,
+  ): { url: string; title: string; publishedAt?: Date | null }[] {
     const $ = cheerio.load(html);
-    const results: { url: string; title: string }[] = [];
+    const results: { url: string; title: string; publishedAt?: Date | null }[] = [];
 
-    // fallback 셀렉터 순회
+    // 1차: 결과 <li> 블록을 순회하며 link + title + date_time 동시 추출
+    $('ul.sch_result_list > li').each((_, li) => {
+      const $li = $(li);
+      const $a = $li.find('a.tit_txt').first();
+      const href = $a.attr('href');
+      const title = $a.text().trim();
+      if (!href || !title) return;
+      const url = href.startsWith('http') ? href : `${this.baseUrl}${href}`;
+      const dateText = $li.find('span.date_time').first().text().trim();
+      const publishedAt = parseDateTextOrNull(dateText);
+      results.push({ url, title, publishedAt });
+    });
+    if (results.length > 0) return results;
+
+    // 2차: 셀렉터 매칭 실패 시 폴백 (구조 변경 대응) — publishedAt 없이 진행
     for (const selector of this.selectors.list) {
       $(selector).each((_, el) => {
         const href = $(el).attr('href');
         const title = $(el).text().trim();
         if (href && title) {
-          // 상대 URL -> 절대 URL
           const url = href.startsWith('http') ? href : `${this.baseUrl}${href}`;
           results.push({ url, title });
         }

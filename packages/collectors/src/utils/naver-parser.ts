@@ -1,4 +1,5 @@
 // 네이버 뉴스 기사 URL 파싱 유틸리티
+import { getKstYmd } from './community-parser';
 
 /**
  * 네이버 뉴스 기사 URL에서 oid(언론사 코드)와 aid(기사 번호) 추출
@@ -42,15 +43,16 @@ export function buildNaverSearchUrl(params: {
   page: number; // 1-based
   sort?: number; // 0=관련도, 1=최신
 }): string {
-  const startD = new Date(params.startDate);
-  const endD = new Date(params.endDate);
+  // KST 기준 연·월·일로 변환 — 컨테이너 TZ(UTC)에서도 사용자 입력 일자와 정확히 일치
+  const startKst = getKstYmd(new Date(params.startDate));
+  const endKst = getKstYmd(new Date(params.endDate));
 
   // YYYY.MM.DD (ds/de용), YYYYMMDD (nso용) 두 형식 모두 필요
   const pad = (n: number) => String(n).padStart(2, '0');
-  const ds = `${startD.getFullYear()}.${pad(startD.getMonth() + 1)}.${pad(startD.getDate())}`;
-  const de = `${endD.getFullYear()}.${pad(endD.getMonth() + 1)}.${pad(endD.getDate())}`;
-  const nsoStart = `${startD.getFullYear()}${pad(startD.getMonth() + 1)}${pad(startD.getDate())}`;
-  const nsoEnd = `${endD.getFullYear()}${pad(endD.getMonth() + 1)}${pad(endD.getDate())}`;
+  const ds = `${startKst.year}.${pad(startKst.month)}.${pad(startKst.day)}`;
+  const de = `${endKst.year}.${pad(endKst.month)}.${pad(endKst.day)}`;
+  const nsoStart = `${startKst.year}${pad(startKst.month)}${pad(startKst.day)}`;
+  const nsoEnd = `${endKst.year}${pad(endKst.month)}${pad(endKst.day)}`;
 
   const start = (params.page - 1) * 10 + 1;
   const sort = params.sort ?? 1; // 기본 최신순

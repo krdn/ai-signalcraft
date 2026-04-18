@@ -18,9 +18,10 @@ export class FMKoreaCollector extends CommunityBaseCollector {
 
   protected readonly config: BrowserCollectorConfig = {
     // 에펨은 최신순 페이지네이션이 깊게 내려가야 과거 기사에 도달 (페이지 40~50 이상).
-    // 무작위성 있는 딜레이로 안티봇 차단 회피.
-    pageDelay: { min: 2500, max: 4500 },
-    postDelay: { min: 800, max: 1500 },
+    // ⚠️ 안티봇 강화: pageDelay를 5~9초로 늘려 차단 빈도를 낮춘다.
+    // (이전 2.5~4.5초는 페이지 12-15 부근에서 차단되는 사례 확인됨)
+    pageDelay: { min: 5000, max: 9000 },
+    postDelay: { min: 1200, max: 2200 },
     defaultMaxItems: 50,
     // 검색 결과 단계에서 publishedAt 사전 필터가 있으므로 페이지 많이 순회해도 본문 요청은 제한적.
     maxSearchPages: 80,
@@ -37,13 +38,21 @@ export class FMKoreaCollector extends CommunityBaseCollector {
     comment: ['.fdb_lst_ul .xe_content', '.comment_content .xe_content'],
   };
 
-  // 차단 감지 override (에펨코리아 전용)
+  // 차단 감지 override (에펨코리아 전용) — 다양한 차단 신호를 폭넓게 검출
   protected detectBlocked(html: string): boolean {
+    if (!html) return true;
+    // 응답이 비정상적으로 짧으면 차단/에러 페이지로 간주 (정상 검색결과는 보통 50KB+)
+    if (html.length < 2000) return true;
     return (
       html.includes('자동등록방지') ||
       html.includes('captcha') ||
       html.includes('접근이 제한') ||
-      html.includes('에펨코리아 보안 시스템')
+      html.includes('에펨코리아 보안 시스템') ||
+      html.includes('Too Many Requests') ||
+      html.includes('429') ||
+      html.includes('일시적으로 접근이 차단') ||
+      // 검색결과 컨테이너가 아예 없으면 차단 또는 비정상 응답
+      (!html.includes('searchResult') && !html.includes('search_list'))
     );
   }
 
@@ -86,9 +95,10 @@ export class FMKoreaCollector extends CommunityBaseCollector {
     page: number,
     _dateRange?: { start: string; end: string },
   ): string {
-    // 에펨 `s_date/e_date` 파라미터는 서버측에서 무시됨(실험으로 확인).
-    // 모든 요청이 동일한 "관련도순 최신 결과"를 반환하므로 일자별 분할이 의미 없음.
-    // 대신 페이지네이션으로 과거까지 내려가며 사전 날짜 필터를 사용.
+    // 에펨 `s_date/e_date` 파라미터는 서버측에서 무시됨(실험으로 확인) →
+    // dateRange는 보내지 않고, URL 빌더에서 `order_type=desc&sort_index=regdate`로
+    // 등록일 최신순 정렬을 강제한다. 페이지를 깊이 내려갈수록 자연스럽게 과거까지 도달.
+    // 일자별 균등 분포는 CommunityBaseCollector의 per-day cap이 보장.
     return buildSearchUrl('fmkorea', keyword, page);
   }
 

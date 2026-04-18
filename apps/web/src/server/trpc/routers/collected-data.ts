@@ -403,9 +403,13 @@ export const collectedDataRouter = router({
           ? sql`COALESCE(${comments.publishedAt}, ${comments.collectedAt})`
           : sql`${comments.collectedAt}`;
 
-      const kstDayArticles = sql<string>`to_char((${articleBasisCol} AT TIME ZONE 'Asia/Seoul')::date, 'YYYY-MM-DD')`;
-      const kstDayVideos = sql<string>`to_char((${videoBasisCol} AT TIME ZONE 'Asia/Seoul')::date, 'YYYY-MM-DD')`;
-      const kstDayComments = sql<string>`to_char((${commentBasisCol} AT TIME ZONE 'Asia/Seoul')::date, 'YYYY-MM-DD')`;
+      // ⚠️ DB 컬럼은 timestamp WITHOUT time zone이지만 실제 저장값은 UTC 시각.
+      //   - 수집기에서 +09:00 명시 Date를 INSERT → 드라이버가 ISO 변환 시 UTC 시각만 박힘
+      //   - 따라서 먼저 UTC로 해석한 뒤 KST로 변환해야 사용자가 보는 일자(KST)와 일치한다.
+      // 단순 `AT TIME ZONE 'Asia/Seoul'`만 쓰면 DB값을 KST로 가정해 9시간 어긋난 일자가 나옴.
+      const kstDayArticles = sql<string>`to_char(((${articleBasisCol} AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Seoul')::date, 'YYYY-MM-DD')`;
+      const kstDayVideos = sql<string>`to_char(((${videoBasisCol} AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Seoul')::date, 'YYYY-MM-DD')`;
+      const kstDayComments = sql<string>`to_char(((${commentBasisCol} AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Seoul')::date, 'YYYY-MM-DD')`;
 
       // 기사별 댓글 수 서브쿼리
       const articleCommentSq = ctx.db

@@ -17,10 +17,13 @@ export class ClienCollector extends CommunityBaseCollector {
   protected readonly baseUrl = 'https://www.clien.net';
 
   protected readonly config: BrowserCollectorConfig = {
-    pageDelay: { min: 2000, max: 3500 },
-    postDelay: { min: 1000, max: 1800 },
+    // ⚠️ 안티봇 강화: 클리앙도 403 강하므로 fmkorea와 유사한 수준으로 딜레이 상향.
+    pageDelay: { min: 5000, max: 9000 },
+    postDelay: { min: 1200, max: 2200 },
     defaultMaxItems: 50,
-    maxSearchPages: 15,
+    // 8일 기간(일 20건) 커버를 위해 페이지 확대 (이전 15 → 60).
+    // 클리앙 검색 결과는 한 페이지 ~10건이므로 60페이지면 600건 검색 → 일자별 cap과 결합해 안전.
+    maxSearchPages: 60,
   };
 
   protected readonly selectors: SiteSelectors = {
@@ -48,18 +51,40 @@ export class ClienCollector extends CommunityBaseCollector {
     return buildSearchUrl('clien', keyword, page);
   }
 
-  /** 검색 결과 HTML에서 게시글 링크 목록 추출 */
-  protected parseSearchResults(html: string): { url: string; title: string }[] {
+  /**
+   * 검색 결과 HTML에서 게시글 링크 + 작성일 추출.
+   * clien 검색결과 구조: `<div class="list_item ...">` 단위로
+   *   - 제목/링크: `a.subject_fixed`
+   *   - 작성일: `<span class="timestamp">YYYY-MM-DD HH:mm:ss</span>` (KST)
+   */
+  protected parseSearchResults(
+    html: string,
+  ): { url: string; title: string; publishedAt?: Date | null }[] {
     const $ = cheerio.load(html);
-    const results: { url: string; title: string }[] = [];
+    const results: { url: string; title: string; publishedAt?: Date | null }[] = [];
 
-    // 1차: 전용 셀렉터 시도
+    // 1차: list_item 단위로 link/title/timestamp 동시 추출
+    $('div.list_item[data-role="list-row"]').each((_, row) => {
+      const $row = $(row);
+      const $a = $row.find('a.subject_fixed').first();
+      const href = $a.attr('href') ?? '';
+      const title = ($a.attr('title') || $a.text() || '').trim();
+      if (!href || !title) return;
+      const cleanHref = href.split('?')[0];
+      const url = cleanHref.startsWith('http') ? cleanHref : `${this.baseUrl}${cleanHref}`;
+      if (results.some((r) => r.url === url)) return;
+      const tsText = $row.find('span.timestamp').first().text().trim();
+      const publishedAt = parseDateText(tsText);
+      results.push({ url, title, publishedAt });
+    });
+    if (results.length > 0) return results;
+
+    // 2차: 전용 셀렉터 폴백 (구조 변경 대응) — publishedAt 없이
     for (const selector of this.selectors.list) {
       $(selector).each((_, el) => {
         const href = $(el).attr('href');
         const title = $(el).text().trim();
         if (href && title) {
-          // 검색 결과 URL에서 쿼리 파라미터(combine, q) 제거
           const cleanHref = href.split('?')[0];
           const url = cleanHref.startsWith('http') ? cleanHref : `${this.baseUrl}${cleanHref}`;
           if (!results.some((r) => r.url === url)) {
@@ -70,12 +95,11 @@ export class ClienCollector extends CommunityBaseCollector {
       if (results.length > 0) break;
     }
 
-    // 2차: 셀렉터 매칭 실패 시 게시글 링크 패턴으로 폴백
+    // 3차: 패턴 폴백
     if (results.length === 0) {
       $('a[href*="/service/board/"]').each((_, el) => {
         const href = $(el).attr('href') ?? '';
         const title = $(el).text().trim();
-        // 게시글 URL: /service/board/{board}/{id} 형태만
         if (title.length > 3 && href.match(/\/service\/board\/[^/]+\/\d+/)) {
           const cleanHref = href.split('?')[0];
           const url = cleanHref.startsWith('http') ? cleanHref : `${this.baseUrl}${cleanHref}`;

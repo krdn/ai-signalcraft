@@ -2,7 +2,8 @@
 import type { Page } from 'playwright';
 import type { CommunityPost } from '../types/community';
 import { sleep } from '../utils/browser';
-import type { CollectionOptions } from './base';
+import { splitIntoDaysKst, kstDayStartMs } from '../utils/community-parser';
+import type { CollectionOptions, CollectionStats } from './base';
 import { BrowserCollector } from './browser-collector';
 
 export interface SiteSelectors {
@@ -72,9 +73,11 @@ export abstract class CommunityBaseCollector extends BrowserCollector<CommunityP
     const skipUrlSet = new Set(options.reusePlan?.skipUrls ?? []);
     const refetchCommentsOnlySet = new Set(options.reusePlan?.refetchCommentsFor ?? []);
 
-    // 기간 필터: publishedAt이 [startDate, endDate) 범위 밖이면 제외.
-    const startTs = new Date(options.startDate).getTime();
-    const endTs = new Date(options.endDate).getTime();
+    // 기간 필터: KST 자정 기준 [startDay, endDay + 24h)로 확장.
+    // 사용자가 "KST 04-11 ~ KST 04-18"을 입력하면 04-11 00:00 KST ~ 04-19 00:00 KST 가 기간.
+    // 컨테이너 TZ가 UTC라도 사용자 인식과 정확히 일치한다.
+    const startTs = kstDayStartMs(new Date(options.startDate));
+    const endTs = kstDayStartMs(new Date(options.endDate)) + 86400000;
     const isInDateRange = (d: Date | null | undefined): boolean => {
       if (!d) return true; // publishedAt 파싱 실패분은 보수적으로 유지
       const t = d instanceof Date ? d.getTime() : new Date(d).getTime();
@@ -117,9 +120,14 @@ export abstract class CommunityBaseCollector extends BrowserCollector<CommunityP
       isInDateRange: (d: Date | null | undefined) => boolean;
     },
   ): AsyncGenerator<CommunityPost[], void, unknown> {
-    const days = splitIntoDays(options.startDate, options.endDate);
-    const perDayLimit = Math.max(1, Math.ceil(ctx.maxItems / days.length));
+    // KST 자정 기준 일자 분할 + perDayLimit은 options.maxItemsPerDay 우선.
+    // ⚠️ 한도 초과 금지, 부족분 보충 금지.
+    const days = splitIntoDaysKst(options.startDate, options.endDate);
+    const perDayLimit =
+      options.maxItemsPerDay ?? Math.max(1, Math.floor(ctx.maxItems / days.length));
     const globalSeen = new Set<string>();
+    const enforced = new Map<number, number>(); // yield 직전 cap 검증용
+    const dayKey = (d: Date): number => kstDayStartMs(d);
     let totalCollected = 0;
     let skippedCount = 0;
     let outOfRangeCount = 0;
@@ -170,7 +178,8 @@ export abstract class CommunityBaseCollector extends BrowserCollector<CommunityP
           await sleep(this.config.postDelay.min, this.config.postDelay.max);
         }
 
-        if (posts.length > 0) yield posts;
+        const filtered = this.enforcePerDayCap(posts, dayKey, perDayLimit, enforced);
+        if (filtered.length > 0) yield filtered;
         await sleep(this.config.pageDelay.min, this.config.pageDelay.max);
       }
     }
@@ -194,18 +203,72 @@ export abstract class CommunityBaseCollector extends BrowserCollector<CommunityP
     let skippedCount = 0;
     let outOfRangeCount = 0;
     let preFilterSkipCount = 0; // 검색 결과 단계에서 사전 필터된 수
+    let perDayCapSkipCount = 0; // 일자별 한도 초과로 본문 요청을 생략한 수
+    let pageEmptyCount = 0; // 빈/차단 페이지 누적 수 (stats용)
+    let endReason: CollectionStats['endReason'] = 'completed';
+    let lastPageReached = 0;
+
+    // per-day cap: 사이트 검색이 시간순으로 정렬되어 있고 publishedAt이 사전 추출되면
+    // 단일 검색 순회만으로도 일자별 균등 분배가 가능. publishedAt이 없는 사이트(현재 dcinside/clien)는
+    // 분기 자체가 비활성화되어 기존 동작 그대로 유지됨.
+    //
+    // perDayLimit 결정 우선순위:
+    //   1) options.maxItemsPerDay (flows.ts가 perDay 모드일 때 사용자 원본 한도를 명시 전달)
+    //   2) 미지정 시 cap 비활성화 (Number.MAX_SAFE_INTEGER) — total 모드 등 일자별 분배가 의미 없는 경우
+    // ⚠️ 한도 초과 금지: 절대 perDayLimit을 넘기지 않는다.
+    // ⚠️ 부족분 보충 금지: 한 일자가 모자라도 다른 일자에서 채우지 않는다.
+    // ⚠️ KST 자정 기준: 컨테이너 TZ가 UTC라도 사용자 입력 일자와 정확히 일치하도록 KST로 normalize.
+    // (days 분할 자체는 이 경로에서 직접 필요 없고 dayKey로 KST 자정 ms만 계산)
+    const perDayLimit = options.maxItemsPerDay ?? Number.MAX_SAFE_INTEGER;
+    const dayCount = new Map<number, number>(); // 위쪽 사전/사후 cap 검사용 (효율 최적화)
+    const enforced = new Map<number, number>(); // yield 직전 최종 cap 검증용 (절대 보장)
+    // KST 자정 ms를 dayKey로 사용 → 컨테이너 TZ 무관, 사용자 인식과 일치
+    const dayKey = (d: Date): number => kstDayStartMs(d);
+
+    // 옵션 3: 빈/차단 페이지를 만나도 즉시 break하지 않고 다음 페이지 시도.
+    // 일시 차단(rate limit)에서 회복 가능. 연속 N번 빈 페이지면 진짜 끝으로 판단하고 종료.
+    const MAX_CONSECUTIVE_EMPTY_PAGES = 3;
+    let consecutiveEmptyPages = 0;
 
     for (let pageNum = 1; pageNum <= this.config.maxSearchPages; pageNum++) {
-      if (totalCollected >= ctx.maxItems) break;
+      lastPageReached = pageNum;
+      if (totalCollected >= ctx.maxItems) {
+        endReason = 'maxItemsReached';
+        break;
+      }
 
       const searchUrl = this.buildSearchUrl(options.keyword, pageNum);
       const postLinks = await this.loadSearchPage(page, searchUrl, pageNum);
-      if (!postLinks || postLinks.length === 0) break;
+      if (!postLinks || postLinks.length === 0) {
+        consecutiveEmptyPages++;
+        pageEmptyCount++;
+        if (consecutiveEmptyPages >= MAX_CONSECUTIVE_EMPTY_PAGES) {
+          // 진짜 검색 결과 끝 또는 영구 차단 → 종료
+          endReason =
+            pageEmptyCount >= MAX_CONSECUTIVE_EMPTY_PAGES ? 'pageEmptyOrBlocked' : 'noMoreResults';
+          console.warn(
+            `${this.source} 빈/차단 페이지 ${consecutiveEmptyPages}회 연속 — 페이지 ${pageNum}에서 종료`,
+          );
+          break;
+        }
+        // 빈 페이지에 대한 백오프 후 다음 페이지 시도
+        console.info(
+          `${this.source} 페이지 ${pageNum} 빈/차단 — 백오프 후 다음 페이지 시도 (${consecutiveEmptyPages}/${MAX_CONSECUTIVE_EMPTY_PAGES})`,
+        );
+        await sleep(5000 * consecutiveEmptyPages, 8000 * consecutiveEmptyPages);
+        continue;
+      }
+      consecutiveEmptyPages = 0; // 정상 응답 → 카운터 리셋
 
       const posts: CommunityPost[] = [];
-      // 한 페이지 내에서 연속된 "기간 이전" 게시물 개수 -- 임계치 초과 시 검색 중단
+      // 한 페이지 내에서 연속된 "확실히 옛날인" 게시물 개수 -- 임계치 초과 시 검색 중단.
+      // ⚠️ 임계값을 30으로 상향 (이전 10) — fmkorea 검색 상위에 섞이는 광고/BEST 글
+      //    (사용자 기간보다 훨씬 오래된 글)이 10건 연속 등장하면 false positive로 검색이 일찍 끊김.
+      // ⚠️ "확실히 옛날" 판정 기준: startTs보다 30일 이상 더 옛날인 글만 카운트.
+      //    (예: 사용자가 04-11~04-18 입력 → 03-12 이전 글만 "옛날"로 카운트, 04-09 글은 안 카운트)
       let consecutiveOldCount = 0;
-      const CONSECUTIVE_OLD_THRESHOLD = 10;
+      const CONSECUTIVE_OLD_THRESHOLD = 30;
+      const OLD_MARGIN_MS = 30 * 86400000;
 
       for (const link of postLinks) {
         if (totalCollected >= ctx.maxItems) break;
@@ -220,13 +283,23 @@ export abstract class CommunityBaseCollector extends BrowserCollector<CommunityP
           if (!ctx.isInDateRange(link.publishedAt)) {
             preFilterSkipCount++;
             const linkTs = link.publishedAt.getTime();
-            if (!Number.isNaN(linkTs) && linkTs < ctx.startTs) {
+            // "확실히 옛날" 글만 consecutiveOldCount에 카운트 — 광고/추천글 false positive 방지
+            if (!Number.isNaN(linkTs) && linkTs < ctx.startTs - OLD_MARGIN_MS) {
               consecutiveOldCount++;
               if (consecutiveOldCount >= CONSECUTIVE_OLD_THRESHOLD) break;
             }
             continue;
           }
           consecutiveOldCount = 0;
+
+          // 사전 cap: link.publishedAt 기준 한도 초과면 본문 fetch 자체를 스킵 (성능 최적화).
+          // ⚠️ dayCount는 본문 fetch 성공 시점에만 누적 — 사전에 +1 하면 fetch 실패가
+          // cap 슬롯을 잠식해 일자별 0건이 되는 버그가 발생.
+          const k = dayKey(link.publishedAt);
+          if ((dayCount.get(k) ?? 0) >= perDayLimit) {
+            perDayCapSkipCount++;
+            continue;
+          }
         }
 
         try {
@@ -236,12 +309,26 @@ export abstract class CommunityBaseCollector extends BrowserCollector<CommunityP
             if (!ctx.isInDateRange(post.publishedAt)) {
               outOfRangeCount++;
               const postTs = post.publishedAt instanceof Date ? post.publishedAt.getTime() : NaN;
-              if (!Number.isNaN(postTs) && postTs < ctx.startTs) {
+              // 동일 정책: "확실히 옛날" 글만 카운트
+              if (!Number.isNaN(postTs) && postTs < ctx.startTs - OLD_MARGIN_MS) {
                 consecutiveOldCount++;
               }
               continue;
             }
             consecutiveOldCount = 0;
+
+            // 본문 fetch 성공 시점에만 dayCount 누적 (post.publishedAt 기준 = 정확한 일자).
+            // fetch 실패는 catch로 빠져 dayCount 영향 X → 일자별 슬롯이 잠식 안 됨.
+            if (post.publishedAt) {
+              const pk = dayKey(post.publishedAt as Date);
+              const pc = dayCount.get(pk) ?? 0;
+              if (pc >= perDayLimit) {
+                perDayCapSkipCount++;
+                continue;
+              }
+              dayCount.set(pk, pc + 1);
+            }
+
             posts.push(post);
             totalCollected++;
           }
@@ -255,15 +342,90 @@ export abstract class CommunityBaseCollector extends BrowserCollector<CommunityP
         console.info(
           `${this.source} 기간 이전 게시물 ${consecutiveOldCount}건 연속 발견 -- 검색 중단`,
         );
-        if (posts.length > 0) yield posts;
+        const filteredFinal = this.enforcePerDayCap(posts, dayKey, perDayLimit, enforced);
+        if (filteredFinal.length > 0) yield filteredFinal;
+        endReason = 'consecutiveOldThreshold';
         break;
       }
 
-      if (posts.length > 0) yield posts;
+      // ⚠️ 이중 안전망: posts 누적 후에도 한 번 더 일자별 cap을 강제.
+      // 위쪽 cap 검사가 어떤 이유로 누락되더라도 yield 단계에서 절대 perDayLimit 초과 X.
+      const filtered = this.enforcePerDayCap(posts, dayKey, perDayLimit, enforced);
+      if (filtered.length > 0) yield filtered;
       await sleep(this.config.pageDelay.min, this.config.pageDelay.max);
+
+      // 페이지 루프 자연 종료 시 maxSearchPages 도달 → endReason 설정
+      if (pageNum === this.config.maxSearchPages) {
+        endReason = 'pageLimitReached';
+      }
     }
 
+    if (perDayCapSkipCount > 0 && options.maxItemsPerDay) {
+      console.info(
+        `${this.source} per-day cap(${options.maxItemsPerDay}/일)으로 ${perDayCapSkipCount}건 본문 요청 생략`,
+      );
+    }
     this.logCollectionEnd(skippedCount, outOfRangeCount, preFilterSkipCount);
+
+    // ⚠️ 옵션 1: 종료 통계를 lastRunStats에 저장 → collector-worker가 DB events에 기록
+    const dist: Record<string, number> = {};
+    for (const [k, v] of dayCount.entries()) {
+      // KST yyyy-mm-dd로 변환 (k는 KST 자정 ms = UTC -9h)
+      const kstStr = new Date(k + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      dist[kstStr] = v;
+    }
+    this.lastRunStats = {
+      endReason,
+      lastPage: lastPageReached,
+      perDayCount: dist,
+      perDayCapSkip: perDayCapSkipCount,
+      preFilterSkip: preFilterSkipCount,
+      outOfRange: outOfRangeCount,
+      pageEmptyCount,
+    };
+    console.info(
+      `${this.source} 종료: total=${totalCollected} lastPage=${lastPageReached} reason=${endReason} dayCount(KST)=${JSON.stringify(dist)} perDayCapSkip=${perDayCapSkipCount} preFilterSkip=${preFilterSkipCount} outOfRange=${outOfRangeCount} pageEmpty=${pageEmptyCount}`,
+    );
+  }
+
+  /**
+   * yield 직전 일자별 cap 강제 — 이중 안전망(독립 카운터로 검증).
+   *
+   * 위쪽 dayCount 로직과 무관하게 enforced(영구 누적) Map으로 일자별 송출량을 추적.
+   * yield 시점에 perDayLimit을 넘는 글은 잘라낸다. 위쪽 cap이 어떤 이유로 누락되더라도
+   * 이 함수가 최후 보루로 절대 한도 초과를 허용하지 않는다.
+   *
+   * dropped > 0이면 위쪽 cap 로직에 결함이 있다는 신호 → 경고 로그.
+   */
+  private enforcePerDayCap(
+    posts: CommunityPost[],
+    dayKey: (d: Date) => number,
+    perDayLimit: number,
+    enforced: Map<number, number>,
+  ): CommunityPost[] {
+    if (perDayLimit === Number.MAX_SAFE_INTEGER) return posts;
+    const out: CommunityPost[] = [];
+    let dropped = 0;
+    for (const p of posts) {
+      if (!p.publishedAt) {
+        out.push(p);
+        continue;
+      }
+      const k = dayKey(p.publishedAt as Date);
+      const cur = enforced.get(k) ?? 0;
+      if (cur >= perDayLimit) {
+        dropped++;
+        continue;
+      }
+      enforced.set(k, cur + 1);
+      out.push(p);
+    }
+    if (dropped > 0) {
+      console.warn(
+        `${this.source} ⚠️ enforcePerDayCap: yield 단계에서 ${dropped}건 추가 제거 (한도 ${perDayLimit}/일) — 위쪽 cap 누락 가능성`,
+      );
+    }
+    return out;
   }
 
   /**
@@ -281,6 +443,13 @@ export abstract class CommunityBaseCollector extends BrowserCollector<CommunityP
     const MAX_ATTEMPTS = 3;
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       try {
+        // ⚠️ 옵션 2: Referer + Accept-Language 헤더로 자연스러운 트래픽 흉내.
+        // 같은 도메인의 검색 페이지 또는 메인을 Referer로 두면 직링크보다 안티봇 통과율이 높음.
+        const refererOrigin = new URL(searchUrl).origin;
+        await page.setExtraHTTPHeaders({
+          Referer: refererOrigin + '/',
+          'Accept-Language': 'ko-KR,ko;q=0.9,en;q=0.8',
+        });
         await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
       } catch (navErr) {
         console.warn(
@@ -288,7 +457,7 @@ export abstract class CommunityBaseCollector extends BrowserCollector<CommunityP
           navErr,
         );
         if (attempt < MAX_ATTEMPTS) {
-          await sleep(2000 * attempt, 3000 * attempt);
+          await sleep(3000 * attempt, 5000 * attempt);
           continue;
         }
         return null;
@@ -317,13 +486,14 @@ export abstract class CommunityBaseCollector extends BrowserCollector<CommunityP
       const html = await page.content();
       const postLinks = this.parseSearchResults(html);
 
-      // 차단으로 판정되는 경우: 백오프 후 재시도
+      // 차단으로 판정되는 경우: 지수 백오프 후 재시도 (강화)
       if (postLinks.length === 0 && this.detectBlocked(html)) {
+        const backoffMs = 8000 * Math.pow(2, attempt - 1); // 8s → 16s → 32s
         console.warn(
-          `${this.source} 검색 차단 감지 (page ${pageNum}, attempt ${attempt}) -- 백오프 후 재시도`,
+          `${this.source} 검색 차단 감지 (page ${pageNum}, attempt ${attempt}, html_len=${html.length}) -- ${backoffMs}ms 백오프`,
         );
         if (attempt < MAX_ATTEMPTS) {
-          await sleep(5000 * attempt, 8000 * attempt);
+          await sleep(backoffMs, backoffMs + 3000);
           continue;
         }
         return null;
@@ -349,22 +519,4 @@ export abstract class CommunityBaseCollector extends BrowserCollector<CommunityP
       console.info(`${this.source} 검색 결과 사전 필터로 ${preFilterSkipCount}건 본문 요청 생략`);
     }
   }
-}
-
-/**
- * 네이버 수집기와 동일 규칙(로컬 TZ, inclusive, 최소 1일)으로 Date 배열 생성
- */
-function splitIntoDays(startISO: string, endISO: string): Date[] {
-  const start = new Date(startISO);
-  const end = new Date(endISO);
-  start.setHours(0, 0, 0, 0);
-  end.setHours(23, 59, 59, 999);
-  const days: Date[] = [];
-  const cursor = new Date(start);
-  while (cursor <= end) {
-    days.push(new Date(cursor));
-    cursor.setDate(cursor.getDate() + 1);
-  }
-  if (days.length === 0) days.push(new Date(start));
-  return days;
 }
