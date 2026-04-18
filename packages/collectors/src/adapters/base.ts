@@ -20,6 +20,8 @@ export const CollectionOptionsSchema = z.object({
       refetchCommentsFor: z.array(z.string()).default([]),
     })
     .optional(),
+  commentOrder: z.enum(['relevance', 'time']).default('relevance').optional(),
+  collectTranscript: z.boolean().default(true).optional(),
 });
 export type CollectionOptions = z.infer<typeof CollectionOptionsSchema>;
 
@@ -47,7 +49,8 @@ export interface CollectionStats {
     | 'pageLimitReached'
     | 'pageEmptyOrBlocked'
     | 'noMoreResults'
-    | 'completed';
+    | 'completed'
+    | 'quotaExhausted';
   /** 마지막으로 시도한 검색 페이지 번호 */
   lastPage: number;
   /** 일자별 수집 분포 (KST yyyy-mm-dd → count) */
@@ -60,6 +63,12 @@ export interface CollectionStats {
   outOfRange?: number;
   /** 차단/빈 페이지 발생 수 */
   pageEmptyCount?: number;
+  /** API 쿼터 사용량 (YouTube 등) */
+  quotaUsed?: number;
+  /** API 쿼터 잔여량 */
+  quotaRemaining?: number;
+  /** 폴백 전략 사용 여부 */
+  usedFallback?: boolean;
 }
 
 // 모든 수집기가 구현하는 인터페이스
