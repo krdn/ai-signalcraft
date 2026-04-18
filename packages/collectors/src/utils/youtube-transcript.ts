@@ -1,13 +1,13 @@
-import { YoutubeTranscript } from 'youtube-transcript';
-
 export async function fetchTranscript(
   videoId: string,
 ): Promise<{ text: string; lang: string } | null> {
+  const { YoutubeTranscript } = (await import('youtube-transcript')) as any;
+
   try {
     const segments = await YoutubeTranscript.fetchTranscript(videoId, { lang: 'ko' });
     if (segments.length > 0) {
       return {
-        text: segments.map((s) => s.text).join(' '),
+        text: segments.map((s: { text: string }) => s.text).join(' '),
         lang: 'ko',
       };
     }
@@ -19,7 +19,7 @@ export async function fetchTranscript(
     const segments = await YoutubeTranscript.fetchTranscript(videoId);
     if (segments.length > 0) {
       return {
-        text: segments.map((s) => s.text).join(' '),
+        text: segments.map((s: { text: string }) => s.text).join(' '),
         lang: 'auto',
       };
     }
