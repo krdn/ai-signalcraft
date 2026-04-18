@@ -357,42 +357,52 @@ export class FMKoreaCollector extends CommunityBaseCollector {
     };
   }
 
-  /** HTML에서 댓글 파싱 */
+  /** HTML에서 댓글 파싱 — re 클래스로 대댓글 감지, id 속성으로 부모 추적 */
   private parseComments(
     $: cheerio.CheerioAPI,
     postSourceId: string,
     maxComments: number,
   ): CommunityComment[] {
     const comments: CommunityComment[] = [];
+    const $items = $('.fdb_lst_ul > li.fdb_itm');
+    if ($items.length === 0) return comments;
 
-    for (const selector of this.selectors.comment) {
-      $(selector).each((i, el) => {
-        if (comments.length >= maxComments) return;
+    $items.each((_, el) => {
+      if (comments.length >= maxComments) return;
+      const $li = $(el);
 
-        const $el = $(el);
-        const $parent = $el.closest('li, .fdb_itm');
-        const content = sanitizeContent($el.html() ?? '');
-        if (!content) return;
+      const content = sanitizeContent($li.find('.xe_content').first().html() ?? '');
+      if (!content) return;
 
-        const author = $parent.find('.member_plate, .author').first().text().trim() || '익명';
-        const dateText = $parent.find('.date, .regdate').text().trim();
-        const commentId = $parent.attr('id')?.replace('comment_', '') || `${postSourceId}_c${i}`;
-        const depth = $parent.hasClass('fdb_itm_answer') ? '1' : '0';
-        const parentCommentId = depth === '1' ? $parent.attr('data-parent') || null : null;
+      const classAttr = $li.attr('class') ?? '';
+      const srlMatch = classAttr.match(/comment-(\d+)/);
+      const commentSrl = srlMatch ? srlMatch[1] : `${postSourceId}_c${comments.length}`;
 
-        comments.push({
-          sourceId: `fm_comment_${commentId}`,
-          parentId: parentCommentId ? `fm_comment_${parentCommentId}` : null,
-          content,
-          author,
-          likeCount: parseInt($parent.find('.voted_count').text() || '0', 10),
-          dislikeCount: 0,
-          publishedAt: parseDateText(dateText),
-          rawData: { dateText },
-        });
+      const isReply = $li.hasClass('re');
+
+      let parentId: string | null = null;
+      if (isReply) {
+        const idAttr = $li.attr('id') ?? '';
+        const parentMatch = idAttr.match(/comment_(\d+)/);
+        if (parentMatch) {
+          parentId = `fm_comment_${parentMatch[1]}`;
+        }
+      }
+
+      const author = $li.find('.member_plate, .author').first().text().trim() || '익명';
+      const dateText = $li.find('.date, .regdate').first().text().trim();
+
+      comments.push({
+        sourceId: `fm_comment_${commentSrl}`,
+        parentId,
+        content,
+        author,
+        likeCount: parseInt($li.find('.voted_count').first().text() || '0', 10),
+        dislikeCount: 0,
+        publishedAt: parseDateText(dateText),
+        rawData: { dateText, isReply },
       });
-      if (comments.length > 0) break;
-    }
+    });
 
     return comments;
   }
