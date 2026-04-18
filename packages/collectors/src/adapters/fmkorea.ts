@@ -338,8 +338,46 @@ export class FMKoreaCollector extends CommunityBaseCollector {
     // 게시글 ID 추출
     const sourceId = this.extractSourceId(url);
 
-    // 댓글 수집
-    const comments = this.parseComments($, sourceId, maxComments);
+    // 댓글 수집 — 1페이지(현재 HTML) + cpage 2~N 추가 fetch
+    let comments = this.parseComments($, sourceId, maxComments);
+    const maxCpage = this.parseCpageMax($);
+    if (maxCpage > 1 && comments.length < maxComments) {
+      const docSrlMatch = url.match(/\/(\d+)/);
+      const docSrl = docSrlMatch ? docSrlMatch[1] : null;
+      if (docSrl) {
+        for (let cp = 2; cp <= maxCpage; cp++) {
+          if (comments.length >= maxComments) break;
+          try {
+            const cpageUrl = `${url}?document_srl=${docSrl}&cpage=${cp}`;
+            const cookies = await page
+              .context()
+              .cookies('https://www.fmkorea.com')
+              .catch(() => []);
+            const cookieHeader = cookies.map((c) => `${c.name}=${c.value}`).join('; ');
+            const cpRes = await fetch(cpageUrl, {
+              headers: {
+                'User-Agent':
+                  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+                Accept: 'text/html,application/xhtml+xml',
+                'Accept-Language': 'ko-KR,ko;q=0.9',
+                Referer: url,
+                ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+              },
+            });
+            if (cpRes.ok) {
+              const cpHtml = await cpRes.text();
+              const cp$ = cheerio.load(cpHtml);
+              const remaining = maxComments - comments.length;
+              const pageComments = this.parseComments(cp$, sourceId, remaining);
+              comments = comments.concat(pageComments);
+            }
+          } catch {
+            console.warn(`[fmkorea] 댓글 cpage=${cp} fetch 실패: ${url}`);
+          }
+          await new Promise((r) => setTimeout(r, 300 + Math.random() * 200));
+        }
+      }
+    }
 
     return {
       sourceId,
@@ -355,6 +393,20 @@ export class FMKoreaCollector extends CommunityBaseCollector {
       rawData: { dateText, originalUrl: url },
       comments,
     };
+  }
+
+  /** 본문 HTML에서 댓글 최대 cpage 추출 */
+  private parseCpageMax($: cheerio.CheerioAPI): number {
+    let max = 1;
+    $('a[href*="cpage="]').each((_, el) => {
+      const href = $(el).attr('href') ?? '';
+      const m = href.match(/cpage=(\d+)/);
+      if (m) {
+        const n = parseInt(m[1], 10);
+        if (n > max) max = n;
+      }
+    });
+    return max;
   }
 
   /** HTML에서 댓글 파싱 — re 클래스로 대댓글 감지, id 속성으로 부모 추적 */

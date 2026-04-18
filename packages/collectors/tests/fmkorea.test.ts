@@ -8,6 +8,10 @@ class TestFMKoreaCollector extends FMKoreaCollector {
   public testParseComments($: cheerio.CheerioAPI, postSourceId: string, maxComments: number) {
     return (this as any).parseComments($, postSourceId, maxComments);
   }
+
+  public testParseCpageMax($: cheerio.CheerioAPI): number {
+    return (this as any).parseCpageMax($);
+  }
 }
 
 describe('FMKoreaCollector', () => {
@@ -61,5 +65,21 @@ describe('FMKoreaCollector parseComments', () => {
   it('maxComments 제한이 동작', () => {
     const comments = collector.testParseComments($, 'fm_test', 3);
     expect(comments.length).toBe(3);
+  });
+});
+
+describe('FMKoreaCollector cpage 파싱', () => {
+  it('cpage 링크에서 최대 페이지 번호를 추출', () => {
+    const html = readFileSync(resolve(__dirname, 'fixtures/fmkorea-post.html'), 'utf-8');
+    const $ = cheerio.load(html);
+    const collector = new TestFMKoreaCollector();
+    const maxCpage = collector.testParseCpageMax($);
+    expect(maxCpage).toBe(3);
+  });
+
+  it('cpage 링크가 없으면 1 반환', () => {
+    const $ = cheerio.load('<html><body><div class="fdb_lst_ul"></div></body></html>');
+    const collector = new TestFMKoreaCollector();
+    expect(collector.testParseCpageMax($)).toBe(1);
   });
 });
