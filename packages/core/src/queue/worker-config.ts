@@ -5,8 +5,8 @@ import { config } from 'dotenv';
 import {
   NaverNewsCollector,
   NaverCommentsCollector,
-  YoutubeVideosCollector,
   YoutubeCommentsCollector,
+  YoutubeCollector,
   DCInsideCollector,
   FMKoreaCollector,
   ClienCollector,
@@ -44,7 +44,7 @@ export function validateApiKeys(): void {
 export function registerAllCollectors(): void {
   registerCollector(new NaverNewsCollector());
   registerCollector(new NaverCommentsCollector());
-  registerCollector(new YoutubeVideosCollector());
+  registerCollector(new YoutubeCollector());
   registerCollector(new YoutubeCommentsCollector());
   registerCollector(new DCInsideCollector());
   registerCollector(new FMKoreaCollector());
@@ -58,6 +58,13 @@ export const COMMUNITY_SOURCES: CommunitySource[] = ['dcinside', 'fmkorea', 'cli
 export function countBySourceType(source: string, items: unknown[]): Record<string, number> {
   const count = items.length;
   if (source === 'naver-news') return { articles: count, comments: 0 };
+  if (source === 'youtube') {
+    const totalComments = items.reduce<number>(
+      (sum, item: any) => sum + (item?.comments?.length ?? 0),
+      0,
+    );
+    return { videos: count, comments: totalComments };
+  }
   if (source === 'youtube-videos') return { videos: count, comments: 0 };
   if (source === 'youtube-comments') return { comments: count };
   // 동적 소스 (RSS/HTML) — 댓글 수집 없음, 기사만 카운트
@@ -77,7 +84,8 @@ export function countBySourceType(source: string, items: unknown[]): Record<stri
 export function progressKey(source: string, dataSourceId?: string): string {
   if (dataSourceId) return `ds_${dataSourceId.slice(0, 8)}`;
   if (source === 'naver-news') return 'naver';
-  if (source === 'youtube-videos' || source === 'youtube-comments') return 'youtube';
+  if (source === 'youtube' || source === 'youtube-videos' || source === 'youtube-comments')
+    return 'youtube';
   return source; // dcinside, fmkorea, clien
 }
 
