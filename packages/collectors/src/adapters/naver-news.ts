@@ -1,4 +1,4 @@
-// 네이버 뉴스 기사 수집기 (하이브리드: 검색=fetch, 본문=Playwright)
+// 네이버 뉴스 기사 수집기 (하이브리드: 검색=fetch, 본문=fetch 우선 + Playwright 폴백)
 import { createHash } from 'node:crypto';
 import type { Browser, Page } from 'playwright';
 import * as cheerio from 'cheerio';
@@ -27,6 +27,18 @@ const SEARCH_HEADERS: Record<string, string> = {
   Referer: 'https://search.naver.com/',
 };
 
+// 기사 본문 fetch 요청 헤더
+const ARTICLE_HEADERS: Record<string, string> = {
+  Accept: 'text/html,application/xhtml+xml',
+  'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+  Referer: 'https://search.naver.com/',
+};
+
+// Phase 2 본문 병렬 수집 동시성
+const ARTICLE_CONCURRENCY = 5;
+// fetch 연속 실패 시 Playwright 폴백 전환 임계값
+const FETCH_FAIL_THRESHOLD = 5;
+
 /**
  * 네이버 검색 결과 블록 텍스트에서 작성일을 추출.
  * 지원: "N분/시간/일/주/달/개월/년 전", "YYYY.MM.DD." (절대일자)
@@ -48,15 +60,15 @@ function extractNaverPublishedAt(blockText: string): Date | null {
  * NaverNewsCollector (하이브리드)
  *
  * 검색 결과 목록: fetch + Cheerio (브라우저 불필요, ~200ms/페이지)
- * 기사 본문 수집: Playwright (일부 언론사 JS 렌더링 필요)
- * AsyncGenerator로 페이지 단위(최대 10건)로 yield.
+ * 기사 본문 수집: fetch 우선 + Playwright 폴백 (병렬 처리, ~100-300ms/건)
+ * AsyncGenerator로 배치 단위(최대 10건)로 yield.
  */
 export class NaverNewsCollector implements Collector<NaverArticle> {
   readonly source = 'naver-news';
 
   private readonly config = {
-    searchDelay: { min: 300, max: 600 }, // 검색 페이지 간 딜레이 (fetch이므로 짧게)
-    postDelay: { min: 500, max: 1000 }, // 기사 본문 간 딜레이
+    searchDelay: { min: 300, max: 600 },
+    articleDelay: { min: 50, max: 150 }, // fetch 병렬 시 burst 방지 미세 딜레이
     defaultMaxItems: 1000,
     maxSearchPages: 100,
   };
@@ -192,51 +204,75 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
     const targetArticles = enforcedArticles.slice(0, maxItems);
     if (targetArticles.length === 0) return;
 
-    // Phase 2: 기사 본문 수집 (Playwright — JS 렌더링 필요)
-    let browser: Browser | null = null;
-    try {
-      browser = await launchBrowser();
-      const context = await createBrowserContext(browser);
-      const page = await context.newPage();
+    // Phase 2: 기사 본문 수집 (fetch 우선 + Playwright 폴백, 병렬 처리)
+    const pw: { browser: Browser | null; page: Page | null } = { browser: null, page: null };
+    let fetchFailCount = 0;
 
-      // 배치로 yield (10건 단위)
+    // 세마포어: 외부 의존성 없이 동시성 제어
+    let running = 0;
+    const waitQueue: (() => void)[] = [];
+    const acquire = (): Promise<void> => {
+      if (running < ARTICLE_CONCURRENCY) {
+        running++;
+        return Promise.resolve();
+      }
+      return new Promise<void>((resolve) => waitQueue.push(resolve));
+    };
+    const release = (): void => {
+      const next = waitQueue.shift();
+      if (next) {
+        next();
+      } else {
+        running--;
+      }
+    };
+
+    try {
       const BATCH_SIZE = 10;
       for (let i = 0; i < targetArticles.length; i += BATCH_SIZE) {
-        const batch = targetArticles.slice(i, i + BATCH_SIZE);
-        const enriched: NaverArticle[] = [];
+        const batch = targetArticles.slice(i, Math.min(i + BATCH_SIZE, targetArticles.length));
 
-        for (const article of batch) {
-          if (totalCollected >= maxItems) break;
+        const enriched = await Promise.all(
+          batch.map(async (article) => {
+            if (totalCollected >= maxItems) return null;
+            await acquire();
+            try {
+              // fetch 연속 실패 시 Playwright 폴백 준비 (lazy init)
+              if (fetchFailCount >= FETCH_FAIL_THRESHOLD && !pw.browser) {
+                pw.browser = await launchBrowser();
+                const context = await createBrowserContext(pw.browser);
+                pw.page = await context.newPage();
+                console.warn(`naver-news fetch ${fetchFailCount}회 실패 → Playwright 폴백 활성화`);
+              }
 
-          // 댓글-only refetch: 본문 fetch 생략 (기존 DB content 가 재사용되므로 null 로 두면
-          // persist 의 onConflictDoUpdate 가 excluded.content=null 로 덮어쓸 위험이 있음 →
-          // 대신 이 경로는 "댓글만 새로 수집" 의미이므로 일단 본문 fetch 는 진행.
-          // 최적화: refetchCommentsOnly 플래그를 normalizer/persist 로 전달해 본문 UPDATE 를 스킵하는 것이
-          // 더 안전 — 우선 기능 동등성 유지하고 후속 개선 대상으로 남김.
-          const _commentsOnly = refetchCommentsOnlySet.has(article.url);
+              const _commentsOnly = refetchCommentsOnlySet.has(article.url);
+              const { content, publishedAt } = await this.fetchArticleContent(
+                article.url,
+                pw.page ?? undefined,
+              );
+              article.content = content;
+              if (publishedAt) article.publishedAt = publishedAt;
+              if (!content) fetchFailCount++;
+            } catch (err) {
+              article.content = null;
+              article.rawData.fetchError = err instanceof Error ? err.message : String(err);
+              fetchFailCount++;
+            } finally {
+              release();
+            }
+            await sleep(this.config.articleDelay.min, this.config.articleDelay.max);
+            totalCollected++;
+            return article;
+          }),
+        );
 
-          try {
-            const { content, publishedAt } = await this.fetchArticleContent(page, article.url);
-            article.content = content;
-            // 본문 페이지의 정확한 게시 시각(KST 초 단위)으로 교체.
-            // 검색 결과의 "N일 전" 상대시간은 하루 단위로 뭉뚱그려져 날짜가 오판되기 쉬움.
-            if (publishedAt) article.publishedAt = publishedAt;
-          } catch (err) {
-            article.content = null;
-            article.rawData.fetchError = err instanceof Error ? err.message : String(err);
-          }
-          await sleep(this.config.postDelay.min, this.config.postDelay.max);
-
-          enriched.push(article);
-          totalCollected++;
-        }
-
-        if (enriched.length > 0) {
-          yield enriched;
+        const valid = enriched.filter((a): a is NaverArticle => a !== null);
+        if (valid.length > 0) {
+          yield valid;
         }
       }
     } finally {
-      if (browser) await browser.close();
+      if (pw.browser) await pw.browser.close();
     }
   }
 
@@ -426,21 +462,47 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
   }
 
   /**
-   * 기사 페이지에서 본문 + 정확한 게시 시각 추출 (Playwright 사용)
-   * n.news.naver.com은 `data-date-time="YYYY-MM-DD HH:MM:SS"` 속성(KST)을 제공하므로
-   * 이를 우선 사용해 검색 결과의 상대시간 파싱 오차를 제거한다.
+   * 기사 본문 + 게시 시각 수집 (fetch 우선, Playwright 폴백)
+   * n.news.naver.com은 SSR이므로 fetch + Cheerio만으로 본문 추출 가능.
+   * fetch 실패 시에만 Playwright를 사용한다.
    */
   private async fetchArticleContent(
-    page: Page,
     url: string,
+    fallbackPage?: Page,
   ): Promise<{ content: string | null; publishedAt: Date | null }> {
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15000 });
-    await page.waitForTimeout(500);
+    // 1차: fetch (SSR — JS 렌더링 불필요, ~100-300ms)
+    try {
+      const response = await fetch(url, {
+        headers: { ...ARTICLE_HEADERS, 'User-Agent': getRandomUserAgent() },
+        signal: AbortSignal.timeout(10000),
+      });
+      if (response.ok) {
+        const html = await response.text();
+        const result = this.parseArticleHtml(html);
+        if (result.content) return result;
+      }
+    } catch {
+      // fetch 실패 → Playwright 폴백
+    }
 
-    const html = await page.content();
+    // 2차: Playwright 폴백
+    if (fallbackPage) {
+      try {
+        await fallbackPage.goto(url, { waitUntil: 'domcontentloaded', timeout: 15000 });
+        await fallbackPage.waitForTimeout(500);
+        const html = await fallbackPage.content();
+        return this.parseArticleHtml(html);
+      } catch {
+        // Playwright도 실패
+      }
+    }
+
+    return { content: null, publishedAt: null };
+  }
+
+  private parseArticleHtml(html: string): { content: string | null; publishedAt: Date | null } {
     const $ = cheerio.load(html);
 
-    // 정확한 게시 시각 (KST 기준 "YYYY-MM-DD HH:MM:SS")
     let publishedAt: Date | null = null;
     const dateAttr =
       $('[data-date-time]').first().attr('data-date-time') ??
@@ -450,7 +512,6 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
         /^(\d{4})-(\d{1,2})-(\d{1,2})\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?$/,
       );
       if (m) {
-        // KST(+09:00)를 명시해 ISO 문자열 생성 — 로컬 TZ 영향 제거
         const iso = `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}T${m[4].padStart(2, '0')}:${m[5].padStart(2, '0')}:${(m[6] ?? '00').padStart(2, '0')}+09:00`;
         const d = new Date(iso);
         if (!Number.isNaN(d.getTime())) publishedAt = d;
