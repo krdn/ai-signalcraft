@@ -22,10 +22,11 @@ export class DCInsideCollector extends CommunityBaseCollector {
   protected readonly baseUrl = 'https://gall.dcinside.com';
 
   protected readonly config: BrowserCollectorConfig = {
-    pageDelay: { min: 1500, max: 2500 },
-    postDelay: { min: 800, max: 1500 },
+    // ⚠️ v2: 본문 fetch 전환 (댓글 AJAX는 Playwright fallback) + postDelay 축소.
+    pageDelay: { min: 3000, max: 5000 },
+    postDelay: { min: 400, max: 800 },
     defaultMaxItems: 50,
-    maxSearchPages: 20,
+    maxSearchPages: 60,
   };
 
   protected readonly selectors: SiteSelectors = {
@@ -33,6 +34,19 @@ export class DCInsideCollector extends CommunityBaseCollector {
     content: ['.write_div', '.writing_view_box', '#container .write_div'],
     comment: ['.reply_content .usertxt', '.cmt_txt_cont .usertxt'],
   };
+
+  // 차단 감지 override — fmkorea/clien과 동일 수준
+  protected detectBlocked(html: string): boolean {
+    if (!html) return true;
+    if (html.length < 2000) return true;
+    return (
+      html.includes('Too Many Requests') ||
+      html.includes('429') ||
+      html.includes('접근이 제한') ||
+      html.includes('차단') ||
+      (!html.includes('sch_result_list') && !html.includes('integrate_schwrap'))
+    );
+  }
 
   protected buildSearchUrl(
     keyword: string,
@@ -86,24 +100,54 @@ export class DCInsideCollector extends CommunityBaseCollector {
     return results;
   }
 
-  /** 게시글 상세 페이지에서 본문 + 댓글 수집 */
+  /**
+   * 게시글 상세 페이지 — 🚀 fetch 우선 (Playwright 대체).
+   * DC 댓글은 AJAX 지연 로드라 fetch HTML엔 없을 수 있음 → 댓글 필요 시 Playwright fallback.
+   */
   protected async fetchPost(
     page: import('playwright').Page,
     url: string,
     title: string,
     maxComments: number,
   ): Promise<CommunityPost | null> {
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
-
-    // DC 댓글은 AJAX로 지연 로드됨 -- 셀렉터 등장 또는 networkidle까지 대기
-    // (댓글이 없는 게시글도 존재하므로 미등장은 에러가 아님)
-    const commentSelector = this.selectors.comment.join(', ');
-    await page
-      .waitForSelector(commentSelector, { timeout: 4000, state: 'attached' })
-      .catch(() => undefined);
-    await page.waitForLoadState('networkidle', { timeout: 3000 }).catch(() => undefined);
-
-    const html = await page.content();
+    let html = '';
+    let usedPlaywright = false;
+    // 1차: fetch 빠른 시도
+    try {
+      const cookies = await page
+        .context()
+        .cookies('https://gall.dcinside.com')
+        .catch(() => []);
+      const cookieHeader = cookies.map((c) => `${c.name}=${c.value}`).join('; ');
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+          Accept: 'text/html,application/xhtml+xml',
+          'Accept-Language': 'ko-KR,ko;q=0.9',
+          Referer: 'https://gall.dcinside.com/',
+          ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+        },
+      });
+      if (response.ok) html = await response.text();
+    } catch {
+      /* Playwright fallback */
+    }
+    // 2차: fetch 실패 또는 댓글 AJAX 필요 → Playwright
+    if (
+      !html ||
+      (maxComments > 0 && !html.includes('reply_content') && !html.includes('usertxt'))
+    ) {
+      usedPlaywright = true;
+      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
+      const commentSelector = this.selectors.comment.join(', ');
+      await page
+        .waitForSelector(commentSelector, { timeout: 4000, state: 'attached' })
+        .catch(() => undefined);
+      await page.waitForLoadState('networkidle', { timeout: 3000 }).catch(() => undefined);
+      html = await page.content();
+    }
+    void usedPlaywright; // 디버깅 시 사용
     const $ = cheerio.load(html);
 
     // 본문 추출 (fallback 셀렉터)
@@ -115,7 +159,14 @@ export class DCInsideCollector extends CommunityBaseCollector {
 
     // 메타데이터 추출
     const author = $('.gall_writer .nickname, .gall_writer .ip').first().text().trim() || '익명';
-    const dateText = $('.gall_date').attr('title') || $('.gall_date').text().trim();
+    // dcinside 본문: <span class="gall_date" title="2026-04-18 14:58:41">2026.04.18</span>
+    // title 속성이 초 단위까지 정확하므로 우선 사용.
+    const dateText = $('.gall_date').attr('title')?.trim() || $('.gall_date').text().trim();
+    // ⚠️ dateText 비면 new Date() fallback 대신 스킵 (clien/fmkorea 동일 정책)
+    if (!dateText) {
+      console.warn(`[dcinside] 본문 gall_date 없음 — 스킵: ${url}`);
+      return null;
+    }
     const publishedAt = parseDateText(dateText);
     const viewCount = parseInt($('.gall_count').text().replace(/[^\d]/g, '') || '0', 10);
     const likeCount = parseInt(

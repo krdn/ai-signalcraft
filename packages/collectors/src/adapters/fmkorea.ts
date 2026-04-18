@@ -17,13 +17,11 @@ export class FMKoreaCollector extends CommunityBaseCollector {
   protected readonly baseUrl = 'https://www.fmkorea.com';
 
   protected readonly config: BrowserCollectorConfig = {
-    // 에펨은 최신순 페이지네이션이 깊게 내려가야 과거 기사에 도달 (페이지 40~50 이상).
-    // ⚠️ 안티봇 강화: pageDelay를 5~9초로 늘려 차단 빈도를 낮춘다.
-    // (이전 2.5~4.5초는 페이지 12-15 부근에서 차단되는 사례 확인됨)
-    pageDelay: { min: 5000, max: 9000 },
-    postDelay: { min: 1200, max: 2200 },
+    // ⚠️ v3: 검색 페이지도 fetch 전환 (쿠키 확보 후) → pageDelay 대폭 단축 가능.
+    // 본문/검색 모두 fetch이면 페이지당 ~500ms fetch + 2-3초 delay = 훨씬 빠름.
+    pageDelay: { min: 2000, max: 3500 },
+    postDelay: { min: 400, max: 800 },
     defaultMaxItems: 50,
-    // 검색 결과 단계에서 publishedAt 사전 필터가 있으므로 페이지 많이 순회해도 본문 요청은 제한적.
     maxSearchPages: 80,
   };
 
@@ -95,16 +93,106 @@ export class FMKoreaCollector extends CommunityBaseCollector {
     page: number,
     _dateRange?: { start: string; end: string },
   ): string {
-    // 에펨 `s_date/e_date` 파라미터는 서버측에서 무시됨(실험으로 확인) →
-    // dateRange는 보내지 않고, URL 빌더에서 `order_type=desc&sort_index=regdate`로
-    // 등록일 최신순 정렬을 강제한다. 페이지를 깊이 내려갈수록 자연스럽게 과거까지 도달.
-    // 일자별 균등 분포는 CommunityBaseCollector의 per-day cap이 보장.
     return buildSearchUrl('fmkorea', keyword, page);
   }
 
   // 에펨은 URL 레벨 날짜 필터 미지원 → 레거시 순차 + 사전 날짜 필터 경로 사용
   protected override supportsDateRangeSearch(): boolean {
     return false;
+  }
+
+  /**
+   * 🚀 속도 개선: 검색 페이지도 fetch로 전환 (Playwright 대체).
+   *
+   * 전략:
+   * 1. 첫 페이지: Playwright로 방문해 lite_year 쿠키 확보 (WASM 챌린지 통과)
+   * 2. 이후 페이지: 획득한 쿠키를 fetch 헤더에 실어 HTTP 직접 호출
+   *    - fetch는 Playwright 대비 10배 빠름
+   *    - 차단 감지(HTTP 430 등) 시 Playwright fallback
+   */
+  private fmCookies = new Map<string, string>();
+  private fmCookiesReady = false;
+
+  protected override async loadSearchPage(
+    page: import('playwright').Page,
+    searchUrl: string,
+    pageNum: number,
+  ): Promise<{ url: string; title: string; publishedAt?: Date | null }[] | null> {
+    // 1차: fetch 시도 (쿠키 확보 후)
+    if (this.fmCookiesReady) {
+      const result = await this.fetchSearchPage(searchUrl, pageNum);
+      if (result) return result;
+      // fetch 실패 → Playwright fallback (쿠키 갱신 포함)
+      console.warn(`[fmkorea] fetch 실패 → Playwright fallback (page ${pageNum})`);
+      this.fmCookiesReady = false;
+    }
+    // 2차: Playwright 경로 (첫 방문 또는 fetch 실패 복구)
+    const result = await super.loadSearchPage(page, searchUrl, pageNum);
+    // Playwright가 성공했으면 쿠키 수집해서 이후 fetch에 사용
+    if (result) {
+      try {
+        const cookies = await page.context().cookies('https://www.fmkorea.com');
+        this.fmCookies.clear();
+        for (const c of cookies) this.fmCookies.set(c.name, c.value);
+        if (this.fmCookies.has('lite_year') || this.fmCookies.size > 0) {
+          this.fmCookiesReady = true;
+          console.info(`[fmkorea] 쿠키 확보 완료 (${this.fmCookies.size}개) — 이후 fetch 사용`);
+        }
+      } catch {
+        /* 쿠키 획득 실패 → Playwright 계속 사용 */
+      }
+    }
+    return result;
+  }
+
+  /**
+   * fetch 기반 검색 페이지 로드 (쿠키 확보 후에만 호출).
+   * 차단/실패 시 null 반환하여 상위에서 Playwright fallback 처리.
+   */
+  private async fetchSearchPage(
+    searchUrl: string,
+    pageNum: number,
+  ): Promise<{ url: string; title: string; publishedAt?: Date | null }[] | null> {
+    try {
+      const cookieHeader = Array.from(this.fmCookies.entries())
+        .map(([k, v]) => `${k}=${v}`)
+        .join('; ');
+      const response = await fetch(searchUrl, {
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+          Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'ko-KR,ko;q=0.9',
+          Referer: 'https://www.fmkorea.com/',
+          ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+        },
+      });
+      if (!response.ok) {
+        console.warn(`[fmkorea] fetch HTTP ${response.status} (page ${pageNum})`);
+        return null;
+      }
+      const html = await response.text();
+      // 응답 쿠키 갱신 (Set-Cookie 헤더가 오면)
+      const setCookies = response.headers.get('set-cookie');
+      if (setCookies) {
+        for (const part of setCookies.split(/,(?=[^;]+=)/)) {
+          const m = part.trim().match(/^([^=;]+)=([^;]*)/);
+          if (m) this.fmCookies.set(m[1].trim(), m[2].trim());
+        }
+      }
+      // 차단 감지
+      if (this.detectBlocked(html)) {
+        console.warn(`[fmkorea] fetch 차단 감지 (page ${pageNum}, size=${html.length})`);
+        return null;
+      }
+      return this.parseSearchResults(html);
+    } catch (err) {
+      console.warn(
+        `[fmkorea] fetch 예외 (page ${pageNum}):`,
+        err instanceof Error ? err.message : err,
+      );
+      return null;
+    }
   }
 
   /**
@@ -173,17 +261,48 @@ export class FMKoreaCollector extends CommunityBaseCollector {
     return results;
   }
 
-  /** 게시글 상세 페이지에서 본문 + 댓글 수집 */
+  /**
+   * 게시글 상세 페이지 — 🚀 fetch 우선 (Playwright 대체, 10배 빠름).
+   * 차단 감지 시 Playwright fallback (WASM lite_year 챌린지 필요 케이스).
+   */
   protected async fetchPost(
     page: import('playwright').Page,
     url: string,
     title: string,
     maxComments: number,
   ): Promise<CommunityPost | null> {
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
-    await page.waitForTimeout(1000);
-
-    const html = await page.content();
+    let html = '';
+    // 1차: fetch로 빠르게 시도
+    try {
+      const cookies = await page
+        .context()
+        .cookies('https://www.fmkorea.com')
+        .catch(() => []);
+      const cookieHeader = cookies.map((c) => `${c.name}=${c.value}`).join('; ');
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+          Accept: 'text/html,application/xhtml+xml',
+          'Accept-Language': 'ko-KR,ko;q=0.9',
+          Referer: 'https://www.fmkorea.com/',
+          ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+        },
+      });
+      if (response.ok) {
+        html = await response.text();
+        // 차단 감지 → Playwright fallback
+        if (this.detectBlocked(html) || html.length < 3000) html = '';
+      }
+    } catch {
+      /* fetch 실패 시 Playwright fallback */
+    }
+    // 2차: Playwright fallback (WASM 챌린지 등 브라우저 필요 케이스)
+    if (!html) {
+      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
+      await page.waitForTimeout(1000);
+      html = await page.content();
+    }
     const $ = cheerio.load(html);
 
     // 본문 추출
@@ -195,7 +314,17 @@ export class FMKoreaCollector extends CommunityBaseCollector {
 
     // 메타데이터 추출
     const author = $('.member_plate, .author').first().text().trim() || '익명';
-    const dateText = $('.date, .regdate, .side .date').first().text().trim();
+    // 실제 fmkorea 본문: <span class="date m_no">2026.04.18 14:16</span>
+    const dateText =
+      $('.date').first().text().trim() ||
+      $('.regdate').first().text().trim() ||
+      $('.side .date').first().text().trim();
+    // ⚠️ dateText가 비면 new Date() fallback 대신 null → post=null 반환으로 스킵
+    //    (clien과 동일: 파싱 실패 시 현재 시각 저장으로 인한 일자 몰림 방지)
+    if (!dateText) {
+      console.warn(`[fmkorea] 본문 date 없음 — 스킵: ${url}`);
+      return null;
+    }
     const publishedAt = parseDateText(dateText);
     const viewCount = parseInt($('.count').text().replace(/[^\d]/g, '') || '0', 10);
     const likeCount = parseInt(

@@ -225,9 +225,10 @@ export abstract class CommunityBaseCollector extends BrowserCollector<CommunityP
     // KST 자정 ms를 dayKey로 사용 → 컨테이너 TZ 무관, 사용자 인식과 일치
     const dayKey = (d: Date): number => kstDayStartMs(d);
 
-    // 옵션 3: 빈/차단 페이지를 만나도 즉시 break하지 않고 다음 페이지 시도.
+    // 옵션 3 (v2): 빈/차단 페이지를 만나도 즉시 break하지 않고 다음 페이지 시도.
     // 일시 차단(rate limit)에서 회복 가능. 연속 N번 빈 페이지면 진짜 끝으로 판단하고 종료.
-    const MAX_CONSECUTIVE_EMPTY_PAGES = 3;
+    // v2: 3 → 5로 상향, clien이 간헐적으로 차단했다가 풀어주는 패턴 관찰 (Job #223).
+    const MAX_CONSECUTIVE_EMPTY_PAGES = 5;
     let consecutiveEmptyPages = 0;
 
     for (let pageNum = 1; pageNum <= this.config.maxSearchPages; pageNum++) {
@@ -251,11 +252,13 @@ export abstract class CommunityBaseCollector extends BrowserCollector<CommunityP
           );
           break;
         }
-        // 빈 페이지에 대한 백오프 후 다음 페이지 시도
+        // 빈 페이지에 대한 지수 백오프 후 다음 페이지 시도 (10s → 20s → 40s → 80s → 160s).
+        // clien은 rate-limit 해제까지 수십 초~수 분 필요하다는 관찰 기반.
+        const backoffBase = 10000 * Math.pow(2, consecutiveEmptyPages - 1);
         console.info(
-          `${this.source} 페이지 ${pageNum} 빈/차단 — 백오프 후 다음 페이지 시도 (${consecutiveEmptyPages}/${MAX_CONSECUTIVE_EMPTY_PAGES})`,
+          `${this.source} 페이지 ${pageNum} 빈/차단 — ${Math.round(backoffBase / 1000)}s 백오프 후 다음 페이지 시도 (${consecutiveEmptyPages}/${MAX_CONSECUTIVE_EMPTY_PAGES})`,
         );
-        await sleep(5000 * consecutiveEmptyPages, 8000 * consecutiveEmptyPages);
+        await sleep(backoffBase, backoffBase + 3000);
         continue;
       }
       consecutiveEmptyPages = 0; // 정상 응답 → 카운터 리셋
@@ -435,7 +438,10 @@ export abstract class CommunityBaseCollector extends BrowserCollector<CommunityP
    * 안티봇 차단(에펨 HTTP 430, 짧은 응답) 시 딜레이를 늘려가며 최대 3회 재시도.
    * 사이트별 handleSecurityChallenge()로 쿠키 기반 챌린지를 통과한 뒤 같은 URL 재시도.
    */
-  private async loadSearchPage(
+  /**
+   * 기본 구현은 Playwright page.goto를 사용. 사이트별 override 가능 (예: clien의 fetch 기반 override).
+   */
+  protected async loadSearchPage(
     page: Page,
     searchUrl: string,
     pageNum: number,
@@ -444,11 +450,15 @@ export abstract class CommunityBaseCollector extends BrowserCollector<CommunityP
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       try {
         // ⚠️ 옵션 2: Referer + Accept-Language 헤더로 자연스러운 트래픽 흉내.
-        // 같은 도메인의 검색 페이지 또는 메인을 Referer로 두면 직링크보다 안티봇 통과율이 높음.
+        // Cache-Control: no-cache로 페이지네이션 캐시 이슈 방지.
+        // ⚠️ waitUntil: 'domcontentloaded' 유지 (networkidle은 광고/트래커로 인해 항상 30s timeout까지 대기해 매우 느림).
+        // 커뮤니티 사이트는 모두 SSR이라 DOM 로드 시점에 검색 결과가 이미 있음.
         const refererOrigin = new URL(searchUrl).origin;
         await page.setExtraHTTPHeaders({
           Referer: refererOrigin + '/',
           'Accept-Language': 'ko-KR,ko;q=0.9,en;q=0.8',
+          'Cache-Control': 'no-cache',
+          Pragma: 'no-cache',
         });
         await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
       } catch (navErr) {

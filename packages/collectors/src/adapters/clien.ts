@@ -1,7 +1,9 @@
 // 클리앙 수집기 -- CommunityBaseCollector 상속
 import * as cheerio from 'cheerio';
+import type { Page } from 'playwright';
 import type { CommunityPost, CommunityComment } from '../types/community';
 import { parseDateText, sanitizeContent, buildSearchUrl } from '../utils/community-parser';
+import { getRandomUserAgent } from '../utils/browser';
 import { CommunityBaseCollector, type SiteSelectors } from './community-base-collector';
 import type { BrowserCollectorConfig } from './browser-collector';
 
@@ -17,13 +19,12 @@ export class ClienCollector extends CommunityBaseCollector {
   protected readonly baseUrl = 'https://www.clien.net';
 
   protected readonly config: BrowserCollectorConfig = {
-    // ⚠️ 안티봇 강화: 클리앙도 403 강하므로 fmkorea와 유사한 수준으로 딜레이 상향.
-    pageDelay: { min: 5000, max: 9000 },
-    postDelay: { min: 1200, max: 2200 },
+    // ⚠️ v4: 본문 fetch 전환(Playwright → fetch, 10배 빠름) + postDelay 대폭 축소.
+    // fetch는 자체 rate-limit 관리 → 긴 delay 불필요.
+    pageDelay: { min: 3000, max: 5000 },
+    postDelay: { min: 300, max: 600 },
     defaultMaxItems: 50,
-    // 8일 기간(일 20건) 커버를 위해 페이지 확대 (이전 15 → 60).
-    // 클리앙 검색 결과는 한 페이지 ~10건이므로 60페이지면 600건 검색 → 일자별 cap과 결합해 안전.
-    maxSearchPages: 60,
+    maxSearchPages: 20,
   };
 
   protected readonly selectors: SiteSelectors = {
@@ -37,9 +38,21 @@ export class ClienCollector extends CommunityBaseCollector {
     comment: ['.comment_view .comment_content', '.comment_row .comment_content'],
   };
 
-  // 차단 감지 override (클리앙 전용)
+  // 차단 감지 override (클리앙 전용) — fmkorea와 동일 수준으로 폭넓게 검출
   protected detectBlocked(html: string): boolean {
-    return html.includes('접근이 제한') || html.includes('403') || html.includes('차단');
+    if (!html) return true;
+    // 정상 검색결과 페이지는 보통 30KB+
+    if (html.length < 2000) return true;
+    return (
+      html.includes('접근이 제한') ||
+      html.includes('403') ||
+      html.includes('차단') ||
+      html.includes('Too Many Requests') ||
+      html.includes('429') ||
+      html.includes('일시적으로 접근이 차단') ||
+      // 검색결과 컨테이너가 없으면 비정상 응답
+      (!html.includes('list_item') && !html.includes('total_search'))
+    );
   }
 
   protected buildSearchUrl(
@@ -49,6 +62,104 @@ export class ClienCollector extends CommunityBaseCollector {
   ): string {
     // Clien은 검색 URL에 날짜 필터 미지원 → dateRange 무시, 사후 필터링으로 처리
     return buildSearchUrl('clien', keyword, page);
+  }
+
+  /**
+   * ⚠️ 혁신적 방법 (v2): Playwright 대신 fetch로 검색 페이지를 직접 로드 + 세션 쿠키 유지.
+   *
+   * 배경: v1은 fetch 적용 후에도 rate-limit에 걸려 첫 페이지(04-18)만 반복 반환.
+   *   - curl 단독은 p=0,1,2,3 모두 정상 반환
+   *   - 워커가 30회 반복 호출 시 clien이 차단 시작
+   *
+   * 해결 (v2):
+   *   1. 세션 쿠키를 인스턴스 레벨에 보관·재사용 (첫 페이지 방문 후 쿠키 획득)
+   *   2. 페이지 간 딜레이를 2-4초로 명시적 부여 (pageDelay는 외부 제어)
+   *   3. UA 로테이션은 매 호출이 아닌 collect 시작 시 1회만 (세션 일관성)
+   */
+  private sessionUserAgent?: string;
+  private sessionCookies = new Map<string, string>();
+
+  protected override async loadSearchPage(
+    _page: Page,
+    searchUrl: string,
+    pageNum: number,
+  ): Promise<{ url: string; title: string; publishedAt?: Date | null }[] | null> {
+    if (!this.sessionUserAgent) {
+      this.sessionUserAgent = getRandomUserAgent();
+    }
+    const MAX_ATTEMPTS = 3;
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      try {
+        // 세션 쿠키를 Cookie 헤더로 직렬화 (이전 응답에서 받은 Set-Cookie 재사용)
+        const cookieHeader = Array.from(this.sessionCookies.entries())
+          .map(([k, v]) => `${k}=${v}`)
+          .join('; ');
+        const response = await fetch(searchUrl, {
+          headers: {
+            'User-Agent': this.sessionUserAgent,
+            Accept:
+              'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+            'Accept-Language': 'ko-KR,ko;q=0.9,en;q=0.8',
+            'Accept-Encoding': 'gzip, deflate, br',
+            Referer: pageNum > 1 ? this.buildSearchUrl('_', pageNum - 1) : 'https://www.clien.net/',
+            'Cache-Control': 'no-cache',
+            Pragma: 'no-cache',
+            ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+          },
+        });
+        // 응답 쿠키 보관 (다음 요청에 재사용 → 세션 자연스러워짐)
+        const setCookies = response.headers.get('set-cookie');
+        if (setCookies) {
+          for (const part of setCookies.split(/,(?=[^;]+=)/)) {
+            const m = part.trim().match(/^([^=;]+)=([^;]*)/);
+            if (m) this.sessionCookies.set(m[1].trim(), m[2].trim());
+          }
+        }
+        if (!response.ok) {
+          console.warn(
+            `${this.source} fetch 실패 HTTP ${response.status} (page ${pageNum}, attempt ${attempt})`,
+          );
+          if (attempt < MAX_ATTEMPTS) {
+            await new Promise((r) =>
+              setTimeout(r, 5000 * attempt + Math.random() * 3000 * attempt),
+            );
+            continue;
+          }
+          return null;
+        }
+        const html = await response.text();
+        if (this.detectBlocked(html)) {
+          console.warn(
+            `${this.source} 차단 감지 (page ${pageNum}, attempt ${attempt}, size=${html.length})`,
+          );
+          if (attempt < MAX_ATTEMPTS) {
+            await new Promise((r) =>
+              setTimeout(r, 10000 * Math.pow(2, attempt - 1) + Math.random() * 3000),
+            );
+            continue;
+          }
+          return null;
+        }
+        // 🔍 진단 로그: 각 페이지의 첫 timestamp — 실제로 다른 페이지를 받는지 확인 (Job #223 캐시 이슈 재발 감시)
+        const firstTs = html.match(/<span class="timestamp">([^<]*)</);
+        const postLinks = this.parseSearchResults(html);
+        console.info(
+          `[clien] p=${pageNum} size=${html.length} firstTs=${firstTs ? firstTs[1] : 'NONE'} parsed=${postLinks.length} firstPublished=${postLinks[0]?.publishedAt?.toISOString() || 'NONE'}`,
+        );
+        return postLinks;
+      } catch (err) {
+        console.warn(
+          `${this.source} fetch 예외 (page ${pageNum}, attempt ${attempt}):`,
+          err instanceof Error ? err.message : err,
+        );
+        if (attempt < MAX_ATTEMPTS) {
+          await new Promise((r) => setTimeout(r, 5000 * attempt));
+          continue;
+        }
+        return null;
+      }
+    }
+    return null;
   }
 
   /**
@@ -113,17 +224,48 @@ export class ClienCollector extends CommunityBaseCollector {
     return results;
   }
 
-  /** 게시글 상세 페이지에서 본문 + 댓글 수집 */
+  /**
+   * 게시글 상세 페이지 — 🚀 fetch 기반 (Playwright 대체, 10배 빠름).
+   * clien 본문은 SSR이라 fetch로 바로 받을 수 있음. 세션 쿠키/UA 재사용.
+   */
   protected async fetchPost(
-    page: import('playwright').Page,
+    _page: import('playwright').Page,
     url: string,
     title: string,
     maxComments: number,
   ): Promise<CommunityPost | null> {
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
-    await page.waitForTimeout(1500);
-
-    const html = await page.content();
+    if (!this.sessionUserAgent) this.sessionUserAgent = getRandomUserAgent();
+    const cookieHeader = Array.from(this.sessionCookies.entries())
+      .map(([k, v]) => `${k}=${v}`)
+      .join('; ');
+    let html: string;
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': this.sessionUserAgent,
+          Accept: 'text/html,application/xhtml+xml',
+          'Accept-Language': 'ko-KR,ko;q=0.9',
+          Referer: 'https://www.clien.net/',
+          'Cache-Control': 'no-cache',
+          ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+        },
+      });
+      if (!response.ok) {
+        console.warn(`[clien] fetchPost HTTP ${response.status}: ${url}`);
+        return null;
+      }
+      const setCookies = response.headers.get('set-cookie');
+      if (setCookies) {
+        for (const part of setCookies.split(/,(?=[^;]+=)/)) {
+          const m = part.trim().match(/^([^=;]+)=([^;]*)/);
+          if (m) this.sessionCookies.set(m[1].trim(), m[2].trim());
+        }
+      }
+      html = await response.text();
+    } catch (err) {
+      console.warn(`[clien] fetchPost 예외: ${url}`, err instanceof Error ? err.message : err);
+      return null;
+    }
     const $ = cheerio.load(html);
 
     // 본문 추출
@@ -135,7 +277,19 @@ export class ClienCollector extends CommunityBaseCollector {
 
     // 메타데이터 추출
     const author = $('.post_author .nickname, .post_info .author').first().text().trim() || '익명';
-    const dateText = $('.post_author .timestamp, .post_info .date').first().text().trim();
+    // ⚠️ 본문 timestamp 셀렉터 — 실제 clien 본문은 `.timestamp` 단독 (첫 번째가 게시글 작성시각).
+    //   이전 `.post_author .timestamp` 매치 실패 → dateText='' → parseDateText('')=new Date()
+    //   → 모든 글이 "현재 시각"으로 저장되어 일자별 분포가 04-18만으로 몰리는 결정적 버그.
+    const dateText =
+      $('.post_author .timestamp').first().text().trim() ||
+      $('.post_info .date').first().text().trim() ||
+      $('.timestamp').first().text().trim();
+    // ⚠️ dateText가 비면 본문 시각을 신뢰할 수 없으므로 post=null 반환해 전체 스킵.
+    //    (이전: new Date() fallback이 모든 글을 현재 시각으로 저장해 04-18만 몰리는 버그 유발)
+    if (!dateText) {
+      console.warn(`[clien] 본문 timestamp 없음 — 스킵: ${url}`);
+      return null;
+    }
     const publishedAt = parseDateText(dateText);
     const viewCount = parseInt(
       $('.post_author .view_count, .view_count').text().replace(/[^\d]/g, '') || '0',
