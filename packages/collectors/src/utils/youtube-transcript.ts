@@ -1,31 +1,36 @@
+import { getInnertubeClient } from './youtube-innertube';
+
 export async function fetchTranscript(
   videoId: string,
 ): Promise<{ text: string; lang: string } | null> {
-  const { YoutubeTranscript } = (await import('youtube-transcript')) as any;
-
   try {
-    const segments = await YoutubeTranscript.fetchTranscript(videoId, { lang: 'ko' });
-    if (segments.length > 0) {
-      return {
-        text: segments.map((s: { text: string }) => s.text).join(' '),
-        lang: 'ko',
-      };
-    }
-  } catch {
-    // 한국어 자막 없음
-  }
+    const innertube = await getInnertubeClient();
+    const info = await innertube.getInfo(videoId);
+    const transcriptInfo = await info.getTranscript();
 
-  try {
-    const segments = await YoutubeTranscript.fetchTranscript(videoId);
-    if (segments.length > 0) {
-      return {
-        text: segments.map((s: { text: string }) => s.text).join(' '),
-        lang: 'auto',
-      };
-    }
-  } catch {
-    // 자막 없음
-  }
+    const body = (transcriptInfo as any)?.content?.body;
+    if (!body) return null;
 
-  return null;
+    const segments: string[] = [];
+    const items = body?.initial_segments ?? body?.segments ?? (body as any)?.content?.items ?? [];
+
+    for (const seg of items) {
+      const text = (seg as any)?.snippet?.text ?? (seg as any)?.segment_title?.text ?? '';
+      if (text) segments.push(text);
+    }
+
+    if (segments.length === 0) return null;
+
+    const lang =
+      (transcriptInfo as any)?.content?.header?.language_menu?.sub_menu_items?.find(
+        (i: any) => i.selected,
+      )?.title ?? 'auto';
+
+    return {
+      text: segments.join(' '),
+      lang: lang.includes('한국') ? 'ko' : lang.includes('English') ? 'en' : 'auto',
+    };
+  } catch {
+    return null;
+  }
 }
