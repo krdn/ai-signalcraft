@@ -97,7 +97,46 @@ export function buildKeywordNetwork(sentimentFraming: SentimentFramingResult): G
     }
   }
 
+  // 폴백: LLM이 relatedKeywords를 반환하지 않아 엣지가 0개일 때
+  // 동일 sentiment 그룹 내 상위 키워드끼리 약한 엣지를 생성해 "아무 연결도 없는 빈 그래프"를 방지
+  if (edges.length === 0 && sentimentFraming.topKeywords.length >= 2) {
+    edges.push(...buildFallbackEdges(sentimentFraming.topKeywords));
+  }
+
   return { nodes, edges };
+}
+
+/**
+ * LLM이 relatedKeywords를 생성하지 못한 경우의 보수적 폴백.
+ * 같은 sentiment를 가진 키워드들을 count 상위 순으로 정렬 후, 허브-스포크 형태로 연결.
+ * weight는 0.2~0.4의 낮은 값을 사용해 "LLM이 검증한 진짜 연관"과 시각적으로 구분.
+ */
+function buildFallbackEdges(topKeywords: SentimentFramingResult['topKeywords']): GraphEdge[] {
+  const edges: GraphEdge[] = [];
+  const groups = new Map<string, typeof topKeywords>();
+
+  for (const kw of topKeywords) {
+    if (!kw.keyword) continue;
+    const list = groups.get(kw.sentiment) ?? [];
+    list.push(kw);
+    groups.set(kw.sentiment, list);
+  }
+
+  for (const group of groups.values()) {
+    if (group.length < 2) continue;
+    const sorted = [...group].sort((a, b) => b.count - a.count);
+    const hub = sorted[0];
+    for (let i = 1; i < sorted.length; i++) {
+      edges.push({
+        source: hub.keyword,
+        target: sorted[i].keyword,
+        weight: 0.3,
+        type: 'co-occurrence-fallback',
+      });
+    }
+  }
+
+  return edges;
 }
 
 // ─── 프레임 전쟁 그래프 ─────────────────────────────────────────────

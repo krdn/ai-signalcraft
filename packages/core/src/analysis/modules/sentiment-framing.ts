@@ -72,16 +72,27 @@ ${comments.map((c, i) => `${i + 1}. [${c.source}] ${c.content} (좋아요: ${c.l
 - 각 키워드의 감정 극성(긍정/부정/중립)을 판단하세요
 - 단순 고유명사(인물명, 정당명)는 제외하고 **의견이 담긴 키워드**를 추출하세요
 
-### Step 3: 연관어 네트워크 (relatedKeywords) — 필수
-Step 2에서 추출한 topKeywords 목록을 바탕으로, 기사/댓글에서 함께 등장하거나 같은 사건·맥락으로 묶이는 키워드 쌍을 반드시 작성하세요.
-- topKeywords의 각 키워드에 대해 연관 키워드(relatedTo)를 2~4개 지정하세요
-- 최소 5개 이상의 relatedKeywords 항목을 작성하세요 (빈 배열 [] 는 절대 금지)
-- coOccurrenceScore: 연관 강도를 0.1~1.0으로 추정 (같은 문장에 자주 등장하면 0.8+, 같은 기사 단위면 0.4~0.7)
+### Step 3: 연관어 네트워크 (relatedKeywords) — ⚠️ 필수 / 절대 생략 금지
+이 필드는 대시보드 "키워드 네트워크" 그래프의 **연결선(엣지)**을 만드는 유일한 원천입니다. 빈 배열이면 그래프가 파손됩니다.
+
+**작성 규칙**:
+- Step 2의 topKeywords 배열 길이의 **50% 이상**을 relatedKeywords 원소로 작성 (topKeywords가 20개면 최소 10개)
+- 절대 하한: **최소 8개** (이 수치 미만이면 실패로 간주)
+- 각 원소의 relatedTo 배열에는 **2~5개의 키워드**를 포함 (빈 배열 금지)
+- relatedTo의 키워드는 **topKeywords 내 다른 키워드를 우선** 참조 (네트워크 연결성 확보). 필요하면 topKeywords 외부 키워드도 추가 가능
+- coOccurrenceScore: 0.1~1.0 (같은 문장 0.8+, 같은 기사 단위 0.4~0.7, 주제 연관 0.2~0.4)
 - context: 두 키워드가 어떤 맥락에서 함께 등장하는지 한 줄 설명
-- 예시 (이재명 관련 분석):
+
+**좋은 예시** (정치 도메인):
   {"keyword": "검찰", "relatedTo": ["기소", "쌍방울", "수사"], "coOccurrenceScore": 0.75, "context": "검찰 기소 및 수사 관련 보도에서 동시 등장"}
   {"keyword": "북한", "relatedTo": ["대북송금", "김성태"], "coOccurrenceScore": 0.65, "context": "대북송금 사건 관련 키워드 클러스터"}
   {"keyword": "쌍방울", "relatedTo": ["김성태", "대북송금", "자백"], "coOccurrenceScore": 0.8, "context": "쌍방울 대북송금 사건의 핵심 인물·키워드 묶음"}
+
+**출력 전 자가 점검**:
+1. relatedKeywords 배열의 length가 8 이상인가?
+2. 모든 원소의 relatedTo 배열이 비어있지 않은가?
+3. topKeywords의 최상위 키워드가 적어도 하나의 relatedKeywords.keyword 또는 relatedTo에 포함되어 있는가?
+세 조건 모두 YES일 때만 출력하세요. 하나라도 NO면 Step 3를 다시 작성하세요.
 
 ### Step 4: 프레임 식별
 - 데이터에서 "같은 사실을 다르게 해석하는 관점"을 프레임으로 식별하세요

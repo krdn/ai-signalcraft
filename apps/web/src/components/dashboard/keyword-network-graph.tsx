@@ -83,9 +83,9 @@ export function KeywordNetworkGraph({
       .selectAll('line')
       .data(links)
       .join('line')
-      .attr('stroke', '#4a4a4a')
-      .attr('stroke-opacity', 0.4)
-      .attr('stroke-width', (d) => Math.max(Math.min(d.weight, 1) * 4, 1));
+      .attr('stroke', '#64748b')
+      .attr('stroke-opacity', 0.7)
+      .attr('stroke-width', (d) => Math.max(Math.min(d.weight, 1) * 4, 1.5));
 
     // 노드
     const node = g

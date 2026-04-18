@@ -203,26 +203,17 @@ export async function runAnalysisPipeline(
     return buildResult(ctx.allResults, ctx.cancelledByUser, ctx.costLimitExceeded, ctx.input);
   }
 
-  // Stage 0: 개별 항목 분석
-  let itemAnalysisPromise: Promise<void> = Promise.resolve();
-  if (jobRow?.options?.enableItemAnalysis) {
-    itemAnalysisPromise = (async () => {
-      try {
-        await analyzeItems(jobId);
-      } catch (error) {
-        console.error(`[runner] 개별 항목 분석 실패:`, error);
-        await updateJobProgress(jobId, {
-          'item-analysis': { status: 'failed', phase: 'error' },
-        }).catch(() => {});
-      }
-    })();
-  } else {
-    await updateJobProgress(jobId, { 'item-analysis': { status: 'skipped' } }).catch(() => {});
+  // Stage 0: 개별 항목 분석 — Stage 1(AI 분석) 시작 전 필수 선행 단계
+  try {
+    await analyzeItems(jobId);
+  } catch (error) {
+    console.error(`[runner] 개별 항목 분석 실패:`, error);
+    await updateJobProgress(jobId, {
+      'item-analysis': { status: 'failed', phase: 'error' },
+    }).catch(() => {});
   }
 
   // BP 게이트: 개별 감정 분석 완료 후
-  // (itemAnalysisPromise는 Stage 1과 병렬로 시작했으므로 게이트 전에 await)
-  await itemAnalysisPromise;
   if (!(await awaitStageGate(jobId, 'item-analysis'))) {
     ctx.cancelledByUser = true;
     return buildResult(ctx.allResults, ctx.cancelledByUser, ctx.costLimitExceeded, ctx.input);
