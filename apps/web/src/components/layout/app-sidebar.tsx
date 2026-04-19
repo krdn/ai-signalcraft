@@ -248,13 +248,29 @@ export function AppSidebar({
           <Play className="h-4 w-4" />
           분석 실행
         </Button>
-        <Link
-          href="/subscriptions"
-          className="flex w-full items-center gap-2 rounded-md border px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700/50"
-        >
-          <Database className="h-3.5 w-3.5" />
-          키워드 구독 관리
-        </Link>
+        <div className="space-y-0.5">
+          <Link
+            href="/subscriptions"
+            className="flex w-full items-center gap-2 rounded-md border px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700/50"
+          >
+            <Database className="h-3.5 w-3.5" />
+            키워드 구독
+          </Link>
+          <div className="flex gap-1 pl-3">
+            <Link
+              href="/subscriptions/monitor"
+              className="rounded px-2 py-0.5 text-[10px] text-slate-500 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-700/50"
+            >
+              모니터링
+            </Link>
+            <Link
+              href="/subscriptions/health"
+              className="rounded px-2 py-0.5 text-[10px] text-slate-500 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-700/50"
+            >
+              건강
+            </Link>
+          </div>
+        </div>
       </div>
 
       {/* 네비게이션 */}

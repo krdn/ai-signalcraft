@@ -143,6 +143,25 @@ export const itemsRouter = router({
         .where(and(...conds))
         .groupBy(rawItems.source);
 
+      const byItemType = await ctx.db
+        .select({
+          itemType: rawItems.itemType,
+          count: sql<number>`count(*)::int`,
+        })
+        .from(rawItems)
+        .where(and(...conds))
+        .groupBy(rawItems.itemType);
+
+      const bySourceAndType = await ctx.db
+        .select({
+          source: rawItems.source,
+          itemType: rawItems.itemType,
+          count: sql<number>`count(*)::int`,
+        })
+        .from(rawItems)
+        .where(and(...conds))
+        .groupBy(rawItems.source, rawItems.itemType);
+
       const [totalRow] = await ctx.db
         .select({ total: sql<number>`count(*)::int` })
         .from(rawItems)
@@ -150,6 +169,8 @@ export const itemsRouter = router({
 
       return {
         bySource,
+        byItemType,
+        bySourceAndType,
         totalItems: totalRow?.total ?? 0,
       };
     }),

@@ -1,42 +1,53 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Plus, ArrowLeft } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
+import { useQuery } from '@tanstack/react-query';
+import { Loader2 } from 'lucide-react';
+import { trpcClient } from '@/lib/trpc';
+import { SubscriptionKpiCards } from '@/components/subscriptions/subscription-kpi-cards';
+import { SubscriptionStatusBar } from '@/components/subscriptions/subscription-status-bar';
+import { SubscriptionTrendChart } from '@/components/subscriptions/subscription-trend-chart';
+import { SubscriptionTable } from '@/components/subscriptions/subscription-table';
+import { SubscriptionAlerts } from '@/components/subscriptions/subscription-alerts';
 import { SubscriptionList } from '@/components/subscriptions/subscription-list';
-import { SubscriptionForm } from '@/components/subscriptions/subscription-form';
 
 export default function SubscriptionsPage() {
-  const router = useRouter();
-  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('all');
+
+  const subsQuery = useQuery({
+    queryKey: ['subscriptions', 'all'],
+    queryFn: () => trpcClient.subscriptions.list.query(),
+    refetchInterval: 30_000,
+  });
+
+  const runsQuery = useQuery({
+    queryKey: ['subscription-runs', { sinceHours: 168 }],
+    queryFn: () => trpcClient.subscriptions.runs.query({ sinceHours: 168, limit: 500 }),
+    refetchInterval: 60_000,
+  });
+
+  const subscriptions = subsQuery.data ?? [];
+  const runs = runsQuery.data ?? [];
+
+  if (subsQuery.isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20 text-muted-foreground">
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        불러오는 중...
+      </div>
+    );
+  }
+
+  if (subsQuery.isError) {
+    return (
+      <div className="rounded-md bg-destructive/10 p-4 text-sm text-destructive">
+        {subsQuery.error instanceof Error ? subsQuery.error.message : '조회 실패'}
+      </div>
+    );
+  }
 
   return (
-    <div className="mx-auto max-w-4xl p-4 md:p-6 space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.push('/dashboard')}
-            className="text-muted-foreground"
-          >
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            대시보드
-          </Button>
-        </div>
-        <Button onClick={() => setIsFormOpen(true)}>
-          <Plus className="h-4 w-4 mr-1" />새 구독 등록
-        </Button>
-      </div>
-
+    <div className="space-y-4">
       <div className="space-y-1">
         <h1 className="text-xl font-semibold">키워드 구독</h1>
         <p className="text-sm text-muted-foreground">
@@ -45,26 +56,25 @@ export default function SubscriptionsPage() {
         </p>
       </div>
 
-      <SubscriptionList
-        onAnalyze={(keyword) => {
-          router.push(`/dashboard?keyword=${encodeURIComponent(keyword)}`);
-        }}
+      <SubscriptionKpiCards subscriptions={subscriptions} runs={runs} />
+
+      <SubscriptionStatusBar
+        subscriptions={subscriptions}
+        statusFilter={statusFilter}
+        onStatusFilterChange={setStatusFilter}
       />
 
-      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>새 키워드 구독</DialogTitle>
-            <DialogDescription>
-              등록 즉시 첫 수집이 큐에 투입됩니다. 이후 설정된 주기로 자동 반복됩니다.
-            </DialogDescription>
-          </DialogHeader>
-          <SubscriptionForm
-            onCreated={() => setIsFormOpen(false)}
-            onCancel={() => setIsFormOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
+      <SubscriptionTrendChart runs={runs} />
+
+      <SubscriptionAlerts subscriptions={subscriptions} />
+
+      {/* 데스크톱: 테이블 / 모바일: 기존 카드 리스트 */}
+      <div className="hidden md:block">
+        <SubscriptionTable subscriptions={subscriptions} runs={runs} statusFilter={statusFilter} />
+      </div>
+      <div className="md:hidden">
+        <SubscriptionList />
+      </div>
     </div>
   );
 }

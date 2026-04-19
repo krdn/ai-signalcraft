@@ -10,7 +10,7 @@ import {
   cleanupOrphanedData,
   getDataStats,
 } from '@ai-signalcraft/core';
-import { desc, sql, eq } from 'drizzle-orm';
+import { desc, sql, eq, and } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { protectedProcedure, adminProcedure, router } from '../init';
 import { verifyJobOwnership } from '../shared/verify-job-ownership';
@@ -60,6 +60,7 @@ export const historyRouter = router({
         // 신규 스코프: 'mine' | 'team' | 'all' | 'user'
         scope: z.enum(['mine', 'team', 'all', 'user']).optional(),
         targetUserId: z.string().optional(),
+        keyword: z.string().optional(),
       }),
     )
     .query(async ({ input, ctx }) => {
@@ -121,9 +122,12 @@ export const historyRouter = router({
         .leftJoin(users, eq(collectionJobs.userId, users.id))
         .leftJoin(analysisSeries, eq(collectionJobs.seriesId, analysisSeries.id));
 
-      const jobs = filter
+      const keywordCond = input.keyword ? eq(collectionJobs.keyword, input.keyword) : undefined;
+      const finalCond = filter && keywordCond ? and(filter, keywordCond) : (filter ?? keywordCond);
+
+      const jobs = finalCond
         ? await baseQuery
-            .where(filter)
+            .where(finalCond)
             .orderBy(desc(collectionJobs.createdAt))
             .limit(input.perPage)
             .offset(offset)
@@ -133,7 +137,7 @@ export const historyRouter = router({
             .offset(offset);
 
       const countQuery = ctx.db.select({ count: sql<number>`count(*)::int` }).from(collectionJobs);
-      const [{ count }] = filter ? await countQuery.where(filter) : await countQuery;
+      const [{ count }] = finalCond ? await countQuery.where(finalCond) : await countQuery;
 
       return {
         items: jobs,

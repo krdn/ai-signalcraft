@@ -15,11 +15,11 @@ export interface SubscriptionRecord {
   options?: { collectTranscript?: boolean; includeComments?: boolean } | null;
   domain?: string | null;
   ownerId?: string | null;
-  nextRunAt: Date | null;
-  lastRunAt: Date | null;
-  lastErrorAt: Date | null;
+  nextRunAt: Date | string | null;
+  lastRunAt: Date | string | null;
+  lastErrorAt: Date | string | null;
   lastError: string | null;
-  createdAt: Date;
+  createdAt: Date | string;
 }
 
 export interface TriggerNowResult {
@@ -32,7 +32,41 @@ export interface TriggerNowResult {
 export interface StatsResult {
   totalItems: number;
   bySource: Array<{ source: string; count: number }>;
-  lastFetchedAt: Date | null;
+  byItemType: Array<{ itemType: string; count: number }>;
+  bySourceAndType: Array<{ source: string; itemType: string; count: number }>;
+  lastFetchedAt: Date | string | null;
+}
+
+export interface SourceHealthRun {
+  source: string;
+  total: number;
+  completed: number;
+  blocked: number;
+  failed: number;
+  avgDurationMs: number;
+}
+
+export interface SourceHealthError {
+  source: string;
+  errorType: string;
+  count: number;
+}
+
+export interface SourceHealthResult {
+  windowHours: number;
+  runs: SourceHealthRun[];
+  errors: SourceHealthError[];
+}
+
+export interface ErrorTimelineEntry {
+  date: string;
+  errorType: string;
+  count: number;
+}
+
+export interface ErrorTimelineResult {
+  days: number;
+  entries: ErrorTimelineEntry[];
 }
 
 export interface RunRecord {
@@ -44,7 +78,7 @@ export interface RunRecord {
   itemsNew: number;
   durationMs: number | null;
   triggerType: string;
-  time: Date;
+  time: Date | string;
   errorReason?: string | null;
 }
 
@@ -232,6 +266,60 @@ export const subscriptionsRouter = router({
       try {
         const res = await getCollectorClient().items.stats.query(input);
         return res as unknown as StatsResult;
+      } catch (err) {
+        handleCollectorError(err);
+      }
+    }),
+
+  itemStats: protectedProcedure
+    .input(
+      z.object({
+        subscriptionId: z.number().int().positive().optional(),
+        keyword: z.string().optional(),
+        dateRange: z.object({ start: z.string(), end: z.string() }),
+      }),
+    )
+    .query(async ({ input }): Promise<StatsResult> => {
+      try {
+        const res = await getCollectorClient().items.stats.query(input);
+        return res as unknown as StatsResult;
+      } catch (err) {
+        handleCollectorError(err);
+      }
+    }),
+
+  sourceHealth: protectedProcedure
+    .input(
+      z
+        .object({
+          sinceHours: z
+            .number()
+            .int()
+            .positive()
+            .max(24 * 7)
+            .default(24),
+        })
+        .optional(),
+    )
+    .query(async ({ input }): Promise<SourceHealthResult> => {
+      try {
+        const res = await getCollectorClient().health.sourceStatus.query(input);
+        return res as unknown as SourceHealthResult;
+      } catch (err) {
+        handleCollectorError(err);
+      }
+    }),
+
+  errorTimeline: protectedProcedure
+    .input(
+      z.object({
+        days: z.number().int().min(1).max(30).default(7),
+      }),
+    )
+    .query(async ({ input }): Promise<ErrorTimelineResult> => {
+      try {
+        const res = await getCollectorClient().health.errorTimeline.query(input);
+        return res as unknown as ErrorTimelineResult;
       } catch (err) {
         handleCollectorError(err);
       }
