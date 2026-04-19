@@ -28,6 +28,16 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from '@/components/ui/alert-dialog';
 
 interface TriggerFormProps {
   onJobStarted: (jobId: number) => void;
@@ -183,6 +193,21 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
     },
   });
 
+  // 고아 작업 확인 다이얼로그 상태
+  const [orphanDialog, setOrphanDialog] = useState<{
+    open: boolean;
+    count: number;
+    pendingSubmit: (() => void) | null;
+  }>({ open: false, count: 0, pendingSubmit: null });
+
+  const cleanupMutation = useMutation({
+    mutationFn: () => trpcClient.admin.workerMgmt.cleanupOrphanedJobs.mutate(),
+    onSuccess: (res) => {
+      toast.success(`${res.cleaned}개 고아 작업 정리 완료`);
+    },
+    onError: () => toast.error('정리에 실패했습니다'),
+  });
+
   const handleAllToggle = (checked: boolean) => {
     setSources(checked ? [...ALL_SOURCES] : []);
   };
@@ -197,10 +222,7 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
     setCustomSourceIds((prev) => (checked ? [...prev, id] : prev.filter((v) => v !== id)));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!keyword.trim() || (sources.length === 0 && customSourceIds.length === 0)) return;
-
+  const doTrigger = () => {
     // 이벤트 모드: 이벤트 날짜 전후 N일로 자동 계산
     const resolvedStart = dateMode === 'event' ? subDays(eventDate, eventRadius) : startDate;
     const resolvedEnd = dateMode === 'event' ? addDays(eventDate, eventRadius) : endDate;
@@ -234,6 +256,23 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
       ...(createNewSeries && { createNewSeries: true }),
       ...(forceRefetch && { forceRefetch: true }),
     });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!keyword.trim() || (sources.length === 0 && customSourceIds.length === 0)) return;
+
+    try {
+      const orphans = await trpcClient.admin.workerMgmt.checkOrphanedJobs.query();
+      if (orphans.count > 0) {
+        setOrphanDialog({ open: true, count: orphans.count, pendingSubmit: doTrigger });
+        return;
+      }
+    } catch {
+      // 권한 없거나 API 실패 시 무시하고 진행
+    }
+
+    doTrigger();
   };
 
   // 기간 모드에서는 수집 한도를 '날짜별'로 해석하므로 도움말 문구를 모드별로 전환한다.
@@ -889,6 +928,45 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
             setHelpTab={setHelpTab}
           />
         </form>
+
+        {/* 고아 작업 확인 다이얼로그 */}
+        <AlertDialog
+          open={orphanDialog.open}
+          onOpenChange={(open) => {
+            if (!open) setOrphanDialog({ open: false, count: 0, pendingSubmit: null });
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>이전 작업이 남아있습니다</AlertDialogTitle>
+              <AlertDialogDescription>
+                이전 실행의 잔여 작업 {orphanDialog.count}개가 큐에 남아있습니다. 정리 후 실행하면
+                충돌을 방지할 수 있습니다.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>취소</AlertDialogCancel>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  orphanDialog.pendingSubmit?.();
+                  setOrphanDialog({ open: false, count: 0, pendingSubmit: null });
+                }}
+              >
+                그냥 실행
+              </Button>
+              <AlertDialogAction
+                onClick={async () => {
+                  await cleanupMutation.mutateAsync();
+                  orphanDialog.pendingSubmit?.();
+                  setOrphanDialog({ open: false, count: 0, pendingSubmit: null });
+                }}
+              >
+                정리 후 실행
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </CardContent>
     </Card>
   );
