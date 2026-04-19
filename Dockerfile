@@ -8,6 +8,7 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY patches/ ./patches/
 COPY apps/web/package.json ./apps/web/
+COPY apps/collector/package.json ./apps/collector/
 COPY packages/core/package.json ./packages/core/
 COPY packages/collectors/package.json ./packages/collectors/
 RUN pnpm install --frozen-lockfile
@@ -21,6 +22,7 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY patches/ ./patches/
 COPY apps/web/package.json ./apps/web/
+COPY apps/collector/package.json ./apps/collector/
 COPY packages/core/package.json ./packages/core/
 COPY packages/collectors/package.json ./packages/collectors/
 RUN pnpm install --frozen-lockfile
