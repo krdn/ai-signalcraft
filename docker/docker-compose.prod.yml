@@ -90,10 +90,96 @@ services:
       timeout: 3s
       retries: 3
 
+  # ── 수집 시스템 (P1~P6) ──────────────────────────────────────────
+  # 독립 서비스 — 자체 TimescaleDB 사용, 기존 ais-prod-redis와는 prefix로 분리.
+  # DB는 krdn-timescaledb(5435)의 ais_collection. 외부에서 접근하므로 host.docker.internal 사용.
+  collector-api:
+    build:
+      context: ..
+      dockerfile: apps/collector/Dockerfile
+    container_name: ais-collector-api
+    command: ["tsx", "apps/collector/src/server/index.ts"]
+    restart: unless-stopped
+    ports:
+      - "3400:3400"
+    environment:
+      NODE_ENV: production
+      PORT: "3400"
+      DATABASE_URL: ${COLLECTOR_DATABASE_URL}
+      REDIS_URL: ${COLLECTOR_REDIS_URL:-redis://redis:6379}
+      COLLECTOR_API_KEY: ${COLLECTOR_API_KEY}
+      BULL_PREFIX: collector
+      MANUAL_TRIGGER_COOLDOWN_SEC: "600"
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - ais-prod-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  collector-worker:
+    build:
+      context: ..
+      dockerfile: apps/collector/Dockerfile
+    container_name: ais-collector-worker
+    command: ["tsx", "apps/collector/src/queue/worker-process.ts"]
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${COLLECTOR_DATABASE_URL}
+      REDIS_URL: ${COLLECTOR_REDIS_URL:-redis://redis:6379}
+      BULL_PREFIX: collector
+    volumes:
+      - ais-collector-model-cache:/root/.cache/xenova
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - ais-prod-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  collector-scheduler:
+    build:
+      context: ..
+      dockerfile: apps/collector/Dockerfile
+    container_name: ais-collector-scheduler
+    command: ["tsx", "apps/collector/src/scheduler/scanner.ts"]
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${COLLECTOR_DATABASE_URL}
+      REDIS_URL: ${COLLECTOR_REDIS_URL:-redis://redis:6379}
+      BULL_PREFIX: collector
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - ais-prod-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
 volumes:
   ais-prod-pgdata:
   ais-prod-redis:
   ais-prod-model-cache:
+  ais-collector-model-cache:
 
 networks:
   ais-prod-network:
