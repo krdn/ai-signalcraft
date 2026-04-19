@@ -19,6 +19,7 @@ import {
   SOURCE_OPTIONS,
   ALL_SOURCES,
 } from './trigger-form-data';
+import { SubscriptionPicker } from './subscription-picker';
 import { trpcClient } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -358,15 +359,19 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
           {/* 키워드 입력 */}
           <div className="space-y-2">
             <Label htmlFor="keyword">키워드</Label>
-            <Input
-              id="keyword"
-              placeholder="인물 또는 키워드 입력"
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              required
-              maxLength={50}
-              disabled={triggerMutation.isPending}
-            />
+            <div className="flex gap-2">
+              <Input
+                id="keyword"
+                placeholder="인물 또는 키워드 입력"
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
+                required
+                maxLength={50}
+                disabled={triggerMutation.isPending}
+                className="flex-1"
+              />
+              <SubscriptionPicker onSelect={setKeyword} disabled={triggerMutation.isPending} />
+            </div>
           </div>
 
           {/* 시리즈 연결 */}
