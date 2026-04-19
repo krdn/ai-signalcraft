@@ -3,6 +3,7 @@ import { and, between, desc, eq, inArray, sql } from 'drizzle-orm';
 import { rawItems } from '../../db/schema';
 import { embedQuery } from '../../services/embedding';
 import { protectedProcedure, router } from './init';
+import { limitCommentsPerParent, truncateContent } from './items-postprocess';
 
 const SOURCE_ENUM = ['naver-news', 'youtube', 'dcinside', 'fmkorea', 'clien'] as const;
 const ITEM_TYPE_ENUM = ['article', 'video', 'comment'] as const;
@@ -99,25 +100,12 @@ export const itemsRouter = router({
 
     // 분석측 전처리와 분리된 content truncation — 호출자가 명시적으로 요청했을 때만
     if (input.maxContentLength) {
-      for (const row of rows) {
-        const c = row.content;
-        if (typeof c === 'string' && c.length > input.maxContentLength) {
-          row.content = c.slice(0, input.maxContentLength);
-        }
-      }
+      truncateContent(rows, input.maxContentLength);
     }
 
     // 댓글 개수 제한 — parent_source_id 기준 그룹핑 후 자르기
     if (input.maxComments && input.itemTypes?.includes('comment')) {
-      const byParent = new Map<string, number>();
-      rows = rows.filter((r) => {
-        if (r.itemType !== 'comment') return true;
-        const key = (r.parentSourceId as string) ?? '';
-        const count = byParent.get(key) ?? 0;
-        if (count >= input.maxComments!) return false;
-        byParent.set(key, count + 1);
-        return true;
-      });
+      rows = limitCommentsPerParent(rows, input.maxComments);
     }
 
     return {
