@@ -290,12 +290,18 @@ importers:
 
   packages/core:
     dependencies:
+      '@ai-signalcraft/collector':
+        specifier: workspace:*
+        version: link:../../apps/collector
       '@ai-signalcraft/collectors':
         specifier: workspace:*
         version: link:../collectors
       '@krdn/ai-analysis-kit':
         specifier: git+https://github.com/krdn/ai-analysis-kit.git#v2.0.1
         version: https://codeload.github.com/krdn/ai-analysis-kit/tar.gz/ff65870de9aba076ccda8d22b49a6d83c9528abc(@modelcontextprotocol/sdk@1.29.0(zod@3.25.76))(@opentelemetry/core@2.6.1(@opentelemetry/api@1.9.1))(@opentelemetry/resources@2.6.1(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-metrics@2.0.1(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.0.1(@opentelemetry/api@1.9.1))(zod@3.25.76)
+      '@trpc/client':
+        specifier: ^11.0.0
+        version: 11.16.0(@trpc/server@11.16.0(typescript@5.9.3))(typescript@5.9.3)
       '@xenova/transformers':
         specifier: ^2.17.0
         version: 2.17.2

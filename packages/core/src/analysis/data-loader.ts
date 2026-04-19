@@ -11,10 +11,11 @@ import {
   videoJobs,
   commentJobs,
 } from '../db/schema/collections';
+import { getCollectorClient } from '../collector-client';
 import type { AnalysisInput } from './types';
 import type { AnalysisDomain } from './domain';
 
-// 토큰 절약 상수 (Pitfall 1 대응)
+// 토큰 절약 상수 — collector API에 인자로 전달 (기본값, 호출부에서 override 가능)
 const MAX_ARTICLE_CONTENT_LENGTH = 500;
 const MAX_COMMENTS = 500;
 
@@ -104,5 +105,125 @@ export async function loadAnalysisInput(jobId: number): Promise<AnalysisInput> {
       end: ensureDate(job.endDate),
     },
     domain: (job.domain as AnalysisDomain) || undefined,
+  };
+}
+
+export interface LoadFromCollectorOptions {
+  keyword: string;
+  subscriptionId?: number;
+  dateRange: { start: Date; end: Date };
+  sources?: Array<'naver-news' | 'youtube' | 'dcinside' | 'fmkorea' | 'clien'>;
+  maxContentLength?: number;
+  maxComments?: number;
+  domain?: AnalysisDomain;
+  /** 분석 jobId — 결과 저장 및 로그용. 실제 데이터와 무관 */
+  jobId: number;
+}
+
+/**
+ * collector 서비스의 items.query API를 통해 분석 입력을 구성.
+ *
+ * 장점:
+ *   - 수집/분석이 완전히 분리되어 분석 시 신규 수집이 발생하지 않음
+ *   - maxContentLength / maxComments를 호출부에서 명시적으로 지정 (하드코딩 제거)
+ *   - 동일 키워드·기간을 반복 분석해도 저장소를 공유
+ */
+export async function loadAnalysisInputFromCollector(
+  opts: LoadFromCollectorOptions,
+): Promise<AnalysisInput> {
+  const client = getCollectorClient();
+  const maxContentLength = opts.maxContentLength ?? MAX_ARTICLE_CONTENT_LENGTH;
+  const maxComments = opts.maxComments ?? MAX_COMMENTS;
+
+  // 기사/영상과 댓글은 다른 itemType — 병렬 호출
+  const [articlesVideosResp, commentsResp] = await Promise.all([
+    client.items.query.query({
+      keyword: opts.keyword,
+      dateRange: {
+        start: opts.dateRange.start.toISOString(),
+        end: opts.dateRange.end.toISOString(),
+      },
+      sources: opts.sources,
+      itemTypes: ['article', 'video'],
+      subscriptionId: opts.subscriptionId,
+      mode: 'all',
+      maxContentLength,
+      limit: 2000,
+    }),
+    client.items.query.query({
+      keyword: opts.keyword,
+      dateRange: {
+        start: opts.dateRange.start.toISOString(),
+        end: opts.dateRange.end.toISOString(),
+      },
+      sources: opts.sources,
+      itemTypes: ['comment'],
+      subscriptionId: opts.subscriptionId,
+      mode: 'all',
+      maxComments,
+      limit: maxComments,
+    }),
+  ]);
+
+  type CollectorItem = {
+    source: string;
+    itemType: 'article' | 'video' | 'comment';
+    title: string | null;
+    content: string | null;
+    publisher: string | null;
+    publishedAt: string | Date | null;
+    author: string | null;
+    metrics: { viewCount?: number; likeCount?: number; commentCount?: number } | null;
+  };
+
+  const toDate = (d: string | Date | null): Date => {
+    if (!d) return new Date(0);
+    return d instanceof Date ? d : new Date(d);
+  };
+
+  const articlesOut = (articlesVideosResp.items as unknown as CollectorItem[])
+    .filter((i) => i.itemType === 'article' && i.title)
+    .map((a) => ({
+      title: a.title as string,
+      content: a.content,
+      publisher: a.publisher,
+      publishedAt: toDate(a.publishedAt),
+      source: a.source,
+    }));
+
+  const videosOut = (articlesVideosResp.items as unknown as CollectorItem[])
+    .filter((i) => i.itemType === 'video' && i.title)
+    .map((v) => ({
+      title: v.title as string,
+      description: v.content,
+      channelTitle: v.publisher,
+      viewCount: v.metrics?.viewCount ?? null,
+      likeCount: v.metrics?.likeCount ?? null,
+      publishedAt: toDate(v.publishedAt),
+      content: v.content,
+    }));
+
+  const commentsOut = (commentsResp.items as unknown as CollectorItem[])
+    .filter((c) => c.content)
+    .map((c) => ({
+      content: c.content as string,
+      source: c.source,
+      author: c.author,
+      likeCount: c.metrics?.likeCount ?? null,
+      dislikeCount: null,
+      publishedAt: toDate(c.publishedAt),
+    }));
+
+  return {
+    jobId: opts.jobId,
+    keyword: opts.keyword,
+    articles: articlesOut,
+    videos: videosOut,
+    comments: commentsOut,
+    dateRange: {
+      start: opts.dateRange.start,
+      end: opts.dateRange.end,
+    },
+    domain: opts.domain,
   };
 }

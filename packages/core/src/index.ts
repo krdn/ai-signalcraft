@@ -25,3 +25,8 @@ export {
 } from './queue/per-day-limits';
 export { analysisSeries, seriesDeltaResults } from './db/schema/series';
 export { runSeriesDeltaAnalysis } from './analysis/delta';
+export {
+  createCollectorClient,
+  getCollectorClient,
+  type CollectorClient,
+} from './collector-client';

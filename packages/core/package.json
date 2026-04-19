@@ -21,7 +21,9 @@
   },
   "dependencies": {
     "@krdn/ai-analysis-kit": "git+https://github.com/krdn/ai-analysis-kit.git#v2.0.1",
+    "@ai-signalcraft/collector": "workspace:*",
     "@ai-signalcraft/collectors": "workspace:*",
+    "@trpc/client": "^11.0.0",
     "bullmq": "^5.0.0",
     "dotenv": "^16.4.0",
     "drizzle-orm": "^0.40.0",
