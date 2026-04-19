@@ -21,6 +21,8 @@ export const CollectionTriggerSchema = z.object({
   limitMode: z.enum(['perDay', 'total']).optional(),
   // TTL 기반 재사용 계획을 무시하고 전량 재수집 (롤백 스위치)
   forceRefetch: z.boolean().optional(),
+  // YouTube 영상 자막 수집 여부 (기본: false)
+  collectTranscript: z.boolean().optional(),
 });
 export type CollectionTrigger = z.infer<typeof CollectionTriggerSchema>;
 

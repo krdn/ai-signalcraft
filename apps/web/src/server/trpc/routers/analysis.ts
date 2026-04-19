@@ -42,6 +42,7 @@ export const analysisRouter = router({
                 'rag-aggressive',
               ])
               .optional(),
+            collectTranscript: z.boolean().optional(),
           })
           .optional(),
         limits: z
@@ -279,6 +280,7 @@ export const analysisRouter = router({
           limits: effectiveLimits ?? undefined,
           limitMode,
           forceRefetch: input.forceRefetch,
+          collectTranscript: input.options?.collectTranscript,
         },
         job.id,
       );

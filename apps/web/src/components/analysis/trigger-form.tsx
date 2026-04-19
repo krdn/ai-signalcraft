@@ -109,6 +109,7 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
   const [optimizationPreset, setOptimizationPreset] = useState<OptimizationPreset>('rag-standard');
   const [breakpoints, setBreakpoints] = useState<BreakpointValue[]>([]);
   const [forceRefetch, setForceRefetch] = useState(false);
+  const [collectTranscript, setCollectTranscript] = useState(false);
 
   // 클라이언트 마운트 후 실제 날짜 설정 (hydration mismatch 방지)
   useEffect(() => {
@@ -213,10 +214,11 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
       startDate: resolvedStart.toISOString(),
       endDate: resolvedEnd.toISOString(),
       options:
-        enableItemAnalysis || optimizationPreset !== 'none'
+        enableItemAnalysis || optimizationPreset !== 'none' || collectTranscript
           ? {
               ...(enableItemAnalysis && { enableItemAnalysis: true }),
               ...(optimizationPreset !== 'none' && { tokenOptimization: optimizationPreset }),
+              ...(collectTranscript && { collectTranscript: true }),
             }
           : undefined,
       limits: {
@@ -535,6 +537,25 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
                 </p>
               </div>
             </label>
+            {sources.includes('youtube') && (
+              <label
+                className={`flex items-start gap-2 rounded-lg border p-3 transition-colors ${isDemo ? 'opacity-70' : 'cursor-pointer hover:bg-accent/50'}`}
+              >
+                <Checkbox
+                  checked={collectTranscript}
+                  onCheckedChange={(checked) => setCollectTranscript(!!checked)}
+                  disabled={isDemo || triggerMutation.isPending}
+                  className="mt-0.5"
+                />
+                <div className="space-y-1">
+                  <span className="text-sm font-medium">유튜브 자막 수집</span>
+                  <p className="text-xs text-muted-foreground">
+                    영상의 자막(자동 생성 포함)을 텍스트로 수집하여 AI 분석에 활용합니다. 자막이
+                    없는 영상은 건너뜁니다.
+                  </p>
+                </div>
+              </label>
+            )}
           </div>
 
           {/* 수집 한도 설정 — 데모 사용자는 변경 불가 */}

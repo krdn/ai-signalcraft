@@ -302,7 +302,7 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
             maxItemsPerDay: perDayLimits?.youtubeVideos,
             maxComments: limits.commentsPerItem,
             commentOrder: 'relevance',
-            collectTranscript: true,
+            collectTranscript: params.collectTranscript ?? false,
             flowId,
             dbJobId,
             reusePlan,
