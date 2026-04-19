@@ -69,7 +69,7 @@ jobs:
             curl -sf http://localhost:3300 > /dev/null && echo "Web OK (재시작 후)" || echo "Web FAILED (재시작 후에도 실패)"
           fi
 
-          if curl -sf http://localhost:3400/health > /dev/null 2>&1; then
+          if curl -sf http://localhost:3401/health > /dev/null 2>&1; then
             echo "Collector API OK"
           else
             echo "Collector API not yet responding (non-fatal)"

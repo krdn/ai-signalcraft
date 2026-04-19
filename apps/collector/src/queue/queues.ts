@@ -4,14 +4,14 @@ import { COLLECTOR_SOURCES, type CollectorSource, type CollectionJobData } from 
 
 /**
  * 수집 큐는 source별로 독립 생성 — 한 소스의 차단이 다른 소스를 막지 않도록.
- * 큐 이름: `collect:<source>` (예: collect:naver-news)
+ * 큐 이름: `collect-<source>` (예: collect-naver-news) — BullMQ는 큐명에 `:` 금지
  */
 const queueCache = new Map<CollectorSource, Queue<CollectionJobData>>();
 
 export function getCollectQueue(source: CollectorSource): Queue<CollectionJobData> {
   let q = queueCache.get(source);
   if (!q) {
-    q = new Queue<CollectionJobData>(`collect:${source}`, getBullMQOptions());
+    q = new Queue<CollectionJobData>(`collect-${source}`, getBullMQOptions());
     queueCache.set(source, q);
   }
   return q;

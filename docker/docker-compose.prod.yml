@@ -101,7 +101,8 @@ services:
     command: ["tsx", "apps/collector/src/server/index.ts"]
     restart: unless-stopped
     ports:
-      - "3400:3400"
+      # 호스트 3400은 ai-insight-api가 선점 → 3401로 매핑. 컨테이너 내부는 3400 유지 (내부 DNS: http://collector-api:3400)
+      - "3401:3400"
     environment:
       NODE_ENV: production
       PORT: "3400"

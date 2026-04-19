@@ -36,7 +36,7 @@ function buildWorker(source: CollectorSource): Worker<CollectionJobData, Collect
   };
 
   const worker = new Worker<CollectionJobData, CollectionJobResult>(
-    `collect:${source}`,
+    `collect-${source}`,
     async (job) => executeCollectionJob(job),
     opts,
   );
