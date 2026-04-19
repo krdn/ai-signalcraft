@@ -31,7 +31,7 @@ export function getAllCollectQueues(): Array<{
 export async function enqueueCollectionJob(data: CollectionJobData): Promise<void> {
   const queue = getCollectQueue(data.source);
   await queue.add(`collect-${data.source}`, data, {
-    jobId: `${data.runId}:${data.source}`,
+    jobId: `${data.runId}-${data.source}`,
     attempts: 3,
     backoff: { type: 'exponential', delay: 30_000 },
     removeOnComplete: { age: 3600, count: 1000 },
