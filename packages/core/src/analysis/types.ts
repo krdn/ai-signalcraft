@@ -41,6 +41,7 @@ export interface AnalysisInput {
   videos: Array<{
     title: string;
     description: string | null;
+    content: string | null;
     channelTitle: string | null;
     viewCount: number | null;
     likeCount: number | null;

@@ -55,6 +55,7 @@ export async function loadAnalysisInput(jobId: number): Promise<AnalysisInput> {
       .select({
         title: videos.title,
         description: videos.description,
+        transcript: videos.transcript,
         channelTitle: videos.channelTitle,
         viewCount: videos.viewCount,
         likeCount: videos.likeCount,
@@ -90,7 +91,13 @@ export async function loadAnalysisInput(jobId: number): Promise<AnalysisInput> {
       // 기사 본문 500자 제한
       content: a.content ? a.content.slice(0, MAX_ARTICLE_CONTENT_LENGTH) : null,
     })),
-    videos: videoRows,
+    videos: videoRows.map((v) => {
+      const raw = v.transcript ?? v.description ?? null;
+      return {
+        ...v,
+        content: raw ? raw.slice(0, MAX_ARTICLE_CONTENT_LENGTH) : null,
+      };
+    }),
     comments: commentRows,
     dateRange: {
       start: ensureDate(job.startDate),

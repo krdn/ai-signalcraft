@@ -25,6 +25,7 @@ function createMockInput(overrides?: Partial<AnalysisInput>): AnalysisInput {
       {
         title: '테스트 영상',
         description: '영상 설명입니다.',
+        content: '영상 설명입니다.',
         channelTitle: '테스트 채널',
         viewCount: 1000,
         likeCount: 50,
@@ -166,6 +167,7 @@ describe('formatInputData', () => {
         {
           title: '영상',
           description: null,
+          content: null,
           channelTitle: null,
           viewCount: 0,
           likeCount: 0,
@@ -216,6 +218,7 @@ describe('formatInputData', () => {
         {
           title: '영상',
           description: null,
+          content: null,
           channelTitle: '채널',
           viewCount: null,
           likeCount: null,

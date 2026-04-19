@@ -61,7 +61,7 @@ ${ANALYSIS_CONSTRAINTS}`;
 ${articles.map((a, i) => `${i + 1}. [${a.publishedAt}][${a.source}] ${a.title}\n   ${a.content}`).join('\n')}
 
 ### 영상 (${videos.length}건)
-${videos.map((v, i) => `${i + 1}. [${v.publishedAt}][${v.channel}] ${v.title} (조회수: ${v.viewCount}, 좋아요: ${v.likeCount})`).join('\n')}
+${videos.map((v, i) => `${i + 1}. [${v.publishedAt}][${v.channel}] ${v.title} (조회수: ${v.viewCount}, 좋아요: ${v.likeCount})${v.content ? `\n   ${v.content}` : ''}`).join('\n')}
 
 ### 댓글 (${comments.length}건)
 ${comments.map((c, i) => `${i + 1}. [${c.publishedAt}][${c.source}] ${c.content} (좋아요: ${c.likeCount})`).join('\n')}

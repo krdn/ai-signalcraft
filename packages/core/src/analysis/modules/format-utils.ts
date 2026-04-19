@@ -30,6 +30,11 @@ export function formatInputData(data: AnalysisInput) {
 
   const videos = data.videos.map((v) => ({
     title: v.title,
+    content: v.content
+      ? v.content.length > MAX_CONTENT_LENGTH
+        ? v.content.slice(0, MAX_CONTENT_LENGTH) + '...'
+        : v.content
+      : null,
     channel: v.channelTitle ?? '채널 미상',
     viewCount: v.viewCount ?? 0,
     likeCount: v.likeCount ?? 0,
