@@ -21,6 +21,17 @@ export {
   getJobDiagnostic,
   forceCleanupActiveJob,
 } from './queue-management';
+export {
+  pauseQueue,
+  resumeQueue,
+  getStalledJobs,
+  removeStalledJobs,
+  getFailedJobs,
+  retryFailedJob,
+  removeFailedJobs,
+  removeJob,
+  checkOrphanedJobs,
+} from './worker-management';
 
 /**
  * 파이프라인 완전 중지
