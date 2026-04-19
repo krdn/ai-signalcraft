@@ -240,7 +240,7 @@ export function AppSidebar({
       </div>
 
       {/* 분석 실행 CTA */}
-      <div className="px-3 pb-2">
+      <div className="px-3 pb-2 space-y-1.5">
         <Button
           className="w-full justify-start gap-2 bg-blue-600 text-white hover:bg-blue-700"
           onClick={() => onTabChange(0)}
@@ -248,6 +248,13 @@ export function AppSidebar({
           <Play className="h-4 w-4" />
           분석 실행
         </Button>
+        <Link
+          href="/subscriptions"
+          className="flex w-full items-center gap-2 rounded-md border px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700/50"
+        >
+          <Database className="h-3.5 w-3.5" />
+          키워드 구독 관리
+        </Link>
       </div>
 
       {/* 네비게이션 */}

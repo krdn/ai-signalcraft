@@ -19,9 +19,11 @@ import { searchRouter } from './routers/search';
 import { ontologyRouter } from './routers/ontology';
 import { llmInsightsRouter } from './routers/llm-insights';
 import { seriesRouter } from './routers/series';
+import { subscriptionsRouter } from './routers/subscriptions';
 
 export const appRouter = router({
   analysis: analysisRouter,
+  subscriptions: subscriptionsRouter,
   pipeline: pipelineRouter,
   history: historyRouter,
   team: teamRouter,
