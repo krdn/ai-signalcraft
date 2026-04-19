@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Activity, AlertCircle, CircleSlash } from 'lucide-react';
-import { WorkerHealthModal } from './worker-health-modal';
+import { WorkerManagementModal } from './worker-management-modal';
 import { trpcClient } from '@/lib/trpc';
 
 const HEALTH_COLOR: Record<string, string> = {
@@ -50,7 +50,7 @@ export function WorkerHealthBadge() {
           );
         })}
       </button>
-      {open && <WorkerHealthModal onClose={() => setOpen(false)} data={data} />}
+      <WorkerManagementModal open={open} onOpenChange={setOpen} defaultTab="queue-status" />
     </>
   );
 }

@@ -14,6 +14,7 @@ import {
   Inbox,
   Loader2,
   Pause,
+  Settings2,
   Skull,
   Trash2,
   XCircle,
@@ -21,6 +22,7 @@ import {
 import type { WorkerQueueStatus, StalledJobInfo } from './types';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
+import { WorkerManagementModal } from '@/components/admin/worker-management-modal';
 import { trpcClient } from '@/lib/trpc';
 
 const QUEUE_LABELS: Record<string, string> = {
@@ -111,6 +113,7 @@ export const WorkerStatusBar = memo(function WorkerStatusBar({
   jobId,
 }: WorkerStatusBarProps) {
   const [expanded, setExpanded] = useState(false);
+  const [mgmtOpen, setMgmtOpen] = useState(false);
 
   const anyDown = workerStatus.some((q) => q.health === 'down');
   const anyStuck = workerStatus.some((q) => q.health === 'stuck');
@@ -220,6 +223,15 @@ export const WorkerStatusBar = memo(function WorkerStatusBar({
               <span className="tabular-nums">{totalFailed}</span>
             </span>
           )}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 text-xs gap-1"
+            onClick={() => setMgmtOpen(true)}
+          >
+            <Settings2 className="h-3 w-3" />
+            관리
+          </Button>
           {hasIssues && (
             <button
               onClick={() => setExpanded(!expanded)}
@@ -239,6 +251,13 @@ export const WorkerStatusBar = memo(function WorkerStatusBar({
       {expanded && hasIssues && (
         <WorkerDetailPanel workerStatus={workerStatus} stalledJobs={allStalledJobs} jobId={jobId} />
       )}
+
+      <WorkerManagementModal
+        open={mgmtOpen}
+        onOpenChange={setMgmtOpen}
+        defaultTab={allStalledJobs.length > 0 ? 'stalled' : 'queue-status'}
+        focusJobId={jobId}
+      />
     </div>
   );
 });
