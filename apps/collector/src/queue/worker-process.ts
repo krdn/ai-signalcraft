@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { Worker, type WorkerOptions } from 'bullmq';
 import { getBullMQOptions } from './connection';
 import {
@@ -13,11 +14,13 @@ import { executeCollectionJob } from './executor';
  *
  * 대상 사이트마다 차단 민감도가 달라서 개별 조정이 필요하다.
  * - naver-news: 비교적 관대 — 2
+ * - naver-comments: 비공식 JSONP, 500ms 인터벌 — 서로 다른 subscription 간 병렬 2
  * - youtube: API quota 기반 — 2
  * - community(dc/fm/clien): 브라우저 크롤 — 1 (직렬)
  */
 const CONCURRENCY: Record<CollectorSource, number> = {
   'naver-news': 2,
+  'naver-comments': 2,
   youtube: 2,
   dcinside: 1,
   fmkorea: 1,

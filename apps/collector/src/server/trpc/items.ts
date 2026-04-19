@@ -5,7 +5,14 @@ import { embedQuery } from '../../services/embedding';
 import { protectedProcedure, router } from './init';
 import { limitCommentsPerParent, truncateContent } from './items-postprocess';
 
-const SOURCE_ENUM = ['naver-news', 'youtube', 'dcinside', 'fmkorea', 'clien'] as const;
+const SOURCE_ENUM = [
+  'naver-news',
+  'naver-comments',
+  'youtube',
+  'dcinside',
+  'fmkorea',
+  'clien',
+] as const;
 const ITEM_TYPE_ENUM = ['article', 'video', 'comment'] as const;
 
 const dateRangeSchema = z.object({

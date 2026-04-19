@@ -36,7 +36,7 @@ export const runsRouter = router({
   itemBreakdown: protectedProcedure
     .input(
       z.object({
-        runIds: z.array(z.string().uuid()).min(1).max(100),
+        runIds: z.array(z.string().uuid()).min(1).max(1000),
       }),
     )
     .query(async ({ ctx, input }) => {
