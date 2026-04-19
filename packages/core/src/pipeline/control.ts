@@ -31,6 +31,8 @@ export {
   removeFailedJobs,
   removeJob,
   checkOrphanedJobs,
+  drainQueue,
+  getRedisInfo,
 } from './worker-management';
 
 /**

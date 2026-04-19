@@ -232,3 +232,55 @@ export async function checkOrphanedJobs(): Promise<{
 
   return { count: orphans.length, jobs: orphans };
 }
+
+export async function drainQueue(queueName: string): Promise<void> {
+  const queue = getQueue(queueNameSchema(queueName));
+  await queue.drain();
+}
+
+export async function getRedisInfo(): Promise<{
+  usedMemory: string;
+  maxMemory: string;
+  totalKeys: number;
+  prefixCounts: Array<{ prefix: string; count: number }>;
+}> {
+  const Redis = (await import('ioredis')).default;
+  const connOpts = (await import('../queue/connection')).getRedisConnection();
+  const redis = new Redis({
+    host: (connOpts as any).host ?? 'localhost',
+    port: (connOpts as any).port ?? 6379,
+    ...((connOpts as any).password ? { password: (connOpts as any).password } : {}),
+    maxRetriesPerRequest: 1,
+    lazyConnect: true,
+  });
+
+  try {
+    await redis.connect();
+    const info = await redis.info('memory');
+    const usedMatch = info.match(/used_memory_human:(\S+)/);
+    const maxMatch = info.match(/maxmemory_human:(\S+)/);
+    const totalKeys = await redis.dbsize();
+
+    const prefixes = ['bull', 'ais-dev', 'ais'];
+    const prefixCounts: Array<{ prefix: string; count: number }> = [];
+    for (const prefix of prefixes) {
+      let count = 0;
+      let cursor = '0';
+      do {
+        const [next, keys] = await redis.scan(cursor, 'MATCH', `${prefix}:*`, 'COUNT', 1000);
+        cursor = next;
+        count += keys.length;
+      } while (cursor !== '0');
+      if (count > 0) prefixCounts.push({ prefix, count });
+    }
+
+    return {
+      usedMemory: usedMatch?.[1] ?? 'unknown',
+      maxMemory: maxMatch?.[1] ?? '0',
+      totalKeys,
+      prefixCounts,
+    };
+  } finally {
+    await redis.quit();
+  }
+}
