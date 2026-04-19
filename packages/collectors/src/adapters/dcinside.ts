@@ -1,4 +1,5 @@
 // DC갤러리 수집기 -- CommunityBaseCollector 상속
+// v3: 댓글 API 직접 호출 + Playwright 의존 최소화 + 갤러리 종류 자동 감지
 import * as cheerio from 'cheerio';
 import type { CommunityPost, CommunityComment } from '../types/community';
 import {
@@ -7,35 +8,31 @@ import {
   sanitizeContent,
   buildSearchUrl,
 } from '../utils/community-parser';
+import { getRandomUserAgent, sleep } from '../utils/browser';
 import { CommunityBaseCollector, type SiteSelectors } from './community-base-collector';
 import type { BrowserCollectorConfig } from './browser-collector';
 
-/**
- * DC갤러리 수집기
- *
- * Playwright로 검색 결과 페이지를 렌더링하고
- * Cheerio로 게시글/댓글을 파싱한다.
- * 마이너 갤러리(/mgallery/) 자동 감지.
- */
+type GallType = 'G' | 'M' | 'MI';
+
+const COMMENT_API_URL = 'https://gall.dcinside.com/board/comment/';
+
 export class DCInsideCollector extends CommunityBaseCollector {
   readonly source = 'dcinside';
   protected readonly baseUrl = 'https://gall.dcinside.com';
 
   protected readonly config: BrowserCollectorConfig = {
-    // ⚠️ v2: 본문 fetch 전환 (댓글 AJAX는 Playwright fallback) + postDelay 축소.
     pageDelay: { min: 3000, max: 5000 },
     postDelay: { min: 400, max: 800 },
     defaultMaxItems: 50,
-    maxSearchPages: 60,
+    maxSearchPages: 120,
   };
 
   protected readonly selectors: SiteSelectors = {
     list: ['.sch_result_list a.tit_txt', '.sch_result_list li > a'],
     content: ['.write_div', '.writing_view_box', '#container .write_div'],
-    comment: ['.reply_content .usertxt', '.cmt_txt_cont .usertxt'],
+    comment: [], // 미사용 — 댓글은 API로 수집
   };
 
-  // 차단 감지 override — fmkorea/clien과 동일 수준
   protected detectBlocked(html: string): boolean {
     if (!html) return true;
     if (html.length < 2000) return true;
@@ -53,24 +50,15 @@ export class DCInsideCollector extends CommunityBaseCollector {
     page: number,
     _dateRange?: { start: string; end: string },
   ): string {
-    // DC는 검색 URL에 날짜 필터 미지원 → dateRange 무시, 사후 필터링으로 처리
     return buildSearchUrl('dcinside', keyword, page);
   }
 
-  /**
-   * 검색 결과 HTML에서 게시글 링크 + 작성일 추출.
-   * search.dcinside.com 결과 구조: `<ul class="sch_result_list"><li>` 단위로
-   *   - 제목/링크: `a.tit_txt`
-   *   - 작성일: `<span class="date_time">YYYY.MM.DD HH:mm</span>` (KST)
-   * 작성일을 동반 추출하면 본문 요청 전 사전 필터 + per-day cap이 활성화된다.
-   */
   protected parseSearchResults(
     html: string,
   ): { url: string; title: string; publishedAt?: Date | null }[] {
     const $ = cheerio.load(html);
     const results: { url: string; title: string; publishedAt?: Date | null }[] = [];
 
-    // 1차: 결과 <li> 블록을 순회하며 link + title + date_time 동시 추출
     $('ul.sch_result_list > li').each((_, li) => {
       const $li = $(li);
       const $a = $li.find('a.tit_txt').first();
@@ -84,7 +72,6 @@ export class DCInsideCollector extends CommunityBaseCollector {
     });
     if (results.length > 0) return results;
 
-    // 2차: 셀렉터 매칭 실패 시 폴백 (구조 변경 대응) — publishedAt 없이 진행
     for (const selector of this.selectors.list) {
       $(selector).each((_, el) => {
         const href = $(el).attr('href');
@@ -100,69 +87,25 @@ export class DCInsideCollector extends CommunityBaseCollector {
     return results;
   }
 
-  /**
-   * 게시글 상세 페이지 — 🚀 fetch 우선 (Playwright 대체).
-   * DC 댓글은 AJAX 지연 로드라 fetch HTML엔 없을 수 있음 → 댓글 필요 시 Playwright fallback.
-   */
   protected async fetchPost(
-    page: import('playwright').Page,
+    _page: import('playwright').Page,
     url: string,
     title: string,
     maxComments: number,
   ): Promise<CommunityPost | null> {
-    let html = '';
-    let usedPlaywright = false;
-    // 1차: fetch 빠른 시도
-    try {
-      const cookies = await page
-        .context()
-        .cookies('https://gall.dcinside.com')
-        .catch(() => []);
-      const cookieHeader = cookies.map((c) => `${c.name}=${c.value}`).join('; ');
-      const response = await fetch(url, {
-        headers: {
-          'User-Agent':
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-          Accept: 'text/html,application/xhtml+xml',
-          'Accept-Language': 'ko-KR,ko;q=0.9',
-          Referer: 'https://gall.dcinside.com/',
-          ...(cookieHeader ? { Cookie: cookieHeader } : {}),
-        },
-      });
-      if (response.ok) html = await response.text();
-    } catch {
-      /* Playwright fallback */
-    }
-    // 2차: fetch 실패 또는 댓글 AJAX 필요 → Playwright
-    if (
-      !html ||
-      (maxComments > 0 && !html.includes('reply_content') && !html.includes('usertxt'))
-    ) {
-      usedPlaywright = true;
-      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
-      const commentSelector = this.selectors.comment.join(', ');
-      await page
-        .waitForSelector(commentSelector, { timeout: 4000, state: 'attached' })
-        .catch(() => undefined);
-      await page.waitForLoadState('networkidle', { timeout: 3000 }).catch(() => undefined);
-      html = await page.content();
-    }
-    void usedPlaywright; // 디버깅 시 사용
+    const html = await this.fetchPostHtml(url);
+    if (!html) return null;
+
     const $ = cheerio.load(html);
 
-    // 본문 추출 (fallback 셀렉터)
     let content = '';
     for (const selector of this.selectors.content) {
       content = sanitizeContent($(selector).html() ?? '');
       if (content.length > 10) break;
     }
 
-    // 메타데이터 추출
     const author = $('.gall_writer .nickname, .gall_writer .ip').first().text().trim() || '익명';
-    // dcinside 본문: <span class="gall_date" title="2026-04-18 14:58:41">2026.04.18</span>
-    // title 속성이 초 단위까지 정확하므로 우선 사용.
     const dateText = $('.gall_date').attr('title')?.trim() || $('.gall_date').text().trim();
-    // ⚠️ dateText 비면 new Date() fallback 대신 스킵 (clien/fmkorea 동일 정책)
     if (!dateText) {
       console.warn(`[dcinside] 본문 gall_date 없음 — 스킵: ${url}`);
       return null;
@@ -174,18 +117,19 @@ export class DCInsideCollector extends CommunityBaseCollector {
       10,
     );
 
-    // 갤러리 이름 추출
     const boardName =
       $('h3.title, .gallview_head .title').text().trim() || this.extractBoardFromUrl(url);
 
-    // 게시글 ID 추출
-    const sourceId = this.extractSourceId(url);
+    const { galleryId, gallType } = this.parseGalleryInfo(url);
+    const postNo = this.extractPostNo(url);
 
-    // 댓글 수집
-    const comments = this.parseComments($, sourceId, maxComments);
+    const { comments, totalCount } =
+      maxComments > 0
+        ? await this.fetchCommentsViaApi(galleryId, postNo, gallType, maxComments)
+        : { comments: [], totalCount: 0 };
 
     return {
-      sourceId,
+      sourceId: `dc_${postNo}`,
       url,
       title,
       content: content || title,
@@ -193,60 +137,123 @@ export class DCInsideCollector extends CommunityBaseCollector {
       boardName,
       publishedAt,
       viewCount,
-      commentCount: comments.length,
+      commentCount: totalCount,
       likeCount,
-      rawData: { dateText, originalUrl: url },
+      rawData: { dateText, gallType, originalUrl: url },
       comments,
     };
   }
 
-  /** HTML에서 댓글 파싱 */
-  private parseComments(
-    $: cheerio.CheerioAPI,
-    postSourceId: string,
+  private async fetchPostHtml(url: string): Promise<string | null> {
+    try {
+      const res = await fetch(url, {
+        headers: {
+          'User-Agent': getRandomUserAgent(),
+          Accept: 'text/html,application/xhtml+xml',
+          'Accept-Language': 'ko-KR,ko;q=0.9',
+          Referer: 'https://gall.dcinside.com/',
+        },
+      });
+      if (!res.ok) return null;
+      return await res.text();
+    } catch {
+      return null;
+    }
+  }
+
+  private async fetchCommentsViaApi(
+    galleryId: string,
+    postNo: string,
+    gallType: GallType,
     maxComments: number,
-  ): CommunityComment[] {
+  ): Promise<{ comments: CommunityComment[]; totalCount: number }> {
     const comments: CommunityComment[] = [];
+    let totalCount = 0;
 
-    for (const selector of this.selectors.comment) {
-      $(selector).each((i, el) => {
-        if (comments.length >= maxComments) return;
+    for (let commentPage = 1; ; commentPage++) {
+      if (comments.length >= maxComments) break;
 
-        const $el = $(el);
-        const $parent = $el.closest('.reply_info, .comment_dccon, li');
-        const content = sanitizeContent($el.html() ?? '');
-        if (!content) return;
+      const body = new URLSearchParams({
+        id: galleryId,
+        no: postNo,
+        cmt_id: galleryId,
+        cmt_no: postNo,
+        e_s_n_o: 'comment_api',
+        comment_page: String(commentPage),
+        sort: 'D',
+        _GALLTYPE_: gallType,
+      });
 
-        const author = $parent.find('.gall_writer .nickname, .ip').first().text().trim() || '익명';
-        const dateText = $parent.find('.date_time').text().trim();
-        const commentId = $parent.attr('data-no') || `${postSourceId}_c${i}`;
-        const parentCommentId =
-          $parent.attr('data-depth') === '1' ? null : $parent.attr('data-parent') || null;
+      let json: Record<string, unknown>;
+      try {
+        const res = await fetch(COMMENT_API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest',
+            'User-Agent': getRandomUserAgent(),
+            Referer: `https://gall.dcinside.com/board/view/?id=${galleryId}&no=${postNo}`,
+          },
+          body: body.toString(),
+        });
+        if (!res.ok) break;
+        json = (await res.json()) as Record<string, unknown>;
+      } catch {
+        break;
+      }
+
+      totalCount = parseInt(String(json.total_cnt ?? '0'), 10);
+      const items = json.comments;
+      if (!Array.isArray(items) || items.length === 0) break;
+
+      for (const item of items) {
+        if (comments.length >= maxComments) break;
+        const memo = sanitizeContent(String(item.memo ?? ''));
+        if (!memo) continue;
+
+        const depth = Number(item.depth ?? 0);
+        const parentNo = item.c_no ? String(item.c_no) : null;
 
         comments.push({
-          sourceId: `dc_comment_${commentId}`,
-          parentId: parentCommentId ? `dc_comment_${parentCommentId}` : null,
-          content,
-          author,
+          sourceId: `dc_comment_${item.no}`,
+          parentId: depth > 0 && parentNo ? `dc_comment_${parentNo}` : null,
+          content: memo,
+          author: String(item.name || '익명'),
           likeCount: 0,
           dislikeCount: 0,
-          publishedAt: parseDateText(dateText),
-          rawData: { dateText },
+          publishedAt: parseDateText(String(item.reg_date ?? '')),
+          rawData: {
+            no: item.no,
+            depth,
+            c_no: item.c_no ?? null,
+            nicktype: item.nicktype ?? null,
+            user_id: item.user_id ?? null,
+          },
         });
-      });
-      if (comments.length > 0) break;
+      }
+
+      const pagination = String(json.pagination ?? '');
+      if (!pagination.includes('comment_page')) break;
+
+      await sleep(200, 400);
     }
 
-    return comments;
+    return { comments, totalCount };
   }
 
-  /** URL에서 게시글 ID 추출 */
-  private extractSourceId(url: string): string {
+  private parseGalleryInfo(url: string): { galleryId: string; gallType: GallType } {
+    const idMatch = url.match(/id=([^&]+)/);
+    const galleryId = idMatch ? idMatch[1] : 'unknown';
+    if (url.includes('/mini/')) return { galleryId, gallType: 'MI' };
+    if (url.includes('/mgallery/')) return { galleryId, gallType: 'M' };
+    return { galleryId, gallType: 'G' };
+  }
+
+  private extractPostNo(url: string): string {
     const match = url.match(/no=(\d+)/);
-    return match ? `dc_${match[1]}` : `dc_${Date.now()}`;
+    return match ? match[1] : String(Date.now());
   }
 
-  /** URL에서 갤러리 이름 추출 */
   private extractBoardFromUrl(url: string): string {
     const match = url.match(/id=([^&]+)/);
     return match ? match[1] : 'unknown';
