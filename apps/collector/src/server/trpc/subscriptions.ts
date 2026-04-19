@@ -1,7 +1,10 @@
+import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { eq, and, desc, sql } from 'drizzle-orm';
 import { keywordSubscriptions } from '../../db/schema';
+import { enqueueCollectionJob } from '../../queue/queues';
+import type { CollectorSource } from '../../queue/types';
 import { router, protectedProcedure } from './init';
 
 const SOURCE_ENUM = ['naver-news', 'youtube', 'dcinside', 'fmkorea', 'clien'] as const;
@@ -146,7 +149,7 @@ export const subscriptionsRouter = router({
   /**
    * 수동 즉시 트리거 — 스케줄과 무관하게 수집 큐에 즉시 enqueue.
    * 쿨다운: 직전 성공 수집 후 MANUAL_TRIGGER_COOLDOWN_SEC 이내면 거부.
-   * 실제 큐 enqueue는 P2(워커 구현)에서 주입 — 현재는 DB 상태만 업데이트.
+   * sources 지정 시 해당 소스만, 아니면 subscription.sources 전체 enqueue.
    */
   triggerNow: protectedProcedure
     .input(
@@ -175,17 +178,45 @@ export const subscriptionsRouter = router({
         }
       }
 
-      // nextRunAt을 즉시로 당겨 스캐너가 다음 tick에서 픽업
+      const targetSources = (input.sources ??
+        (row.sources as CollectorSource[])) as CollectorSource[];
+      if (targetSources.length === 0) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: '수집할 소스가 없습니다' });
+      }
+
+      const runId = randomUUID();
+      const now = new Date();
+      const intervalMs = row.intervalHours * 3600 * 1000;
+      const startISO = row.lastRunAt
+        ? row.lastRunAt.toISOString()
+        : new Date(now.getTime() - intervalMs).toISOString();
+      const endISO = now.toISOString();
+
+      for (const source of targetSources) {
+        await enqueueCollectionJob({
+          runId,
+          subscriptionId: row.id,
+          source,
+          keyword: row.keyword,
+          limits: row.limits,
+          options: row.options ?? undefined,
+          dateRange: { startISO, endISO },
+          triggerType: 'manual',
+        });
+      }
+
+      // 다음 스케줄 실행 시각을 intervalHours 뒤로 — 스캐너 중복 enqueue 방지
       const [updated] = await ctx.db
         .update(keywordSubscriptions)
-        .set({ nextRunAt: new Date() })
+        .set({ nextRunAt: new Date(now.getTime() + intervalMs) })
         .where(eq(keywordSubscriptions.id, input.id))
         .returning();
 
       return {
         queued: true,
+        runId,
         subscription: updated,
-        requestedSources: input.sources ?? row.sources,
+        enqueuedSources: targetSources,
       };
     }),
 
