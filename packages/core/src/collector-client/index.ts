@@ -10,7 +10,7 @@ import type { AppRouter } from '@ai-signalcraft/collector/router';
 
 export type CollectorClient = TRPCClient<AppRouter>;
 
-function getCollectorUrl(): string {
+export function getCollectorUrl(): string {
   const url = process.env.COLLECTOR_URL;
   if (!url) {
     throw new Error('COLLECTOR_URL 환경변수가 설정되지 않았습니다. (예: http://localhost:3400)');
@@ -18,7 +18,7 @@ function getCollectorUrl(): string {
   return url.replace(/\/+$/, '');
 }
 
-function getCollectorApiKey(): string {
+export function getCollectorApiKey(): string {
   const key = process.env.COLLECTOR_API_KEY;
   if (!key) {
     throw new Error('COLLECTOR_API_KEY 환경변수가 설정되지 않았습니다.');
