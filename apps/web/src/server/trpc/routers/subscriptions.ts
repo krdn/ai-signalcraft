@@ -82,6 +82,13 @@ export interface RunRecord {
   errorReason?: string | null;
 }
 
+export interface RunItemBreakdownEntry {
+  fetchedFromRun: string | null;
+  source: string;
+  itemType: string;
+  count: number;
+}
+
 /**
  * 키워드 구독 관리 라우터.
  * collector 서비스(apps/collector)의 tRPC API를 web에서 프록시.
@@ -343,6 +350,21 @@ export const subscriptionsRouter = router({
       try {
         const res = await getCollectorClient().runs.list.query(input);
         return res as unknown as RunRecord[];
+      } catch (err) {
+        handleCollectorError(err);
+      }
+    }),
+
+  runItemBreakdown: protectedProcedure
+    .input(
+      z.object({
+        runIds: z.array(z.string().uuid()).min(1).max(100),
+      }),
+    )
+    .query(async ({ input }): Promise<RunItemBreakdownEntry[]> => {
+      try {
+        const res = await getCollectorClient().runs.itemBreakdown.query(input);
+        return res as unknown as RunItemBreakdownEntry[];
       } catch (err) {
         handleCollectorError(err);
       }

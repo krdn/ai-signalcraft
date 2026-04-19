@@ -10,10 +10,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import type { RunRecord } from '@/server/trpc/routers/subscriptions';
+import type { RunRecord, RunItemBreakdownEntry } from '@/server/trpc/routers/subscriptions';
 
 interface RunHistoryTableProps {
   runs: RunRecord[];
+  breakdown?: RunItemBreakdownEntry[];
   limit?: number;
 }
 
@@ -47,7 +48,24 @@ function getRunStatusLabel(status: string): string {
   }
 }
 
-export function RunHistoryTable({ runs, limit = 50 }: RunHistoryTableProps) {
+const ITEM_TYPE_LABEL: Record<string, string> = {
+  article: '기사',
+  video: '영상',
+  comment: '댓글',
+};
+
+function getBreakdownText(
+  runId: string,
+  source: string,
+  breakdown?: RunItemBreakdownEntry[],
+): string | null {
+  if (!breakdown || breakdown.length === 0) return null;
+  const entries = breakdown.filter((b) => b.fetchedFromRun === runId && b.source === source);
+  if (entries.length === 0) return null;
+  return entries.map((e) => `${ITEM_TYPE_LABEL[e.itemType] ?? e.itemType} ${e.count}`).join(' / ');
+}
+
+export function RunHistoryTable({ runs, breakdown, limit = 50 }: RunHistoryTableProps) {
   const sorted = [...runs]
     .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
     .slice(0, limit);
@@ -78,6 +96,7 @@ export function RunHistoryTable({ runs, limit = 50 }: RunHistoryTableProps) {
             sorted.map((run, i) => {
               const prevRun = sorted[i - 1];
               const sameGroup = prevRun?.runId === run.runId;
+              const bdText = getBreakdownText(run.runId, run.source, breakdown);
               return (
                 <TableRow
                   key={`${run.runId}-${run.source}-${i}`}
@@ -97,7 +116,10 @@ export function RunHistoryTable({ runs, limit = 50 }: RunHistoryTableProps) {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right text-xs tabular-nums">
-                    {run.itemsCollected}
+                    <div>{run.itemsCollected}</div>
+                    {bdText && (
+                      <div className="text-[10px] text-muted-foreground font-normal">{bdText}</div>
+                    )}
                   </TableCell>
                   <TableCell className="text-right text-xs tabular-nums">{run.itemsNew}</TableCell>
                   <TableCell className="text-right hidden md:table-cell text-xs tabular-nums">

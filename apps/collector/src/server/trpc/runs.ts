@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { and, desc, eq, gte } from 'drizzle-orm';
-import { collectionRuns } from '../../db/schema';
+import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
+import { collectionRuns, rawItems } from '../../db/schema';
 import { protectedProcedure, router } from './init';
 
 export const runsRouter = router({
@@ -30,6 +30,26 @@ export const runsRouter = router({
         .where(and(...conds))
         .orderBy(desc(collectionRuns.time))
         .limit(input.limit);
+      return rows;
+    }),
+
+  itemBreakdown: protectedProcedure
+    .input(
+      z.object({
+        runIds: z.array(z.string().uuid()).min(1).max(100),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const rows = await ctx.db
+        .select({
+          fetchedFromRun: rawItems.fetchedFromRun,
+          source: rawItems.source,
+          itemType: rawItems.itemType,
+          count: sql<number>`count(*)::int`,
+        })
+        .from(rawItems)
+        .where(inArray(rawItems.fetchedFromRun, input.runIds))
+        .groupBy(rawItems.fetchedFromRun, rawItems.source, rawItems.itemType);
       return rows;
     }),
 

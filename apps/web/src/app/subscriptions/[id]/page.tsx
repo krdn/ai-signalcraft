@@ -65,6 +65,15 @@ export default function SubscriptionDetailPage() {
 
   const itemStats = itemStatsQuery.data;
 
+  const runIds = [...new Set(runs.map((r) => r.runId))];
+  const breakdownQuery = useQuery({
+    queryKey: ['run-item-breakdown', { runIds }],
+    queryFn: () => trpcClient.subscriptions.runItemBreakdown.query({ runIds }),
+    enabled: runIds.length > 0,
+    refetchInterval: 60_000,
+  });
+  const breakdown = breakdownQuery.data;
+
   if (subQuery.isLoading) {
     return (
       <div className="flex items-center justify-center py-20 text-muted-foreground">
@@ -114,7 +123,7 @@ export default function SubscriptionDetailPage() {
 
           <div>
             <h3 className="text-sm font-medium mb-2">실행 히스토리</h3>
-            <RunHistoryTable runs={runs} limit={100} />
+            <RunHistoryTable runs={runs} breakdown={breakdown} limit={100} />
           </div>
         </TabsContent>
 
