@@ -241,3 +241,5 @@ export async function updateBreakpoints(
     .where(eq(collectionJobs.id, jobId));
   return { updated: true, message: '브레이크포인트가 업데이트되었습니다' };
 }
+
+export { writeAuditLog, getAuditLogs, type AuditEntry } from './worker-audit';
