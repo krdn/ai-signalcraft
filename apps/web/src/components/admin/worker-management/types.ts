@@ -1,6 +1,6 @@
 import type { trpcClient } from '@/lib/trpc';
 
-export type WorkerModalTab = 'queue-status' | 'stalled' | 'failed' | 'workers';
+export type WorkerModalTab = 'queue-status' | 'stalled' | 'failed' | 'workers' | 'system';
 
 export interface WorkerManagementModalProps {
   open: boolean;

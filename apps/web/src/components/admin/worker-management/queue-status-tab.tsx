@@ -204,18 +204,13 @@ export function QueueStatusTab({ data, onRefresh }: QueueStatusTabProps) {
 
               {activeJobs.length > 0 && (
                 <Collapsible open={isExpanded} onOpenChange={() => toggleExpand(q.queue)}>
-                  <CollapsibleTrigger asChild>
-                    <button
-                      type="button"
-                      className="mt-2 flex w-full items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-                    >
-                      {isExpanded ? (
-                        <ChevronDown className="h-3 w-3" />
-                      ) : (
-                        <ChevronRight className="h-3 w-3" />
-                      )}
-                      Active jobs ({activeJobs.length})
-                    </button>
+                  <CollapsibleTrigger className="mt-2 flex w-full items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+                    {isExpanded ? (
+                      <ChevronDown className="h-3 w-3" />
+                    ) : (
+                      <ChevronRight className="h-3 w-3" />
+                    )}
+                    Active jobs ({activeJobs.length})
                   </CollapsibleTrigger>
                   <CollapsibleContent className="mt-1 space-y-1">
                     {activeJobs.map((job) => (

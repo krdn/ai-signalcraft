@@ -6,6 +6,7 @@ import { QueueStatusTab } from './worker-management/queue-status-tab';
 import { StalledJobsTab } from './worker-management/stalled-jobs-tab';
 import { FailedJobsTab } from './worker-management/failed-jobs-tab';
 import { WorkersTab } from './worker-management/workers-tab';
+import { SystemTab } from './worker-management/system-tab';
 import type { WorkerManagementModalProps } from './worker-management/types';
 import { trpcClient } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
@@ -76,6 +77,7 @@ export function WorkerManagementModal({
                 )}
               </TabsTrigger>
               <TabsTrigger value="workers">워커</TabsTrigger>
+              <TabsTrigger value="system">시스템</TabsTrigger>
             </TabsList>
 
             <TabsContent value="queue-status">
@@ -89,6 +91,9 @@ export function WorkerManagementModal({
             </TabsContent>
             <TabsContent value="workers">
               <WorkersTab workerHealth={data.workerHealth} />
+            </TabsContent>
+            <TabsContent value="system">
+              <SystemTab />
             </TabsContent>
           </Tabs>
         ) : null}
