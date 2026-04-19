@@ -50,11 +50,11 @@ jobs:
       - name: Build & Deploy (Docker Compose)
         working-directory: docker
         run: |
-          # 이미지 빌드 (web, worker)
-          docker compose -f docker-compose.prod.yml --env-file ../.env.production build web worker
+          docker compose -f docker-compose.prod.yml --env-file ../.env.production build \
+            web worker collector-api collector-worker collector-scheduler
 
-          # 인프라(postgres, redis)는 건드리지 않고 web/worker만 교체
-          docker compose -f docker-compose.prod.yml --env-file ../.env.production up -d --no-deps web worker
+          docker compose -f docker-compose.prod.yml --env-file ../.env.production up -d --no-deps \
+            web worker collector-api collector-worker collector-scheduler
           echo "Deploy completed at $(date)"
 
       - name: Health Check
@@ -67,6 +67,12 @@ jobs:
             docker start ais-prod-web 2>/dev/null || true
             sleep 5
             curl -sf http://localhost:3300 > /dev/null && echo "Web OK (재시작 후)" || echo "Web FAILED (재시작 후에도 실패)"
+          fi
+
+          if curl -sf http://localhost:3400/health > /dev/null 2>&1; then
+            echo "Collector API OK"
+          else
+            echo "Collector API not yet responding (non-fatal)"
           fi
 
       - name: Publish Release
