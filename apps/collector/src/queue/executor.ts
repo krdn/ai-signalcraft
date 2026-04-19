@@ -3,6 +3,7 @@ import { sql, eq } from 'drizzle-orm';
 import { getCollector } from '@ai-signalcraft/collectors';
 import { getDb } from '../db';
 import { rawItems, collectionRuns, fetchErrors, keywordSubscriptions } from '../db/schema';
+import { buildEmbeddingText, embedPassages } from '../services/embedding';
 import { mapToRawItem } from './item-mapper';
 import type { CollectionJobData, CollectionJobResult, CollectorSource } from './types';
 
@@ -82,6 +83,23 @@ export async function executeCollectionJob(
           runId,
         }),
       );
+
+      // 임베딩 생성 — 실패해도 수집은 계속 (embedding은 NULL 허용)
+      try {
+        const texts = rows.map((r) => buildEmbeddingText(r.title ?? null, r.content ?? null));
+        if (texts.some((t) => t.length > 0)) {
+          const vectors = await embedPassages(texts);
+          rows.forEach((r, i) => {
+            if (texts[i].length > 0 && vectors[i]) r.embedding = vectors[i];
+          });
+        }
+      } catch (embedErr) {
+        console.warn(
+          `[executor:${source}] embedding failed (continuing without): ${
+            embedErr instanceof Error ? embedErr.message : String(embedErr)
+          }`,
+        );
+      }
 
       // TimescaleDB는 UNIQUE 제약이 시간 컬럼을 포함해야 하므로 애플리케이션 레벨에서
       // ON CONFLICT DO NOTHING 효과를 위해 dedup 인덱스를 활용.

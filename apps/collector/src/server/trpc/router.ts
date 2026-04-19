@@ -1,12 +1,17 @@
 import { router } from './init';
 import { subscriptionsRouter } from './subscriptions';
+import { itemsRouter } from './items';
+import { runsRouter } from './runs';
+import { healthRouter } from './health';
 
 /**
- * P1 단계 — subscriptions CRUD 만 노출.
- * P3에서 items/runs/health 라우터 추가 예정.
+ * collector 공개 API — ai-signalcraft 분석 시스템 및 운영 툴이 소비.
  */
 export const appRouter = router({
   subscriptions: subscriptionsRouter,
+  items: itemsRouter,
+  runs: runsRouter,
+  health: healthRouter,
 });
 
 export type AppRouter = typeof appRouter;
