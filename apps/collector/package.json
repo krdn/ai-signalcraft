@@ -16,7 +16,8 @@
     "worker": "tsx watch src/queue/worker-process.ts",
     "scheduler": "tsx watch src/scheduler/scanner.ts",
     "db:push": "drizzle-kit push",
-    "db:migrate-timescale": "tsx src/db/migrations/apply-hypertables.ts"
+    "db:migrate-timescale": "tsx src/db/migrations/apply-hypertables.ts",
+    "migrate:import-legacy": "tsx src/migrations/import-legacy.ts"
   },
   "dependencies": {
     "@ai-signalcraft/collectors": "workspace:*",
