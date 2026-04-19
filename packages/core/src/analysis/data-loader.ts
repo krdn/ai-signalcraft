@@ -128,6 +128,41 @@ export interface LoadFromCollectorOptions {
  *   - maxContentLength / maxComments를 호출부에서 명시적으로 지정 (하드코딩 제거)
  *   - 동일 키워드·기간을 반복 분석해도 저장소를 공유
  */
+/**
+ * jobId로 collector API 경로를 통해 분석 입력을 로드.
+ *
+ * legacy `loadAnalysisInput`(N:M 조인)의 collector-backed 대체.
+ * `USE_COLLECTOR_LOADER=1` 환경에서 orchestrator가 선택할 수 있도록 같은 시그니처 제공.
+ */
+export async function loadAnalysisInputViaCollector(jobId: number): Promise<AnalysisInput> {
+  const [job] = await getDb()
+    .select()
+    .from(collectionJobs)
+    .where(eq(collectionJobs.id, jobId))
+    .limit(1);
+
+  if (!job) {
+    throw new Error(`Collection job not found: ${jobId}`);
+  }
+
+  const ensureDate = (d: Date | string): Date => (d instanceof Date ? d : new Date(d));
+
+  return loadAnalysisInputFromCollector({
+    jobId,
+    keyword: job.keyword,
+    dateRange: {
+      start: ensureDate(job.startDate),
+      end: ensureDate(job.endDate),
+    },
+    domain: (job.domain as AnalysisDomain) || undefined,
+  });
+}
+
+export function shouldUseCollectorLoader(): boolean {
+  const v = process.env.USE_COLLECTOR_LOADER;
+  return v === '1' || v === 'true';
+}
+
 export async function loadAnalysisInputFromCollector(
   opts: LoadFromCollectorOptions,
 ): Promise<AnalysisInput> {

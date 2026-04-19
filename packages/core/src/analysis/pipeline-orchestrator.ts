@@ -15,7 +15,11 @@ import {
   createModelConfigAdapter,
 } from './runner';
 import { runModuleMapReduce } from './map-reduce';
-import { loadAnalysisInput } from './data-loader';
+import {
+  loadAnalysisInput,
+  loadAnalysisInputViaCollector,
+  shouldUseCollectorLoader,
+} from './data-loader';
 import {
   preprocessAnalysisInput,
   normalizeAnalysisInput,
@@ -65,7 +69,9 @@ export async function runAnalysisPipeline(
   cancelledByUser?: boolean;
   costLimitExceeded?: boolean;
 }> {
-  let input = await loadAnalysisInput(jobId);
+  let input = shouldUseCollectorLoader()
+    ? await loadAnalysisInputViaCollector(jobId)
+    : await loadAnalysisInput(jobId);
   const loaded = await loadCompletedResults(jobId, options?.retryModules);
 
   if (Object.keys(loaded.allResults).length > 0) {
