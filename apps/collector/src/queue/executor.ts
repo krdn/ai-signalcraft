@@ -22,6 +22,18 @@ import type {
 const EMBED_BATCH_SIZE = 50;
 
 /**
+ * 게시물/비디오에 comments 배열을 inline으로 담아 반환하는 소스.
+ * executor가 이 배열을 item_type='comment' raw_items로 풀어준다.
+ * naver-news는 별도 fan-out(naver-comments) 경로라 포함하지 않는다.
+ */
+const INLINE_COMMENT_SOURCES: ReadonlySet<CollectorSource> = new Set<CollectorSource>([
+  'youtube',
+  'dcinside',
+  'fmkorea',
+  'clien',
+]);
+
+/**
  * texts 전체를 EMBED_BATCH_SIZE로 쪼개 embedPassages를 여러 번 호출한다.
  * 실패하는 배치가 있으면 그 배치 구간만 빈 배열로 채워 전체 길이를 유지한다.
  */
@@ -147,18 +159,30 @@ export async function executeCollectionJob(
       });
       itemsCollected += rows.length;
 
-      // YouTube 통합 수집기는 각 video의 comments 배열을 같이 반환한다.
+      // YouTube + 커뮤니티(dcinside/fmkorea/clien)는 게시물에 comments 배열을 포함해 반환한다.
       // executor가 이 배열을 별도 raw_items(item_type='comment')로 풀어주지 않으면
       // 댓글은 raw_payload에만 묻혀 분석 파이프라인에서 조회되지 않는다.
-      if (source === 'youtube') {
+      // naver-news는 별도 fan-out(naver-comments)으로 처리되므로 여기선 제외.
+      if (INLINE_COMMENT_SOURCES.has(source)) {
         for (const raw of chunk) {
           const record = raw as Record<string, unknown>;
           const comments = Array.isArray(record.comments)
             ? (record.comments as Record<string, unknown>[])
             : [];
+          // 커뮤니티 어댑터는 댓글 객체에 부모 게시물 sourceId를 담지 않는다 (대댓글의 parentId는
+          // 부모 댓글 ID). parentSourceId 연결을 유지하려면 수집 컨텍스트인 게시물 sourceId를
+          // 여기서 주입한다. YouTube는 이미 어댑터가 videoSourceId를 넣어 반환하므로 덮어쓰지 않는다.
+          const postSourceId = typeof record.sourceId === 'string' ? record.sourceId : null;
           for (const c of comments) {
+            // 어댑터가 명시적으로 article/video 연결을 넣어준 경우는 존중.
+            // 아니면 게시물 sourceId를 postId로 주입 — mapToRawItem이 parentSourceId로 매핑한다.
+            // 대댓글의 parentId(부모 댓글 ID)보다 우선순위가 앞서 게시물 연결이 이긴다.
+            const hasExplicitParent =
+              typeof c.articleSourceId === 'string' || typeof c.videoSourceId === 'string';
+            const enriched =
+              postSourceId && !hasExplicitParent ? { ...c, postId: postSourceId } : c;
             rows.push(
-              mapToRawItem(c, {
+              mapToRawItem(enriched, {
                 subscriptionId,
                 source,
                 itemType: 'comment',
