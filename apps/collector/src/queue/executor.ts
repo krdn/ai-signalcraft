@@ -225,7 +225,20 @@ export async function executeCollectionJob(
 
       itemsNew += result.length;
 
-      await job.updateProgress({ itemsCollected, itemsNew });
+      // 실시간 진행 상태: Redis(job.progress)에 ts 포함해 저장 + DB(collection_runs)에 하트비트 기록.
+      // UI는 Redis를 primary로 읽고, DB는 Redis 장애 시 fallback 겸 stalled 판정용.
+      const progressTs = Date.now();
+      await job.updateProgress({ itemsCollected, itemsNew, ts: progressTs });
+      await db
+        .update(collectionRuns)
+        .set({ itemsCollected, itemsNew, lastProgressAt: new Date(progressTs) })
+        .where(
+          and(
+            eq(collectionRuns.runId, runId),
+            eq(collectionRuns.source, source),
+            eq(collectionRuns.status, 'running'),
+          ),
+        );
     }
 
     const durationMs = Date.now() - startedAt;
@@ -431,7 +444,19 @@ async function executeCommentsJob(job: Job<CollectionJobData>): Promise<Collecti
             .returning({ insertedAt: rawItems.fetchedAt });
 
           itemsNew += result.length;
-          await job.updateProgress({ itemsCollected, itemsNew });
+          // 댓글 fan-out 경로도 동일 하트비트 — 기사당 1회씩
+          const progressTs = Date.now();
+          await job.updateProgress({ itemsCollected, itemsNew, ts: progressTs });
+          await db
+            .update(collectionRuns)
+            .set({ itemsCollected, itemsNew, lastProgressAt: new Date(progressTs) })
+            .where(
+              and(
+                eq(collectionRuns.runId, runId),
+                eq(collectionRuns.source, source),
+                eq(collectionRuns.status, 'running'),
+              ),
+            );
         }
       } catch (articleErr) {
         // CancelledError는 per-article catch에서 삼키지 않고 outer catch로 전파

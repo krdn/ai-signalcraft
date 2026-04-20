@@ -5,6 +5,7 @@ import { Loader2 } from 'lucide-react';
 import { SOURCE_LABEL_MAP } from './subscription-utils';
 import { CopyableClaudeRef } from './copyable-claude-ref';
 import { RunRowActions } from './run-row-actions';
+import { RunProgressInline } from './run-progress-inline';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { RunRecord } from '@/server/trpc/routers/subscriptions';
@@ -88,7 +89,12 @@ export function LiveRunFeed({ runs, subscriptionMap }: LiveRunFeedProps) {
                 {keyword && <span className="font-medium truncate max-w-[160px]">{keyword}</span>}
                 <span className="text-muted-foreground">→</span>
                 <span className="text-xs">{SOURCE_LABEL_MAP[run.source] ?? run.source}</span>
-                <div className="ml-auto flex items-center gap-2">
+                <div className="ml-auto flex items-center gap-3 flex-wrap justify-end">
+                  <RunProgressInline
+                    runId={run.runId}
+                    source={run.source}
+                    active={run.status === 'running'}
+                  />
                   <span className="text-xs text-muted-foreground tabular-nums">
                     <ElapsedTimer since={new Date(run.time)} />
                   </span>

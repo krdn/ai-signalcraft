@@ -3,6 +3,8 @@ import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
 import { collectionRuns, rawItems, runDiagnostics } from '../../db/schema';
 import { cancelRun, cancelBySubscription, cancelAll, retryRun } from '../../queue/run-control';
 import { collectLayerA } from '../../diagnostics/collect-run';
+import { getCollectQueue } from '../../queue/queues';
+import type { CollectorSource } from '../../queue/types';
 import { protectedProcedure, router } from './init';
 
 const SOURCE_ENUM = [
@@ -134,6 +136,121 @@ export const runsRouter = router({
     .mutation(async ({ input, ctx }) => {
       const triggeredBy = `user:${(ctx.apiKey ?? 'unknown').slice(0, 8)}`;
       return retryRun(input.runId, input.source, triggeredBy);
+    }),
+
+  /**
+   * 실시간 진행 상태. /subscriptions/monitor의 LiveRunFeed + run-actions-modal이 2초 폴링.
+   *
+   * 데이터 소스 우선순위 (liveness 판정):
+   *   1) BullMQ job.progress — {itemsCollected, itemsNew, ts}. Primary.
+   *   2) collection_runs.last_progress_at — Redis 장애 시 fallback
+   *   3) job.processedOn — 워커가 작업을 잡은 시각 (최소 하한)
+   *
+   * byType은 rawItems에서 직접 COUNT — job.progress는 insert 완료 전에 찍히므로
+   * "DB에 실제 적재된 수"를 UI가 교차 검증할 수 있게 한다.
+   */
+  progress: protectedProcedure
+    .input(
+      z.object({
+        runId: z.string().uuid(),
+        source: z.enum(SOURCE_ENUM),
+      }),
+    )
+    .query(async ({ input, ctx }) => {
+      const { runId, source } = input;
+      const jobId = `${runId}-${source}`;
+
+      // 1) BullMQ job — state/progress/timestamps
+      let bullState: string = 'unknown';
+      let attemptsMade = 0;
+      let failedReason: string | null = null;
+      let jobProgress: { itemsCollected?: number; itemsNew?: number; ts?: number } = {};
+      let processedOnMs: number | null = null;
+      let finishedOnMs: number | null = null;
+      let timestampMs: number | null = null;
+      try {
+        const queue = getCollectQueue(source as CollectorSource);
+        const job = await queue.getJob(jobId);
+        if (job) {
+          bullState = await job.getState();
+          attemptsMade = job.attemptsMade ?? 0;
+          failedReason = job.failedReason ?? null;
+          const raw = job.progress;
+          if (raw && typeof raw === 'object') {
+            jobProgress = raw as typeof jobProgress;
+          }
+          processedOnMs = job.processedOn ?? null;
+          finishedOnMs = job.finishedOn ?? null;
+          timestampMs = job.timestamp ?? null;
+        }
+      } catch (err) {
+        // Redis 장애는 degradation — DB fallback으로 계속
+        console.warn(
+          `[runs.progress] BullMQ 조회 실패 runId=${runId} source=${source}: ${
+            err instanceof Error ? err.message : String(err)
+          }`,
+        );
+        bullState = 'unreachable';
+      }
+
+      // 2) DB — 최신 collection_runs row + rawItems byType 집계 병렬
+      const [runRowResult, byTypeRows] = await Promise.all([
+        ctx.db
+          .select()
+          .from(collectionRuns)
+          .where(and(eq(collectionRuns.runId, runId), eq(collectionRuns.source, source)))
+          .orderBy(desc(collectionRuns.time))
+          .limit(1),
+        ctx.db
+          .select({
+            itemType: rawItems.itemType,
+            count: sql<number>`count(*)::int`,
+          })
+          .from(rawItems)
+          .where(eq(rawItems.fetchedFromRun, runId))
+          .groupBy(rawItems.itemType),
+      ]);
+      const [runRow] = runRowResult;
+
+      const byType = { article: 0, video: 0, comment: 0 };
+      for (const r of byTypeRows) {
+        byType[r.itemType as keyof typeof byType] = r.count;
+      }
+
+      // liveness 결정: Redis progress ts → DB last_progress_at → job.processedOn
+      const dbLastProgressMs = runRow?.lastProgressAt ? runRow.lastProgressAt.getTime() : null;
+      const lastProgressAtMs =
+        jobProgress.ts && dbLastProgressMs
+          ? Math.max(jobProgress.ts, dbLastProgressMs)
+          : (jobProgress.ts ?? dbLastProgressMs ?? processedOnMs);
+
+      // itemsCollected/itemsNew도 Redis 우선, 없으면 DB
+      const itemsCollected = jobProgress.itemsCollected ?? runRow?.itemsCollected ?? 0;
+      const itemsNew = jobProgress.itemsNew ?? runRow?.itemsNew ?? 0;
+
+      const startedAtMs = runRow?.time?.getTime() ?? timestampMs ?? null;
+      const elapsedMs =
+        finishedOnMs && startedAtMs
+          ? finishedOnMs - startedAtMs
+          : startedAtMs
+            ? Date.now() - startedAtMs
+            : 0;
+
+      return {
+        runId,
+        source,
+        status: runRow?.status ?? null,
+        bullState,
+        attemptsMade,
+        itemsCollected,
+        itemsNew,
+        byType,
+        lastProgressAtMs,
+        processedOnMs,
+        finishedOnMs,
+        elapsedMs,
+        failedReason,
+      };
     }),
 
   diagnose: protectedProcedure

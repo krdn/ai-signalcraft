@@ -21,6 +21,9 @@ export const collectionRuns = pgTable(
     errorReason: text('error_reason'),
     durationMs: integer('duration_ms'),
     triggerType: text('trigger_type', { enum: ['schedule', 'manual'] }).notNull(),
+    // 실시간 진행률 하트비트. executor가 매 청크마다 now()로 갱신.
+    // job.progress(Redis)가 primary이고 이 컬럼은 Redis 장애 시 fallback + UI stalled 판정용.
+    lastProgressAt: timestamp('last_progress_at', { withTimezone: true }),
   },
   (table) => [
     index('collection_runs_subscription_time_idx').on(table.subscriptionId, table.time),

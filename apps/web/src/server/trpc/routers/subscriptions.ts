@@ -89,6 +89,22 @@ export interface RunItemBreakdownEntry {
   count: number;
 }
 
+export interface RunProgress {
+  runId: string;
+  source: string;
+  status: 'running' | 'completed' | 'blocked' | 'failed' | null;
+  bullState: string;
+  attemptsMade: number;
+  itemsCollected: number;
+  itemsNew: number;
+  byType: { article: number; video: number; comment: number };
+  lastProgressAtMs: number | null;
+  processedOnMs: number | null;
+  finishedOnMs: number | null;
+  elapsedMs: number;
+  failedReason: string | null;
+}
+
 export interface CancelResult {
   runId: string;
   source: string;
@@ -429,6 +445,22 @@ export const subscriptionsRouter = router({
       try {
         const res = await getCollectorClient().runs.itemBreakdown.query(input);
         return res as unknown as RunItemBreakdownEntry[];
+      } catch (err) {
+        handleCollectorError(err);
+      }
+    }),
+
+  runProgress: protectedProcedure
+    .input(
+      z.object({
+        runId: z.string().uuid(),
+        source: z.enum(SOURCE_ENUM),
+      }),
+    )
+    .query(async ({ input }): Promise<RunProgress> => {
+      try {
+        const res = await getCollectorClient().runs.progress.query(input);
+        return res as unknown as RunProgress;
       } catch (err) {
         handleCollectorError(err);
       }
