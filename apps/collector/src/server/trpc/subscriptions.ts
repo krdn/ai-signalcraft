@@ -233,12 +233,17 @@ export const subscriptionsRouter = router({
         fromDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD KST 형식'),
         toDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD KST 형식'),
         perDay: z.number().int().positive().max(1000).default(200),
-        maxPages: z.number().int().positive().max(200).default(80),
       }),
     )
     .mutation(async ({ ctx, input }) => {
       const fromMs = new Date(`${input.fromDate}T00:00:00+09:00`).getTime();
       const toMs = new Date(`${input.toDate}T00:00:00+09:00`).getTime();
+      if (Number.isNaN(fromMs) || Number.isNaN(toMs)) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: '유효하지 않은 날짜입니다 (fromDate/toDate)',
+        });
+      }
       const windowDays = Math.floor((toMs - fromMs) / 86400000) + 1;
       if (windowDays < 1 || windowDays > 90) {
         throw new TRPCError({
