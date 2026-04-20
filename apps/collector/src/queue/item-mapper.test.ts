@@ -57,6 +57,25 @@ describe('mapToRawItem', () => {
     expect(row.itemType).toBe('video');
   });
 
+  it('YouTube 댓글(YoutubeComment) 구조를 raw_items(comment)로 매핑한다', () => {
+    const raw = {
+      sourceId: 'cmt-xyz',
+      videoSourceId: 'vid-abc',
+      parentId: null,
+      content: '댓글 본문',
+      author: '시청자',
+      likeCount: 3,
+      publishedAt: '2026-03-15T09:00:00Z',
+    };
+    const row = mapToRawItem(raw, { ...ctx, source: 'youtube', itemType: 'comment' });
+    expect(row.sourceId).toBe('cmt-xyz');
+    expect(row.itemType).toBe('comment');
+    expect(row.parentSourceId).toBe('vid-abc');
+    expect(row.content).toBe('댓글 본문');
+    expect(row.author).toBe('시청자');
+    expect(row.metrics?.likeCount).toBe(3);
+  });
+
   it('커뮤니티(CommunityPost) 구조를 매핑한다', () => {
     const raw = {
       id: 'post-7',

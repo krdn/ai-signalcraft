@@ -114,6 +114,7 @@ export function mapToRawItem(raw: AnyItem, ctx: MapItemContext): NewRawItem {
       raw,
       'articleSourceId',
       'articleId',
+      'videoSourceId',
       'videoId',
       'postId',
       'parentId',

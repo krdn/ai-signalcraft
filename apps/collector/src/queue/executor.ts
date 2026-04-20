@@ -91,7 +91,6 @@ export async function executeCollectionJob(
 
     for await (const chunk of iter) {
       if (!Array.isArray(chunk) || chunk.length === 0) continue;
-      itemsCollected += chunk.length;
 
       const rows = chunk.map((raw) => {
         const record = raw as Record<string, unknown>;
@@ -109,6 +108,30 @@ export async function executeCollectionJob(
           runId,
         });
       });
+      itemsCollected += rows.length;
+
+      // YouTube 통합 수집기는 각 video의 comments 배열을 같이 반환한다.
+      // executor가 이 배열을 별도 raw_items(item_type='comment')로 풀어주지 않으면
+      // 댓글은 raw_payload에만 묻혀 분석 파이프라인에서 조회되지 않는다.
+      if (source === 'youtube') {
+        for (const raw of chunk) {
+          const record = raw as Record<string, unknown>;
+          const comments = Array.isArray(record.comments)
+            ? (record.comments as Record<string, unknown>[])
+            : [];
+          for (const c of comments) {
+            rows.push(
+              mapToRawItem(c, {
+                subscriptionId,
+                source,
+                itemType: 'comment',
+                runId,
+              }),
+            );
+          }
+          itemsCollected += comments.length;
+        }
+      }
 
       // 임베딩 생성 — 실패해도 수집은 계속 (embedding은 NULL 허용)
       try {
