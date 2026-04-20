@@ -12,6 +12,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { SubscriptionForm } from '@/components/subscriptions/subscription-form';
+import { RunActionsModal } from '@/components/subscriptions/run-actions-modal';
 import { cn } from '@/lib/utils';
 
 const NAV_ITEMS = [
@@ -84,6 +85,8 @@ export default function SubscriptionsLayout({ children }: { children: React.Reac
           />
         </DialogContent>
       </Dialog>
+
+      <RunActionsModal />
     </div>
   );
 }
