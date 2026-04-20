@@ -46,6 +46,15 @@ export interface CollectionJobData {
   };
   triggerType: 'schedule' | 'manual';
   /**
+   * 수집 모드 — DC/Clien의 일자 윈도우 분기 결정.
+   * 'incremental': scheduler 자동 (perDay=50, maxPages=20, windowDays=1)
+   * 'backfill':    수동 트리거 (perDay=200, maxPages=80, windowDays=사용자 입력)
+   * 미지정 시 기존 동작(legacy) 유지 — backward compatible.
+   */
+  mode?: 'incremental' | 'backfill';
+  /** backfill 모드에서 사용자가 지정한 백필 기간(일). incremental은 항상 1. */
+  windowDays?: number;
+  /**
    * source='naver-comments' 전용 — naver-news 실행 후 fan-out된 기사 URL 목록.
    * executor가 각 URL에 대해 NaverCommentsCollector.collectForArticle을 직렬 호출.
    */
