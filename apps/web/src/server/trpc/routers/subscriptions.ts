@@ -89,6 +89,70 @@ export interface RunItemBreakdownEntry {
   count: number;
 }
 
+export interface CancelResult {
+  runId: string;
+  source: string;
+  mode: 'graceful' | 'force';
+  alreadyCancelled?: boolean;
+  alreadyCancelling?: boolean;
+  diagnosticId: string;
+}
+
+export interface CancelResultBatch {
+  runId: string;
+  results: CancelResult[];
+}
+
+export interface RetryResult {
+  newRunId: string;
+  reused: boolean;
+}
+
+export interface DiagnosticRecord {
+  id: string;
+  runId: string;
+  source: string | null;
+  triggeredBy: string;
+  layerA: unknown;
+  layerB: unknown | null;
+  layerC: unknown | null;
+  layerAAt: Date | string;
+  layerBAt: Date | string | null;
+  layerCAt: Date | string | null;
+  createdAt: Date | string;
+}
+
+export interface StalledRun {
+  runId: string;
+  source: string;
+  time: Date | string;
+  subscriptionId: number;
+  status: string;
+}
+
+export interface SourceState {
+  source: string;
+  pausedAt: Date | string;
+  pausedBy: string;
+  reason: string | null;
+  resumedAt: Date | string | null;
+}
+
+export interface QueueStatus {
+  [queueName: string]: {
+    workerCount: number;
+    workers: Array<{ id: string; addr: string; idleMs: number }>;
+    counts: {
+      waiting: number;
+      active: number;
+      delayed: number;
+      failed: number;
+      paused: number;
+    };
+    isPaused: boolean;
+  };
+}
+
 /**
  * 키워드 구독 관리 라우터.
  * collector 서비스(apps/collector)의 tRPC API를 web에서 프록시.
@@ -365,6 +429,152 @@ export const subscriptionsRouter = router({
       try {
         const res = await getCollectorClient().runs.itemBreakdown.query(input);
         return res as unknown as RunItemBreakdownEntry[];
+      } catch (err) {
+        handleCollectorError(err);
+      }
+    }),
+
+  cancelRun: protectedProcedure
+    .input(
+      z.object({
+        runId: z.string().uuid(),
+        source: z.enum(SOURCE_ENUM).optional(),
+        mode: z.enum(['graceful', 'force']).default('graceful'),
+      }),
+    )
+    .mutation(async ({ input }): Promise<CancelResult | CancelResultBatch> => {
+      try {
+        const res = await getCollectorClient().runs.cancel.mutate(input);
+        return res as unknown as CancelResult | CancelResultBatch;
+      } catch (err) {
+        handleCollectorError(err);
+      }
+    }),
+
+  cancelBySubscription: protectedProcedure
+    .input(
+      z.object({
+        subscriptionId: z.number().int().positive(),
+        mode: z.enum(['graceful', 'force']).default('graceful'),
+      }),
+    )
+    .mutation(async ({ input }): Promise<{ cancelled: number; runIds: string[] }> => {
+      try {
+        const res = await getCollectorClient().runs.cancelBySubscription.mutate(input);
+        return res as unknown as { cancelled: number; runIds: string[] };
+      } catch (err) {
+        handleCollectorError(err);
+      }
+    }),
+
+  cancelAll: protectedProcedure
+    .input(
+      z.object({
+        mode: z.enum(['graceful', 'force']).default('graceful'),
+        confirm: z.literal('CANCEL_ALL'),
+      }),
+    )
+    .mutation(async ({ input }): Promise<{ cancelled: number }> => {
+      try {
+        const res = await getCollectorClient().runs.cancelAll.mutate(input);
+        return res as unknown as { cancelled: number };
+      } catch (err) {
+        handleCollectorError(err);
+      }
+    }),
+
+  retry: protectedProcedure
+    .input(
+      z.object({
+        runId: z.string().uuid(),
+        source: z.enum(SOURCE_ENUM),
+      }),
+    )
+    .mutation(async ({ input }): Promise<RetryResult> => {
+      try {
+        const res = await getCollectorClient().runs.retry.mutate(input);
+        return res as unknown as RetryResult;
+      } catch (err) {
+        handleCollectorError(err);
+      }
+    }),
+
+  diagnose: protectedProcedure
+    .input(
+      z.object({
+        runId: z.string().uuid(),
+        source: z.enum(SOURCE_ENUM).optional(),
+        refresh: z.boolean().default(false),
+      }),
+    )
+    .query(async ({ input }): Promise<DiagnosticRecord | null> => {
+      try {
+        const res = await getCollectorClient().runs.diagnose.query(input);
+        return res as unknown as DiagnosticRecord | null;
+      } catch (err) {
+        handleCollectorError(err);
+      }
+    }),
+
+  stalled: protectedProcedure
+    .input(
+      z
+        .object({
+          staleMinutes: z.number().int().min(1).max(120).default(10),
+        })
+        .optional(),
+    )
+    .query(async ({ input }): Promise<StalledRun[]> => {
+      try {
+        const res = await getCollectorClient().runs.stalled.query({
+          staleMinutes: input?.staleMinutes ?? 10,
+        });
+        return res as unknown as StalledRun[];
+      } catch (err) {
+        handleCollectorError(err);
+      }
+    }),
+
+  queueStatus: protectedProcedure.query(async (): Promise<QueueStatus> => {
+    try {
+      const res = await getCollectorClient().queue.status.query();
+      return res as unknown as QueueStatus;
+    } catch (err) {
+      handleCollectorError(err);
+    }
+  }),
+
+  sourceList: protectedProcedure.query(async (): Promise<SourceState[]> => {
+    try {
+      const res = await getCollectorClient().sources.list.query();
+      return res as unknown as SourceState[];
+    } catch (err) {
+      handleCollectorError(err);
+    }
+  }),
+
+  sourcePause: protectedProcedure
+    .input(
+      z.object({
+        source: z.enum(SOURCE_ENUM),
+        reason: z.string().max(200).nullable().default(null),
+      }),
+    )
+    .mutation(async ({ input }): Promise<{ source: string; paused: boolean }> => {
+      try {
+        const res = await getCollectorClient().sources.pause.mutate(input);
+        return res as unknown as { source: string; paused: boolean };
+      } catch (err) {
+        handleCollectorError(err);
+      }
+    }),
+
+  sourceResume: protectedProcedure
+    .input(z.object({ source: z.enum(SOURCE_ENUM) }))
+    .mutation(async ({ input }): Promise<{ source: string; paused: boolean }> => {
+      try {
+        const res = await getCollectorClient().sources.resume.mutate(input);
+        return res as unknown as { source: string; paused: boolean };
       } catch (err) {
         handleCollectorError(err);
       }
