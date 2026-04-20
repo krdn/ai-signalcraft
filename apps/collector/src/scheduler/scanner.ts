@@ -3,6 +3,7 @@ import { and, eq, isNull, lte, or, sql } from 'drizzle-orm';
 import { getDb } from '../db';
 import { keywordSubscriptions } from '../db/schema';
 import { enqueueCollectionJob } from '../queue/queues';
+import { isSourcePaused } from '../queue/source-pause';
 import type { CollectorSource } from '../queue/types';
 
 const SCAN_INTERVAL_MS = 60_000;
@@ -72,6 +73,10 @@ export async function scanAndEnqueue(): Promise<number> {
       );
 
     for (const source of sub.sources as CollectorSource[]) {
+      if (await isSourcePaused(source)) {
+        console.warn(`[scanner] skip paused source=${source} subscription=${sub.id}`);
+        continue;
+      }
       await enqueueCollectionJob({
         runId,
         subscriptionId: sub.id,
