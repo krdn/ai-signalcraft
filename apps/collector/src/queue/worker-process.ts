@@ -45,6 +45,12 @@ function buildWorker(source: CollectorSource): Worker<CollectionJobData, Collect
   const opts: WorkerOptions = {
     ...getBullMQOptions(),
     concurrency: CONCURRENCY[source],
+    // 대량 수집(특히 youtube 수천건 댓글 + 임베딩)은 한 job이 수 분 이상 걸린다.
+    // BullMQ 기본 lockDuration=30s로는 CPU가 임베딩 추론에 점유될 때 갱신 실패 →
+    // "stalled" 오판으로 같은 job이 중복 재실행되거나 실패 기록됨.
+    // 5분으로 늘려 정상적으로 오래 걸리는 작업을 stalled로 오판하지 않도록 한다.
+    lockDuration: 300_000,
+    stalledInterval: 60_000,
     // 차단 방지: 작업 간 최소 간격 (ms). 소스별로 별도 튜닝 여지.
     limiter: {
       max: source === 'youtube' ? 5 : 2,
