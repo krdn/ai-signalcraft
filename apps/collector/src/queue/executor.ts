@@ -86,6 +86,7 @@ export async function executeCollectionJob(
       maxItemsPerDay: limits.maxPerRun,
       maxComments: limits.commentsPerItem,
       collectTranscript: options?.collectTranscript,
+      mode: job.data.mode,
     });
 
     for await (const chunk of iter) {
