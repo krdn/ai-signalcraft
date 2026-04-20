@@ -11,6 +11,7 @@ import { SourceRunStats } from '@/components/subscriptions/source-run-stats';
 import { CopyableClaudeRef } from '@/components/subscriptions/copyable-claude-ref';
 import { StalledRunsBanner } from '@/components/subscriptions/stalled-runs-banner';
 import { QueueStatsBar } from '@/components/subscriptions/queue-stats-bar';
+import { SourcePauseControls } from '@/components/subscriptions/source-pause-controls';
 
 export default function MonitorPage() {
   const subsQuery = useQuery({
@@ -114,6 +115,8 @@ export default function MonitorPage() {
       <RecentRunsLog runs={runs} subscriptionMap={subscriptionMap} breakdown={breakdown} />
 
       <SourceRunStats runs={runs} />
+
+      <SourcePauseControls />
     </div>
   );
 }
