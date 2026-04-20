@@ -6,6 +6,13 @@ export const CollectionOptionsSchema = z.object({
   endDate: z.string().datetime(),
   maxItems: z.number().optional(),
   maxComments: z.number().optional(),
+  /**
+   * 수집 모드. dayWindow 경로 결정 외에 어댑터 동작을 바꾸지 않음.
+   * 'incremental': 매일/매시간 자동 수집 (좁은 윈도우, 낮은 cap)
+   * 'backfill':    수동 트리거의 과거 백필 (큰 윈도우, 높은 cap)
+   * 미지정: 기존 경로(legacy/range) 유지 — backward compatible
+   */
+  mode: z.enum(['incremental', 'backfill']).optional(),
   // perDay 모드에서 사용자가 지정한 "1일당 한도".
   // flows.ts가 perDay 모드 + dayCount > 1일 때만 명시 전달.
   // 어댑터는 이 값을 일자별 cap의 절대 상한으로 사용 — 한도 초과 금지, 부족분 보충 금지.
@@ -47,6 +54,7 @@ export interface CollectionStats {
     | 'maxItemsReached'
     | 'consecutiveOldThreshold'
     | 'pageLimitReached'
+    | 'maxPagesReached'
     | 'pageEmptyOrBlocked'
     | 'noMoreResults'
     | 'completed'

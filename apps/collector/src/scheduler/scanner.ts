@@ -81,6 +81,8 @@ export async function scanAndEnqueue(): Promise<number> {
         options: sub.options ?? undefined,
         dateRange: { startISO, endISO },
         triggerType: 'schedule',
+        mode: 'incremental',
+        windowDays: 1,
       });
       enqueued += 1;
     }

@@ -33,6 +33,10 @@ export class DCInsideCollector extends CommunityBaseCollector {
     comment: [], // 미사용 — 댓글은 API로 수집
   };
 
+  protected override sortedByDateDescending(): boolean {
+    return true;
+  }
+
   protected detectBlocked(html: string): boolean {
     if (!html) return true;
     if (html.length < 2000) return true;
