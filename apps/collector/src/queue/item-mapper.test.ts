@@ -2,6 +2,10 @@ import { createHash } from 'node:crypto';
 import { describe, it, expect } from 'vitest';
 import { mapToRawItem, type MapItemContext } from './item-mapper';
 
+function startOfUtcDayForTest(d: Date): Date {
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+}
+
 const ctx: MapItemContext = {
   subscriptionId: 42,
   source: 'naver-news',
@@ -88,19 +92,48 @@ describe('mapToRawItem', () => {
     expect(row.sourceId.length).toBe(40);
   });
 
-  it('publishedAt이 없으면 createdAt → publishDate → timestamp → now 순으로 폴백한다', () => {
+  it('publishedAt이 없으면 createdAt → publishDate → timestamp 순으로 폴백한다', () => {
     const rawA = { sourceId: 'a', createdAt: '2026-01-01T00:00:00Z' };
     const rawB = { sourceId: 'b', timestamp: 1704067200000 };
-    const rawC = { sourceId: 'c' };
 
     const a = mapToRawItem(rawA, ctx);
     const b = mapToRawItem(rawB, ctx);
-    const c = mapToRawItem(rawC, ctx);
 
     expect(a.publishedAt?.toISOString()).toBe('2026-01-01T00:00:00.000Z');
     expect(b.publishedAt?.toISOString()).toBe('2024-01-01T00:00:00.000Z');
-    expect(c.publishedAt).toBeNull();
-    expect(c.time).toBeInstanceOf(Date); // now 폴백
+  });
+
+  it('publishedAt이 모두 null이면 time은 현재 UTC 자정이다', () => {
+    const raw = { sourceId: 'no-date' };
+    const before = startOfUtcDayForTest(new Date());
+    const row = mapToRawItem(raw, ctx);
+    const after = startOfUtcDayForTest(new Date());
+
+    expect(row.publishedAt).toBeNull();
+    expect(row.time).toBeInstanceOf(Date);
+    expect(row.time.getTime()).toBe(before.getTime());
+    expect(row.time.getTime()).toBe(after.getTime());
+    expect(row.time.getUTCHours()).toBe(0);
+    expect(row.time.getUTCMinutes()).toBe(0);
+    expect(row.time.getUTCSeconds()).toBe(0);
+    expect(row.time.getUTCMilliseconds()).toBe(0);
+  });
+
+  it('publishedAt null 아이템을 연속 호출해도 동일한 UTC day에서는 같은 time을 돌려준다', () => {
+    const raw = { sourceId: 'same-id' };
+    const row1 = mapToRawItem(raw, ctx);
+    const row2 = mapToRawItem(raw, ctx);
+    expect(row1.time.getTime()).toBe(row2.time.getTime());
+  });
+
+  it('publishedAt이 유효하면 time은 publishedAt과 같다 (회귀 방지)', () => {
+    const raw = {
+      sourceId: 'pub',
+      publishedAt: '2026-03-15T12:34:56Z',
+    };
+    const row = mapToRawItem(raw, ctx);
+    expect(row.publishedAt?.toISOString()).toBe('2026-03-15T12:34:56.000Z');
+    expect(row.time.getTime()).toBe(row.publishedAt?.getTime());
   });
 
   it('잘못된 날짜 문자열은 null로 처리한다', () => {
