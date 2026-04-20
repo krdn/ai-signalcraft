@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, Loader2 } from 'lucide-react';
+import { RunProgressInline } from './run-progress-inline';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -94,6 +95,14 @@ export function RunActionsModal() {
           </TabsList>
 
           <TabsContent value="diagnose" className="space-y-3 mt-4">
+            {source && (
+              <RunProgressInline
+                runId={runId}
+                source={source}
+                active={isRunActive(diagQuery.data as DiagData | null | undefined)}
+                variant="full"
+              />
+            )}
             {diagQuery.isLoading && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" /> 불러오는 중...
@@ -167,6 +176,16 @@ type DiagData = {
   layerB: LayerB | null;
   layerC: LayerC | null;
 };
+
+/**
+ * 진단 payload에서 현재 run이 "실시간 폴링 대상"인지 판단.
+ * layerA가 아직 없으면 (최초 로드) 보수적으로 active 간주해 progress 스피너를 띄움.
+ */
+function isRunActive(data: DiagData | null | undefined): boolean {
+  if (!data) return true;
+  const state = data.layerA?.bullState;
+  return state === 'active' || state === 'waiting' || state === 'delayed';
+}
 
 type LayerA = {
   bullState: string;
