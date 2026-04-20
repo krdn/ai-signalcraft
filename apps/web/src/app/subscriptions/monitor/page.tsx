@@ -10,6 +10,7 @@ import { RecentRunsLog } from '@/components/subscriptions/recent-runs-log';
 import { SourceRunStats } from '@/components/subscriptions/source-run-stats';
 import { CopyableClaudeRef } from '@/components/subscriptions/copyable-claude-ref';
 import { StalledRunsBanner } from '@/components/subscriptions/stalled-runs-banner';
+import { QueueStatsBar } from '@/components/subscriptions/queue-stats-bar';
 
 export default function MonitorPage() {
   const subsQuery = useQuery({
@@ -96,6 +97,7 @@ export default function MonitorPage() {
             </Badge>
           </span>
         </div>
+        <QueueStatsBar />
         {running > 0 && (
           <span className="relative flex h-2 w-2 ml-auto">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
