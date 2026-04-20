@@ -48,6 +48,15 @@ export abstract class CommunityBaseCollector extends BrowserCollector<CommunityP
     return false;
   }
 
+  /**
+   * 사이트 검색이 "최신순 정렬은 되지만 날짜 범위 파라미터는 없는" 경우 표시.
+   * (DC인사이드, Clien) — true면 클라이언트측 일자 윈도우로 perDay 균등 분배.
+   * supportsDateRangeSearch()가 true인 사이트가 우선이며, 둘 다 false면 legacy 경로.
+   */
+  protected sortedByDateDescending(): boolean {
+    return false;
+  }
+
   // 차단 감지 -- 기본 false, clien/fmkorea에서 override
   protected detectBlocked(_html: string): boolean {
     return false;
@@ -94,6 +103,18 @@ export abstract class CommunityBaseCollector extends BrowserCollector<CommunityP
         skipUrlSet,
         refetchCommentsOnlySet,
         isInDateRange,
+      });
+      return;
+    }
+
+    if (this.sortedByDateDescending()) {
+      yield* this.collectByDayWindowDescending(page, options, {
+        maxItems,
+        maxComments,
+        skipUrlSet,
+        refetchCommentsOnlySet,
+        isInDateRange,
+        startTs,
       });
       return;
     }
