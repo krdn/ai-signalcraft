@@ -12,6 +12,7 @@ export const runCancellations = pgTable(
     source: text('source').notNull(),
     status: text('status', { enum: ['cancelling', 'cancelled'] }).notNull(),
     mode: text('mode', { enum: ['graceful', 'force'] }).notNull(),
+    // 자유 형식 — 'user', 'auto-stall-timeout', 'failure_hook' 등 확장 가능하도록 enum 미사용
     triggeredBy: text('triggered_by').notNull(),
     requestedAt: timestamp('requested_at', { withTimezone: true }).defaultNow().notNull(),
     finalizedAt: timestamp('finalized_at', { withTimezone: true }),

@@ -13,3 +13,4 @@ export const sourcePauseState = pgTable('source_pause_state', {
 });
 
 export type SourcePauseRow = typeof sourcePauseState.$inferSelect;
+export type NewSourcePauseRow = typeof sourcePauseState.$inferInsert;

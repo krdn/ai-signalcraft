@@ -15,8 +15,10 @@ export const runRetryLinks = pgTable(
   },
   (table) => [
     uniqueIndex('run_retry_links_original_source_uniq').on(table.originalRunId, table.source),
+    // (newRunId, source) 복합 — spec은 newRunId 단독이나, 복합이 source-scoped/전체 lookup 모두 커버
     index('run_retry_links_new_run_idx').on(table.newRunId, table.source),
   ],
 );
 
 export type RunRetryLink = typeof runRetryLinks.$inferSelect;
+export type NewRunRetryLink = typeof runRetryLinks.$inferInsert;

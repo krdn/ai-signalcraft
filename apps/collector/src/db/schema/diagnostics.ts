@@ -53,13 +53,13 @@ export const runDiagnostics = pgTable(
   {
     id: uuid('id').defaultRandom().primaryKey(),
     runId: uuid('run_id').notNull(),
-    source: text('source'),
+    source: text('source'), // null = run 전체 대상 (source 미지정)
     triggeredBy: text('triggered_by', {
       enum: ['user_cancel', 'auto_stall', 'manual', 'failure_hook'],
     }).notNull(),
     layerA: jsonb('layer_a').$type<LayerAPayload>().notNull(),
-    layerB: jsonb('layer_b').$type<LayerBPayload>(),
-    layerC: jsonb('layer_c').$type<LayerCPayload>(),
+    layerB: jsonb('layer_b').$type<LayerBPayload>(), // 비동기 수집, 미완성 시 null
+    layerC: jsonb('layer_c').$type<LayerCPayload>(), // 비동기 수집, 미완성 시 null
     layerAAt: timestamp('layer_a_at', { withTimezone: true }).defaultNow().notNull(),
     layerBAt: timestamp('layer_b_at', { withTimezone: true }),
     layerCAt: timestamp('layer_c_at', { withTimezone: true }),
