@@ -223,6 +223,60 @@ export const subscriptionsRouter = router({
     }),
 
   /**
+   * 백필 수동 실행 — fromDate~toDate 범위를 day-windowed backfill 모드로 즉시 enqueue.
+   * windowDays = toDate - fromDate + 1 (1~90일 범위 제한).
+   */
+  backfill: protectedProcedure
+    .input(
+      z.object({
+        subscriptionId: z.number().int().positive(),
+        fromDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD KST 형식'),
+        toDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD KST 형식'),
+        perDay: z.number().int().positive().max(1000).default(200),
+        maxPages: z.number().int().positive().max(200).default(80),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const fromMs = new Date(`${input.fromDate}T00:00:00+09:00`).getTime();
+      const toMs = new Date(`${input.toDate}T00:00:00+09:00`).getTime();
+      const windowDays = Math.floor((toMs - fromMs) / 86400000) + 1;
+      if (windowDays < 1 || windowDays > 90) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `windowDays는 1~90 범위여야 합니다 (입력: ${windowDays})`,
+        });
+      }
+
+      const [sub] = await ctx.db
+        .select()
+        .from(keywordSubscriptions)
+        .where(eq(keywordSubscriptions.id, input.subscriptionId))
+        .limit(1);
+      if (!sub) throw new TRPCError({ code: 'NOT_FOUND' });
+
+      const runId = randomUUID();
+      const startISO = new Date(fromMs).toISOString();
+      const endISO = new Date(toMs + 86400000).toISOString(); // toDate의 KST 자정 + 24h
+
+      for (const source of sub.sources as CollectorSource[]) {
+        await enqueueCollectionJob({
+          runId,
+          subscriptionId: sub.id,
+          source,
+          keyword: sub.keyword,
+          limits: { ...sub.limits, maxPerRun: input.perDay },
+          options: sub.options ?? undefined,
+          dateRange: { startISO, endISO },
+          triggerType: 'manual',
+          mode: 'backfill',
+          windowDays,
+        });
+      }
+
+      return { runId, windowDays, sources: sub.sources };
+    }),
+
+  /**
    * 다음 실행 대상 — 스케줄러가 조회용으로 사용.
    * 외부 클라이언트도 "지금 수집 대기 중인 키워드"를 볼 수 있음.
    */
