@@ -9,6 +9,7 @@ import { UpcomingRuns } from '@/components/subscriptions/upcoming-runs';
 import { RecentRunsLog } from '@/components/subscriptions/recent-runs-log';
 import { SourceRunStats } from '@/components/subscriptions/source-run-stats';
 import { CopyableClaudeRef } from '@/components/subscriptions/copyable-claude-ref';
+import { StalledRunsBanner } from '@/components/subscriptions/stalled-runs-banner';
 
 export default function MonitorPage() {
   const subsQuery = useQuery({
@@ -64,6 +65,8 @@ export default function MonitorPage() {
         </div>
         <p className="text-sm text-muted-foreground">실시간 수집 작업 상태를 확인합니다.</p>
       </div>
+
+      <StalledRunsBanner />
 
       {/* 실시간 상태 헤더 */}
       <div className="flex items-center gap-4 rounded-lg border px-4 py-3 flex-wrap">
