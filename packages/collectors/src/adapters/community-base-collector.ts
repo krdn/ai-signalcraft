@@ -208,6 +208,229 @@ export abstract class CommunityBaseCollector extends BrowserCollector<CommunityP
     this.logCollectionEnd(skippedCount, outOfRangeCount);
   }
 
+  /**
+   * sortedByDateDescending() = true인 사이트(DC/Clien)용 일자 윈도우 수집.
+   *
+   * 검색이 단조감소(최신→과거)로 정렬돼 있다는 사실을 활용해 클라이언트측에서
+   * KST 자정 기준 일자 배열로 분할하고, 각 일자에 perDayLimit까지만 채운다.
+   * dayIdx는 단조 증가(과거 방향)만 허용 — 부족분 보충 금지.
+   *
+   * ⚠️ 검색 정렬이 깨지면 일자 점프가 부정확해져 누락 발생 가능 →
+   *    sortedByDateDescending()을 false로 강등하면 즉시 legacy 경로로 회귀.
+   */
+  private async *collectByDayWindowDescending(
+    page: Page,
+    options: CollectionOptions,
+    ctx: {
+      maxItems: number;
+      maxComments: number;
+      skipUrlSet: Set<string>;
+      refetchCommentsOnlySet: Set<string>;
+      isInDateRange: (d: Date | null | undefined) => boolean;
+      startTs: number;
+    },
+  ): AsyncGenerator<CommunityPost[], void, unknown> {
+    const days = splitIntoDaysKst(options.startDate, options.endDate);
+    // days는 과거→미래 순서로 반환되므로, 최신 우선 처리를 위해 역순 사용
+    const daysDescMs = days.map((d) => kstDayStartMs(d)).sort((a, b) => b - a);
+    const perDayLimit = options.maxItemsPerDay ?? Number.MAX_SAFE_INTEGER;
+
+    let pageNum = 1;
+    let dayIdx = 0;
+    const perDayCount = new Map<number, number>();
+    const enforced = new Map<number, number>();
+    const globalSeen = new Set<string>();
+    let consecutiveOldInWindow = 0;
+    const CONSECUTIVE_OLD_THRESHOLD = 30;
+    let consecutiveEmptyPages = 0;
+    const MAX_CONSECUTIVE_EMPTY_PAGES = 5;
+    let totalCollected = 0;
+    let skippedCount = 0;
+    let preFilterSkipCount = 0;
+    let perDayCapSkipCount = 0;
+    let outOfRangeCount = 0;
+    let pageEmptyCount = 0;
+    let endReason: CollectionStats['endReason'] = 'completed';
+    let lastPageReached = 0;
+
+    const dayKey = (d: Date): number => kstDayStartMs(d);
+
+    pageLoop: while (
+      pageNum <= this.config.maxSearchPages &&
+      dayIdx < daysDescMs.length &&
+      totalCollected < ctx.maxItems
+    ) {
+      lastPageReached = pageNum;
+      const searchUrl = this.buildSearchUrl(options.keyword, pageNum);
+      const postLinks = await this.loadSearchPage(page, searchUrl, pageNum);
+
+      if (!postLinks || postLinks.length === 0) {
+        consecutiveEmptyPages++;
+        pageEmptyCount++;
+        if (consecutiveEmptyPages >= MAX_CONSECUTIVE_EMPTY_PAGES) {
+          endReason = 'pageEmptyOrBlocked';
+          break;
+        }
+        // 설정된 pageDelay가 있으면 지수 백오프 적용, 없으면(테스트 등) 즉시 다음 페이지.
+        const baseBackoff =
+          this.config.pageDelay.min > 0 ? 10000 * Math.pow(2, consecutiveEmptyPages - 1) : 0;
+        if (baseBackoff > 0) {
+          console.info(
+            `${this.source} 페이지 ${pageNum} 빈/차단 — ${Math.round(baseBackoff / 1000)}s 백오프 후 다음 페이지 시도 (${consecutiveEmptyPages}/${MAX_CONSECUTIVE_EMPTY_PAGES})`,
+          );
+          await sleep(baseBackoff, baseBackoff + 3000);
+        }
+        pageNum++;
+        continue;
+      }
+      consecutiveEmptyPages = 0;
+
+      const posts: CommunityPost[] = [];
+
+      for (const link of postLinks) {
+        if (totalCollected >= ctx.maxItems) {
+          endReason = 'maxItemsReached';
+          break pageLoop;
+        }
+        if (globalSeen.has(link.url)) continue;
+        globalSeen.add(link.url);
+        if (ctx.skipUrlSet.has(link.url)) {
+          skippedCount++;
+          continue;
+        }
+
+        // publishedAt 파싱 실패: 보수적 fetch (현재 윈도우로 가정)
+        if (!link.publishedAt) {
+          if (dayIdx >= daysDescMs.length) break;
+          const windowStart = daysDescMs[dayIdx];
+          if ((perDayCount.get(windowStart) ?? 0) >= perDayLimit) {
+            perDayCapSkipCount++;
+            continue;
+          }
+          try {
+            const post = await this.fetchPost(page, link.url, link.title, ctx.maxComments);
+            if (post) {
+              if (!ctx.isInDateRange(post.publishedAt)) {
+                outOfRangeCount++;
+                continue;
+              }
+              const pk = post.publishedAt ? dayKey(post.publishedAt as Date) : windowStart;
+              perDayCount.set(pk, (perDayCount.get(pk) ?? 0) + 1);
+              posts.push(post);
+              totalCollected++;
+            }
+          } catch (err) {
+            console.warn(`${this.source} 게시글 수집 실패 (${link.url}):`, err);
+          }
+          await sleep(this.config.postDelay.min, this.config.postDelay.max);
+          continue;
+        }
+
+        // classify(link.publishedAt): dayIdx를 필요 시 진행시키며 분기
+        const linkTs = link.publishedAt.getTime();
+        let classified = false;
+        while (!classified && dayIdx < daysDescMs.length) {
+          const windowStart = daysDescMs[dayIdx];
+          const windowEnd = windowStart + 86400000;
+
+          if (linkTs >= windowEnd) {
+            // 더 미래 (이미 처리한 일자) → skip, dayIdx 그대로
+            preFilterSkipCount++;
+            classified = true;
+          } else if (linkTs >= windowStart) {
+            // 현재 윈도우 내
+            consecutiveOldInWindow = 0;
+            if ((perDayCount.get(windowStart) ?? 0) >= perDayLimit) {
+              perDayCapSkipCount++;
+              break;
+            }
+            try {
+              const post = await this.fetchPost(page, link.url, link.title, ctx.maxComments);
+              if (post) {
+                if (!ctx.isInDateRange(post.publishedAt)) {
+                  outOfRangeCount++;
+                } else if (post.publishedAt) {
+                  const pk = dayKey(post.publishedAt as Date);
+                  if ((perDayCount.get(pk) ?? 0) >= perDayLimit) {
+                    perDayCapSkipCount++;
+                  } else {
+                    perDayCount.set(pk, (perDayCount.get(pk) ?? 0) + 1);
+                    posts.push(post);
+                    totalCollected++;
+                  }
+                }
+              }
+            } catch (err) {
+              console.warn(`${this.source} 게시글 수집 실패 (${link.url}):`, err);
+            }
+            await sleep(this.config.postDelay.min, this.config.postDelay.max);
+            classified = true;
+          } else {
+            // linkTs < windowStart → 현재 윈도우보다 오래된 글
+            // 다음 윈도우가 이 글을 포함할 수 있으면 즉시 dayIdx 진행 후 재평가.
+            const nextIdx = dayIdx + 1;
+            if (nextIdx < daysDescMs.length && linkTs >= daysDescMs[nextIdx]) {
+              // 다음 윈도우에 속할 수 있음 → 즉시 전진
+              dayIdx++;
+              consecutiveOldInWindow = 0;
+              continue; // 같은 link를 새 윈도우에서 재평가
+            }
+            // 다음 윈도우도 없거나 다음 윈도우보다도 오래된 글 → consecutiveOld 카운트
+            consecutiveOldInWindow++;
+            if (consecutiveOldInWindow >= CONSECUTIVE_OLD_THRESHOLD) {
+              dayIdx++;
+              consecutiveOldInWindow = 0;
+              continue; // 같은 link를 새 윈도우에서 재평가
+            }
+            preFilterSkipCount++;
+            classified = true;
+          }
+        }
+      }
+
+      const filtered = this.enforcePerDayCap(posts, dayKey, perDayLimit, enforced);
+      if (filtered.length > 0) yield filtered;
+
+      // 포화된 일자를 건너뜀 — 현재 dayIdx의 일자가 cap에 도달하면 앞으로 진행.
+      // 이 과정에서 dayIdx >= daysDescMs.length가 되면 모든 일자가 완료 → 루프 탈출.
+      while (
+        dayIdx < daysDescMs.length &&
+        perDayLimit !== Number.MAX_SAFE_INTEGER &&
+        (perDayCount.get(daysDescMs[dayIdx]) ?? 0) >= perDayLimit
+      ) {
+        dayIdx++;
+      }
+      if (dayIdx >= daysDescMs.length) break;
+
+      await sleep(this.config.pageDelay.min, this.config.pageDelay.max);
+
+      if (pageNum === this.config.maxSearchPages) {
+        endReason = 'maxPagesReached';
+      }
+      pageNum++;
+    }
+
+    this.logCollectionEnd(skippedCount, outOfRangeCount, preFilterSkipCount);
+
+    const dist: Record<string, number> = {};
+    for (const [k, v] of perDayCount.entries()) {
+      const kstStr = new Date(k + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      dist[kstStr] = v;
+    }
+    this.lastRunStats = {
+      endReason,
+      lastPage: lastPageReached,
+      perDayCount: dist,
+      perDayCapSkip: perDayCapSkipCount,
+      preFilterSkip: preFilterSkipCount,
+      outOfRange: outOfRangeCount,
+      pageEmptyCount,
+    };
+    console.info(
+      `${this.source} 종료(dayWindow): total=${totalCollected} lastPage=${lastPageReached} reason=${endReason} dayCount(KST)=${JSON.stringify(dist)} perDayCapSkip=${perDayCapSkipCount} preFilterSkip=${preFilterSkipCount} outOfRange=${outOfRangeCount}`,
+    );
+  }
+
   private async *collectLegacySequential(
     page: Page,
     options: CollectionOptions,
