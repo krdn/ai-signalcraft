@@ -1,5 +1,5 @@
 // YouTube 통합 수집기 — 영상 검색 + 댓글 + 자막을 하나의 collect()에서 처리
-import { getYoutubeClient } from '../utils/youtube-client';
+import { getYoutubeClient, YoutubeApiKeyMissingError } from '../utils/youtube-client';
 import { getInnertubeClient } from '../utils/youtube-innertube';
 import { QuotaTracker } from '../utils/youtube-quota';
 import { fetchTranscript } from '../utils/youtube-transcript';
@@ -78,7 +78,9 @@ export class YoutubeCollector implements Collector<YoutubeVideo> {
           );
           videos = result.videos;
           nextToken = result.nextPageToken;
-        } catch {
+        } catch (err) {
+          // 구성 오류(API 키 미설정)는 quota 소진과 구분해 failed로 전파.
+          if (err instanceof YoutubeApiKeyMissingError) throw err;
           endReason = 'quotaExhausted';
           break;
         }
@@ -171,7 +173,6 @@ export class YoutubeCollector implements Collector<YoutubeVideo> {
     maxResults: number,
   ): Promise<{ videos: YoutubeVideo[]; nextPageToken?: string }> {
     const youtube = getYoutubeClient();
-    if (!youtube) return { videos: [] };
 
     const publishedAfter = day.toISOString();
     const publishedBefore = new Date(day.getTime() + 86400000 - 1).toISOString();
@@ -271,7 +272,6 @@ export class YoutubeCollector implements Collector<YoutubeVideo> {
     order: 'relevance' | 'time',
   ): Promise<YoutubeComment[]> {
     const youtube = getYoutubeClient();
-    if (!youtube) return [];
     const comments: YoutubeComment[] = [];
     let pageToken: string | undefined;
 
@@ -326,7 +326,6 @@ export class YoutubeCollector implements Collector<YoutubeVideo> {
   /** comments.list로 대댓글 전량 수집 */
   private async fetchAllReplies(parentId: string, videoId: string): Promise<YoutubeComment[]> {
     const youtube = getYoutubeClient();
-    if (!youtube) return [];
     const replies: YoutubeComment[] = [];
     let pageToken: string | undefined;
 

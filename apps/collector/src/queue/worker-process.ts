@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { Worker, type WorkerOptions } from 'bullmq';
+import { hasYoutubeApiKey } from '@ai-signalcraft/collectors';
 import { getBullMQOptions } from './connection';
 import {
   COLLECTOR_SOURCES,
@@ -8,6 +9,19 @@ import {
   type CollectionJobResult,
 } from './types';
 import { executeCollectionJob } from './executor';
+
+/**
+ * 소스별 기동 전 환경 검증.
+ * 누락 시 워커는 여전히 기동하되(다른 소스 보존) 매우 눈에 띄는 경고를 남긴다.
+ * 실제 수집 실행은 개별 작업에서 throw되어 run 상태가 failed로 기록된다.
+ */
+function logSourcePreflight(source: CollectorSource): void {
+  if (source === 'youtube' && !hasYoutubeApiKey()) {
+    console.error(
+      `[worker:youtube] ⚠ YOUTUBE_API_KEY missing — 실행 시도 시 모든 작업이 failed로 기록됩니다. .env.production 및 compose env_file 확인 필요.`,
+    );
+  }
+}
 
 /**
  * 소스별 Worker 동시성.
@@ -64,10 +78,13 @@ function buildWorker(source: CollectorSource): Worker<CollectionJobData, Collect
 }
 
 export function startAllWorkers(): Array<{ source: CollectorSource; worker: Worker }> {
-  return COLLECTOR_SOURCES.map((source) => ({
-    source,
-    worker: buildWorker(source),
-  }));
+  return COLLECTOR_SOURCES.map((source) => {
+    logSourcePreflight(source);
+    return {
+      source,
+      worker: buildWorker(source),
+    };
+  });
 }
 
 export async function shutdownWorkers(

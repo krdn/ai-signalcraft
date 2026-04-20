@@ -54,7 +54,6 @@ export class YoutubeVideosCollector implements Collector<YoutubeVideo> {
    */
   async *collect(options: CollectionOptions): AsyncGenerator<YoutubeVideo[], void, unknown> {
     const youtube = getYoutubeClient();
-    if (!youtube) return;
     const maxItems = options.maxItems ?? DEFAULT_MAX_ITEMS;
     const days = splitIntoDaysKst(options.startDate, options.endDate);
     const perDayLimit = options.maxItemsPerDay ?? Math.max(1, Math.floor(maxItems / days.length));

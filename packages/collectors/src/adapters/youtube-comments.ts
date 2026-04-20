@@ -43,7 +43,6 @@ export class YoutubeCommentsCollector implements Collector<YoutubeComment> {
    */
   async *collect(options: CollectionOptions): AsyncGenerator<YoutubeComment[], void, unknown> {
     const youtube = getYoutubeClient();
-    if (!youtube) return; // API 키 미설정 시 빈 결과
     const videoId = options.keyword; // videoId를 keyword로 전달
     const maxComments = options.maxComments ?? DEFAULT_MAX_COMMENTS;
     let totalCollected = 0;

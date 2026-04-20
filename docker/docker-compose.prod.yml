@@ -103,6 +103,8 @@ services:
     ports:
       # 호스트 3400은 ai-insight-api가 선점 → 3401로 매핑. 컨테이너 내부는 3400 유지 (내부 DNS: http://collector-api:3400)
       - "3401:3400"
+    env_file:
+      - ../.env.production
     environment:
       NODE_ENV: production
       PORT: "3400"
@@ -131,6 +133,8 @@ services:
     container_name: ais-collector-worker
     command: ["tsx", "apps/collector/src/queue/worker-process.ts"]
     restart: unless-stopped
+    env_file:
+      - ../.env.production
     environment:
       NODE_ENV: production
       DATABASE_URL: ${COLLECTOR_DATABASE_URL}
@@ -158,6 +162,8 @@ services:
     container_name: ais-collector-scheduler
     command: ["tsx", "apps/collector/src/scheduler/scanner.ts"]
     restart: unless-stopped
+    env_file:
+      - ../.env.production
     environment:
       NODE_ENV: production
       DATABASE_URL: ${COLLECTOR_DATABASE_URL}
