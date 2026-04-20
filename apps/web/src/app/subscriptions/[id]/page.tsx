@@ -2,10 +2,11 @@
 
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
-import { Loader2 } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Loader2, Square } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -30,6 +31,18 @@ export default function SubscriptionDetailPage() {
   const params = useParams();
   const id = Number(params.id);
   const [editOpen, setEditOpen] = useState(false);
+  const qc = useQueryClient();
+
+  const cancelBySubMut = useMutation({
+    mutationFn: () =>
+      trpcClient.subscriptions.cancelBySubscription.mutate({
+        subscriptionId: id,
+        mode: 'graceful',
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['subscription-runs', { subscriptionId: id }] });
+    },
+  });
 
   const subQuery = useQuery({
     queryKey: ['subscriptions', id],
@@ -98,6 +111,22 @@ export default function SubscriptionDetailPage() {
   return (
     <div className="space-y-4">
       <SubscriptionHeader subscription={sub} onEdit={() => setEditOpen(true)} />
+
+      <div className="flex justify-end">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => {
+            if (confirm('이 구독의 진행 중인 모든 run을 graceful 중지하시겠습니까?')) {
+              cancelBySubMut.mutate();
+            }
+          }}
+          disabled={cancelBySubMut.isPending}
+        >
+          <Square className="h-3.5 w-3.5 mr-1" />
+          {cancelBySubMut.isPending ? '중지 요청 중...' : '이 구독의 진행 중 중지'}
+        </Button>
+      </div>
 
       <SubscriptionKpiCards subscriptions={[sub]} runs={runs} itemStats={itemStats} />
 
