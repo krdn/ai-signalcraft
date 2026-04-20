@@ -14,6 +14,30 @@ import type {
 } from './types';
 
 /**
+ * 임베딩 배치 크기. Xenova transformers는 CPU에서 동기 추론이라 한 번에 큰 배열을 넘기면
+ * 이벤트 루프가 수 분간 블록되어 BullMQ lock 갱신(30초 주기)이 실패 → stalled 판정.
+ * 50개 단위로 쪼개면 각 배치 사이에 await가 끼어 lock 갱신이 가능해진다.
+ */
+const EMBED_BATCH_SIZE = 50;
+
+/**
+ * texts 전체를 EMBED_BATCH_SIZE로 쪼개 embedPassages를 여러 번 호출한다.
+ * 실패하는 배치가 있으면 그 배치 구간만 빈 배열로 채워 전체 길이를 유지한다.
+ */
+async function embedPassagesBatched(texts: string[]): Promise<number[][]> {
+  if (texts.length === 0) return [];
+  const out: number[][] = new Array(texts.length);
+  for (let i = 0; i < texts.length; i += EMBED_BATCH_SIZE) {
+    const slice = texts.slice(i, i + EMBED_BATCH_SIZE);
+    const vectors = await embedPassages(slice);
+    for (let j = 0; j < slice.length; j++) {
+      out[i + j] = vectors[j] ?? [];
+    }
+  }
+  return out;
+}
+
+/**
  * 주어진 source에 대한 collector 선택.
  *
  * 기존 packages/collectors는 registry 기반으로 source 문자열로 lookup.
@@ -137,7 +161,7 @@ export async function executeCollectionJob(
       try {
         const texts = rows.map((r) => buildEmbeddingText(r.title ?? null, r.content ?? null));
         if (texts.some((t) => t.length > 0)) {
-          const vectors = await embedPassages(texts);
+          const vectors = await embedPassagesBatched(texts);
           rows.forEach((r, i) => {
             if (texts[i].length > 0 && vectors[i]) r.embedding = vectors[i];
           });
@@ -324,7 +348,7 @@ async function executeCommentsJob(job: Job<CollectionJobData>): Promise<Collecti
           try {
             const texts = rows.map((r) => buildEmbeddingText(null, r.content ?? null));
             if (texts.some((t) => t.length > 0)) {
-              const vectors = await embedPassages(texts);
+              const vectors = await embedPassagesBatched(texts);
               rows.forEach((r, i) => {
                 if (texts[i].length > 0 && vectors[i]) r.embedding = vectors[i];
               });
