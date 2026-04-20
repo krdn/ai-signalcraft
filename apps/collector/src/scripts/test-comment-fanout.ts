@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { randomUUID } from 'node:crypto';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { getDb } from '../db';
 import { keywordSubscriptions, collectionRuns } from '../db/schema';
 import { enqueueCollectionJob, closeAllQueues } from '../queue/queues';
@@ -59,14 +59,8 @@ async function cleanup() {
     console.warn(`[cleanup] 삭제할 테스트 구독 없음`);
     return;
   }
-  await db.execute(
-    // @ts-expect-error raw sql
-    `DELETE FROM raw_items WHERE subscription_id=${sub.id}`,
-  );
-  await db.execute(
-    // @ts-expect-error raw sql
-    `DELETE FROM collection_runs WHERE subscription_id=${sub.id}`,
-  );
+  await db.execute(sql`DELETE FROM raw_items WHERE subscription_id=${sub.id}`);
+  await db.execute(sql`DELETE FROM collection_runs WHERE subscription_id=${sub.id}`);
   await db.delete(keywordSubscriptions).where(eq(keywordSubscriptions.id, sub.id));
   console.warn(`[cleanup] subscription ${sub.id} 및 관련 데이터 삭제 완료`);
 }
@@ -88,12 +82,10 @@ async function status() {
     return;
   }
   const articles = await db.execute<{ c: number }>(
-    // @ts-expect-error raw sql
-    `SELECT COUNT(*)::int AS c FROM raw_items WHERE subscription_id=${sub.id} AND item_type='article'`,
+    sql`SELECT COUNT(*)::int AS c FROM raw_items WHERE subscription_id=${sub.id} AND item_type='article'`,
   );
   const comments = await db.execute<{ c: number }>(
-    // @ts-expect-error raw sql
-    `SELECT COUNT(*)::int AS c FROM raw_items WHERE subscription_id=${sub.id} AND item_type='comment'`,
+    sql`SELECT COUNT(*)::int AS c FROM raw_items WHERE subscription_id=${sub.id} AND item_type='comment'`,
   );
   const runs = await db
     .select()
