@@ -11,8 +11,13 @@ export type ItemMetrics = {
 
 /**
  * raw_items — 원본 저장 하이퍼테이블 (시간축: time = publishedAt 또는 fetchedAt)
- * UNIQUE(source, source_id, item_type)로 중복 방지
- * compression 7일, retention 1년은 apply-hypertables.ts에서 정책 설정
+ *
+ * 하이퍼테이블은 UNIQUE 제약에 시간 컬럼을 반드시 포함해야 하므로,
+ * 논리적 중복 방지용 UNIQUE INDEX (source, source_id, item_type, time)는
+ * apply-hypertables.ts의 `raw_items_dedup_uniq`가 관리한다 (Drizzle 스키마로는 표현 불가).
+ * 아래 index()들은 조회 성능용이며, 반드시 `db:migrate-timescale`을 실행해야
+ * executor의 `onConflictDoNothing(target: [source, source_id, item_type, time])`가 동작한다.
+ * compression 7일, retention 1년도 동일 스크립트에서 정책 설정.
  */
 export const rawItems = pgTable(
   'raw_items',
