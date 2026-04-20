@@ -3,11 +3,14 @@
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { SOURCE_LABEL_MAP } from './subscription-utils';
+import { CopyableRunId } from './copyable-run-id';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { RunRecord } from '@/server/trpc/routers/subscriptions';
 
 interface LiveRunFeedProps {
   runs: RunRecord[];
+  subscriptionMap?: Map<number, string>;
 }
 
 function ElapsedTimer({ since }: { since: Date }) {
@@ -28,7 +31,7 @@ function ElapsedTimer({ since }: { since: Date }) {
   );
 }
 
-export function LiveRunFeed({ runs }: LiveRunFeedProps) {
+export function LiveRunFeed({ runs, subscriptionMap }: LiveRunFeedProps) {
   const runningRuns = runs.filter((r) => r.status === 'running');
 
   if (runningRuns.length === 0) {
@@ -60,25 +63,27 @@ export function LiveRunFeed({ runs }: LiveRunFeedProps) {
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
-          {runningRuns.map((run, i) => (
-            <div
-              key={`${run.runId}-${run.source}-${i}`}
-              className="flex items-center gap-3 rounded-md border px-3 py-2 text-sm"
-            >
-              <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-500 shrink-0" />
-              <span className="font-mono text-xs text-muted-foreground">
-                {run.runId.slice(0, 7)}
-              </span>
-              <span className="font-medium">
-                {run.source in SOURCE_LABEL_MAP ? '' : run.source}
-              </span>
-              <span className="text-muted-foreground">→</span>
-              <span>{SOURCE_LABEL_MAP[run.source] ?? run.source}</span>
-              <span className="ml-auto text-xs text-muted-foreground tabular-nums">
-                <ElapsedTimer since={new Date(run.time)} />
-              </span>
-            </div>
-          ))}
+          {runningRuns.map((run, i) => {
+            const keyword = subscriptionMap?.get(run.subscriptionId);
+            return (
+              <div
+                key={`${run.runId}-${run.source}-${i}`}
+                className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm flex-wrap"
+              >
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-500 shrink-0" />
+                <CopyableRunId runId={run.runId} />
+                <Badge variant="outline" className="text-[10px] font-mono shrink-0">
+                  sub #{run.subscriptionId}
+                </Badge>
+                {keyword && <span className="font-medium truncate max-w-[160px]">{keyword}</span>}
+                <span className="text-muted-foreground">→</span>
+                <span className="text-xs">{SOURCE_LABEL_MAP[run.source] ?? run.source}</span>
+                <span className="ml-auto text-xs text-muted-foreground tabular-nums">
+                  <ElapsedTimer since={new Date(run.time)} />
+                </span>
+              </div>
+            );
+          })}
         </div>
       </CardContent>
     </Card>

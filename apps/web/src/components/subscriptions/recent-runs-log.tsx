@@ -2,13 +2,33 @@
 
 import { useState } from 'react';
 import { SOURCE_LABEL_MAP, formatRelative } from './subscription-utils';
+import { CopyableRunId } from './copyable-run-id';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import type { RunRecord } from '@/server/trpc/routers/subscriptions';
+import type { RunRecord, RunItemBreakdownEntry } from '@/server/trpc/routers/subscriptions';
 
 interface RecentRunsLogProps {
   runs: RunRecord[];
+  subscriptionMap?: Map<number, string>;
+  breakdown?: RunItemBreakdownEntry[];
+}
+
+const ITEM_TYPE_LABEL: Record<string, string> = {
+  article: '기사',
+  video: '영상',
+  comment: '댓글',
+};
+
+function getBreakdownText(
+  runId: string,
+  source: string,
+  breakdown?: RunItemBreakdownEntry[],
+): string | null {
+  if (!breakdown || breakdown.length === 0) return null;
+  const entries = breakdown.filter((b) => b.fetchedFromRun === runId && b.source === source);
+  if (entries.length === 0) return null;
+  return entries.map((e) => `${ITEM_TYPE_LABEL[e.itemType] ?? e.itemType} ${e.count}`).join(' / ');
 }
 
 const STATUS_FILTERS = [
@@ -48,7 +68,7 @@ function getStatusLabel(status: string): string {
   }
 }
 
-export function RecentRunsLog({ runs }: RecentRunsLogProps) {
+export function RecentRunsLog({ runs, subscriptionMap, breakdown }: RecentRunsLogProps) {
   const [filter, setFilter] = useState('all');
 
   const sorted = [...runs]
@@ -81,41 +101,54 @@ export function RecentRunsLog({ runs }: RecentRunsLogProps) {
           {filtered.length === 0 ? (
             <p className="text-sm text-muted-foreground py-4 text-center">실행 기록이 없습니다</p>
           ) : (
-            filtered.map((run, i) => (
-              <div
-                key={`${run.runId}-${run.source}-${i}`}
-                className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-xs ${
-                  run.status === 'failed' || run.status === 'blocked'
-                    ? 'bg-destructive/5'
-                    : 'hover:bg-muted/50'
-                }`}
-              >
-                <span
-                  className={`inline-block h-1.5 w-1.5 rounded-full shrink-0 ${getStatusColor(run.status)}`}
-                />
-                <span className="font-mono text-muted-foreground w-[50px] shrink-0">
-                  {run.runId.slice(0, 7)}
-                </span>
-                <Badge variant="outline" className="text-[9px] font-normal shrink-0">
-                  {SOURCE_LABEL_MAP[run.source] ?? run.source}
-                </Badge>
-                <span className="shrink-0">{getStatusLabel(run.status)}</span>
-                <span className="text-muted-foreground tabular-nums shrink-0">
-                  {run.itemsCollected}건
-                </span>
-                {run.durationMs != null && (
-                  <span className="text-muted-foreground tabular-nums hidden md:inline">
-                    {(run.durationMs / 1000).toFixed(1)}s
+            filtered.map((run, i) => {
+              const keyword = subscriptionMap?.get(run.subscriptionId);
+              const bdText = getBreakdownText(run.runId, run.source, breakdown);
+              return (
+                <div
+                  key={`${run.runId}-${run.source}-${i}`}
+                  className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-xs ${
+                    run.status === 'failed' || run.status === 'blocked'
+                      ? 'bg-destructive/5'
+                      : 'hover:bg-muted/50'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-1.5 w-1.5 rounded-full shrink-0 ${getStatusColor(run.status)}`}
+                  />
+                  <CopyableRunId runId={run.runId} />
+                  <Badge variant="outline" className="text-[9px] font-mono shrink-0">
+                    #{run.subscriptionId}
+                  </Badge>
+                  {keyword && (
+                    <span className="truncate max-w-[120px] shrink-0 font-medium">{keyword}</span>
+                  )}
+                  <Badge variant="outline" className="text-[9px] font-normal shrink-0">
+                    {SOURCE_LABEL_MAP[run.source] ?? run.source}
+                  </Badge>
+                  <span className="shrink-0">{getStatusLabel(run.status)}</span>
+                  <span
+                    className="text-muted-foreground tabular-nums shrink-0"
+                    title={bdText ?? undefined}
+                  >
+                    {bdText ?? `${run.itemsCollected}건`}
                   </span>
-                )}
-                {run.errorReason && (
-                  <span className="text-destructive truncate max-w-[200px]">{run.errorReason}</span>
-                )}
-                <span className="ml-auto text-muted-foreground shrink-0">
-                  {formatRelative(run.time)}
-                </span>
-              </div>
-            ))
+                  {run.durationMs != null && (
+                    <span className="text-muted-foreground tabular-nums hidden md:inline">
+                      {(run.durationMs / 1000).toFixed(1)}s
+                    </span>
+                  )}
+                  {run.errorReason && (
+                    <span className="text-destructive truncate max-w-[200px]">
+                      {run.errorReason}
+                    </span>
+                  )}
+                  <span className="ml-auto text-muted-foreground shrink-0">
+                    {formatRelative(run.time)}
+                  </span>
+                </div>
+              );
+            })
           )}
         </div>
       </CardContent>

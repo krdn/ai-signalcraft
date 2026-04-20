@@ -25,6 +25,17 @@ export default function MonitorPage() {
   const subscriptions = subsQuery.data ?? [];
   const runs = runsQuery.data ?? [];
 
+  const subscriptionMap = new Map(subscriptions.map((s) => [s.id, s.keyword]));
+
+  const runIds = [...new Set(runs.map((r) => r.runId))];
+  const breakdownQuery = useQuery({
+    queryKey: ['run-item-breakdown-monitor', { runIds }],
+    queryFn: () => trpcClient.subscriptions.runItemBreakdown.query({ runIds }),
+    enabled: runIds.length > 0,
+    refetchInterval: 15_000,
+  });
+  const breakdown = breakdownQuery.data;
+
   const running = runs.filter((r) => r.status === 'running').length;
   const now = Date.now();
   const h1Ago = now - 3600 * 1000;
@@ -87,11 +98,11 @@ export default function MonitorPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <LiveRunFeed runs={runs} />
+        <LiveRunFeed runs={runs} subscriptionMap={subscriptionMap} />
         <UpcomingRuns subscriptions={subscriptions} />
       </div>
 
-      <RecentRunsLog runs={runs} />
+      <RecentRunsLog runs={runs} subscriptionMap={subscriptionMap} breakdown={breakdown} />
 
       <SourceRunStats runs={runs} />
     </div>

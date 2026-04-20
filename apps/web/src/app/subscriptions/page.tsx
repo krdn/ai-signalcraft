@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { trpcClient } from '@/lib/trpc';
@@ -28,6 +28,24 @@ export default function SubscriptionsPage() {
 
   const subscriptions = subsQuery.data ?? [];
   const runs = runsQuery.data ?? [];
+
+  // 24h 내 runId만 breakdown 대상(테이블이 24h 기준이므로 범위 일치)
+  const runIds24h = useMemo(() => {
+    const cutoff = Date.now() - 24 * 3600 * 1000;
+    const ids = new Set<string>();
+    for (const r of runs) {
+      if (new Date(r.time).getTime() >= cutoff) ids.add(r.runId);
+    }
+    return [...ids];
+  }, [runs]);
+
+  const breakdownQuery = useQuery({
+    queryKey: ['run-item-breakdown', { runIds: runIds24h }],
+    queryFn: () => trpcClient.subscriptions.runItemBreakdown.query({ runIds: runIds24h }),
+    enabled: runIds24h.length > 0,
+    refetchInterval: 60_000,
+  });
+  const breakdown = breakdownQuery.data ?? [];
 
   if (subsQuery.isLoading) {
     return (
@@ -70,7 +88,12 @@ export default function SubscriptionsPage() {
 
       {/* 데스크톱: 테이블 / 모바일: 기존 카드 리스트 */}
       <div className="hidden md:block">
-        <SubscriptionTable subscriptions={subscriptions} runs={runs} statusFilter={statusFilter} />
+        <SubscriptionTable
+          subscriptions={subscriptions}
+          runs={runs}
+          breakdown={breakdown}
+          statusFilter={statusFilter}
+        />
       </div>
       <div className="md:hidden">
         <SubscriptionList />

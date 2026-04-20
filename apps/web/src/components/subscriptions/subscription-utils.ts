@@ -3,6 +3,7 @@ import { ko } from 'date-fns/locale';
 
 export const SOURCE_LABEL_MAP: Record<string, string> = {
   'naver-news': '네이버',
+  'naver-comments': '네이버 댓글',
   youtube: '유튜브',
   dcinside: 'DC',
   fmkorea: '에펨',
@@ -11,6 +12,7 @@ export const SOURCE_LABEL_MAP: Record<string, string> = {
 
 export const SOURCE_COLOR_MAP: Record<string, string> = {
   'naver-news': '#03C75A',
+  'naver-comments': '#4ADE80',
   youtube: '#FF0000',
   dcinside: '#1E3A5F',
   fmkorea: '#3B82F6',
