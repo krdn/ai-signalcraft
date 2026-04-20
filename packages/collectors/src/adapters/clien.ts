@@ -29,6 +29,10 @@ export class ClienCollector extends CommunityBaseCollector {
     comment: ['.comment_row[data-role="comment-row"]'],
   };
 
+  protected override sortedByDateDescending(): boolean {
+    return true;
+  }
+
   protected detectBlocked(html: string): boolean {
     if (!html) return true;
     if (html.length < 2000) return true;
