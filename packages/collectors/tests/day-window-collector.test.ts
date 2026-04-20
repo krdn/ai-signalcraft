@@ -86,7 +86,7 @@ describe('collectByDayWindowDescending', () => {
     const links: FakeLink[] = Array.from({ length: 5 }, (_, i) => ({
       url: `https://example.test/${i}`,
       title: `t${i}`,
-      publishedAt: kstDate('2026-04-20', `12:0${i}`),
+      publishedAt: kstDate('2026-04-20', `12:${String(i).padStart(2, '0')}`),
     }));
     const c = new FakeDayWindowCollector([links]);
     const posts = await collectAll(c, {
@@ -100,7 +100,7 @@ describe('collectByDayWindowDescending', () => {
     expect(posts).toHaveLength(3);
   });
 
-  it('publishedAt이 윈도우보다 오래되면 다음 일자로 점프한다', async () => {
+  it('윈도우 내 두 날짜의 게시글을 모두 수집한다', async () => {
     const page1: FakeLink[] = [
       { url: 'a', title: 'a', publishedAt: kstDate('2026-04-20', '15:00') },
       { url: 'b', title: 'b', publishedAt: kstDate('2026-04-20', '10:00') },
@@ -137,6 +137,7 @@ describe('collectByDayWindowDescending', () => {
   });
 
   it('consecutiveOld 임계 도달 시 다음 일자로 점프 후 수집 계속', async () => {
+    // 35 > CONSECUTIVE_OLD_THRESHOLD(30) — 다음 일자 점프 유도
     const old: FakeLink[] = Array.from({ length: 35 }, (_, i) => ({
       url: `old${i}`,
       title: `old${i}`,
