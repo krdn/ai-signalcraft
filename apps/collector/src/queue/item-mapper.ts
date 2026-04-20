@@ -26,6 +26,20 @@ function toDate(v: unknown): Date | null {
   return null;
 }
 
+/**
+ * publishedAt이 없는 아이템을 위한 time 폴백.
+ *
+ * TimescaleDB UNIQUE (source, source_id, item_type, time) 제약은 시간 컬럼을
+ * 포함해야 하는데, publishedAt이 null일 때 `new Date()`를 쓰면 재수집마다
+ * time이 달라져 UNIQUE가 무력화되어 중복이 쌓인다.
+ *
+ * 수집 시각을 UTC 자정으로 절삭하면 같은 날 안에서는 time이 일정해 중복이
+ * `onConflictDoNothing`으로 차단되고, 청크 분포도 날짜별로 자연스럽게 유지된다.
+ */
+function startOfUtcDay(d: Date): Date {
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+}
+
 function pickString(obj: AnyItem, ...keys: string[]): string | null {
   for (const k of keys) {
     const v = obj[k];
@@ -74,8 +88,8 @@ export function mapToRawItem(raw: AnyItem, ctx: MapItemContext): NewRawItem {
     toDate(raw.publishDate) ??
     toDate(raw.timestamp);
 
-  // time = 게시일 우선, 없으면 now (하이퍼테이블 시간축)
-  const time = publishedAt ?? new Date();
+  // time = 게시일 우선, 없으면 오늘 UTC 자정 (같은 날 재수집 중복 차단용)
+  const time = publishedAt ?? startOfUtcDay(new Date());
 
   const metrics: NewRawItem['metrics'] = {
     viewCount: pickNumber(raw, 'viewCount', 'views') ?? undefined,
