@@ -4,6 +4,7 @@ import { TRPCError } from '@trpc/server';
 import { eq, and, desc, sql } from 'drizzle-orm';
 import { keywordSubscriptions } from '../../db/schema';
 import { enqueueCollectionJob } from '../../queue/queues';
+import { isSourcePaused } from '../../queue/source-pause';
 import type { CollectorSource } from '../../queue/types';
 import { router, protectedProcedure } from './init';
 
@@ -194,7 +195,13 @@ export const subscriptionsRouter = router({
         : new Date(now.getTime() - intervalMs).toISOString();
       const endISO = now.toISOString();
 
+      const enqueuedSources: CollectorSource[] = [];
+      const skippedSources: string[] = [];
       for (const source of targetSources) {
+        if (await isSourcePaused(source)) {
+          skippedSources.push(source);
+          continue;
+        }
         await enqueueCollectionJob({
           runId,
           subscriptionId: row.id,
@@ -205,6 +212,7 @@ export const subscriptionsRouter = router({
           dateRange: { startISO, endISO },
           triggerType: 'manual',
         });
+        enqueuedSources.push(source);
       }
 
       // 다음 스케줄 실행 시각을 intervalHours 뒤로 — 스캐너 중복 enqueue 방지
@@ -218,7 +226,8 @@ export const subscriptionsRouter = router({
         queued: true,
         runId,
         subscription: updated,
-        enqueuedSources: targetSources,
+        enqueuedSources,
+        skippedSources,
       };
     }),
 
@@ -263,7 +272,13 @@ export const subscriptionsRouter = router({
       const startISO = new Date(fromMs).toISOString();
       const endISO = new Date(toMs + 86400000).toISOString(); // toDate의 KST 자정 + 24h
 
+      const enqueued: CollectorSource[] = [];
+      const skippedSources: string[] = [];
       for (const source of sub.sources as CollectorSource[]) {
+        if (await isSourcePaused(source)) {
+          skippedSources.push(source);
+          continue;
+        }
         await enqueueCollectionJob({
           runId,
           subscriptionId: sub.id,
@@ -276,9 +291,10 @@ export const subscriptionsRouter = router({
           mode: 'backfill',
           windowDays,
         });
+        enqueued.push(source);
       }
 
-      return { runId, windowDays, sources: sub.sources };
+      return { runId, windowDays, sources: enqueued, skippedSources };
     }),
 
   /**

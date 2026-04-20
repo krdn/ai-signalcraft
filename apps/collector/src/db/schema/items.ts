@@ -1,4 +1,5 @@
 import { pgTable, text, integer, timestamp, jsonb, uuid, index } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import { vector384 } from '../types/vector';
 
 export type ItemMetrics = {
@@ -38,6 +39,10 @@ export const rawItems = pgTable(
     index('raw_items_subscription_time_idx').on(table.subscriptionId, table.time),
     index('raw_items_source_source_id_idx').on(table.source, table.sourceId, table.itemType),
     index('raw_items_parent_idx').on(table.parentSourceId),
+    // partial: fetched_from_run은 대부분 NULL. Layer A COUNT 쿼리를 index-only scan으로 처리 (Task 0 EXPLAIN 확인)
+    index('raw_items_fetched_from_run_idx')
+      .on(table.fetchedFromRun)
+      .where(sql`${table.fetchedFromRun} IS NOT NULL`),
   ],
 );
 

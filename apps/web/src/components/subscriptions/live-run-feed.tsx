@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { SOURCE_LABEL_MAP } from './subscription-utils';
 import { CopyableClaudeRef } from './copyable-claude-ref';
+import { RunRowActions } from './run-row-actions';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { RunRecord } from '@/server/trpc/routers/subscriptions';
@@ -87,9 +88,12 @@ export function LiveRunFeed({ runs, subscriptionMap }: LiveRunFeedProps) {
                 {keyword && <span className="font-medium truncate max-w-[160px]">{keyword}</span>}
                 <span className="text-muted-foreground">→</span>
                 <span className="text-xs">{SOURCE_LABEL_MAP[run.source] ?? run.source}</span>
-                <span className="ml-auto text-xs text-muted-foreground tabular-nums">
-                  <ElapsedTimer since={new Date(run.time)} />
-                </span>
+                <div className="ml-auto flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground tabular-nums">
+                    <ElapsedTimer since={new Date(run.time)} />
+                  </span>
+                  <RunRowActions runId={run.runId} source={run.source} status={run.status} />
+                </div>
               </div>
             );
           })}

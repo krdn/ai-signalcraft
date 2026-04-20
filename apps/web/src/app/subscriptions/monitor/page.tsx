@@ -1,16 +1,29 @@
 'use client';
 
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Loader2 } from 'lucide-react';
+import { Loader2, MoreVertical } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { trpcClient } from '@/lib/trpc';
 import { LiveRunFeed } from '@/components/subscriptions/live-run-feed';
 import { UpcomingRuns } from '@/components/subscriptions/upcoming-runs';
 import { RecentRunsLog } from '@/components/subscriptions/recent-runs-log';
 import { SourceRunStats } from '@/components/subscriptions/source-run-stats';
 import { CopyableClaudeRef } from '@/components/subscriptions/copyable-claude-ref';
+import { StalledRunsBanner } from '@/components/subscriptions/stalled-runs-banner';
+import { QueueStatsBar } from '@/components/subscriptions/queue-stats-bar';
+import { SourcePauseControls } from '@/components/subscriptions/source-pause-controls';
+import { CancelAllDialog } from '@/components/subscriptions/cancel-all-dialog';
 
 export default function MonitorPage() {
+  const [cancelAllOpen, setCancelAllOpen] = useState(false);
+
   const subsQuery = useQuery({
     queryKey: ['subscriptions', 'all'],
     queryFn: () => trpcClient.subscriptions.list.query(),
@@ -61,9 +74,26 @@ export default function MonitorPage() {
         <div className="flex items-center gap-2 flex-wrap">
           <h1 className="text-xl font-semibold">수집 모니터링</h1>
           <CopyableClaudeRef kind="monitor" size="sm" />
+          <div className="ml-auto">
+            <DropdownMenu>
+              <DropdownMenuTrigger className="inline-flex items-center justify-center h-8 w-8 rounded-md hover:bg-accent">
+                <MoreVertical className="h-4 w-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  className="text-red-600 focus:text-red-600"
+                  onClick={() => setCancelAllOpen(true)}
+                >
+                  전체 긴급 정지
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
         <p className="text-sm text-muted-foreground">실시간 수집 작업 상태를 확인합니다.</p>
       </div>
+
+      <StalledRunsBanner />
 
       {/* 실시간 상태 헤더 */}
       <div className="flex items-center gap-4 rounded-lg border px-4 py-3 flex-wrap">
@@ -93,6 +123,7 @@ export default function MonitorPage() {
             </Badge>
           </span>
         </div>
+        <QueueStatsBar />
         {running > 0 && (
           <span className="relative flex h-2 w-2 ml-auto">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
@@ -109,6 +140,10 @@ export default function MonitorPage() {
       <RecentRunsLog runs={runs} subscriptionMap={subscriptionMap} breakdown={breakdown} />
 
       <SourceRunStats runs={runs} />
+
+      <SourcePauseControls />
+
+      <CancelAllDialog open={cancelAllOpen} onOpenChange={setCancelAllOpen} />
     </div>
   );
 }

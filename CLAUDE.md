@@ -74,3 +74,4 @@ pnpm build        # 프로덕션 빌드
 - 근본 원인(root cause) 먼저 파악. DB → API → Worker → Frontend 전체 경로 추적
 - SQL 변경 시 ambiguous column reference 확인
 - UI 콜백 변경 후 전체 사용자 플로우 테스트
+- 진행 중 run 중지·진단: 모니터 페이지(`/subscriptions/monitor`) 각 row의 [중지]/[진단] 모달 사용. DB 수동 조작 금지 — `run_cancellations` 테이블이 cooperative cancel 플래그의 단일 진실 (executor checkpoint가 이 값을 폴링)
