@@ -4,6 +4,7 @@ import { getCollector, NaverCommentsCollector } from '@ai-signalcraft/collectors
 import { getDb } from '../db';
 import { rawItems, collectionRuns, fetchErrors, keywordSubscriptions } from '../db/schema';
 import { buildEmbeddingText, embedPassages } from '../services/embedding';
+import { CancelledError, checkCancellation, finalizeCancellationIfDone } from './cancellation';
 import { mapToRawItem } from './item-mapper';
 import { enqueueCollectionJob } from './queues';
 import type {
@@ -24,10 +25,17 @@ const EMBED_BATCH_SIZE = 50;
  * texts 전체를 EMBED_BATCH_SIZE로 쪼개 embedPassages를 여러 번 호출한다.
  * 실패하는 배치가 있으면 그 배치 구간만 빈 배열로 채워 전체 길이를 유지한다.
  */
-async function embedPassagesBatched(texts: string[]): Promise<number[][]> {
+async function embedPassagesBatched(
+  texts: string[],
+  runId: string,
+  source: string,
+): Promise<number[][]> {
   if (texts.length === 0) return [];
   const out: number[][] = new Array(texts.length);
   for (let i = 0; i < texts.length; i += EMBED_BATCH_SIZE) {
+    // embedding 배치 사이에 체크 — Xenova CPU 추론은 분 단위로 블록 가능하므로
+    // 배치 경계가 유일한 cooperative 중단 지점
+    await checkCancellation(runId, source);
     const slice = texts.slice(i, i + EMBED_BATCH_SIZE);
     const vectors = await embedPassages(slice);
     for (let j = 0; j < slice.length; j++) {
@@ -99,6 +107,9 @@ export async function executeCollectionJob(
     const collector = resolveCollector(source);
     const itemType = itemTypeFor(source);
 
+    // 수집 시작 전 체크 — 이미 cancelling이면 네트워크 호출조차 피함
+    await checkCancellation(runId, source);
+
     const iter = collector.collect({
       keyword,
       startDate: dateRange.startISO,
@@ -114,6 +125,8 @@ export async function executeCollectionJob(
     });
 
     for await (const chunk of iter) {
+      // 각 청크 경계 — 어댑터가 페이지네이션 중에 중단 신호 감지
+      await checkCancellation(runId, source);
       if (!Array.isArray(chunk) || chunk.length === 0) continue;
 
       const rows = chunk.map((raw) => {
@@ -161,12 +174,14 @@ export async function executeCollectionJob(
       try {
         const texts = rows.map((r) => buildEmbeddingText(r.title ?? null, r.content ?? null));
         if (texts.some((t) => t.length > 0)) {
-          const vectors = await embedPassagesBatched(texts);
+          const vectors = await embedPassagesBatched(texts, runId, source);
           rows.forEach((r, i) => {
             if (texts[i].length > 0 && vectors[i]) r.embedding = vectors[i];
           });
         }
       } catch (embedErr) {
+        // CancelledError는 재throw해서 outer catch에서 처리
+        if (embedErr instanceof CancelledError) throw embedErr;
         console.warn(
           `[executor:${source}] embedding failed (continuing without): ${
             embedErr instanceof Error ? embedErr.message : String(embedErr)
@@ -254,11 +269,15 @@ export async function executeCollectionJob(
       })
       .where(eq(keywordSubscriptions.id, subscriptionId));
 
+    // race 커버 — 정상 종료 직전에 cancel이 들어왔어도 cancelling row를 cancelled로 정리
+    await finalizeCancellationIfDone(runId, source).catch(() => void 0);
+
     return { runId, itemsCollected, itemsNew, blocked, durationMs };
   } catch (err) {
     const durationMs = Date.now() - startedAt;
-    const message = err instanceof Error ? err.message : String(err);
-    blocked = /block|captcha|429|forbidden|rate.?limit/i.test(message);
+    const cancelled = err instanceof CancelledError;
+    const message = cancelled ? 'cancelled' : err instanceof Error ? err.message : String(err);
+    blocked = !cancelled && /block|captcha|429|forbidden|rate.?limit/i.test(message);
 
     await db
       .update(collectionRuns)
@@ -271,6 +290,17 @@ export async function executeCollectionJob(
         durationMs,
       })
       .where(and(eq(collectionRuns.runId, runId), eq(collectionRuns.source, source)));
+
+    if (cancelled) {
+      // run_cancellations cancelling→cancelled 전이. race-safe (WHERE status='cancelling').
+      await finalizeCancellationIfDone(runId, source);
+      // BullMQ 재시도 방지 — CancelledError가 일반 에러처럼 재시도되면 UX가 혼란스러움
+      if (typeof job.discard === 'function') {
+        await job.discard();
+      }
+      // lastError는 사용자 취소이므로 subscription에 기록하지 않음
+      throw err;
+    }
 
     await db.insert(fetchErrors).values({
       time: new Date(),
@@ -328,10 +358,15 @@ async function executeCommentsJob(job: Job<CollectionJobData>): Promise<Collecti
   const collector = new NaverCommentsCollector();
 
   try {
+    // 수집 시작 전 체크 — 이미 cancelling이면 네트워크 호출조차 피함
+    await checkCancellation(runId, source);
+
     for (const target of commentTargets) {
       try {
         const iter = collector.collectForArticle(target.url, { maxComments });
         for await (const chunk of iter) {
+          // 각 청크 경계 — 페이지네이션 중에 중단 신호 감지
+          await checkCancellation(runId, source);
           if (!Array.isArray(chunk) || chunk.length === 0) continue;
           itemsCollected += chunk.length;
 
@@ -348,12 +383,14 @@ async function executeCommentsJob(job: Job<CollectionJobData>): Promise<Collecti
           try {
             const texts = rows.map((r) => buildEmbeddingText(null, r.content ?? null));
             if (texts.some((t) => t.length > 0)) {
-              const vectors = await embedPassagesBatched(texts);
+              const vectors = await embedPassagesBatched(texts, runId, source);
               rows.forEach((r, i) => {
                 if (texts[i].length > 0 && vectors[i]) r.embedding = vectors[i];
               });
             }
           } catch (embedErr) {
+            // CancelledError는 재throw해서 outer catch에서 처리
+            if (embedErr instanceof CancelledError) throw embedErr;
             console.warn(
               `[executor:${source}] embedding failed (continuing without): ${
                 embedErr instanceof Error ? embedErr.message : String(embedErr)
@@ -373,6 +410,8 @@ async function executeCommentsJob(job: Job<CollectionJobData>): Promise<Collecti
           await job.updateProgress({ itemsCollected, itemsNew });
         }
       } catch (articleErr) {
+        // CancelledError는 per-article catch에서 삼키지 않고 outer catch로 전파
+        if (articleErr instanceof CancelledError) throw articleErr;
         const msg = articleErr instanceof Error ? articleErr.message : String(articleErr);
         errors.push(`${target.articleSourceId}: ${msg}`);
         console.warn(
@@ -406,11 +445,15 @@ async function executeCommentsJob(job: Job<CollectionJobData>): Promise<Collecti
       throw new Error(`naver-comments 전체 실패 (${errors.length}건): ${errors[0] ?? 'unknown'}`);
     }
 
+    // race 커버 — 정상 종료 직전에 cancel이 들어왔어도 cancelling row를 cancelled로 정리
+    await finalizeCancellationIfDone(runId, source).catch(() => void 0);
+
     return { runId, itemsCollected, itemsNew, blocked: false, durationMs };
   } catch (err) {
     const durationMs = Date.now() - startedAt;
-    const message = err instanceof Error ? err.message : String(err);
-    const blocked = /block|captcha|429|forbidden|rate.?limit/i.test(message);
+    const cancelled = err instanceof CancelledError;
+    const message = cancelled ? 'cancelled' : err instanceof Error ? err.message : String(err);
+    const blocked = !cancelled && /block|captcha|429|forbidden|rate.?limit/i.test(message);
 
     // 위의 finalize가 이미 failed로 기록했을 수 있지만, 예상치 못한 예외 보호
     await db
@@ -424,6 +467,16 @@ async function executeCommentsJob(job: Job<CollectionJobData>): Promise<Collecti
         durationMs,
       })
       .where(and(eq(collectionRuns.runId, runId), eq(collectionRuns.source, source)));
+
+    if (cancelled) {
+      // run_cancellations cancelling→cancelled 전이. race-safe (WHERE status='cancelling').
+      await finalizeCancellationIfDone(runId, source);
+      // BullMQ 재시도 방지
+      if (typeof job.discard === 'function') {
+        await job.discard();
+      }
+      throw err;
+    }
 
     await db.insert(fetchErrors).values({
       time: new Date(),
