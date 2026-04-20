@@ -13,6 +13,16 @@ export interface SiteSelectors {
 }
 
 export abstract class CommunityBaseCollector extends BrowserCollector<CommunityPost> {
+  // 정책 상수 — dayWindow/legacy 경로 공통 사용.
+  // ⚠️ 30: fmkorea/clien 검색 상위에 섞이는 광고/BEST 글(기간 외)이 10건 연속 등장 시 false positive로
+  //     수집이 일찍 끊기는 현상 회피. 이 임계 이상 연속이면 진짜 기간 종료로 판단.
+  private static readonly CONSECUTIVE_OLD_THRESHOLD = 30;
+  // ⚠️ 5: clien이 간헐적으로 차단했다가 풀어주는 패턴 관찰 (Job #223).
+  //     연속 5번 빈 페이지면 영구 차단/진짜 끝으로 판정.
+  private static readonly MAX_CONSECUTIVE_EMPTY_PAGES = 5;
+  // 빈/차단 페이지 지수 백오프 베이스 (10s → 20s → 40s → 80s → 160s).
+  private static readonly EMPTY_PAGE_BACKOFF_BASE_MS = 10_000;
+
   protected abstract readonly selectors: SiteSelectors;
   protected abstract readonly baseUrl: string;
 
@@ -241,9 +251,7 @@ export abstract class CommunityBaseCollector extends BrowserCollector<CommunityP
     const enforced = new Map<number, number>();
     const globalSeen = new Set<string>();
     let consecutiveOldInWindow = 0;
-    const CONSECUTIVE_OLD_THRESHOLD = 30;
     let consecutiveEmptyPages = 0;
-    const MAX_CONSECUTIVE_EMPTY_PAGES = 5;
     let totalCollected = 0;
     let skippedCount = 0;
     let preFilterSkipCount = 0;
@@ -255,11 +263,13 @@ export abstract class CommunityBaseCollector extends BrowserCollector<CommunityP
 
     const dayKey = (d: Date): number => kstDayStartMs(d);
 
-    pageLoop: while (
-      pageNum <= this.config.maxSearchPages &&
-      dayIdx < daysDescMs.length &&
-      totalCollected < ctx.maxItems
-    ) {
+    pageLoop: while (pageNum <= this.config.maxSearchPages && dayIdx < daysDescMs.length) {
+      // ⚠️ body 상단 가드: 마지막 link에서 maxItems 도달 후 페이지 끝에 도달한 경우에도
+      //    endReason이 'completed'로 남지 않도록 진입 즉시 명시적으로 설정.
+      if (totalCollected >= ctx.maxItems) {
+        endReason = 'maxItemsReached';
+        break;
+      }
       lastPageReached = pageNum;
       const searchUrl = this.buildSearchUrl(options.keyword, pageNum);
       const postLinks = await this.loadSearchPage(page, searchUrl, pageNum);
@@ -267,16 +277,19 @@ export abstract class CommunityBaseCollector extends BrowserCollector<CommunityP
       if (!postLinks || postLinks.length === 0) {
         consecutiveEmptyPages++;
         pageEmptyCount++;
-        if (consecutiveEmptyPages >= MAX_CONSECUTIVE_EMPTY_PAGES) {
+        if (consecutiveEmptyPages >= CommunityBaseCollector.MAX_CONSECUTIVE_EMPTY_PAGES) {
           endReason = 'pageEmptyOrBlocked';
           break;
         }
         // 설정된 pageDelay가 있으면 지수 백오프 적용, 없으면(테스트 등) 즉시 다음 페이지.
         const baseBackoff =
-          this.config.pageDelay.min > 0 ? 10000 * Math.pow(2, consecutiveEmptyPages - 1) : 0;
+          this.config.pageDelay.min > 0
+            ? CommunityBaseCollector.EMPTY_PAGE_BACKOFF_BASE_MS *
+              Math.pow(2, consecutiveEmptyPages - 1)
+            : 0;
         if (baseBackoff > 0) {
           console.info(
-            `${this.source} 페이지 ${pageNum} 빈/차단 — ${Math.round(baseBackoff / 1000)}s 백오프 후 다음 페이지 시도 (${consecutiveEmptyPages}/${MAX_CONSECUTIVE_EMPTY_PAGES})`,
+            `${this.source} 페이지 ${pageNum} 빈/차단 — ${Math.round(baseBackoff / 1000)}s 백오프 후 다음 페이지 시도 (${consecutiveEmptyPages}/${CommunityBaseCollector.MAX_CONSECUTIVE_EMPTY_PAGES})`,
           );
           await sleep(baseBackoff, baseBackoff + 3000);
         }
@@ -358,6 +371,17 @@ export abstract class CommunityBaseCollector extends BrowserCollector<CommunityP
                     posts.push(post);
                     totalCollected++;
                   }
+                } else {
+                  // publishedAt null이지만 in-range로 간주된 post — legacy/!link.publishedAt 경로와 일관되게 보수적으로 포함.
+                  // ⚠️ 이 경로는 현재 윈도우의 cap을 소비한다 (link.publishedAt으로 현재 윈도우에 속한다고 이미 분류했으므로).
+                  const windowCount = perDayCount.get(windowStart) ?? 0;
+                  if (windowCount >= perDayLimit) {
+                    perDayCapSkipCount++;
+                  } else {
+                    perDayCount.set(windowStart, windowCount + 1);
+                    posts.push(post);
+                    totalCollected++;
+                  }
                 }
               }
             } catch (err) {
@@ -377,7 +401,7 @@ export abstract class CommunityBaseCollector extends BrowserCollector<CommunityP
             }
             // 다음 윈도우도 없거나 다음 윈도우보다도 오래된 글 → consecutiveOld 카운트
             consecutiveOldInWindow++;
-            if (consecutiveOldInWindow >= CONSECUTIVE_OLD_THRESHOLD) {
+            if (consecutiveOldInWindow >= CommunityBaseCollector.CONSECUTIVE_OLD_THRESHOLD) {
               dayIdx++;
               consecutiveOldInWindow = 0;
               continue; // 같은 link를 새 윈도우에서 재평가
@@ -471,8 +495,7 @@ export abstract class CommunityBaseCollector extends BrowserCollector<CommunityP
 
     // 옵션 3 (v2): 빈/차단 페이지를 만나도 즉시 break하지 않고 다음 페이지 시도.
     // 일시 차단(rate limit)에서 회복 가능. 연속 N번 빈 페이지면 진짜 끝으로 판단하고 종료.
-    // v2: 3 → 5로 상향, clien이 간헐적으로 차단했다가 풀어주는 패턴 관찰 (Job #223).
-    const MAX_CONSECUTIVE_EMPTY_PAGES = 5;
+    // 상수 MAX_CONSECUTIVE_EMPTY_PAGES는 클래스 static 필드로 승격됨.
     let consecutiveEmptyPages = 0;
 
     for (let pageNum = 1; pageNum <= this.config.maxSearchPages; pageNum++) {
@@ -487,10 +510,12 @@ export abstract class CommunityBaseCollector extends BrowserCollector<CommunityP
       if (!postLinks || postLinks.length === 0) {
         consecutiveEmptyPages++;
         pageEmptyCount++;
-        if (consecutiveEmptyPages >= MAX_CONSECUTIVE_EMPTY_PAGES) {
+        if (consecutiveEmptyPages >= CommunityBaseCollector.MAX_CONSECUTIVE_EMPTY_PAGES) {
           // 진짜 검색 결과 끝 또는 영구 차단 → 종료
           endReason =
-            pageEmptyCount >= MAX_CONSECUTIVE_EMPTY_PAGES ? 'pageEmptyOrBlocked' : 'noMoreResults';
+            pageEmptyCount >= CommunityBaseCollector.MAX_CONSECUTIVE_EMPTY_PAGES
+              ? 'pageEmptyOrBlocked'
+              : 'noMoreResults';
           console.warn(
             `${this.source} 빈/차단 페이지 ${consecutiveEmptyPages}회 연속 — 페이지 ${pageNum}에서 종료`,
           );
@@ -498,9 +523,11 @@ export abstract class CommunityBaseCollector extends BrowserCollector<CommunityP
         }
         // 빈 페이지에 대한 지수 백오프 후 다음 페이지 시도 (10s → 20s → 40s → 80s → 160s).
         // clien은 rate-limit 해제까지 수십 초~수 분 필요하다는 관찰 기반.
-        const backoffBase = 10000 * Math.pow(2, consecutiveEmptyPages - 1);
+        const backoffBase =
+          CommunityBaseCollector.EMPTY_PAGE_BACKOFF_BASE_MS *
+          Math.pow(2, consecutiveEmptyPages - 1);
         console.info(
-          `${this.source} 페이지 ${pageNum} 빈/차단 — ${Math.round(backoffBase / 1000)}s 백오프 후 다음 페이지 시도 (${consecutiveEmptyPages}/${MAX_CONSECUTIVE_EMPTY_PAGES})`,
+          `${this.source} 페이지 ${pageNum} 빈/차단 — ${Math.round(backoffBase / 1000)}s 백오프 후 다음 페이지 시도 (${consecutiveEmptyPages}/${CommunityBaseCollector.MAX_CONSECUTIVE_EMPTY_PAGES})`,
         );
         await sleep(backoffBase, backoffBase + 3000);
         continue;
@@ -509,12 +536,10 @@ export abstract class CommunityBaseCollector extends BrowserCollector<CommunityP
 
       const posts: CommunityPost[] = [];
       // 한 페이지 내에서 연속된 "확실히 옛날인" 게시물 개수 -- 임계치 초과 시 검색 중단.
-      // ⚠️ 임계값을 30으로 상향 (이전 10) — fmkorea 검색 상위에 섞이는 광고/BEST 글
-      //    (사용자 기간보다 훨씬 오래된 글)이 10건 연속 등장하면 false positive로 검색이 일찍 끊김.
+      // CONSECUTIVE_OLD_THRESHOLD는 클래스 static 필드로 승격됨 (정책 상수, dayWindow와 공유).
       // ⚠️ "확실히 옛날" 판정 기준: startTs보다 30일 이상 더 옛날인 글만 카운트.
       //    (예: 사용자가 04-11~04-18 입력 → 03-12 이전 글만 "옛날"로 카운트, 04-09 글은 안 카운트)
       let consecutiveOldCount = 0;
-      const CONSECUTIVE_OLD_THRESHOLD = 30;
       const OLD_MARGIN_MS = 30 * 86400000;
 
       for (const link of postLinks) {
@@ -533,7 +558,7 @@ export abstract class CommunityBaseCollector extends BrowserCollector<CommunityP
             // "확실히 옛날" 글만 consecutiveOldCount에 카운트 — 광고/추천글 false positive 방지
             if (!Number.isNaN(linkTs) && linkTs < ctx.startTs - OLD_MARGIN_MS) {
               consecutiveOldCount++;
-              if (consecutiveOldCount >= CONSECUTIVE_OLD_THRESHOLD) break;
+              if (consecutiveOldCount >= CommunityBaseCollector.CONSECUTIVE_OLD_THRESHOLD) break;
             }
             continue;
           }
@@ -585,7 +610,7 @@ export abstract class CommunityBaseCollector extends BrowserCollector<CommunityP
         await sleep(this.config.postDelay.min, this.config.postDelay.max);
       }
 
-      if (consecutiveOldCount >= CONSECUTIVE_OLD_THRESHOLD) {
+      if (consecutiveOldCount >= CommunityBaseCollector.CONSECUTIVE_OLD_THRESHOLD) {
         console.info(
           `${this.source} 기간 이전 게시물 ${consecutiveOldCount}건 연속 발견 -- 검색 중단`,
         );
