@@ -80,6 +80,10 @@ export async function executeCollectionJob(
       startDate: dateRange.startISO,
       endDate: dateRange.endISO,
       maxItems: limits.maxPerRun,
+      // perDay cap을 maxPerRun 자체로 지정 — rolling overlap으로 범위가 자정을 건드려
+      // dayCount가 2가 되더라도 각 일자에서 maxPerRun까지 가져와 누락을 줄인다.
+      // UNIQUE(source, source_id, item_type, time)로 중복은 자동 차단.
+      maxItemsPerDay: limits.maxPerRun,
       maxComments: limits.commentsPerItem,
       collectTranscript: options?.collectTranscript,
     });

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { SOURCE_LABEL_MAP, formatRelative } from './subscription-utils';
-import { CopyableRunId } from './copyable-run-id';
+import { CopyableClaudeRef } from './copyable-claude-ref';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -116,7 +116,16 @@ export function RecentRunsLog({ runs, subscriptionMap, breakdown }: RecentRunsLo
                   <span
                     className={`inline-block h-1.5 w-1.5 rounded-full shrink-0 ${getStatusColor(run.status)}`}
                   />
-                  <CopyableRunId runId={run.runId} />
+                  <CopyableClaudeRef
+                    kind="run"
+                    subscriptionId={run.subscriptionId}
+                    runId={run.runId}
+                    keyword={keyword}
+                    source={run.source}
+                    withContext
+                    displayLabel={run.runId.slice(0, 8)}
+                    variant="inline"
+                  />
                   <Badge variant="outline" className="text-[9px] font-mono shrink-0">
                     #{run.subscriptionId}
                   </Badge>

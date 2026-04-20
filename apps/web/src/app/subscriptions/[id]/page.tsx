@@ -20,7 +20,11 @@ import { SubscriptionTrendChart } from '@/components/subscriptions/subscription-
 import { SourceStatusCard } from '@/components/subscriptions/source-status-card';
 import { RunHistoryTable } from '@/components/subscriptions/run-history-table';
 import { SubscriptionForm } from '@/components/subscriptions/subscription-form';
-import { SOURCE_LABEL_MAP, formatRelative } from '@/components/subscriptions/subscription-utils';
+import {
+  SOURCE_LABEL_MAP,
+  SOURCE_FANOUT_CHILDREN,
+  formatRelative,
+} from '@/components/subscriptions/subscription-utils';
 
 export default function SubscriptionDetailPage() {
   const params = useParams();
@@ -110,20 +114,32 @@ export default function SubscriptionDetailPage() {
           <div>
             <h3 className="text-sm font-medium mb-2">소스별 상태</h3>
             <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
-              {(sub.sources as string[]).map((source) => (
-                <SourceStatusCard
-                  key={source}
-                  source={source}
-                  runs={runs}
-                  itemBreakdown={itemStats?.bySourceAndType?.filter((s) => s.source === source)}
-                />
-              ))}
+              {(sub.sources as string[]).map((source) => {
+                const childSources = SOURCE_FANOUT_CHILDREN[source] ?? [];
+                const includedSources = [source, ...childSources];
+                return (
+                  <SourceStatusCard
+                    key={source}
+                    source={source}
+                    runs={runs}
+                    itemBreakdown={itemStats?.bySourceAndType?.filter((s) =>
+                      includedSources.includes(s.source),
+                    )}
+                    subscriptionId={sub.id}
+                  />
+                );
+              })}
             </div>
           </div>
 
           <div>
             <h3 className="text-sm font-medium mb-2">실행 히스토리</h3>
-            <RunHistoryTable runs={runs} breakdown={breakdown} limit={100} />
+            <RunHistoryTable
+              runs={runs}
+              breakdown={breakdown}
+              limit={100}
+              subscriptionId={sub.id}
+            />
           </div>
         </TabsContent>
 
@@ -177,7 +193,9 @@ export default function SubscriptionDetailPage() {
             <DialogDescription>변경사항은 다음 수집부터 적용됩니다.</DialogDescription>
           </DialogHeader>
           <SubscriptionForm
-            onCreated={() => {
+            key={editOpen ? `edit-${sub.id}` : 'closed'}
+            initial={sub}
+            onSaved={() => {
               setEditOpen(false);
               subQuery.refetch();
             }}

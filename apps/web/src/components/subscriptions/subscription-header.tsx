@@ -8,6 +8,7 @@ import {
   getStatusVariant,
   formatRelative,
 } from './subscription-utils';
+import { CopyableClaudeRef } from './copyable-claude-ref';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useSubscriptionActions } from '@/hooks/use-subscription-actions';
@@ -26,11 +27,17 @@ export function SubscriptionHeader({ subscription: sub, onEdit }: SubscriptionHe
     <div className="sticky top-0 z-10 bg-background/95 backdrop-blur pb-3 border-b mb-4">
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1.5">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <h1 className="text-xl font-bold">{sub.keyword}</h1>
             <Badge variant={getStatusVariant(sub.status)} className="text-xs">
               {getStatusLabel(sub.status)}
             </Badge>
+            <CopyableClaudeRef
+              kind="subscription"
+              subscriptionId={sub.id}
+              keyword={sub.keyword}
+              size="sm"
+            />
           </div>
           <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
             <span>{sub.intervalHours}시간 주기</span>

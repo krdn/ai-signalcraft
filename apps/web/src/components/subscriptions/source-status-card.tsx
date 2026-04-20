@@ -1,6 +1,7 @@
 'use client';
 
 import { SOURCE_LABEL_MAP, formatRelative } from './subscription-utils';
+import { CopyableClaudeRef } from './copyable-claude-ref';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import type { RunRecord } from '@/server/trpc/routers/subscriptions';
@@ -15,9 +16,15 @@ interface SourceStatusCardProps {
   source: string;
   runs: RunRecord[];
   itemBreakdown?: ItemBreakdown[];
+  subscriptionId?: number;
 }
 
-export function SourceStatusCard({ source, runs, itemBreakdown }: SourceStatusCardProps) {
+export function SourceStatusCard({
+  source,
+  runs,
+  itemBreakdown,
+  subscriptionId,
+}: SourceStatusCardProps) {
   const sourceRuns = runs.filter((r) => r.source === source);
   const now = Date.now();
   const h24Ago = now - 24 * 3600 * 1000;
@@ -30,9 +37,11 @@ export function SourceStatusCard({ source, runs, itemBreakdown }: SourceStatusCa
   const successRate = total > 0 ? (completed / total) * 100 : -1;
   const totalCollected = sourceRuns.reduce((s, r) => s + (r.itemsCollected ?? 0), 0);
 
-  const articleCount = itemBreakdown?.find((b) => b.itemType === 'article')?.count ?? 0;
-  const videoCount = itemBreakdown?.find((b) => b.itemType === 'video')?.count ?? 0;
-  const commentCount = itemBreakdown?.find((b) => b.itemType === 'comment')?.count ?? 0;
+  const sumByType = (type: string) =>
+    itemBreakdown?.filter((b) => b.itemType === type).reduce((s, b) => s + b.count, 0) ?? 0;
+  const articleCount = sumByType('article');
+  const videoCount = sumByType('video');
+  const commentCount = sumByType('comment');
 
   const lastRun =
     sourceRuns.length > 0
@@ -46,11 +55,24 @@ export function SourceStatusCard({ source, runs, itemBreakdown }: SourceStatusCa
   return (
     <Card className={cn('border-t-2', hasIssue ? 'border-t-amber-500' : 'border-t-emerald-500')}>
       <CardContent className="p-4 space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-semibold">{SOURCE_LABEL_MAP[source] ?? source}</span>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="text-sm font-semibold truncate">
+              {SOURCE_LABEL_MAP[source] ?? source}
+            </span>
+            {subscriptionId != null && (
+              <CopyableClaudeRef
+                kind="source"
+                subscriptionId={subscriptionId}
+                source={source}
+                displayLabel="@ais"
+                variant="inline"
+              />
+            )}
+          </div>
           <span
             className={cn(
-              'inline-block h-2 w-2 rounded-full',
+              'inline-block h-2 w-2 rounded-full shrink-0',
               hasIssue ? 'bg-amber-500' : 'bg-emerald-500',
             )}
           />

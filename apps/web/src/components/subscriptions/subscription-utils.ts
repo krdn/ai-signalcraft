@@ -10,6 +10,10 @@ export const SOURCE_LABEL_MAP: Record<string, string> = {
   clien: '클리앙',
 };
 
+export const SOURCE_FANOUT_CHILDREN: Record<string, string[]> = {
+  'naver-news': ['naver-comments'],
+};
+
 export const SOURCE_COLOR_MAP: Record<string, string> = {
   'naver-news': '#03C75A',
   'naver-comments': '#4ADE80',

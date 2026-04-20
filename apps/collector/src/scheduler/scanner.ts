@@ -7,11 +7,22 @@ import type { CollectorSource } from '../queue/types';
 
 const SCAN_INTERVAL_MS = 60_000;
 
+// Rolling overlap window: 이전 실행 종료 시점에서 interval의 15% 만큼 겹치게 다시 검사해
+// 늦게 인덱싱된 기사(publish와 검색결과 노출 사이의 지연)를 포착한다.
+// raw_items UNIQUE(source, source_id, item_type, time)로 중복 저장은 자동 차단되므로
+// 비용은 네트워크/파싱뿐이다.
+const ROLLING_OVERLAP_RATIO = 0.15;
+
 /**
  * 1분마다 실행:
  *   - status='active' AND (next_run_at IS NULL OR next_run_at <= now()) 조회
  *   - subscription.sources 각각에 대해 수집 job enqueue
  *   - runId는 subscription 단위로 발급 (동일 트리거 내 여러 source는 공유)
+ *
+ * 수집 범위:
+ *   - startDate = lastRunAt - (intervalHours * ROLLING_OVERLAP_RATIO) — 늦게 노출되는 기사 재검증
+ *   - endDate   = now
+ *   - lastRunAt이 없으면 최초 실행이므로 intervalHours 이전부터 긁는다
  *
  * 동시 실행 방지:
  *   - next_run_at을 즉시 +intervalHours로 업데이트해 다음 틱에 중복 enqueue 되지 않게 함
@@ -39,9 +50,10 @@ export async function scanAndEnqueue(): Promise<number> {
   for (const sub of due) {
     const runId = randomUUID();
     const intervalMs = sub.intervalHours * 3600 * 1000;
+    const overlapMs = Math.floor(intervalMs * ROLLING_OVERLAP_RATIO);
     const nextRunAt = new Date(now.getTime() + intervalMs);
     const startISO = sub.lastRunAt
-      ? new Date(sub.lastRunAt.getTime()).toISOString()
+      ? new Date(sub.lastRunAt.getTime() - overlapMs).toISOString()
       : new Date(now.getTime() - intervalMs).toISOString();
     const endISO = now.toISOString();
 

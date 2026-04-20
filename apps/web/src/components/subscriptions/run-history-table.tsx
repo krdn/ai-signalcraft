@@ -1,6 +1,7 @@
 'use client';
 
 import { SOURCE_LABEL_MAP, formatRelative } from './subscription-utils';
+import { CopyableClaudeRef } from './copyable-claude-ref';
 import { Badge } from '@/components/ui/badge';
 import {
   Table,
@@ -16,6 +17,7 @@ interface RunHistoryTableProps {
   runs: RunRecord[];
   breakdown?: RunItemBreakdownEntry[];
   limit?: number;
+  subscriptionId?: number;
 }
 
 function getRunStatusVariant(status: string): 'default' | 'secondary' | 'destructive' | 'outline' {
@@ -65,7 +67,12 @@ function getBreakdownText(
   return entries.map((e) => `${ITEM_TYPE_LABEL[e.itemType] ?? e.itemType} ${e.count}`).join(' / ');
 }
 
-export function RunHistoryTable({ runs, breakdown, limit = 50 }: RunHistoryTableProps) {
+export function RunHistoryTable({
+  runs,
+  breakdown,
+  limit = 50,
+  subscriptionId,
+}: RunHistoryTableProps) {
   const sorted = [...runs]
     .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
     .slice(0, limit);
@@ -105,7 +112,20 @@ export function RunHistoryTable({ runs, breakdown, limit = 50 }: RunHistoryTable
                   }
                 >
                   <TableCell className="text-xs font-mono text-muted-foreground">
-                    {sameGroup ? '' : run.runId.slice(0, 7)}
+                    {sameGroup ? (
+                      ''
+                    ) : subscriptionId != null ? (
+                      <CopyableClaudeRef
+                        kind="run"
+                        subscriptionId={subscriptionId}
+                        runId={run.runId}
+                        displayLabel={run.runId.slice(0, 7)}
+                        variant="inline"
+                        className="-ml-1"
+                      />
+                    ) : (
+                      run.runId.slice(0, 7)
+                    )}
                   </TableCell>
                   <TableCell className="text-xs">
                     {SOURCE_LABEL_MAP[run.source] ?? run.source}

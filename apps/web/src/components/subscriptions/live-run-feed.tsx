@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { SOURCE_LABEL_MAP } from './subscription-utils';
-import { CopyableRunId } from './copyable-run-id';
+import { CopyableClaudeRef } from './copyable-claude-ref';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { RunRecord } from '@/server/trpc/routers/subscriptions';
@@ -71,7 +71,16 @@ export function LiveRunFeed({ runs, subscriptionMap }: LiveRunFeedProps) {
                 className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm flex-wrap"
               >
                 <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-500 shrink-0" />
-                <CopyableRunId runId={run.runId} />
+                <CopyableClaudeRef
+                  kind="run"
+                  subscriptionId={run.subscriptionId}
+                  runId={run.runId}
+                  keyword={keyword}
+                  source={run.source}
+                  withContext
+                  displayLabel={run.runId.slice(0, 8)}
+                  variant="inline"
+                />
                 <Badge variant="outline" className="text-[10px] font-mono shrink-0">
                   sub #{run.subscriptionId}
                 </Badge>

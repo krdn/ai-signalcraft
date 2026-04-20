@@ -187,8 +187,10 @@ export const subscriptionsRouter = router({
       const runId = randomUUID();
       const now = new Date();
       const intervalMs = row.intervalHours * 3600 * 1000;
+      // Rolling overlap 15% — scanner.ts와 동일 전략 (늦게 인덱싱된 기사 재검증)
+      const overlapMs = Math.floor(intervalMs * 0.15);
       const startISO = row.lastRunAt
-        ? row.lastRunAt.toISOString()
+        ? new Date(row.lastRunAt.getTime() - overlapMs).toISOString()
         : new Date(now.getTime() - intervalMs).toISOString();
       const endISO = now.toISOString();
 

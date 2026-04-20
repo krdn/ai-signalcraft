@@ -19,6 +19,7 @@ import {
   getStatusLabel,
   getStatusVariant,
 } from './subscription-utils';
+import { CopyableClaudeRef } from './copyable-claude-ref';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -293,7 +294,20 @@ export function SubscriptionTable({
                         )}
                       </Button>
                     </TableCell>
-                    <TableCell className="font-medium text-sm">{row.keyword}</TableCell>
+                    <TableCell className="font-medium text-sm">
+                      <div className="flex items-center gap-1.5">
+                        <span>{row.keyword}</span>
+                        <span onClick={(e) => e.stopPropagation()}>
+                          <CopyableClaudeRef
+                            kind="subscription"
+                            subscriptionId={row.id}
+                            keyword={row.keyword}
+                            displayLabel={`@ais:sub/${row.id}`}
+                            variant="inline"
+                          />
+                        </span>
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <Badge variant={getStatusVariant(row.status)} className="text-[10px]">
                         {getStatusLabel(row.status)}
