@@ -22,6 +22,12 @@ import type {
 const EMBED_BATCH_SIZE = 50;
 
 /**
+ * PostgreSQL bind 프로토콜 파라미터 한도(65535)를 초과하지 않도록 DB insert를 청크로 분할.
+ * rawItems 테이블 컬럼 수(16) 기준: 65535 / 16 = 4095. 안전 마진 포함해 2000으로 설정.
+ */
+const DB_INSERT_CHUNK_SIZE = 2000;
+
+/**
  * 게시물/비디오에 comments 배열을 inline으로 담아 반환하는 소스.
  * executor가 이 배열을 item_type='comment' raw_items로 풀어준다.
  * naver-news는 별도 fan-out(naver-comments) 경로라 포함하지 않는다.
@@ -215,15 +221,19 @@ export async function executeCollectionJob(
 
       // TimescaleDB는 UNIQUE 제약이 시간 컬럼을 포함해야 하므로 애플리케이션 레벨에서
       // ON CONFLICT DO NOTHING 효과를 위해 dedup 인덱스를 활용.
-      const result = await db
-        .insert(rawItems)
-        .values(rows)
-        .onConflictDoNothing({
-          target: [rawItems.source, rawItems.sourceId, rawItems.itemType, rawItems.time],
-        })
-        .returning({ insertedAt: rawItems.fetchedAt });
-
-      itemsNew += result.length;
+      // YouTube처럼 인라인 댓글이 많은 소스는 rows가 수만 건에 달해 PostgreSQL bind 파라미터
+      // 한도(65535)를 초과할 수 있으므로 DB_INSERT_CHUNK_SIZE 단위로 분할한다.
+      for (let i = 0; i < rows.length; i += DB_INSERT_CHUNK_SIZE) {
+        const chunk = rows.slice(i, i + DB_INSERT_CHUNK_SIZE);
+        const chunkResult = await db
+          .insert(rawItems)
+          .values(chunk)
+          .onConflictDoNothing({
+            target: [rawItems.source, rawItems.sourceId, rawItems.itemType, rawItems.time],
+          })
+          .returning({ insertedAt: rawItems.fetchedAt });
+        itemsNew += chunkResult.length;
+      }
 
       // 실시간 진행 상태: Redis(job.progress)에 ts 포함해 저장 + DB(collection_runs)에 하트비트 기록.
       // UI는 Redis를 primary로 읽고, DB는 Redis 장애 시 fallback 겸 stalled 판정용.
@@ -435,15 +445,17 @@ async function executeCommentsJob(job: Job<CollectionJobData>): Promise<Collecti
             );
           }
 
-          const result = await db
-            .insert(rawItems)
-            .values(rows)
-            .onConflictDoNothing({
-              target: [rawItems.source, rawItems.sourceId, rawItems.itemType, rawItems.time],
-            })
-            .returning({ insertedAt: rawItems.fetchedAt });
-
-          itemsNew += result.length;
+          for (let i = 0; i < rows.length; i += DB_INSERT_CHUNK_SIZE) {
+            const chunk = rows.slice(i, i + DB_INSERT_CHUNK_SIZE);
+            const chunkResult = await db
+              .insert(rawItems)
+              .values(chunk)
+              .onConflictDoNothing({
+                target: [rawItems.source, rawItems.sourceId, rawItems.itemType, rawItems.time],
+              })
+              .returning({ insertedAt: rawItems.fetchedAt });
+            itemsNew += chunkResult.length;
+          }
           // 댓글 fan-out 경로도 동일 하트비트 — 기사당 1회씩
           const progressTs = Date.now();
           await job.updateProgress({ itemsCollected, itemsNew, ts: progressTs });
