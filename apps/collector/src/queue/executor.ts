@@ -4,6 +4,7 @@ import { getCollector, NaverCommentsCollector } from '@ai-signalcraft/collectors
 import { getDb } from '../db';
 import { rawItems, collectionRuns, fetchErrors, keywordSubscriptions } from '../db/schema';
 import { buildEmbeddingText, embedPassages } from '../services/embedding';
+import { classifySentimentFromTexts } from '../services/sentiment';
 import { CancelledError, checkCancellation, finalizeCancellationIfDone } from './cancellation';
 import { mapToRawItem } from './item-mapper';
 import { enqueueCollectionJob } from './queues';
@@ -201,8 +202,8 @@ export async function executeCollectionJob(
       }
 
       // 임베딩 생성 — 실패해도 수집은 계속 (embedding은 NULL 허용)
+      const texts = rows.map((r) => buildEmbeddingText(r.title ?? null, r.content ?? null));
       try {
-        const texts = rows.map((r) => buildEmbeddingText(r.title ?? null, r.content ?? null));
         if (texts.some((t) => t.length > 0)) {
           const vectors = await embedPassagesBatched(texts, runId, source);
           rows.forEach((r, i) => {
@@ -215,6 +216,26 @@ export async function executeCollectionJob(
         console.warn(
           `[executor:${source}] embedding failed (continuing without): ${
             embedErr instanceof Error ? embedErr.message : String(embedErr)
+          }`,
+        );
+      }
+
+      // 감정 분석 — 임베딩용 텍스트 재사용, 실패해도 수집은 계속
+      try {
+        if (texts.some((t) => t.length > 0)) {
+          const sentiments = await classifySentimentFromTexts(texts);
+          rows.forEach((r, i) => {
+            if (texts[i].length > 0 && sentiments[i]) {
+              r.sentiment = sentiments[i].label;
+              r.sentimentScore = sentiments[i].score;
+            }
+          });
+        }
+      } catch (sentimentErr) {
+        if (sentimentErr instanceof CancelledError) throw sentimentErr;
+        console.warn(
+          `[executor:${source}] sentiment analysis failed (continuing without): ${
+            sentimentErr instanceof Error ? sentimentErr.message : String(sentimentErr)
           }`,
         );
       }
@@ -427,8 +448,8 @@ async function executeCommentsJob(job: Job<CollectionJobData>): Promise<Collecti
           );
 
           // 댓글 임베딩 — title 없이 content만 임베딩 (실패해도 계속)
+          const texts = rows.map((r) => buildEmbeddingText(null, r.content ?? null));
           try {
-            const texts = rows.map((r) => buildEmbeddingText(null, r.content ?? null));
             if (texts.some((t) => t.length > 0)) {
               const vectors = await embedPassagesBatched(texts, runId, source);
               rows.forEach((r, i) => {
@@ -441,6 +462,26 @@ async function executeCommentsJob(job: Job<CollectionJobData>): Promise<Collecti
             console.warn(
               `[executor:${source}] embedding failed (continuing without): ${
                 embedErr instanceof Error ? embedErr.message : String(embedErr)
+              }`,
+            );
+          }
+
+          // 댓글 감정 분석 — 실패해도 수집은 계속
+          try {
+            if (texts.some((t) => t.length > 0)) {
+              const sentiments = await classifySentimentFromTexts(texts);
+              rows.forEach((r, i) => {
+                if (texts[i].length > 0 && sentiments[i]) {
+                  r.sentiment = sentiments[i].label;
+                  r.sentimentScore = sentiments[i].score;
+                }
+              });
+            }
+          } catch (sentimentErr) {
+            if (sentimentErr instanceof CancelledError) throw sentimentErr;
+            console.warn(
+              `[executor:${source}] sentiment analysis failed (continuing without): ${
+                sentimentErr instanceof Error ? sentimentErr.message : String(sentimentErr)
               }`,
             );
           }
