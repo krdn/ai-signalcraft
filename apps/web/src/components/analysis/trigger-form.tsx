@@ -19,7 +19,7 @@ import {
   SOURCE_OPTIONS,
   ALL_SOURCES,
 } from './trigger-form-data';
-import { SubscriptionPicker } from './subscription-picker';
+import { SubscriptionPicker, type SubscriptionSummary } from './subscription-picker';
 import { trpcClient } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -121,6 +121,10 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
   const [breakpoints, setBreakpoints] = useState<BreakpointValue[]>([]);
   const [forceRefetch, setForceRefetch] = useState(false);
   const [collectTranscript, setCollectTranscript] = useState(false);
+  const [subscriptionMode, setSubscriptionMode] = useState<{
+    isActive: boolean;
+    subscription: SubscriptionSummary | null;
+  }>({ isActive: false, subscription: null });
 
   // 클라이언트 마운트 후 실제 날짜 설정 (hydration mismatch 방지)
   useEffect(() => {
@@ -223,6 +227,38 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
     setCustomSourceIds((prev) => (checked ? [...prev, id] : prev.filter((v) => v !== id)));
   };
 
+  const handleSubscriptionSelect = (sub: SubscriptionSummary) => {
+    setSubscriptionMode({ isActive: true, subscription: sub });
+    setKeyword(sub.keyword);
+    setSources(sub.sources as SourceId[]);
+    setForceRefetch(false);
+    setEnableItemAnalysis(sub.options.includeComments !== false);
+    setCollectTranscript(!!sub.options.collectTranscript);
+    if (sub.limits.maxPerRun) {
+      setMaxNaverArticles(Math.min(sub.limits.maxPerRun, 5000));
+      setMaxYoutubeVideos(Math.min(Math.round(sub.limits.maxPerRun / 10), 500));
+      setMaxCommunityPosts(Math.min(Math.round(sub.limits.maxPerRun / 10), 500));
+    }
+    if (sub.limits.commentsPerItem) {
+      setMaxCommentsPerItem(Math.min(sub.limits.commentsPerItem, 2000));
+    }
+  };
+
+  const handleSubscriptionClear = () => {
+    setSubscriptionMode({ isActive: false, subscription: null });
+    setKeyword('');
+    setSources([...ALL_SOURCES]);
+    setForceRefetch(false);
+    setEnableItemAnalysis(true);
+    setCollectTranscript(false);
+    if (defaultLimits) {
+      setMaxNaverArticles(defaultLimits.naverArticles);
+      setMaxYoutubeVideos(defaultLimits.youtubeVideos);
+      setMaxCommunityPosts(defaultLimits.communityPosts);
+      setMaxCommentsPerItem(defaultLimits.commentsPerItem);
+    }
+  };
+
   const doTrigger = () => {
     // 이벤트 모드: 이벤트 날짜 전후 N일로 자동 계산
     const resolvedStart = dateMode === 'event' ? subDays(eventDate, eventRadius) : startDate;
@@ -287,6 +323,8 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
   const limitsDescription = isPerDay
     ? '소스별 날짜당 수집 건수를 조절합니다. 줄이면 비용과 시간이 절약됩니다.'
     : '소스별 최대 수집 건수를 조절합니다. 줄이면 비용과 시간이 절약됩니다.';
+
+  const isSubMode = subscriptionMode.isActive;
 
   return (
     <Card className="mx-auto max-w-xl">
@@ -360,17 +398,39 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
           <div className="space-y-2">
             <Label htmlFor="keyword">키워드</Label>
             <div className="flex gap-2">
-              <Input
-                id="keyword"
-                placeholder="인물 또는 키워드 입력"
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
-                required
-                maxLength={50}
-                disabled={triggerMutation.isPending}
-                className="flex-1"
-              />
-              <SubscriptionPicker onSelect={setKeyword} disabled={triggerMutation.isPending} />
+              <div className="flex flex-1 gap-2">
+                <Input
+                  id="keyword"
+                  placeholder="인물 또는 키워드 입력"
+                  value={keyword}
+                  onChange={(e) => setKeyword(e.target.value)}
+                  required
+                  maxLength={50}
+                  disabled={triggerMutation.isPending || isSubMode}
+                  className="flex-1"
+                />
+                {isSubMode && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0 text-xs gap-1"
+                    onClick={handleSubscriptionClear}
+                    title="구독 모드 해제"
+                  >
+                    <span className="max-w-[120px] truncate">
+                      {subscriptionMode.subscription?.keyword}
+                    </span>
+                    ✕
+                  </Button>
+                )}
+              </div>
+              {!isSubMode && (
+                <SubscriptionPicker
+                  onSelect={handleSubscriptionSelect}
+                  disabled={triggerMutation.isPending}
+                />
+              )}
             </div>
           </div>
 
@@ -384,14 +444,21 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
 
           {/* 소스 선택 */}
           <div className="space-y-2">
-            <Label>소스</Label>
+            <div className="flex items-center gap-2">
+              <Label>소스</Label>
+              {isSubMode && (
+                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+                  구독 설정
+                </span>
+              )}
+            </div>
             <div className="space-y-3">
               {/* 전체 선택 */}
               <label className="flex items-center gap-2 cursor-pointer">
                 <Checkbox
                   checked={isAllSelected}
                   onCheckedChange={(checked) => handleAllToggle(!!checked)}
-                  disabled={triggerMutation.isPending}
+                  disabled={triggerMutation.isPending || isSubMode}
                 />
                 <span className="text-sm font-medium">전체 선택</span>
               </label>
@@ -405,7 +472,7 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
                         <Checkbox
                           checked={sources.includes(item.id)}
                           onCheckedChange={(checked) => handleSourceToggle(item.id, !!checked)}
-                          disabled={triggerMutation.isPending}
+                          disabled={triggerMutation.isPending || isSubMode}
                         />
                         <span className="text-sm">{item.label}</span>
                       </label>
@@ -423,7 +490,7 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
                         <Checkbox
                           checked={customSourceIds.includes(cs.id)}
                           onCheckedChange={(checked) => handleCustomSourceToggle(cs.id, !!checked)}
-                          disabled={triggerMutation.isPending}
+                          disabled={triggerMutation.isPending || isSubMode}
                         />
                         <span className="text-sm">
                           {cs.name}
@@ -557,7 +624,14 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
 
           {/* 분석 옵션 */}
           <div className="space-y-2">
-            <Label>분석 옵션</Label>
+            <div className="flex items-center gap-2">
+              <Label>분석 옵션</Label>
+              {isSubMode && (
+                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+                  구독 설정
+                </span>
+              )}
+            </div>
             <label
               suppressHydrationWarning
               className={`flex items-start gap-2 rounded-lg border p-3 transition-colors ${isDemo ? 'opacity-70' : 'cursor-pointer hover:bg-accent/50'}`}
@@ -565,7 +639,7 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
               <Checkbox
                 checked={enableItemAnalysis}
                 onCheckedChange={(checked) => setEnableItemAnalysis(!!checked)}
-                disabled={isDemo || triggerMutation.isPending}
+                disabled={isDemo || triggerMutation.isPending || isSubMode}
                 className="mt-0.5"
               />
               <div className="space-y-1" suppressHydrationWarning>
@@ -588,7 +662,7 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
                 <Checkbox
                   checked={collectTranscript}
                   onCheckedChange={(checked) => setCollectTranscript(!!checked)}
-                  disabled={isDemo || triggerMutation.isPending}
+                  disabled={isDemo || triggerMutation.isPending || isSubMode}
                   className="mt-0.5"
                 />
                 <div className="space-y-1">
@@ -881,7 +955,7 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
           </Collapsible>
 
           {/* 전량 재수집 옵션 — 데모 사용자에게는 표시하지 않음 */}
-          {!isDemo && (
+          {!isDemo && !isSubMode && (
             <label className="flex items-start gap-2 rounded-lg border p-3 transition-colors cursor-pointer hover:bg-accent/50">
               <Checkbox
                 checked={forceRefetch}
