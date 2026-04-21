@@ -1,5 +1,5 @@
-// 개별 기사/댓글 감정 분석 (경량 BERT 모델 단일 패스)
-import { eq, sql } from 'drizzle-orm';
+// 개별 기사/댓글 감정 분석 (경량 BERT 모델 단일 패스, 증분)
+import { and, eq, isNull, sql } from 'drizzle-orm';
 import { getDb } from '../db';
 import {
   articles,
@@ -76,27 +76,32 @@ export async function analyzeItems(jobId: number): Promise<{
   // 경량 모델 초기화
   await initClassifier();
 
-  // 기사/댓글 병렬 로드
-  const [articleRows, commentRows] = await Promise.all([
+  // 기사/댓글 병렬 로드 — 증분: sentiment가 아직 NULL인 row만
+  const { articleQuery, commentQuery } = buildItemAnalysisQueries(jobId);
+  const [articleRows, commentRows, articlesSkipped, commentsSkipped] = await Promise.all([
+    articleQuery,
+    commentQuery,
     db
-      .select({ id: articles.id, title: articles.title, content: articles.content })
+      .select({ count: sql<number>`count(*)::int` })
       .from(articles)
       .innerJoin(articleJobs, eq(articles.id, articleJobs.articleId))
-      .where(eq(articleJobs.jobId, jobId)),
+      .where(and(eq(articleJobs.jobId, jobId), sql`${articles.sentiment} IS NOT NULL`))
+      .then((rows) => rows[0]?.count ?? 0),
     db
-      .select({ id: comments.id, content: comments.content })
+      .select({ count: sql<number>`count(*)::int` })
       .from(comments)
       .innerJoin(commentJobs, eq(comments.id, commentJobs.commentId))
-      .where(eq(commentJobs.jobId, jobId)),
+      .where(and(eq(commentJobs.jobId, jobId), sql`${comments.sentiment} IS NOT NULL`))
+      .then((rows) => rows[0]?.count ?? 0),
   ]);
 
-  const articlesTotal = articleRows.length;
-  const commentsTotal = commentRows.length;
+  const articlesTotal = articleRows.length + articlesSkipped;
+  const commentsTotal = commentRows.length + commentsSkipped;
 
   await appendJobEvent(
     jobId,
     'info',
-    `개별 감정 분석 시작 (기사 ${articlesTotal}건, 댓글 ${commentsTotal}건)`,
+    `개별 감정 분석 시작 (신규: 기사 ${articleRows.length}건, 댓글 ${commentRows.length}건 | 이미 분류됨: 기사 ${articlesSkipped}건, 댓글 ${commentsSkipped}건)`,
   );
 
   await updateJobProgress(jobId, {
@@ -107,6 +112,8 @@ export async function analyzeItems(jobId: number): Promise<{
       commentsTotal,
       articlesAnalyzed: 0,
       commentsAnalyzed: 0,
+      articlesSkipped,
+      commentsSkipped,
     },
   });
 
@@ -223,4 +230,23 @@ export async function analyzeItems(jobId: number): Promise<{
 
   console.log(`[item-analyzer] 완료: 기사 ${articlesAnalyzed}건, 댓글 ${commentsAnalyzed}건`);
   return { articlesAnalyzed, commentsAnalyzed };
+}
+
+/**
+ * analyzeItems의 증분 로드 쿼리를 별도 export — 테스트/재사용 용도.
+ * sentiment가 아직 NULL인 row만 대상.
+ */
+export function buildItemAnalysisQueries(jobId: number) {
+  const db = getDb();
+  const articleQuery = db
+    .select({ id: articles.id, title: articles.title, content: articles.content })
+    .from(articles)
+    .innerJoin(articleJobs, eq(articles.id, articleJobs.articleId))
+    .where(and(eq(articleJobs.jobId, jobId), isNull(articles.sentiment)));
+  const commentQuery = db
+    .select({ id: comments.id, content: comments.content })
+    .from(comments)
+    .innerJoin(commentJobs, eq(comments.id, commentJobs.commentId))
+    .where(and(eq(commentJobs.jobId, jobId), isNull(comments.sentiment)));
+  return { articleQuery, commentQuery };
 }
