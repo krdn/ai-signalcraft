@@ -207,7 +207,7 @@ export const runsRouter = router({
             count: sql<number>`count(*)::int`,
           })
           .from(rawItems)
-          .where(eq(rawItems.fetchedFromRun, runId))
+          .where(and(eq(rawItems.fetchedFromRun, runId), eq(rawItems.source, source)))
           .groupBy(rawItems.itemType),
       ]);
       const [runRow] = runRowResult;

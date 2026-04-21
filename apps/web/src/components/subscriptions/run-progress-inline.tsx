@@ -66,11 +66,11 @@ export function RunProgressInline({
     ) : null;
   }
 
-  const { byType, itemsNew, lastProgressAtMs } = data;
+  const { byType, itemsCollected, lastProgressAtMs } = data;
   const ageMs = lastProgressAtMs ? now - lastProgressAtMs : null;
   const heartbeat = classifyHeartbeat(ageMs, active);
 
-  const summary = buildSummary(byType, itemsNew, source);
+  const summary = buildSummary(byType, itemsCollected, source);
 
   if (variant === 'full') {
     return (
@@ -93,19 +93,29 @@ export function RunProgressInline({
   );
 }
 
-/** article + comment 중심. video는 YouTube 구독에서만 의미. */
+/**
+ * article + comment 중심. video는 YouTube 구독에서만 의미.
+ *
+ * byType은 fetched_from_run 기준 — 이 run이 DB에 실제로 적재한 "신규" 건수.
+ * itemsCollected는 어댑터가 수집을 시도한 총 건수. 둘의 차이 = UNIQUE 충돌로 스킵된 중복.
+ * 중복이 있을 때만 "수집 N · 중복 M" 병기로 사용자에게 스킵 사실을 노출한다.
+ */
 function buildSummary(
   byType: { article: number; video: number; comment: number },
-  itemsNew: number,
+  itemsCollected: number,
   source: string,
 ): string {
+  const newTotal = byType.article + byType.video + byType.comment;
+  const dup = Math.max(0, itemsCollected - newTotal);
+  const dupSuffix = dup > 0 ? ` (수집 ${itemsCollected} · 중복 ${dup})` : '';
+
   if (source === 'youtube') {
-    return `영상 ${byType.video} · 댓글 ${byType.comment} · 신규 ${itemsNew}`;
+    return `신규 영상 ${byType.video} · 댓글 ${byType.comment}${dupSuffix}`;
   }
   if (source === 'naver-comments') {
-    return `댓글 ${byType.comment} · 신규 ${itemsNew}`;
+    return `신규 댓글 ${byType.comment}${dupSuffix}`;
   }
-  return `기사 ${byType.article} · 댓글 ${byType.comment} · 신규 ${itemsNew}`;
+  return `신규 기사 ${byType.article} · 댓글 ${byType.comment}${dupSuffix}`;
 }
 
 type HeartbeatKind = 'live' | 'idle' | 'slow' | 'stalled' | 'inactive';
