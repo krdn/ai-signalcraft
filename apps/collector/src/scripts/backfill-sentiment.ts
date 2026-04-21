@@ -78,23 +78,33 @@ async function main() {
     const sentiments = await classifySentimentFromTexts(texts);
 
     if (!dryRun) {
-      for (let i = 0; i < rows.length; i++) {
-        const s = sentiments[i];
-        if (!s) continue;
+      // batch UPDATE — VALUES + JOIN으로 N건을 단일 쿼리로 처리
+      const validEntries = rows
+        .map((r, i) => ({ row: r, sentiment: sentiments[i] }))
+        .filter(
+          (e) => e.sentiment && !(e.sentiment.label === 'neutral' && e.sentiment.score === 0),
+        );
+
+      if (validEntries.length > 0) {
         try {
-          await db
-            .update(rawItems)
-            .set({ sentiment: s.label, sentimentScore: s.score })
-            .where(
-              and(
-                eq(rawItems.sourceId, rows[i].sourceId),
-                eq(rawItems.time, rows[i].time),
-                isNull(rawItems.sentiment),
-              ),
-            );
-          updated++;
-        } catch {
-          // 개별 UPDATE 실패 무시
+          const valuesClauses = validEntries.map(
+            (e) =>
+              sql`(${e.row.time}, ${e.row.sourceId}, ${e.sentiment!.label}, ${e.sentiment!.score})`,
+          );
+          await db.execute(sql`
+            UPDATE raw_items AS t
+            SET sentiment = v.sentiment::text,
+                sentiment_score = v.score::real
+            FROM (VALUES ${sql.join(valuesClauses, sql`, `)}) AS v(time timestamptz, source_id text, sentiment text, score float)
+            WHERE t.source_id = v.source_id
+              AND t.time = v.time
+              AND t.sentiment IS NULL
+          `);
+          updated += validEntries.length;
+        } catch (err) {
+          console.warn(
+            `[backfill-sentiment] batch UPDATE 실패: ${err instanceof Error ? err.message : String(err)}`,
+          );
         }
       }
     }

@@ -67,8 +67,13 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
 
 /**
  * 텍스트 배열을 배치 단위로 감정 분류 (모델 직접 호출)
+ * @param options.onBatchDone 배치 완료 콜백 — executor에서 cancellation 체크에 활용
  */
-async function classifyRaw(texts: string[], batchSize = 50): Promise<SentimentResult[]> {
+async function classifyRaw(
+  texts: string[],
+  batchSize = 50,
+  options?: { onBatchDone?: (processed: number, total: number) => Promise<void> },
+): Promise<SentimentResult[]> {
   if (!classifier) await initSentiment();
   if (!classifier) throw new Error('감정 분류 모델 초기화 실패');
 
@@ -99,6 +104,8 @@ async function classifyRaw(texts: string[], batchSize = 50): Promise<SentimentRe
       );
       results.push(...batch.map(() => ({ label: 'neutral' as const, score: 0 })));
     }
+
+    await options?.onBatchDone?.(Math.min(i + batchSize, texts.length), texts.length);
   }
 
   return results;

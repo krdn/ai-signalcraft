@@ -405,24 +405,32 @@ export const runsRouter = router({
       const texts = rows.map((r) => buildEmbeddingText(r.title, r.content));
       const sentiments = await classifySentimentFromTexts(texts);
 
+      // batch UPDATE — VALUES + JOIN으로 N건을 단일 쿼리로 처리
+      const validEntries = rows
+        .map((r, i) => ({ row: r, sentiment: sentiments[i] }))
+        .filter(
+          (e) => e.sentiment && !(e.sentiment.label === 'neutral' && e.sentiment.score === 0),
+        );
+
       let updated = 0;
-      for (let i = 0; i < rows.length; i++) {
-        const s = sentiments[i];
-        if (!s) continue;
+      if (validEntries.length > 0) {
         try {
-          await ctx.db
-            .update(rawItems)
-            .set({ sentiment: s.label, sentimentScore: s.score })
-            .where(
-              and(
-                eq(rawItems.sourceId, rows[i].sourceId),
-                eq(rawItems.time, rows[i].time),
-                isNull(rawItems.sentiment),
-              ),
-            );
-          updated++;
+          const valuesClauses = validEntries.map(
+            (e) =>
+              sql`(${e.row.time}, ${e.row.sourceId}, ${e.sentiment!.label}, ${e.sentiment!.score})`,
+          );
+          await ctx.db.execute(sql`
+            UPDATE raw_items AS t
+            SET sentiment = v.sentiment::text,
+                sentiment_score = v.score::real
+            FROM (VALUES ${sql.join(valuesClauses, sql`, `)}) AS v(time timestamptz, source_id text, sentiment text, score float)
+            WHERE t.source_id = v.source_id
+              AND t.time = v.time
+              AND t.sentiment IS NULL
+          `);
+          updated = validEntries.length;
         } catch {
-          // 개별 UPDATE 실패 무시
+          // batch UPDATE 실패 시 0건으로 보고
         }
       }
 
