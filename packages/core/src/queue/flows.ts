@@ -99,10 +99,15 @@ async function safePlanVideoReuse(
 
 function toReusePlanPayload(plan: ArticleReusePlan | VideoReusePlan): ReusePlanPayload {
   const skipUrls = 'skipUrls' in plan ? plan.skipUrls : plan.skipVideoUrls;
-  return {
-    skipUrls,
-    refetchCommentsFor: plan.refetchCommentsFor,
-  };
+  const refetchCommentsFor = plan.refetchCommentsFor.map((spec) => ({
+    url: spec.url,
+    ...('articleId' in spec ? { articleId: spec.articleId } : {}),
+    ...('videoId' in spec ? { videoId: spec.videoId } : {}),
+    lastCommentsFetchedAt: spec.lastCommentsFetchedAt
+      ? spec.lastCommentsFetchedAt.toISOString()
+      : null,
+  }));
+  return { skipUrls, refetchCommentsFor };
 }
 
 // dbJobId: collection_jobs 테이블의 정수 PK -- 호출자가 createCollectionJob() 후 전달
@@ -258,7 +263,13 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
     children.push({
       name: 'normalize-naver',
       queueName: 'pipeline',
-      data: { source: 'naver-news', flowId, dbJobId, maxComments: limits.commentsPerItem },
+      data: {
+        source: 'naver-news',
+        flowId,
+        dbJobId,
+        maxComments: limits.commentsPerItem,
+        reusePlan, // Task 12: pipeline-worker가 URL별 since 맵 구성용
+      },
       children: [
         {
           name: 'collect-naver-articles',
@@ -452,6 +463,27 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
   });
 
   return { flowId, dbJobId, flow };
+}
+
+/**
+ * 개별 감정 분류 트리거 — persist 완료 후 호출.
+ * classify 노드는 pipeline 큐에서 돌며, 완료 시 triggerAnalysis를 자동으로 이어서 호출한다.
+ * BERT 모델은 pipeline-worker 프로세스에 이미 상주 — 별도 워커 없이 재사용.
+ */
+export async function triggerClassify(dbJobId: number, keyword: string) {
+  const flow = await getFlowProducer().add({
+    name: 'classify',
+    queueName: 'pipeline',
+    data: { dbJobId, keyword },
+    opts: {
+      // 멱등성 보장: persist가 재시도되어도 동일 dbJobId에 대해 classify는 1번만 enqueue됨.
+      // BullMQ는 같은 jobId를 가진 두 번째 add를 무시한다.
+      jobId: `classify:${dbJobId}`,
+      removeOnComplete: { age: 3600 },
+      removeOnFail: { age: 86400 },
+    },
+  });
+  return flow;
 }
 
 // D-09: 분석 파이프라인 트리거 -- persist 완료 후 호출

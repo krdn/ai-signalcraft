@@ -24,9 +24,21 @@ export const CollectionOptionsSchema = z.object({
   reusePlan: z
     .object({
       skipUrls: z.array(z.string()).default([]),
-      refetchCommentsFor: z.array(z.string()).default([]),
+      refetchCommentsFor: z
+        .array(
+          z.object({
+            url: z.string(),
+            articleId: z.number().int().optional(),
+            videoId: z.number().int().optional(),
+            lastCommentsFetchedAt: z.string().datetime().nullable(),
+          }),
+        )
+        .default([]),
     })
     .optional(),
+  // 증분 댓글 수집 컷오프. 이 시각 이후(publishedAt > since)의 댓글만 수집.
+  // 네이버/유튜브 댓글 어댑터만 해석한다 (커뮤니티 어댑터는 무시).
+  since: z.string().datetime().optional(),
   commentOrder: z.enum(['relevance', 'time']).default('relevance').optional(),
   collectTranscript: z.boolean().default(true).optional(),
 });

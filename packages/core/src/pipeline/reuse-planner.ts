@@ -18,10 +18,28 @@ export interface ReusePlanInput {
   forceRefetch?: boolean;
 }
 
+/**
+ * 본문 재사용 대상 중 "댓글만 새로 긁어야 할" 기사의 스펙.
+ * URL뿐 아니라 articleId/lastCommentsFetchedAt을 함께 전달해 어댑터가
+ * since 기반 증분 수집을 할 수 있게 한다.
+ */
+export interface RefetchCommentSpec {
+  url: string;
+  articleId: number;
+  lastCommentsFetchedAt: Date | null;
+}
+
+/** 영상용 RefetchCommentSpec (videoId 필드 사용) */
+export interface RefetchCommentSpecVideo {
+  url: string;
+  videoId: number;
+  lastCommentsFetchedAt: Date | null;
+}
+
 export interface ArticleReusePlan {
   reuseArticleIds: number[]; // articleJobs 재연결 대상 (본문·댓글 모두 스킵)
   skipUrls: string[]; // collector 가 검색 결과에서 제외할 URL
-  refetchCommentsFor: string[]; // 본문 skip, 댓글만 fetch
+  refetchCommentsFor: RefetchCommentSpec[]; // 본문 skip, 댓글만 fetch (since 증분 포함)
   // 디버깅·모니터링용
   evaluated: number; // 후보 개수 (DB hit 기사)
 }
@@ -29,7 +47,7 @@ export interface ArticleReusePlan {
 export interface VideoReusePlan {
   reuseVideoIds: number[];
   skipVideoUrls: string[];
-  refetchCommentsFor: string[];
+  refetchCommentsFor: RefetchCommentSpecVideo[];
   evaluated: number;
 }
 
@@ -98,15 +116,19 @@ export async function planArticleReuse(input: ReusePlanInput): Promise<ArticleRe
 
   const reuseArticleIds: number[] = [];
   const skipUrls: string[] = [];
-  const refetchCommentsFor: string[] = [];
+  const refetchCommentsFor: RefetchCommentSpec[] = [];
 
   for (const row of candidates) {
     reuseArticleIds.push(row.id);
     const commentsStale =
       !row.lastCommentsFetchedAt || row.lastCommentsFetchedAt.getTime() < commentCutoffMs;
     if (commentsStale) {
-      // 본문은 스킵하지만 댓글만 새로 긁기 — 검색 결과 URL 매칭용
-      refetchCommentsFor.push(row.url);
+      // 본문은 스킵하지만 댓글만 새로 긁기 — 어댑터에 since(lastCommentsFetchedAt) 전달용
+      refetchCommentsFor.push({
+        url: row.url,
+        articleId: row.id,
+        lastCommentsFetchedAt: row.lastCommentsFetchedAt ?? null,
+      });
     } else {
       // 본문·댓글 모두 스킵
       skipUrls.push(row.url);
@@ -163,14 +185,18 @@ export async function planVideoReuse(input: ReusePlanInput): Promise<VideoReuseP
 
   const reuseVideoIds: number[] = [];
   const skipVideoUrls: string[] = [];
-  const refetchCommentsFor: string[] = [];
+  const refetchCommentsFor: RefetchCommentSpecVideo[] = [];
 
   for (const row of candidates) {
     reuseVideoIds.push(row.id);
     const commentsStale =
       !row.lastCommentsFetchedAt || row.lastCommentsFetchedAt.getTime() < commentCutoffMs;
     if (commentsStale) {
-      refetchCommentsFor.push(row.url);
+      refetchCommentsFor.push({
+        url: row.url,
+        videoId: row.id,
+        lastCommentsFetchedAt: row.lastCommentsFetchedAt ?? null,
+      });
     } else {
       skipVideoUrls.push(row.url);
     }

@@ -38,7 +38,12 @@ export class YoutubeCollector implements Collector<YoutubeVideo> {
     const days = splitIntoDaysKst(options.startDate, options.endDate);
     const perDayLimit = options.maxItemsPerDay ?? Math.max(1, Math.floor(maxItems / days.length));
     const skipUrlSet = new Set(options.reusePlan?.skipUrls ?? []);
-    const refetchSet = new Set(options.reusePlan?.refetchCommentsFor ?? []);
+    // 댓글 재수집 대상 URL + since 맵
+    const refetchSpecs = options.reusePlan?.refetchCommentsFor ?? [];
+    const refetchUrlToSince = new Map<string, string | null>(
+      refetchSpecs.map((s) => [s.url, s.lastCommentsFetchedAt]),
+    );
+    const refetchSet = new Set(refetchSpecs.map((s) => s.url));
     const perDayCount: Record<string, number> = {};
     let totalCollected = 0;
     let endReason: CollectionStats['endReason'] = 'completed';
@@ -46,9 +51,14 @@ export class YoutubeCollector implements Collector<YoutubeVideo> {
     let perDayCapSkip = 0;
     let outOfRange = 0;
 
-    // 댓글 재수집 대상이 있으면 먼저 처리
+    // 댓글 재수집 대상이 있으면 먼저 처리 (since 기반 증분)
     if (refetchSet.size > 0) {
-      yield* this.refetchCommentsOnly([...refetchSet], maxComments, commentOrder);
+      yield* this.refetchCommentsOnly(
+        [...refetchSet],
+        maxComments,
+        commentOrder,
+        refetchUrlToSince,
+      );
     }
 
     for (const day of days) {
@@ -259,21 +269,28 @@ export class YoutubeCollector implements Collector<YoutubeVideo> {
     videoId: string,
     max: number,
     order: 'relevance' | 'time',
+    sinceIso?: string | null,
   ): Promise<YoutubeComment[]> {
     if (this.shouldUseFallback()) {
+      // Innertube 경로는 since 미지원 (fallback 용도)
       return this.collectCommentsViaInnertube(videoId, max);
     }
-    return this.collectCommentsViaApi(videoId, max, order);
+    // since 지정 시 order='time' 강제 (최신순 필수)
+    const effectiveOrder: 'relevance' | 'time' = sinceIso ? 'time' : order;
+    return this.collectCommentsViaApi(videoId, max, effectiveOrder, sinceIso ?? null);
   }
 
   private async collectCommentsViaApi(
     videoId: string,
     max: number,
     order: 'relevance' | 'time',
+    sinceIso: string | null = null,
   ): Promise<YoutubeComment[]> {
     const youtube = getYoutubeClient();
     const comments: YoutubeComment[] = [];
+    const sinceMs = sinceIso ? new Date(sinceIso).getTime() : null;
     let pageToken: string | undefined;
+    let stopDueToSince = false;
 
     while (comments.length < max) {
       try {
@@ -292,6 +309,15 @@ export class YoutubeCollector implements Collector<YoutubeVideo> {
         for (const thread of items) {
           const top = thread.snippet?.topLevelComment;
           if (top?.snippet) {
+            // since cutoff: 최신순 정렬이므로 첫 오래된 것 발견 시 즉시 종료
+            const publishedAtIso = top.snippet.publishedAt;
+            if (sinceMs !== null && publishedAtIso) {
+              const ts = new Date(publishedAtIso).getTime();
+              if (ts <= sinceMs) {
+                stopDueToSince = true;
+                break;
+              }
+            }
             comments.push(this.mapApiComment(top, null, videoId));
           }
           // 대댓글: API가 최대 5개만 반환 → totalReplyCount > 5이면 추가 호출
@@ -310,6 +336,8 @@ export class YoutubeCollector implements Collector<YoutubeVideo> {
             }
           }
         }
+
+        if (stopDueToSince) break;
 
         pageToken = res.data.nextPageToken ?? undefined;
         if (!pageToken) break;
@@ -400,11 +428,14 @@ export class YoutubeCollector implements Collector<YoutubeVideo> {
     urls: string[],
     max: number,
     order: 'relevance' | 'time',
+    urlToSince?: Map<string, string | null>,
   ): AsyncGenerator<YoutubeVideo[], void, unknown> {
     for (const url of urls) {
       const videoId = extractVideoId(url);
       if (!videoId) continue;
-      const comments = await this.collectComments(videoId, max, order);
+      // since 지정 시 collectComments는 order=time 강제 + publishedAt 컷오프
+      const since = urlToSince?.get(url) ?? undefined;
+      const comments = await this.collectComments(videoId, max, order, since ?? undefined);
       yield [
         {
           sourceId: videoId,

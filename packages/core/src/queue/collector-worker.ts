@@ -25,7 +25,15 @@ export function createCollectorHandler(): (job: Job) => Promise<CollectorResult>
       job.data;
     const dataSourceSnapshot = job.data.dataSourceSnapshot as DataSourceSnapshot | undefined;
     const reusePlan = job.data.reusePlan as
-      | { skipUrls: string[]; refetchCommentsFor: string[] }
+      | {
+          skipUrls: string[];
+          refetchCommentsFor: Array<{
+            url: string;
+            articleId?: number;
+            videoId?: number;
+            lastCommentsFetchedAt: string | null;
+          }>;
+        }
       | undefined;
 
     // 동적 소스(RSS/HTML)면 factory로 인스턴스 생성, 아니면 기존 정적 registry 조회

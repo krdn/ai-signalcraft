@@ -195,6 +195,7 @@ export const comments = pgTable(
     rawData: jsonb('raw_data'),
     embedding: vector384('embedding'), // pgvector 임베딩 (multilingual-e5-small, 384차원)
     collectedAt: timestamp('collected_at').defaultNow().notNull(),
+    firstSeenAt: timestamp('first_seen_at').defaultNow().notNull(),
   },
   (table) => [uniqueIndex('comments_source_id_idx').on(table.source, table.sourceId)],
 );

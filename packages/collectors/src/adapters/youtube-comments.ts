@@ -41,10 +41,19 @@ export class YoutubeCommentsCollector implements Collector<YoutubeComment> {
    * keyword에 videoId를 전달
    * 페이지 단위(최대 100건)로 yield
    */
+  /**
+   * since 증분 모드:
+   * - options.since 지정 시 order='time'으로 강제 (최신순 필수).
+   * - 최신순 정렬 상태에서 publishedAt <= since 댓글 발견 시 즉시 종료
+   *   (같은 페이지 내 이후 댓글과 다음 페이지는 모두 더 오래됨).
+   */
   async *collect(options: CollectionOptions): AsyncGenerator<YoutubeComment[], void, unknown> {
     const youtube = getYoutubeClient();
-    const videoId = options.keyword; // videoId를 keyword로 전달
+    const videoId = options.keyword;
     const maxComments = options.maxComments ?? DEFAULT_MAX_COMMENTS;
+    const since = options.since ? new Date(options.since) : null;
+    const order: 'time' | 'relevance' = since ? 'time' : (options.commentOrder ?? 'relevance');
+
     let totalCollected = 0;
     let nextPageToken: string | undefined;
 
@@ -54,7 +63,7 @@ export class YoutubeCommentsCollector implements Collector<YoutubeComment> {
           part: ['snippet', 'replies'],
           videoId,
           maxResults: Math.min(maxComments - totalCollected, COMMENTS_PAGE_SIZE),
-          order: 'relevance',
+          order,
           pageToken: nextPageToken,
         });
 
@@ -62,37 +71,51 @@ export class YoutubeCommentsCollector implements Collector<YoutubeComment> {
         if (!items || items.length === 0) break;
 
         const comments: YoutubeComment[] = [];
+        let stopAfterPage = false;
 
         for (const thread of items) {
-          // 최상위 댓글
           const topComment = thread.snippet?.topLevelComment;
-          if (topComment?.snippet) {
-            comments.push({
-              sourceId: topComment.id ?? '',
-              parentId: null,
-              videoSourceId: videoId,
-              content: topComment.snippet.textDisplay ?? '',
-              author: topComment.snippet.authorDisplayName ?? '',
-              likeCount: topComment.snippet.likeCount ?? 0,
-              publishedAt: topComment.snippet.publishedAt
-                ? new Date(topComment.snippet.publishedAt)
-                : null,
-              rawData: topComment as unknown as Record<string, unknown>,
-            });
+          if (!topComment?.snippet) continue;
+
+          const publishedAt: Date | null = topComment.snippet.publishedAt
+            ? new Date(topComment.snippet.publishedAt)
+            : null;
+
+          // since cutoff: 최신순이므로 첫 오래된 것 발견 시 즉시 종료
+          if (since && publishedAt && publishedAt.getTime() <= since.getTime()) {
+            stopAfterPage = true;
+            break;
           }
 
-          // 대댓글 (replies가 있는 경우)
+          comments.push({
+            sourceId: topComment.id ?? '',
+            parentId: null,
+            videoSourceId: videoId,
+            content: topComment.snippet.textDisplay ?? '',
+            author: topComment.snippet.authorDisplayName ?? '',
+            likeCount: topComment.snippet.likeCount ?? 0,
+            publishedAt,
+            rawData: topComment as unknown as Record<string, unknown>,
+          });
+
           if (thread.replies?.comments) {
             for (const reply of thread.replies.comments) {
               if (!reply.snippet) continue;
+              const replyPublishedAt: Date | null = reply.snippet.publishedAt
+                ? new Date(reply.snippet.publishedAt)
+                : null;
+              // 대댓글은 since 필터만 (종료는 topLevel이 결정)
+              if (since && replyPublishedAt && replyPublishedAt.getTime() <= since.getTime()) {
+                continue;
+              }
               comments.push({
                 sourceId: reply.id ?? '',
-                parentId: topComment?.id ?? null,
+                parentId: topComment.id ?? null,
                 videoSourceId: videoId,
                 content: reply.snippet.textDisplay ?? '',
                 author: reply.snippet.authorDisplayName ?? '',
                 likeCount: reply.snippet.likeCount ?? 0,
-                publishedAt: reply.snippet.publishedAt ? new Date(reply.snippet.publishedAt) : null,
+                publishedAt: replyPublishedAt,
                 rawData: reply as unknown as Record<string, unknown>,
               });
             }
@@ -104,14 +127,13 @@ export class YoutubeCommentsCollector implements Collector<YoutubeComment> {
           yield comments;
         }
 
-        // 다음 페이지 토큰 확인
+        if (stopAfterPage) break;
+
         nextPageToken = response.data.nextPageToken ?? undefined;
         if (!nextPageToken) break;
       } catch (err: unknown) {
-        // 댓글이 비활성화된 영상 -- 403 에러 시 graceful skip
         const error = err as { code?: number; message?: string };
         if (error.code === 403) {
-          // 댓글 비활성화 영상 -- 건너뛰기
           break;
         }
         throw err;
