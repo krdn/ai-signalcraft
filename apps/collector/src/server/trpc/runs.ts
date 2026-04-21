@@ -415,17 +415,20 @@ export const runsRouter = router({
       let updated = 0;
       if (validEntries.length > 0) {
         try {
-          const valuesClauses = validEntries.map(
-            (e) =>
-              sql`(${e.row.time.toISOString()}, ${e.row.sourceId}, ${e.sentiment!.label}, ${e.sentiment!.score})`,
+          const valuesClauses = validEntries.map((e, i) =>
+            // 첫 행에만 명시적 캐스트 — PostgreSQL이 VALUES의 컬럼 타입을 첫 행으로 추론한다.
+            // AS alias(col ...)에는 타입을 넣을 수 없음(syntax error at or near "text").
+            i === 0
+              ? sql`(${e.row.time.toISOString()}::timestamptz, ${e.row.sourceId}::text, ${e.sentiment!.label}::text, ${e.sentiment!.score}::real)`
+              : sql`(${e.row.time.toISOString()}, ${e.row.sourceId}, ${e.sentiment!.label}, ${e.sentiment!.score})`,
           );
           await ctx.db.execute(sql`
             UPDATE raw_items AS t
-            SET sentiment = v.s::text,
-                sentiment_score = v.sc::real
-            FROM (VALUES ${sql.join(valuesClauses, sql`, `)}) AS v(ts text, sid text, s text, sc float)
+            SET sentiment = v.s,
+                sentiment_score = v.sc
+            FROM (VALUES ${sql.join(valuesClauses, sql`, `)}) AS v(ts, sid, s, sc)
             WHERE t.source_id = v.sid
-              AND t.time = v.ts::timestamptz
+              AND t.time = v.ts
               AND t.sentiment IS NULL
           `);
           updated = validEntries.length;
