@@ -34,9 +34,13 @@ export function ItemFilterBar({ subscription, value, onChange, totalItems }: Ite
   };
 
   const handleDateChange = (key: 'start' | 'end', val: string) => {
+    // datetime-local input은 "YYYY-MM-DDTHH:mm" 형식
+    // 이를 UTC 자정으로 해석하려면 "Z"를 명시해야 함
+    // 예: "2026-03-22T00:00" → "2026-03-22T00:00:00Z"
+    const isoString = `${val}:00Z`;
     onChange({
       ...value,
-      dateRange: { ...value.dateRange, [key]: new Date(val).toISOString() },
+      dateRange: { ...value.dateRange, [key]: isoString },
     });
   };
 
@@ -90,7 +94,7 @@ export function ItemFilterBar({ subscription, value, onChange, totalItems }: Ite
             <Input
               type="datetime-local"
               className="text-xs h-8 flex-1"
-              value={new Date(value.dateRange.start).toISOString().slice(0, 16)}
+              value={value.dateRange.start.slice(0, 16)}
               onChange={(e) => handleDateChange('start', e.target.value)}
             />
           </div>
@@ -99,7 +103,7 @@ export function ItemFilterBar({ subscription, value, onChange, totalItems }: Ite
             <Input
               type="datetime-local"
               className="text-xs h-8 flex-1"
-              value={new Date(value.dateRange.end).toISOString().slice(0, 16)}
+              value={value.dateRange.end.slice(0, 16)}
               onChange={(e) => handleDateChange('end', e.target.value)}
             />
           </div>
