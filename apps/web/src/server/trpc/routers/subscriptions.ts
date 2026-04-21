@@ -174,13 +174,50 @@ export interface QueueStatus {
   };
 }
 
+export interface RawItemRecord {
+  time: Date | string;
+  subscriptionId: number;
+  source: string;
+  sourceId: string;
+  itemType: 'article' | 'video' | 'comment';
+  url: string | null;
+  title: string | null;
+  content: string | null;
+  author: string | null;
+  publisher: string | null;
+  publishedAt: Date | string | null;
+  parentSourceId: string | null;
+  metrics: {
+    viewCount?: number;
+    likeCount?: number;
+    commentCount?: number;
+    shareCount?: number;
+  } | null;
+  fetchedAt: Date | string;
+  fetchedFromRun?: string | null;
+}
+
+export interface QueryItemsResult {
+  items: RawItemRecord[];
+  total: number;
+  mode: string;
+  nextCursor: string | null;
+}
+
+export interface CommentCountByParentEntry {
+  source: string;
+  parentSourceId: string;
+  count: number;
+}
+
 /**
  * 키워드 구독 관리 라우터.
  * collector 서비스(apps/collector)의 tRPC API를 web에서 프록시.
  * 인증된 사용자의 userId를 ownerId로 자동 주입한다.
  */
 
-const SOURCE_ENUM = ['naver-news', 'youtube', 'dcinside', 'fmkorea', 'clien'] as const;
+export const SOURCE_ENUM = ['naver-news', 'youtube', 'dcinside', 'fmkorea', 'clien'] as const;
+export type SourceEnum = (typeof SOURCE_ENUM)[number];
 
 const limitsSchema = z.object({
   maxPerRun: z.number().int().positive(),
@@ -628,6 +665,51 @@ export const subscriptionsRouter = router({
       try {
         const res = await getCollectorClient().sources.resume.mutate(input);
         return res as unknown as { source: string; paused: boolean };
+      } catch (err) {
+        handleCollectorError(err);
+      }
+    }),
+
+  queryItems: protectedProcedure
+    .input(
+      z.object({
+        subscriptionId: z.number().int().positive(),
+        dateRange: z.object({ start: z.string(), end: z.string() }),
+        sources: z.array(z.enum(SOURCE_ENUM)).optional(),
+        itemTypes: z.array(z.enum(['article', 'video', 'comment'])).optional(),
+        cursor: z.string().datetime().optional(),
+        limit: z.number().int().min(1).max(100).default(50),
+      }),
+    )
+    .query(async ({ input }): Promise<QueryItemsResult> => {
+      try {
+        const res = await getCollectorClient().items.query.query({
+          subscriptionId: input.subscriptionId,
+          dateRange: input.dateRange,
+          sources: input.sources,
+          itemTypes: input.itemTypes,
+          cursor: input.cursor,
+          limit: input.limit,
+          mode: 'all',
+        });
+        return res as unknown as QueryItemsResult;
+      } catch (err) {
+        handleCollectorError(err);
+      }
+    }),
+
+  commentCountByParent: protectedProcedure
+    .input(
+      z.object({
+        subscriptionId: z.number().int().positive(),
+        dateRange: z.object({ start: z.string(), end: z.string() }),
+        sources: z.array(z.enum(SOURCE_ENUM)).optional(),
+      }),
+    )
+    .query(async ({ input }): Promise<CommentCountByParentEntry[]> => {
+      try {
+        const res = await getCollectorClient().items.commentCountByParent.query(input);
+        return res as unknown as CommentCountByParentEntry[];
       } catch (err) {
         handleCollectorError(err);
       }

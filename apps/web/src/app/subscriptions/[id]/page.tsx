@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Loader2, Square } from 'lucide-react';
+import { Loader2, Square, Database } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,6 +29,7 @@ import {
 
 export default function SubscriptionDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const id = Number(params.id);
   const [editOpen, setEditOpen] = useState(false);
   const qc = useQueryClient();
@@ -112,7 +113,15 @@ export default function SubscriptionDetailPage() {
     <div className="space-y-4">
       <SubscriptionHeader subscription={sub} onEdit={() => setEditOpen(true)} />
 
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => router.push(`/subscriptions/${id}/items`)}
+        >
+          <Database className="h-3.5 w-3.5 mr-1" />
+          데이터 보기
+        </Button>
         <Button
           size="sm"
           variant="outline"
@@ -133,6 +142,7 @@ export default function SubscriptionDetailPage() {
       <Tabs defaultValue="collection" className="space-y-4">
         <TabsList>
           <TabsTrigger value="collection">수집 현황</TabsTrigger>
+          <TabsTrigger value="items">항목/댓글</TabsTrigger>
           <TabsTrigger value="analysis">분석 히스토리</TabsTrigger>
           <TabsTrigger value="settings">설정</TabsTrigger>
         </TabsList>
@@ -170,6 +180,19 @@ export default function SubscriptionDetailPage() {
               subscriptionId={sub.id}
             />
           </div>
+        </TabsContent>
+
+        <TabsContent value="items">
+          <Card>
+            <CardContent className="py-6 text-center text-sm">
+              <Button
+                onClick={() => router.push(`/subscriptions/${id}/items`)}
+                className="inline-block"
+              >
+                수집된 항목 및 댓글 보기 →
+              </Button>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="analysis">
