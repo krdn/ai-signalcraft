@@ -263,7 +263,13 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
     children.push({
       name: 'normalize-naver',
       queueName: 'pipeline',
-      data: { source: 'naver-news', flowId, dbJobId, maxComments: limits.commentsPerItem },
+      data: {
+        source: 'naver-news',
+        flowId,
+        dbJobId,
+        maxComments: limits.commentsPerItem,
+        reusePlan, // Task 12: pipeline-worker가 URL별 since 맵 구성용
+      },
       children: [
         {
           name: 'collect-naver-articles',

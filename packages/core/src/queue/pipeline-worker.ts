@@ -80,6 +80,19 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
         const maxComments = (job.data.maxComments as number) ?? 500;
         const allComments: NaverComment[] = [];
 
+        // 재사용된 기사의 since 맵 — 이 URL들은 댓글만 증분으로 새로 긁는다
+        const refetchSpecs = (job.data.reusePlan?.refetchCommentsFor ?? []) as Array<{
+          url: string;
+          articleId?: number;
+          lastCommentsFetchedAt: string | null;
+        }>;
+        const urlToSince = new Map<string, Date | null>(
+          refetchSpecs.map((s) => [
+            s.url,
+            s.lastCommentsFetchedAt ? new Date(s.lastCommentsFetchedAt) : null,
+          ]),
+        );
+
         // 기사별 댓글 수집 진행 추적
         const articleDetails: Array<{ title: string; status: string; comments: number }> = articles
           .filter((a) => a.url)
@@ -118,9 +131,14 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
           detail.status = 'running';
           const collector = new NaverCommentsCollector();
           const articleComments: NaverComment[] = [];
+          // 재사용 대상이면 since 전달, 신규 기사면 전량 수집
+          const since = urlToSince.get(item.url) ?? undefined;
 
           try {
-            for await (const chunk of collector.collectForArticle(item.url, { maxComments })) {
+            for await (const chunk of collector.collectForArticle(item.url, {
+              maxComments,
+              since: since ?? undefined,
+            })) {
               articleComments.push(...chunk);
               detail.comments = articleComments.length;
               await updateProgress();
