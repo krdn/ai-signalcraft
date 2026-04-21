@@ -5,23 +5,22 @@ import { useQuery } from '@tanstack/react-query';
 import { Database } from 'lucide-react';
 import { trpcClient } from '@/lib/trpc';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import type { SubscriptionRecord } from '@/server/trpc/routers/subscriptions';
 
-interface SubscriptionRow {
+export interface SubscriptionSummary {
   id: number;
   keyword: string;
   sources: string[];
-  intervalHours: number;
+  limits: { maxPerRun: number; maxPerDay?: number; commentsPerItem?: number };
+  options: { collectTranscript?: boolean; includeComments?: boolean };
+  domain?: string | null;
 }
 
 interface SubscriptionPickerProps {
-  onSelect: (keyword: string) => void;
+  onSelect: (subscription: SubscriptionSummary) => void;
   disabled?: boolean;
 }
 
-/**
- * 키워드 구독 목록에서 하나를 선택해 analysis 폼의 keyword에 주입.
- * 구독이 없거나 조회 실패 시 버튼을 비활성화 — 기존 수동 입력 플로우와 병행.
- */
 export function SubscriptionPicker({ onSelect, disabled }: SubscriptionPickerProps) {
   const [open, setOpen] = useState(false);
   const [hasError, setHasError] = useState(false);
@@ -33,12 +32,11 @@ export function SubscriptionPicker({ onSelect, disabled }: SubscriptionPickerPro
     staleTime: 30_000,
   });
 
-  // collector 서비스 미배포 환경에선 에러가 정상 — 조용히 숨김 상태로
   useEffect(() => {
     if (error) setHasError(true);
   }, [error]);
 
-  const subs: SubscriptionRow[] = data ?? [];
+  const subs: SubscriptionRecord[] = data ?? [];
   const hasSubs = subs.length > 0;
   const available = !hasError && !isLoading && hasSubs;
 
@@ -54,6 +52,21 @@ export function SubscriptionPicker({ onSelect, disabled }: SubscriptionPickerPro
       : hasSubs
         ? '수집 중인 키워드에서 선택'
         : '활성 구독이 없습니다';
+
+  const handleSelect = (sub: SubscriptionRecord) => {
+    onSelect({
+      id: sub.id,
+      keyword: sub.keyword,
+      sources: sub.sources,
+      limits: sub.limits,
+      options: {
+        collectTranscript: sub.options?.collectTranscript ?? false,
+        includeComments: sub.options?.includeComments ?? true,
+      },
+      domain: sub.domain,
+    });
+    setOpen(false);
+  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -75,10 +88,7 @@ export function SubscriptionPicker({ onSelect, disabled }: SubscriptionPickerPro
             <button
               key={sub.id}
               type="button"
-              onClick={() => {
-                onSelect(sub.keyword);
-                setOpen(false);
-              }}
+              onClick={() => handleSelect(sub)}
               className="flex w-full flex-col gap-0.5 px-3 py-2 text-left text-sm hover:bg-accent"
             >
               <span className="truncate font-medium">{sub.keyword}</span>
