@@ -89,15 +89,15 @@ async function main() {
         try {
           const valuesClauses = validEntries.map(
             (e) =>
-              sql`(${e.row.time}, ${e.row.sourceId}, ${e.sentiment!.label}, ${e.sentiment!.score})`,
+              sql`(${e.row.time.toISOString()}, ${e.row.sourceId}, ${e.sentiment!.label}, ${e.sentiment!.score})`,
           );
           await db.execute(sql`
             UPDATE raw_items AS t
             SET sentiment = v.sentiment::text,
                 sentiment_score = v.score::real
-            FROM (VALUES ${sql.join(valuesClauses, sql`, `)}) AS v(time timestamptz, source_id text, sentiment text, score float)
+            FROM (VALUES ${sql.join(valuesClauses, sql`, `)}) AS v(time text, source_id text, sentiment text, score float)
             WHERE t.source_id = v.source_id
-              AND t.time = v.time
+              AND t.time = v.time::timestamptz
               AND t.sentiment IS NULL
           `);
           updated += validEntries.length;
