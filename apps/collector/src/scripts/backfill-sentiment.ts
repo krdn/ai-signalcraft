@@ -8,7 +8,7 @@
  *   pnpm --filter collector tsx src/scripts/backfill-sentiment.ts --item-type comment
  *   pnpm --filter collector tsx src/scripts/backfill-sentiment.ts --dry-run
  */
-import { sql, isNull, and, eq } from 'drizzle-orm';
+import { sql, isNull, and, eq, type SQL } from 'drizzle-orm';
 import { getDb } from '../db';
 import { rawItems } from '../db/schema';
 import { initSentiment, classifySentimentFromTexts } from '../services/sentiment';
@@ -28,7 +28,7 @@ async function main() {
   await initSentiment();
 
   const db = getDb();
-  const conditions = [isNull(rawItems.sentiment)];
+  const conditions: SQL[] = [isNull(rawItems.sentiment)];
   if (subscriptionId) conditions.push(eq(rawItems.subscriptionId, Number(subscriptionId)));
   if (source) conditions.push(eq(rawItems.source, source));
   if (itemType) conditions.push(eq(rawItems.itemType, itemType as 'article' | 'video' | 'comment'));
@@ -53,7 +53,7 @@ async function main() {
   let lastSourceId: string | null = null;
 
   while (true) {
-    const cursorConditions = lastTime
+    const cursorConditions: SQL[] = lastTime
       ? [
           ...conditions,
           sql`(${rawItems.time}, ${rawItems.sourceId}) > (${lastTime}, ${lastSourceId})`,
