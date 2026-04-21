@@ -147,6 +147,8 @@ export async function analyzeItems(jobId: number): Promise<{
           commentsTotal,
           articlesAnalyzed,
           commentsAnalyzed: 0,
+          articlesSkipped,
+          commentsSkipped,
         },
       });
     }
@@ -165,6 +167,8 @@ export async function analyzeItems(jobId: number): Promise<{
         commentsTotal,
         articlesAnalyzed,
         commentsAnalyzed: 0,
+        articlesSkipped,
+        commentsSkipped,
       },
     });
     return { articlesAnalyzed, commentsAnalyzed: 0 };
@@ -203,6 +207,8 @@ export async function analyzeItems(jobId: number): Promise<{
           commentsTotal,
           articlesAnalyzed,
           commentsAnalyzed,
+          articlesSkipped,
+          commentsSkipped,
         },
       });
     }
@@ -219,6 +225,8 @@ export async function analyzeItems(jobId: number): Promise<{
       commentsTotal,
       articlesAnalyzed,
       commentsAnalyzed,
+      articlesSkipped,
+      commentsSkipped,
     },
   });
 
