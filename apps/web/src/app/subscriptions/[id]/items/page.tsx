@@ -10,7 +10,6 @@ import type { FilterState } from '@/components/subscriptions/items/item-filter-b
 import { ItemFilterBar } from '@/components/subscriptions/items/item-filter-bar';
 import { ItemFeed } from '@/components/subscriptions/items/item-feed';
 import { ItemDetailPanel } from '@/components/subscriptions/items/item-detail-panel';
-import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 
 export default function SubscriptionItemsPage() {
@@ -19,7 +18,6 @@ export default function SubscriptionItemsPage() {
   const id = Number(params.id);
 
   const [selectedItem, setSelectedItem] = useState<RawItemRecord | null>(null);
-  const [showMobilePanel, setShowMobilePanel] = useState(false);
 
   const [filterState, setFilterState] = useState<FilterState>(() => {
     const now = new Date();
@@ -50,7 +48,6 @@ export default function SubscriptionItemsPage() {
 
   const handleSelectItem = (item: RawItemRecord) => {
     setSelectedItem(item);
-    setShowMobilePanel(true);
   };
 
   const effectiveFilterState = useMemo(() => {
@@ -119,17 +116,6 @@ export default function SubscriptionItemsPage() {
           />
         </div>
       </div>
-
-      <Sheet open={showMobilePanel} onOpenChange={setShowMobilePanel}>
-        <SheetContent side="bottom" className="h-[90vh] overflow-y-auto p-4">
-          <ItemDetailPanel
-            item={selectedItem}
-            subscriptionId={id}
-            dateRange={effectiveFilterState.dateRange}
-            onClose={() => setShowMobilePanel(false)}
-          />
-        </SheetContent>
-      </Sheet>
     </div>
   );
 }
