@@ -3,6 +3,7 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify';
 import type { TRPCError } from '@trpc/server';
+import { assertHypertableConstraints } from '../db/migrations/verify-hypertable-constraints';
 import { appRouter } from './trpc/router';
 import { createCollectorContext } from './trpc/init';
 
@@ -10,6 +11,8 @@ const PORT = Number(process.env.PORT ?? 3400);
 const HOST = process.env.HOST ?? '0.0.0.0';
 
 async function main() {
+  await assertHypertableConstraints({ softFail: true });
+
   const server = Fastify({
     logger: {
       level: process.env.LOG_LEVEL ?? 'info',

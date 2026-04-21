@@ -34,6 +34,20 @@ jobs:
           pnpm --filter @ai-signalcraft/core db:push
           echo "DB schema synced"
 
+      - name: Collector Hypertable DDL (UNIQUE INDEX, compression, retention)
+        shell: bash -l {0}
+        run: |
+          source ~/.nvm/nvm.sh
+          # 하이퍼테이블 UNIQUE INDEX는 Drizzle push로 표현 불가 → apply-hypertables.ts (멱등) 실행.
+          # 누락 시 executor의 ON CONFLICT가 실패해 모든 수집 run이 failed로 쌓임 (과거 2회 재발).
+          export DATABASE_URL=$(grep ^COLLECTOR_DATABASE_URL .env.production | sed 's/COLLECTOR_DATABASE_URL=//' | sed 's|@host.docker.internal:5435|@localhost:5435|')
+          if [ -z "$DATABASE_URL" ]; then
+            echo "COLLECTOR_DATABASE_URL missing in .env.production"
+            exit 1
+          fi
+          pnpm --filter @ai-signalcraft/collector db:migrate-timescale
+          echo "Collector hypertable DDL applied"
+
       - name: Generate Release Draft
         shell: bash -l {0}
         continue-on-error: true

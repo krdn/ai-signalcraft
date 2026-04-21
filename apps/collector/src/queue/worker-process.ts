@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { Worker, type WorkerOptions } from 'bullmq';
 import { hasYoutubeApiKey } from '@ai-signalcraft/collectors';
+import { assertHypertableConstraints } from '../db/migrations/verify-hypertable-constraints';
 import { getBullMQOptions } from './connection';
 import {
   COLLECTOR_SOURCES,
@@ -109,6 +110,8 @@ export async function shutdownWorkers(
  * docker-compose의 collector-worker 서비스가 사용.
  */
 async function main() {
+  console.warn('[worker-process] verifying hypertable constraints...');
+  await assertHypertableConstraints();
   console.warn('[worker-process] starting all source workers...');
   const workers = startAllWorkers();
   console.warn(
