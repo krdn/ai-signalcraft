@@ -60,7 +60,21 @@ export class FMKoreaCollector extends CommunityBaseCollector {
    * 쿠키 설정 후 재접속하면 정상 페이지 반환
    */
   protected async handleSecurityChallenge(page: import('playwright').Page): Promise<boolean> {
-    const html = await page.content();
+    // page.content()는 페이지가 네비게이션 중이면 "Unable to retrieve content..."로 throw된다.
+    // 챌린지 페이지 자체가 리다이렉트/스크립트 네비를 발생시키는 경우가 있어 방어 필요.
+    // 실패 시 false(챌린지 아님)로 반환해 상위가 정상 흐름으로 이어가도록 한다.
+    let html: string;
+    try {
+      await page.waitForLoadState('domcontentloaded', { timeout: 5000 }).catch(() => {});
+      html = await page.content();
+    } catch (err) {
+      console.warn(
+        `[fmkorea] 챌린지 감지 단계에서 content() 실패 — 챌린지 아님으로 처리: ${
+          err instanceof Error ? err.message : err
+        }`,
+      );
+      return false;
+    }
     if (!html.includes('에펨코리아 보안 시스템') && !html.includes('/mc/mc.php')) {
       return false;
     }
@@ -317,10 +331,21 @@ export class FMKoreaCollector extends CommunityBaseCollector {
       /* fetch 실패 시 Playwright fallback */
     }
     // 2차: Playwright fallback (WASM 챌린지 등 브라우저 필요 케이스)
+    // page.content() race 방어: 네비게이션 완료 대기 + 실패 시 null 반환.
     if (!html) {
-      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
-      await page.waitForTimeout(1000);
-      html = await page.content();
+      try {
+        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
+        await page.waitForTimeout(1000);
+        await page.waitForLoadState('domcontentloaded', { timeout: 5000 }).catch(() => {});
+        html = await page.content();
+      } catch (err) {
+        console.warn(
+          `[fmkorea] fetchPost Playwright fallback 실패 (${url}): ${
+            err instanceof Error ? err.message : err
+          }`,
+        );
+        return null;
+      }
     }
     const $ = cheerio.load(html);
 

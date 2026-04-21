@@ -728,10 +728,42 @@ export abstract class CommunityBaseCollector extends BrowserCollector<CommunityP
           Pragma: 'no-cache',
         });
         await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
-      } catch (navErr) {
+
+        // 챌린지 감지/처리 + content() 호출을 동일 try 블록 안에서 보호한다.
+        // 이전 코드에서 page.content()가 "페이지가 네비게이션 중"일 때 throw되면 for-loop
+        // 바깥으로 에러가 전파되어 attempt 재시도가 무력화되는 버그가 있었다 (fmkorea WASM
+        // 챌린지 리다이렉트 타이밍에서 재현).
+        const challengeHandled = await this.handleSecurityChallenge(page);
+        if (challengeHandled) {
+          await page.goto(searchUrl, { waitUntil: 'networkidle', timeout: 30000 });
+          await page.waitForTimeout(2000);
+        }
+
+        await page.waitForTimeout(this.config.pageDelay.min + Math.random() * 1000);
+        // content() 직전에 네비게이션이 안정됐는지 한 번 더 확인. 실패해도 content() 시도 자체는 계속.
+        await page.waitForLoadState('domcontentloaded', { timeout: 10000 }).catch(() => {});
+
+        const html = await page.content();
+        const postLinks = this.parseSearchResults(html);
+
+        // 차단으로 판정되는 경우: 지수 백오프 후 재시도 (강화)
+        if (postLinks.length === 0 && this.detectBlocked(html)) {
+          const backoffMs = 8000 * Math.pow(2, attempt - 1); // 8s → 16s → 32s
+          console.warn(
+            `${this.source} 검색 차단 감지 (page ${pageNum}, attempt ${attempt}, html_len=${html.length}) -- ${backoffMs}ms 백오프`,
+          );
+          if (attempt < MAX_ATTEMPTS) {
+            await sleep(backoffMs, backoffMs + 3000);
+            continue;
+          }
+          return null;
+        }
+
+        return postLinks;
+      } catch (err) {
         console.warn(
           `${this.source} 검색 페이지 로드 실패 (page ${pageNum}, attempt ${attempt}):`,
-          navErr,
+          err instanceof Error ? err.message : err,
         );
         if (attempt < MAX_ATTEMPTS) {
           await sleep(3000 * attempt, 5000 * attempt);
@@ -739,44 +771,6 @@ export abstract class CommunityBaseCollector extends BrowserCollector<CommunityP
         }
         return null;
       }
-
-      const challengeHandled = await this.handleSecurityChallenge(page);
-      if (challengeHandled) {
-        try {
-          await page.goto(searchUrl, { waitUntil: 'networkidle', timeout: 30000 });
-          await page.waitForTimeout(2000);
-        } catch (navErr) {
-          console.warn(
-            `${this.source} 챌린지 후 재로드 실패 (page ${pageNum}, attempt ${attempt}):`,
-            navErr,
-          );
-          if (attempt < MAX_ATTEMPTS) {
-            await sleep(3000 * attempt, 5000 * attempt);
-            continue;
-          }
-          return null;
-        }
-      }
-
-      await page.waitForTimeout(this.config.pageDelay.min + Math.random() * 1000);
-
-      const html = await page.content();
-      const postLinks = this.parseSearchResults(html);
-
-      // 차단으로 판정되는 경우: 지수 백오프 후 재시도 (강화)
-      if (postLinks.length === 0 && this.detectBlocked(html)) {
-        const backoffMs = 8000 * Math.pow(2, attempt - 1); // 8s → 16s → 32s
-        console.warn(
-          `${this.source} 검색 차단 감지 (page ${pageNum}, attempt ${attempt}, html_len=${html.length}) -- ${backoffMs}ms 백오프`,
-        );
-        if (attempt < MAX_ATTEMPTS) {
-          await sleep(backoffMs, backoffMs + 3000);
-          continue;
-        }
-        return null;
-      }
-
-      return postLinks;
     }
     return null;
   }
