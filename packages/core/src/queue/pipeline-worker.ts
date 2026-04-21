@@ -232,6 +232,9 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
       }
 
       // 하위 호환: 기존 YoutubeVideosCollector로 수집된 결과 처리
+      // NOTE: 이 경로는 "신규 영상 수집 → 댓글 후처리" 전용이며, TTL 재사용된 영상은
+      //       신규 YoutubeCollector(통합형)의 refetchCommentsOnly 경로에서 처리된다.
+      //       따라서 여기서는 since 주입이 불필요 — 모든 영상이 신규 수집 대상이다.
       if (job.name === 'normalize-youtube' && results['youtube-videos'] && !results['youtube']) {
         const videos = (
           results['youtube-videos'] as { items: Array<{ sourceId: string; title?: string }> }

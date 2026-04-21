@@ -476,6 +476,9 @@ export async function triggerClassify(dbJobId: number, keyword: string) {
     queueName: 'pipeline',
     data: { dbJobId, keyword },
     opts: {
+      // 멱등성 보장: persist가 재시도되어도 동일 dbJobId에 대해 classify는 1번만 enqueue됨.
+      // BullMQ는 같은 jobId를 가진 두 번째 add를 무시한다.
+      jobId: `classify:${dbJobId}`,
       removeOnComplete: { age: 3600 },
       removeOnFail: { age: 86400 },
     },

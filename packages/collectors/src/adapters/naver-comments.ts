@@ -159,7 +159,10 @@ export class NaverCommentsCollector implements Collector<NaverComment> {
             ? new Date(String(raw.regTime))
             : null;
 
-        // since 컷오프: publishedAt <= since 이면 "오래된 것"으로 카운트하고 건너뜀
+        // since 컷오프: publishedAt <= since 이면 "오래된 것"으로 카운트하고 건너뜀.
+        // publishedAt이 null이면 cutoff 판단 불가 → 보수적으로 포함 + consecutiveOld 미증가.
+        // (네이버 API에서 날짜 누락은 극히 드물지만, 연속 null이 와도 cutoff가 도달 못하는
+        //  최악의 경우에도 maxComments가 상한 역할을 한다)
         if (since && publishedAt && publishedAt.getTime() <= since.getTime()) {
           consecutiveOld++;
           if (consecutiveOld >= OLD_CONSECUTIVE_CUTOFF) {
