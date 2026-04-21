@@ -1,4 +1,4 @@
-import { pgTable, text, integer, timestamp, jsonb, uuid, index } from 'drizzle-orm/pg-core';
+import { pgTable, text, integer, timestamp, jsonb, uuid, index, real } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { vector384 } from '../types/vector';
 
@@ -37,6 +37,8 @@ export const rawItems = pgTable(
     metrics: jsonb('metrics').$type<ItemMetrics>(),
     rawPayload: jsonb('raw_payload').notNull(),
     embedding: vector384('embedding'),
+    sentiment: text('sentiment'), // 'positive' | 'negative' | 'neutral' | NULL
+    sentimentScore: real('sentiment_score'), // 0~1 확신도, NULL
     fetchedFromRun: uuid('fetched_from_run'),
     fetchedAt: timestamp('fetched_at', { withTimezone: true }).defaultNow().notNull(),
   },
