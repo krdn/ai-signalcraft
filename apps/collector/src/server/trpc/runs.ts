@@ -66,6 +66,30 @@ export const runsRouter = router({
       return rows;
     }),
 
+  sentimentBreakdown: protectedProcedure
+    .input(
+      z.object({
+        runIds: z.array(z.string().uuid()).min(1).max(1000),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const rows = await ctx.db
+        .select({
+          fetchedFromRun: rawItems.fetchedFromRun,
+          sentiment: rawItems.sentiment,
+          count: sql<number>`count(*)::int`,
+        })
+        .from(rawItems)
+        .where(
+          and(
+            inArray(rawItems.fetchedFromRun, input.runIds),
+            sql`${rawItems.sentiment} IS NOT NULL`,
+          ),
+        )
+        .groupBy(rawItems.fetchedFromRun, rawItems.sentiment);
+      return rows;
+    }),
+
   get: protectedProcedure
     .input(z.object({ runId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {

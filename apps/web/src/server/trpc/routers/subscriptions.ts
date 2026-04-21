@@ -492,6 +492,25 @@ export const subscriptionsRouter = router({
       }
     }),
 
+  runSentimentBreakdown: protectedProcedure
+    .input(
+      z.object({
+        runIds: z.array(z.string().uuid()).min(1).max(1000),
+      }),
+    )
+    .query(async ({ input }) => {
+      try {
+        const res = await getCollectorClient().runs.sentimentBreakdown.query(input);
+        return res as unknown as Array<{
+          fetchedFromRun: string;
+          sentiment: string | null;
+          count: number;
+        }>;
+      } catch (err) {
+        handleCollectorError(err);
+      }
+    }),
+
   runProgress: protectedProcedure
     .input(
       z.object({
