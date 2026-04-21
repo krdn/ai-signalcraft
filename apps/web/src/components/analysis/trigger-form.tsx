@@ -252,6 +252,7 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
     setForceRefetch(false);
     setEnableItemAnalysis(true);
     setCollectTranscript(false);
+    setOptimizationPreset('rag-standard');
     if (defaultLimits) {
       setMaxNaverArticles(defaultLimits.naverArticles);
       setMaxYoutubeVideos(defaultLimits.youtubeVideos);

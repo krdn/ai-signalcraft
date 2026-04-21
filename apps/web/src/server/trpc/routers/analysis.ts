@@ -13,6 +13,7 @@ import {
   resumePipelineWithMode,
   runToEndPipeline,
   updateBreakpoints,
+  getCollectorClient,
 } from '@ai-signalcraft/core';
 import { protectedProcedure, router } from '../init';
 import { buildJobCondition } from '../shared/query-helpers';
@@ -244,8 +245,30 @@ export const analysisRouter = router({
 
       // limitMode를 options JSONB에 병합하여 DB에 함께 저장 (감사/재실행 시 모드 복원 가능)
       const persistedOptions = effectiveOptions
-        ? { ...effectiveOptions, limitMode }
-        : { limitMode };
+        ? {
+            ...effectiveOptions,
+            limitMode,
+            ...(input.subscriptionId && { subscriptionId: input.subscriptionId }),
+          }
+        : { limitMode, ...(input.subscriptionId && { subscriptionId: input.subscriptionId }) };
+
+      // 구독 모드 검증: subscriptionId가 있으면 실제 활성 구독인지, 본인 소유인지 확인
+      if (input.subscriptionId) {
+        try {
+          const sub = await getCollectorClient().subscriptions.get.query({
+            id: input.subscriptionId,
+          });
+          if (!sub || sub.ownerId !== ctx.userId) {
+            throw new TRPCError({ code: 'FORBIDDEN', message: '해당 구독에 접근할 수 없습니다.' });
+          }
+          if (sub.status !== 'active') {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: '비활성 구독입니다.' });
+          }
+        } catch (err) {
+          if (err instanceof TRPCError) throw err;
+          throw new TRPCError({ code: 'BAD_REQUEST', message: '구독 정보를 확인할 수 없습니다.' });
+        }
+      }
 
       // 1. collectionJobs 레코드 생성 (팀 ID 포함)
       const [job] = await ctx.db

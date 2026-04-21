@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Database } from 'lucide-react';
 import { trpcClient } from '@/lib/trpc';
@@ -23,7 +23,6 @@ interface SubscriptionPickerProps {
 
 export function SubscriptionPicker({ onSelect, disabled }: SubscriptionPickerProps) {
   const [open, setOpen] = useState(false);
-  const [hasError, setHasError] = useState(false);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['subscriptions.list', 'active'],
@@ -32,10 +31,7 @@ export function SubscriptionPicker({ onSelect, disabled }: SubscriptionPickerPro
     staleTime: 30_000,
   });
 
-  useEffect(() => {
-    if (error) setHasError(true);
-  }, [error]);
-
+  const hasError = !!error;
   const subs: SubscriptionRecord[] = data ?? [];
   const hasSubs = subs.length > 0;
   const available = !hasError && !isLoading && hasSubs;
