@@ -76,10 +76,19 @@ export class NaverCommentsCollector implements Collector<NaverComment> {
   /**
    * 특정 기사의 댓글 수집
    * 실제 파이프라인에서 사용하는 메서드
+   *
+   * since 증분 모드:
+   * - since 지정 시 sort를 'NEW'로 전환해 최신순으로 받는다.
+   * - publishedAt <= since 인 댓글이 연속 OLD_CONSECUTIVE_CUTOFF(20)개 나오면 조기 종료.
+   * - 결과에는 since 이후 댓글만 포함된다.
    */
   async *collectForArticle(
     articleUrl: string,
-    options?: { maxComments?: number },
+    options?: {
+      maxComments?: number;
+      since?: Date;
+      sort?: 'FAVORITE' | 'NEW';
+    },
   ): AsyncGenerator<NaverComment[], void, unknown> {
     const parsed = parseNaverArticleUrl(articleUrl);
     if (!parsed) {
@@ -90,8 +99,14 @@ export class NaverCommentsCollector implements Collector<NaverComment> {
     const objectId = buildObjectId(oid, aid);
     const articleSourceId = `${oid}_${aid}`;
     const maxComments = options?.maxComments ?? DEFAULT_MAX_COMMENTS;
+    const since = options?.since ?? null;
+    // since 있으면 최신순(NEW), 없으면 기존 FAVORITE 유지
+    const sort: 'FAVORITE' | 'NEW' = options?.sort ?? (since ? 'NEW' : 'FAVORITE');
+    const OLD_CONSECUTIVE_CUTOFF = 20;
+
     let totalCollected = 0;
     let currentPage = 1;
+    let consecutiveOld = 0;
 
     // Referer 헤더 -- 기사 댓글 페이지 URL (필수, 없으면 403)
     const referer = `https://n.news.naver.com/article/comment/${oid}/${aid}`;
@@ -101,7 +116,7 @@ export class NaverCommentsCollector implements Collector<NaverComment> {
         objectId,
         page: currentPage,
         pageSize: 100,
-        sort: 'FAVORITE',
+        sort,
       });
 
       const response = await fetch(apiUrl, {
@@ -131,8 +146,29 @@ export class NaverCommentsCollector implements Collector<NaverComment> {
       if (!commentList || commentList.length === 0) break;
 
       const comments: NaverComment[] = [];
+      let stopAfterPage = false; // since cutoff 또는 maxComments 도달 시 yield 후 pageLoop 종료용
       for (const raw of commentList) {
-        if (totalCollected >= maxComments) break;
+        if (totalCollected >= maxComments) {
+          stopAfterPage = true;
+          break;
+        }
+
+        const publishedAt: Date | null = raw.modTime
+          ? new Date(String(raw.modTime))
+          : raw.regTime
+            ? new Date(String(raw.regTime))
+            : null;
+
+        // since 컷오프: publishedAt <= since 이면 "오래된 것"으로 카운트하고 건너뜀
+        if (since && publishedAt && publishedAt.getTime() <= since.getTime()) {
+          consecutiveOld++;
+          if (consecutiveOld >= OLD_CONSECUTIVE_CUTOFF) {
+            stopAfterPage = true;
+            break;
+          }
+          continue;
+        }
+        consecutiveOld = 0;
 
         comments.push({
           sourceId: String(raw.commentNo ?? raw.ticket ?? ''),
@@ -142,20 +178,19 @@ export class NaverCommentsCollector implements Collector<NaverComment> {
           author: String(raw.maskedUserId ?? raw.userName ?? '익명'),
           likeCount: Number(raw.sympathyCount ?? 0),
           dislikeCount: Number(raw.antipathyCount ?? 0),
-          publishedAt: raw.modTime
-            ? new Date(String(raw.modTime))
-            : raw.regTime
-              ? new Date(String(raw.regTime))
-              : null,
+          publishedAt,
           rawData: raw,
         });
 
         totalCollected++;
       }
 
+      // stopAfterPage 여부와 무관하게, 이번 페이지에서 수집된 comments는 먼저 yield
       if (comments.length > 0) {
         yield comments;
       }
+
+      if (stopAfterPage) break;
 
       // 전체 페이지 확인
       const pageModel = result.pageModel as Record<string, unknown> | undefined;
