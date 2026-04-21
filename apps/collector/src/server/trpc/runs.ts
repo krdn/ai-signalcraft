@@ -1,9 +1,10 @@
 import { z } from 'zod';
-import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, isNull, sql } from 'drizzle-orm';
 import { collectionRuns, rawItems, runDiagnostics } from '../../db/schema';
 import { cancelRun, cancelBySubscription, cancelAll, retryRun } from '../../queue/run-control';
 import { collectLayerA } from '../../diagnostics/collect-run';
 import { getCollectQueue } from '../../queue/queues';
+import { COLLECTOR_SOURCES } from '../../queue/types';
 import type { CollectorSource } from '../../queue/types';
 import { protectedProcedure, router } from './init';
 
@@ -355,5 +356,76 @@ export const runsRouter = router({
         )
         .returning({ runId: collectionRuns.runId });
       return { patched: updated.length, runId: input.runId };
+    }),
+
+  backfillSentiment: protectedProcedure
+    .input(
+      z.object({
+        subscriptionId: z.number().optional(),
+        source: z.enum(COLLECTOR_SOURCES).optional(),
+        itemType: z.enum(['article', 'video', 'comment']).optional(),
+        dryRun: z.boolean().default(false),
+        limit: z.number().min(1).max(10000).default(500),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { dryRun, limit } = input;
+      const conditions = [isNull(rawItems.sentiment)];
+      if (input.subscriptionId) conditions.push(eq(rawItems.subscriptionId, input.subscriptionId));
+      if (input.source) conditions.push(eq(rawItems.source, input.source));
+      if (input.itemType) conditions.push(eq(rawItems.itemType, input.itemType));
+
+      const [{ count }] = await ctx.db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(rawItems)
+        .where(and(...conditions));
+
+      if (count === 0 || dryRun) {
+        return { processed: 0, updated: 0, total: count, dryRun };
+      }
+
+      const rows = await ctx.db
+        .select({
+          time: rawItems.time,
+          sourceId: rawItems.sourceId,
+          title: rawItems.title,
+          content: rawItems.content,
+        })
+        .from(rawItems)
+        .where(and(...conditions))
+        .limit(limit);
+
+      if (rows.length === 0) return { processed: 0, updated: 0, total: count, dryRun };
+
+      const { classifySentimentFromTexts, initSentiment } =
+        await import('../../services/sentiment');
+      const { buildEmbeddingText } = await import('../../services/embedding');
+      await initSentiment();
+
+      const texts = rows.map((r) => buildEmbeddingText(r.title, r.content));
+      const sentiments = await classifySentimentFromTexts(texts);
+
+      let updated = 0;
+      for (let i = 0; i < rows.length; i++) {
+        const s = sentiments[i];
+        if (!s) continue;
+        try {
+          await ctx.db
+            .update(rawItems)
+            .set({ sentiment: s.label, sentimentScore: s.score })
+            .where(
+              and(
+                eq(rawItems.sourceId, rows[i].sourceId),
+                eq(rawItems.time, rows[i].time),
+                isNull(rawItems.sentiment),
+              ),
+            );
+          updated++;
+        } catch {
+          // 개별 UPDATE 실패 무시
+        }
+      }
+
+      return { processed: rows.length, updated, total: count, dryRun };
     }),
 });
