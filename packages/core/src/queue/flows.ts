@@ -465,6 +465,24 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
   return { flowId, dbJobId, flow };
 }
 
+/**
+ * 개별 감정 분류 트리거 — persist 완료 후 호출.
+ * classify 노드는 pipeline 큐에서 돌며, 완료 시 triggerAnalysis를 자동으로 이어서 호출한다.
+ * BERT 모델은 pipeline-worker 프로세스에 이미 상주 — 별도 워커 없이 재사용.
+ */
+export async function triggerClassify(dbJobId: number, keyword: string) {
+  const flow = await getFlowProducer().add({
+    name: 'classify',
+    queueName: 'pipeline',
+    data: { dbJobId, keyword },
+    opts: {
+      removeOnComplete: { age: 3600 },
+      removeOnFail: { age: 86400 },
+    },
+  });
+  return flow;
+}
+
 // D-09: 분석 파이프라인 트리거 -- persist 완료 후 호출
 // runner.ts가 내부적으로 3단계 병렬/순차를 관리하므로 Flow는 단일 작업으로 단순화
 export async function triggerAnalysis(dbJobId: number, keyword: string) {

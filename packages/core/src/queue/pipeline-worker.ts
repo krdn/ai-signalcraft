@@ -23,6 +23,7 @@ import {
   updateJobProgress,
   linkArticleKeywords,
   linkVideoKeywords,
+  appendJobEvent,
 } from '../pipeline';
 import { getDb } from '../db';
 import { dataSources } from '../db/schema/sources';
@@ -33,7 +34,8 @@ import {
   persistArticleEmbeddings,
   persistCommentEmbeddings,
 } from '../analysis/preprocessing/embedding-persist';
-import { triggerAnalysis } from './flows';
+import { analyzeItems } from '../analysis/item-analyzer';
+import { triggerAnalysis, triggerClassify } from './flows';
 import { COMMUNITY_SOURCES } from './worker-config';
 
 const logger = createLogger('pipeline-worker');
@@ -532,22 +534,56 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
       logger.info(`[persist] 완료: ${persistElapsed}초 소요 (dbJobId=${dbJobId})`);
 
       // D-09: 수집 완료 후 자동 분석 트리거
-      // 취소 확인 — persist 완료 후에도 취소되었으면 분석 트리거하지 않음
+      // 취소 확인 — persist 완료 후에도 취소되었으면 분류/분석 트리거하지 않음
       const keyword = job.data.keyword;
       if (keyword) {
         if (dbJobId && (await isPipelineCancelled(dbJobId))) {
-          logger.info(`[persist] 취소됨 — 분석 트리거 건너뜀 (dbJobId=${dbJobId})`);
+          logger.info(`[persist] 취소됨 — classify 트리거 건너뜀 (dbJobId=${dbJobId})`);
         } else {
-          // BP 게이트: 정규화 완료 후 (analysis 트리거 직전)
-          if (dbJobId && !(await awaitStageGate(dbJobId, 'normalize'))) {
-            return { cancelled: true };
-          }
-          await triggerAnalysis(dbJobId, keyword);
-          logger.info(`분석 파이프라인 트리거됨: job=${dbJobId}, keyword=${keyword}`);
+          // classify 노드가 내부적으로 게이트 확인 후 triggerAnalysis 호출
+          await triggerClassify(dbJobId, keyword);
+          logger.info(`classify 노드 트리거됨: job=${dbJobId}, keyword=${keyword}`);
         }
       }
 
       return { persisted: true };
+    }
+
+    // classify 분기: 증분 개별 감정 분석 + triggerAnalysis
+    if (job.name === 'classify') {
+      const { dbJobId: classifyJobId, keyword: classifyKeyword } = job.data;
+
+      if (await isPipelineCancelled(classifyJobId)) {
+        logger.info(`[classify] 취소됨 — 스킵 (dbJobId=${classifyJobId})`);
+        return { skipped: true, reason: 'cancelled' };
+      }
+
+      // 증분 item-analysis — 실패해도 분석은 계속 진행
+      try {
+        await analyzeItems(classifyJobId);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        logger.warn(`[classify] item-analysis 실패 (분석은 계속): ${msg}`);
+        await appendJobEvent(
+          classifyJobId,
+          'warn',
+          `개별 감정 분석 실패 (분석은 계속 진행됨): ${msg}`,
+        ).catch(() => void 0);
+      }
+
+      // BP 게이트: 정규화 완료 후 (analysis 트리거 직전)
+      if (!(await awaitStageGate(classifyJobId, 'normalize'))) {
+        logger.info(`[classify] 게이트 미통과 — 분석 트리거 건너뜀 (dbJobId=${classifyJobId})`);
+        return { cancelled: true };
+      }
+
+      if (classifyKeyword) {
+        await triggerAnalysis(classifyJobId, classifyKeyword);
+        logger.info(
+          `[classify] 분석 파이프라인 트리거됨: job=${classifyJobId}, keyword=${classifyKeyword}`,
+        );
+      }
+      return { classified: true };
     }
   };
 }
