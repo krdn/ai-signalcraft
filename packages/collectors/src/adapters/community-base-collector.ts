@@ -339,24 +339,48 @@ export abstract class CommunityBaseCollector extends BrowserCollector<CommunityP
           continue;
         }
 
-        // classify(link.publishedAt): dayIdx를 필요 시 진행시키며 분기
+        // classify(link.publishedAt):
+        // 1) linkTs >= daysDescMs[dayIdx] + 86400000  → 이미 처리한 일자보다 미래(중복) → skip
+        // 2) linkTs가 daysDescMs 범위 어딘가에 속함     → 해당 일자 윈도우로 dayIdx를 점프 후 수집
+        // 3) linkTs < daysDescMs[last]                → 전체 범위 이전의 과거 → skip + consecutiveOld
+        //
+        // 핵심: 단일 link로 dayIdx를 필요한 만큼 "한 번에" 전진시킨다. 기존 로직은 nextIdx 한 칸만
+        // 확인하고 carry counter(30)에 의존해 느리게 전진해서, 검색 결과 최신 글이 시작 일자보다
+        // 이른 경우 해당 글이 영원히 preFilterSkip으로 버려지는 버그가 있었다.
         const linkTs = link.publishedAt.getTime();
-        let classified = false;
-        while (!classified && dayIdx < daysDescMs.length) {
-          const windowStart = daysDescMs[dayIdx];
-          const windowEnd = windowStart + 86400000;
+        const currentWindowStart = daysDescMs[dayIdx];
+        const currentWindowEnd = currentWindowStart + 86400000;
 
-          if (linkTs >= windowEnd) {
-            // 더 미래 (이미 처리한 일자) → skip, dayIdx 그대로
-            preFilterSkipCount++;
-            classified = true;
-          } else if (linkTs >= windowStart) {
-            // 현재 윈도우 내
+        if (linkTs >= currentWindowEnd) {
+          // 더 미래 — 이미 지난 일자. skip.
+          preFilterSkipCount++;
+        } else if (linkTs < daysDescMs[daysDescMs.length - 1]) {
+          // 모든 수집 일자보다 과거. 같은 검색 페이지에서 계속 이런 상태가 쌓이면 dayIdx를 끝까지
+          // 전진시켜 pageLoop을 조기 종료 — 검색 결과가 정렬되어 있다는 가정에서 이후 페이지도
+          // 모두 과거일 테니까 무의미한 페이지 탐색을 막는다.
+          consecutiveOldInWindow++;
+          if (consecutiveOldInWindow >= CommunityBaseCollector.CONSECUTIVE_OLD_THRESHOLD) {
+            dayIdx = daysDescMs.length; // pageLoop 조건에서 탈출
             consecutiveOldInWindow = 0;
-            if ((perDayCount.get(windowStart) ?? 0) >= perDayLimit) {
-              perDayCapSkipCount++;
-              break;
-            }
+          }
+          preFilterSkipCount++;
+        } else {
+          // 링크가 수집 범위 내 어느 일자에 속함. 해당 idx로 점프.
+          // daysDescMs는 내림차순이므로 linkTs가 속하는 가장 빠른 idx = linkTs >= daysDescMs[i]인 첫 i.
+          let targetIdx = dayIdx;
+          while (targetIdx < daysDescMs.length && linkTs < daysDescMs[targetIdx]) {
+            targetIdx++;
+          }
+          // targetIdx < length가 보장됨 (위 두 분기에서 범위 벗어난 경우 이미 처리했으므로)
+          if (targetIdx !== dayIdx) {
+            dayIdx = targetIdx;
+            consecutiveOldInWindow = 0;
+          }
+          const windowStart = daysDescMs[dayIdx];
+          const windowCount = perDayCount.get(windowStart) ?? 0;
+          if (windowCount >= perDayLimit) {
+            perDayCapSkipCount++;
+          } else {
             try {
               const post = await this.fetchPost(page, link.url, link.title, ctx.maxComments);
               if (post) {
@@ -372,42 +396,16 @@ export abstract class CommunityBaseCollector extends BrowserCollector<CommunityP
                     totalCollected++;
                   }
                 } else {
-                  // publishedAt null이지만 in-range로 간주된 post — legacy/!link.publishedAt 경로와 일관되게 보수적으로 포함.
-                  // ⚠️ 이 경로는 현재 윈도우의 cap을 소비한다 (link.publishedAt으로 현재 윈도우에 속한다고 이미 분류했으므로).
-                  const windowCount = perDayCount.get(windowStart) ?? 0;
-                  if (windowCount >= perDayLimit) {
-                    perDayCapSkipCount++;
-                  } else {
-                    perDayCount.set(windowStart, windowCount + 1);
-                    posts.push(post);
-                    totalCollected++;
-                  }
+                  // publishedAt null이지만 in-range로 간주 — link.publishedAt 기준 이미 윈도우 내로 분류.
+                  perDayCount.set(windowStart, windowCount + 1);
+                  posts.push(post);
+                  totalCollected++;
                 }
               }
             } catch (err) {
               console.warn(`${this.source} 게시글 수집 실패 (${link.url}):`, err);
             }
             await sleep(this.config.postDelay.min, this.config.postDelay.max);
-            classified = true;
-          } else {
-            // linkTs < windowStart → 현재 윈도우보다 오래된 글
-            // 다음 윈도우가 이 글을 포함할 수 있으면 즉시 dayIdx 진행 후 재평가.
-            const nextIdx = dayIdx + 1;
-            if (nextIdx < daysDescMs.length && linkTs >= daysDescMs[nextIdx]) {
-              // 다음 윈도우에 속할 수 있음 → 즉시 전진
-              dayIdx++;
-              consecutiveOldInWindow = 0;
-              continue; // 같은 link를 새 윈도우에서 재평가
-            }
-            // 다음 윈도우도 없거나 다음 윈도우보다도 오래된 글 → consecutiveOld 카운트
-            consecutiveOldInWindow++;
-            if (consecutiveOldInWindow >= CommunityBaseCollector.CONSECUTIVE_OLD_THRESHOLD) {
-              dayIdx++;
-              consecutiveOldInWindow = 0;
-              continue; // 같은 link를 새 윈도우에서 재평가
-            }
-            preFilterSkipCount++;
-            classified = true;
           }
         }
       }

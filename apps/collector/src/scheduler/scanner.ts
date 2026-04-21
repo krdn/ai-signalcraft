@@ -5,6 +5,7 @@ import { keywordSubscriptions } from '../db/schema';
 import { enqueueCollectionJob } from '../queue/queues';
 import { isSourcePaused } from '../queue/source-pause';
 import type { CollectorSource } from '../queue/types';
+import { computeSourceStartBatch } from './source-window';
 
 const SCAN_INTERVAL_MS = 60_000;
 
@@ -12,7 +13,7 @@ const SCAN_INTERVAL_MS = 60_000;
 // 늦게 인덱싱된 기사(publish와 검색결과 노출 사이의 지연)를 포착한다.
 // raw_items UNIQUE(source, source_id, item_type, time)로 중복 저장은 자동 차단되므로
 // 비용은 네트워크/파싱뿐이다.
-const ROLLING_OVERLAP_RATIO = 0.15;
+export const ROLLING_OVERLAP_RATIO = 0.15;
 
 /**
  * 1분마다 실행:
@@ -20,10 +21,13 @@ const ROLLING_OVERLAP_RATIO = 0.15;
  *   - subscription.sources 각각에 대해 수집 job enqueue
  *   - runId는 subscription 단위로 발급 (동일 트리거 내 여러 source는 공유)
  *
- * 수집 범위:
- *   - startDate = lastRunAt - (intervalHours * ROLLING_OVERLAP_RATIO) — 늦게 노출되는 기사 재검증
- *   - endDate   = now
- *   - lastRunAt이 없으면 최초 실행이므로 intervalHours 이전부터 긁는다
+ * 수집 범위 (소스별 계산):
+ *   - 해당 source의 직전 "items>0 성공" 시각이 있고 MAX_STALENESS_MS 이내면
+ *     startDate = lastSuccess(source) - (intervalHours * ROLLING_OVERLAP_RATIO)
+ *   - 없거나 너무 오래됐으면 startDate = now - MAX_STALENESS_MS
+ *   - endDate = now
+ *   → subscription.lastRunAt 단일 기준을 쓰지 않음. 한 소스가 연속 0건이어도 다른 소스
+ *     성공으로 lastRunAt이 갱신되어 "영구 0건" 상태에 빠지지 않도록 소스별로 독립 계산.
  *
  * 동시 실행 방지:
  *   - next_run_at을 즉시 +intervalHours로 업데이트해 다음 틱에 중복 enqueue 되지 않게 함
@@ -53,10 +57,14 @@ export async function scanAndEnqueue(): Promise<number> {
     const intervalMs = sub.intervalHours * 3600 * 1000;
     const overlapMs = Math.floor(intervalMs * ROLLING_OVERLAP_RATIO);
     const nextRunAt = new Date(now.getTime() + intervalMs);
-    const startISO = sub.lastRunAt
-      ? new Date(sub.lastRunAt.getTime() - overlapMs).toISOString()
-      : new Date(now.getTime() - intervalMs).toISOString();
     const endISO = now.toISOString();
+    const subSources = sub.sources as CollectorSource[];
+    const startBySource = await computeSourceStartBatch({
+      subscriptionId: sub.id,
+      sources: subSources,
+      now,
+      overlapMs,
+    });
 
     // 선점: 다음 next_run_at을 미리 잡아 중복 실행 방지
     await db
@@ -72,11 +80,13 @@ export async function scanAndEnqueue(): Promise<number> {
         ),
       );
 
-    for (const source of sub.sources as CollectorSource[]) {
+    for (const source of subSources) {
       if (await isSourcePaused(source)) {
         console.warn(`[scanner] skip paused source=${source} subscription=${sub.id}`);
         continue;
       }
+      const win = startBySource.get(source);
+      if (!win) continue; // 방어적: 배치 결과에 없으면 스킵
       await enqueueCollectionJob({
         runId,
         subscriptionId: sub.id,
@@ -84,7 +94,7 @@ export async function scanAndEnqueue(): Promise<number> {
         keyword: sub.keyword,
         limits: sub.limits,
         options: sub.options ?? undefined,
-        dateRange: { startISO, endISO },
+        dateRange: { startISO: win.startISO, endISO },
         triggerType: 'schedule',
         mode: 'incremental',
         windowDays: 1,

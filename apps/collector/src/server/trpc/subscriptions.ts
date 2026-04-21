@@ -6,6 +6,8 @@ import { keywordSubscriptions } from '../../db/schema';
 import { enqueueCollectionJob } from '../../queue/queues';
 import { isSourcePaused } from '../../queue/source-pause';
 import type { CollectorSource } from '../../queue/types';
+import { computeSourceStartBatch } from '../../scheduler/source-window';
+import { ROLLING_OVERLAP_RATIO } from '../../scheduler/scanner';
 import { router, protectedProcedure } from './init';
 
 const SOURCE_ENUM = ['naver-news', 'youtube', 'dcinside', 'fmkorea', 'clien'] as const;
@@ -188,12 +190,18 @@ export const subscriptionsRouter = router({
       const runId = randomUUID();
       const now = new Date();
       const intervalMs = row.intervalHours * 3600 * 1000;
-      // Rolling overlap 15% — scanner.ts와 동일 전략 (늦게 인덱싱된 기사 재검증)
-      const overlapMs = Math.floor(intervalMs * 0.15);
-      const startISO = row.lastRunAt
-        ? new Date(row.lastRunAt.getTime() - overlapMs).toISOString()
-        : new Date(now.getTime() - intervalMs).toISOString();
+      // Rolling overlap — scanner.ts와 동일 비율(상수 재사용)
+      const overlapMs = Math.floor(intervalMs * ROLLING_OVERLAP_RATIO);
       const endISO = now.toISOString();
+      // 소스별 "items>0 성공"만 lastSuccess로 간주하여 startISO를 계산.
+      // subscription.lastRunAt 단일 기준을 쓰면 한 소스가 계속 0건이어도 다른 소스 성공으로
+      // lastRunAt이 갱신되어 해당 소스가 영구 0건 상태에 빠진다 (구독 225 clien 사례).
+      const startBySource = await computeSourceStartBatch({
+        subscriptionId: row.id,
+        sources: targetSources,
+        now,
+        overlapMs,
+      });
 
       const enqueuedSources: CollectorSource[] = [];
       const skippedSources: string[] = [];
@@ -202,6 +210,8 @@ export const subscriptionsRouter = router({
           skippedSources.push(source);
           continue;
         }
+        const win = startBySource.get(source);
+        if (!win) continue;
         await enqueueCollectionJob({
           runId,
           subscriptionId: row.id,
@@ -209,7 +219,7 @@ export const subscriptionsRouter = router({
           keyword: row.keyword,
           limits: row.limits,
           options: row.options ?? undefined,
-          dateRange: { startISO, endISO },
+          dateRange: { startISO: win.startISO, endISO },
           triggerType: 'manual',
         });
         enqueuedSources.push(source);
