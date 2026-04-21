@@ -306,4 +306,30 @@ export const runsRouter = router({
         .limit(50);
       return rows;
     }),
+
+  forceComplete: protectedProcedure
+    .input(
+      z.object({
+        runId: z.string().uuid(),
+        source: z.enum(SOURCE_ENUM),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const updated = await ctx.db
+        .update(collectionRuns)
+        .set({
+          status: 'failed',
+          durationMs: sql`EXTRACT(EPOCH FROM (NOW() - ${collectionRuns.time})) * 1000`,
+          errorReason: 'force-completed from monitor (worker unresponsive)',
+        })
+        .where(
+          and(
+            eq(collectionRuns.runId, input.runId),
+            eq(collectionRuns.source, input.source),
+            eq(collectionRuns.status, 'running'),
+          ),
+        )
+        .returning({ runId: collectionRuns.runId });
+      return { patched: updated.length, runId: input.runId };
+    }),
 });

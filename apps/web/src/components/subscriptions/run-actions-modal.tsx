@@ -69,6 +69,19 @@ export function RunActionsModal() {
     },
   });
 
+  const forceCompleteMut = useMutation({
+    mutationFn: () =>
+      trpcClient.subscriptions.forceCompleteRun.mutate({
+        runId: runId!,
+        source: source as 'naver-news' | 'youtube' | 'dcinside' | 'fmkorea' | 'clien',
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stalled-runs'] });
+      queryClient.invalidateQueries({ queryKey: ['subscription-runs-monitor'] });
+      closeModal();
+    },
+  });
+
   if (!runId || !source) return null;
 
   return (
@@ -92,6 +105,7 @@ export function RunActionsModal() {
             <TabsTrigger value="diagnose">진단</TabsTrigger>
             <TabsTrigger value="cancel">중지</TabsTrigger>
             <TabsTrigger value="retry">재시도</TabsTrigger>
+            <TabsTrigger value="force-complete">DB 강제 완료</TabsTrigger>
           </TabsList>
 
           <TabsContent value="diagnose" className="space-y-3 mt-4">
@@ -163,13 +177,30 @@ export function RunActionsModal() {
               {retryMut.isPending ? '재시도 중...' : '재시도'}
             </Button>
           </TabsContent>
+
+          <TabsContent value="force-complete" className="space-y-4 mt-4">
+            <p className="text-sm">
+              <AlertTriangle className="inline h-4 w-4 text-amber-500 mr-1" />
+              Worker가 응답하지 않을 때만 사용합니다. 이미 수집된 데이터는 유지됩니다.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              running 상태인 collection_runs 행을 직접 failed로 패치합니다.
+            </p>
+            <Button
+              variant="destructive"
+              disabled={forceCompleteMut.isPending}
+              onClick={() => forceCompleteMut.mutate()}
+            >
+              {forceCompleteMut.isPending ? '처리 중...' : 'DB 강제 완료'}
+            </Button>
+          </TabsContent>
         </Tabs>
       </DialogContent>
     </Dialog>
   );
 }
 
-type RunActionsTabValue = 'diagnose' | 'cancel' | 'retry';
+type RunActionsTabValue = 'diagnose' | 'cancel' | 'retry' | 'force-complete';
 
 type DiagData = {
   layerA: LayerA | null;

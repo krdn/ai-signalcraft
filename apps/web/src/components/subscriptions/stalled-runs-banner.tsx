@@ -132,14 +132,24 @@ export function StalledRunsBanner() {
                   진단
                 </Button>
                 {isPublicSource(r.source) && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-6 text-xs px-2"
-                    onClick={() => openModal(r.runId, r.source, 'cancel')}
-                  >
-                    중지
-                  </Button>
+                  <>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-6 text-xs px-2"
+                      onClick={() => openModal(r.runId, r.source, 'cancel')}
+                    >
+                      중지
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="h-6 text-xs px-2"
+                      onClick={() => openModal(r.runId, r.source, 'force-complete')}
+                    >
+                      DB 강제 완료
+                    </Button>
+                  </>
                 )}
               </span>
             </li>

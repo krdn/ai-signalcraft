@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type RunActionsTab = 'diagnose' | 'cancel' | 'retry';
+export type RunActionsTab = 'diagnose' | 'cancel' | 'retry' | 'force-complete';
 
 interface State {
   open: boolean;

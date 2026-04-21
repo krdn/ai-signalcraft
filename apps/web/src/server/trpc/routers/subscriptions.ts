@@ -124,6 +124,11 @@ export interface RetryResult {
   reused: boolean;
 }
 
+export interface ForceCompleteResult {
+  patched: number;
+  runId: string;
+}
+
 export interface DiagnosticRecord {
   id: string;
   runId: string;
@@ -478,6 +483,22 @@ export const subscriptionsRouter = router({
       try {
         const res = await getCollectorClient().runs.cancel.mutate(input);
         return res as unknown as CancelResult | CancelResultBatch;
+      } catch (err) {
+        handleCollectorError(err);
+      }
+    }),
+
+  forceCompleteRun: protectedProcedure
+    .input(
+      z.object({
+        runId: z.string().uuid(),
+        source: z.enum(SOURCE_ENUM),
+      }),
+    )
+    .mutation(async ({ input }): Promise<ForceCompleteResult> => {
+      try {
+        const res = await getCollectorClient().runs.forceComplete.mutate(input);
+        return res as unknown as ForceCompleteResult;
       } catch (err) {
         handleCollectorError(err);
       }
