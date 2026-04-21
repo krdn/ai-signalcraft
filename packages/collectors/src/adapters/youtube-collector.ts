@@ -38,7 +38,7 @@ export class YoutubeCollector implements Collector<YoutubeVideo> {
     const days = splitIntoDaysKst(options.startDate, options.endDate);
     const perDayLimit = options.maxItemsPerDay ?? Math.max(1, Math.floor(maxItems / days.length));
     const skipUrlSet = new Set(options.reusePlan?.skipUrls ?? []);
-    const refetchSet = new Set(options.reusePlan?.refetchCommentsFor ?? []);
+    const refetchSet = new Set((options.reusePlan?.refetchCommentsFor ?? []).map((s) => s.url));
     const perDayCount: Record<string, number> = {};
     let totalCollected = 0;
     let endReason: CollectionStats['endReason'] = 'completed';

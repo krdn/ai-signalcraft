@@ -32,9 +32,21 @@ export type CollectionTrigger = z.infer<typeof CollectionTriggerSchema>;
  * 각 collector adapter 는 skipUrls 를 검색 결과에서 제외하고,
  * refetchCommentsFor 에 해당하는 URL 은 본문 fetch 없이 댓글만 수집한다.
  */
+/**
+ * 본문 재사용 대상 중 "댓글만 새로 수집할" 항목의 BullMQ 직렬화 형태.
+ * Date는 ISO 문자열로 전달 (BullMQ가 JSON 직렬화).
+ * articleId/videoId 중 하나만 세팅 (수집 계통이 다른 두 테이블 구분).
+ */
+export interface RefetchCommentSpecPayload {
+  url: string;
+  articleId?: number;
+  videoId?: number;
+  lastCommentsFetchedAt: string | null;
+}
+
 export interface ReusePlanPayload {
   skipUrls: string[]; // 본문+댓글 모두 스킵
-  refetchCommentsFor: string[]; // 본문은 스킵, 댓글만 새로 수집
+  refetchCommentsFor: RefetchCommentSpecPayload[]; // 본문 스킵, 댓글만 증분 수집
 }
 
 export type SourceStatus = {

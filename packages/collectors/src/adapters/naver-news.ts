@@ -161,7 +161,9 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
     // TTL 재사용: 완전 스킵 URL 은 Phase 2 본문 수집에서 제외
     // 재사용 기사는 flows.ts 에서 article_jobs 로 이미 연결됨 → 분석 단계에서 자동 포함
     const skipUrlSet = new Set(options.reusePlan?.skipUrls ?? []);
-    const refetchCommentsOnlySet = new Set(options.reusePlan?.refetchCommentsFor ?? []);
+    const refetchCommentsOnlySet = new Set(
+      (options.reusePlan?.refetchCommentsFor ?? []).map((s) => s.url),
+    );
     const preSkipCount = allArticles.length;
     const filteredArticles = allArticles.filter((a) => !skipUrlSet.has(a.url));
     const skippedByReuse = preSkipCount - filteredArticles.length;

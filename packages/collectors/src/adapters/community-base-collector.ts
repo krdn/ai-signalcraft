@@ -90,7 +90,9 @@ export abstract class CommunityBaseCollector extends BrowserCollector<CommunityP
 
     // TTL 재사용: 완전 스킵 URL 집합과 댓글-only URL 집합 (Set 으로 O(1) 조회)
     const skipUrlSet = new Set(options.reusePlan?.skipUrls ?? []);
-    const refetchCommentsOnlySet = new Set(options.reusePlan?.refetchCommentsFor ?? []);
+    const refetchCommentsOnlySet = new Set(
+      (options.reusePlan?.refetchCommentsFor ?? []).map((s) => s.url),
+    );
 
     // 기간 필터: KST 자정 기준 [startDay, endDay + 24h)로 확장.
     // 사용자가 "KST 04-11 ~ KST 04-18"을 입력하면 04-11 00:00 KST ~ 04-19 00:00 KST 가 기간.

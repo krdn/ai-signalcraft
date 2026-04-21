@@ -99,10 +99,15 @@ async function safePlanVideoReuse(
 
 function toReusePlanPayload(plan: ArticleReusePlan | VideoReusePlan): ReusePlanPayload {
   const skipUrls = 'skipUrls' in plan ? plan.skipUrls : plan.skipVideoUrls;
-  return {
-    skipUrls,
-    refetchCommentsFor: plan.refetchCommentsFor,
-  };
+  const refetchCommentsFor = plan.refetchCommentsFor.map((spec) => ({
+    url: spec.url,
+    ...('articleId' in spec ? { articleId: spec.articleId } : {}),
+    ...('videoId' in spec ? { videoId: spec.videoId } : {}),
+    lastCommentsFetchedAt: spec.lastCommentsFetchedAt
+      ? spec.lastCommentsFetchedAt.toISOString()
+      : null,
+  }));
+  return { skipUrls, refetchCommentsFor };
 }
 
 // dbJobId: collection_jobs 테이블의 정수 PK -- 호출자가 createCollectionJob() 후 전달
