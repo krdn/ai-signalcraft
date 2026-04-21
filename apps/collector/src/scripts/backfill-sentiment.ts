@@ -93,11 +93,11 @@ async function main() {
           );
           await db.execute(sql`
             UPDATE raw_items AS t
-            SET sentiment = v.sentiment::text,
-                sentiment_score = v.score::real
-            FROM (VALUES ${sql.join(valuesClauses, sql`, `)}) AS v(time text, source_id text, sentiment text, score float)
-            WHERE t.source_id = v.source_id
-              AND t.time = v.time::timestamptz
+            SET sentiment = v.s::text,
+                sentiment_score = v.sc::real
+            FROM (VALUES ${sql.join(valuesClauses, sql`, `)}) AS v(ts text, sid text, s text, sc float)
+            WHERE t.source_id = v.sid
+              AND t.time = v.ts::timestamptz
               AND t.sentiment IS NULL
           `);
           updated += validEntries.length;
