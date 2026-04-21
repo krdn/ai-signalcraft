@@ -12,6 +12,7 @@ interface RecentRunsLogProps {
   runs: RunRecord[];
   subscriptionMap?: Map<number, string>;
   breakdown?: RunItemBreakdownEntry[];
+  sentimentMap?: Record<string, { positive: number; negative: number; neutral: number }>;
 }
 
 const ITEM_TYPE_LABEL: Record<string, string> = {
@@ -68,7 +69,12 @@ function getStatusLabel(status: string): string {
   }
 }
 
-export function RecentRunsLog({ runs, subscriptionMap, breakdown }: RecentRunsLogProps) {
+export function RecentRunsLog({
+  runs,
+  subscriptionMap,
+  breakdown,
+  sentimentMap,
+}: RecentRunsLogProps) {
   const [filter, setFilter] = useState('all');
 
   const sorted = [...runs]
@@ -142,6 +148,12 @@ export function RecentRunsLog({ runs, subscriptionMap, breakdown }: RecentRunsLo
                   >
                     {bdText ?? `${run.itemsCollected}건`}
                   </span>
+                  {run.status === 'completed' && sentimentMap?.[run.runId] && (
+                    <span className="flex items-center gap-1 text-xs shrink-0">
+                      <span className="text-green-600">+{sentimentMap[run.runId].positive}</span>
+                      <span className="text-red-600">-{sentimentMap[run.runId].negative}</span>
+                    </span>
+                  )}
                   {run.durationMs != null && (
                     <span className="text-muted-foreground tabular-nums hidden md:inline">
                       {(run.durationMs / 1000).toFixed(1)}s

@@ -89,6 +89,12 @@ export interface RunItemBreakdownEntry {
   count: number;
 }
 
+export interface SentimentBreakdownEntry {
+  fetchedFromRun: string;
+  sentiment: string | null;
+  count: number;
+}
+
 export interface RunProgress {
   runId: string;
   source: string;

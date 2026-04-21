@@ -20,6 +20,25 @@ import { StalledRunsBanner } from '@/components/subscriptions/stalled-runs-banne
 import { QueueStatsBar } from '@/components/subscriptions/queue-stats-bar';
 import { SourcePauseControls } from '@/components/subscriptions/source-pause-controls';
 import { CancelAllDialog } from '@/components/subscriptions/cancel-all-dialog';
+import type { SentimentBreakdownEntry } from '@/server/trpc/routers/subscriptions';
+
+function buildSentimentMap(
+  data?: SentimentBreakdownEntry[],
+): Record<string, { positive: number; negative: number; neutral: number }> {
+  if (!data) return {};
+  const map: Record<string, { positive: number; negative: number; neutral: number }> = {};
+  for (const entry of data) {
+    if (!entry.fetchedFromRun || !entry.sentiment) continue;
+    if (!map[entry.fetchedFromRun]) {
+      map[entry.fetchedFromRun] = { positive: 0, negative: 0, neutral: 0 };
+    }
+    const key = entry.sentiment as keyof (typeof map)[string];
+    if (key in map[entry.fetchedFromRun]) {
+      map[entry.fetchedFromRun][key] += entry.count;
+    }
+  }
+  return map;
+}
 
 export default function MonitorPage() {
   const [cancelAllOpen, setCancelAllOpen] = useState(false);
@@ -49,6 +68,19 @@ export default function MonitorPage() {
     refetchInterval: 15_000,
   });
   const breakdown = breakdownQuery.data;
+
+  // 완료된 run들의 감정 집계
+  const completedRunIds = [
+    ...new Set(runs.filter((r) => r.status === 'completed').map((r) => r.runId)),
+  ];
+  const sentimentQuery = useQuery({
+    queryKey: ['run-sentiment-breakdown-monitor', { runIds: completedRunIds }],
+    queryFn: () =>
+      trpcClient.subscriptions.runSentimentBreakdown.query({ runIds: completedRunIds }),
+    enabled: completedRunIds.length > 0,
+    refetchInterval: 15_000,
+  });
+  const sentimentMap = buildSentimentMap(sentimentQuery.data);
 
   const running = runs.filter((r) => r.status === 'running').length;
   const now = Date.now();
@@ -137,7 +169,12 @@ export default function MonitorPage() {
         <UpcomingRuns subscriptions={subscriptions} />
       </div>
 
-      <RecentRunsLog runs={runs} subscriptionMap={subscriptionMap} breakdown={breakdown} />
+      <RecentRunsLog
+        runs={runs}
+        subscriptionMap={subscriptionMap}
+        breakdown={breakdown}
+        sentimentMap={sentimentMap}
+      />
 
       <SourceRunStats runs={runs} />
 
