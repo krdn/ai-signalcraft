@@ -89,6 +89,7 @@ export const analysisRouter = router({
         seriesId: z.number().optional(),
         createNewSeries: z.boolean().optional(),
         forceRefetch: z.boolean().optional(),
+        subscriptionId: z.number().optional(),
       }),
     )
     .mutation(async ({ input, ctx }) => {
@@ -269,6 +270,9 @@ export const analysisRouter = router({
         })
         .returning();
 
+      // 구독 모드: forceRefetch 강제 false
+      const effectiveForceRefetch = input.subscriptionId ? false : (input.forceRefetch ?? false);
+
       // 2. BullMQ 트리거 -- CollectionTrigger 형식 (INT-01: sources 전달)
       await triggerCollection(
         {
@@ -279,7 +283,7 @@ export const analysisRouter = router({
           customSourceIds: input.customSourceIds,
           limits: effectiveLimits ?? undefined,
           limitMode,
-          forceRefetch: input.forceRefetch,
+          forceRefetch: effectiveForceRefetch,
           collectTranscript: input.options?.collectTranscript,
         },
         job.id,
