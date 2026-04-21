@@ -188,6 +188,7 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
       limitMode?: 'perDay' | 'total';
       breakpoints?: BreakpointValue[];
       forceRefetch?: boolean;
+      subscriptionId?: number;
     }) => trpcClient.analysis.trigger.mutate(input as any),
     onSuccess: (data) => {
       toast.success('분석이 시작되었습니다');
@@ -259,6 +260,8 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
     }
   };
 
+  const isSubMode = subscriptionMode.isActive;
+
   const doTrigger = () => {
     // 이벤트 모드: 이벤트 날짜 전후 N일로 자동 계산
     const resolvedStart = dateMode === 'event' ? subDays(eventDate, eventRadius) : startDate;
@@ -291,7 +294,9 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
       breakpoints: breakpoints.length > 0 ? breakpoints : undefined,
       ...(selectedSeriesId && { seriesId: selectedSeriesId }),
       ...(createNewSeries && { createNewSeries: true }),
-      ...(forceRefetch && { forceRefetch: true }),
+      ...(!isSubMode && forceRefetch && { forceRefetch: true }),
+      ...(isSubMode &&
+        subscriptionMode.subscription && { subscriptionId: subscriptionMode.subscription.id }),
     });
   };
 
@@ -323,8 +328,6 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
   const limitsDescription = isPerDay
     ? '소스별 날짜당 수집 건수를 조절합니다. 줄이면 비용과 시간이 절약됩니다.'
     : '소스별 최대 수집 건수를 조절합니다. 줄이면 비용과 시간이 절약됩니다.';
-
-  const isSubMode = subscriptionMode.isActive;
 
   return (
     <Card className="mx-auto max-w-xl">
