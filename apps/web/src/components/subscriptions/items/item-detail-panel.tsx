@@ -1,10 +1,12 @@
 'use client';
 
-import { ExternalLink, X } from 'lucide-react';
+import { ExternalLink, Loader2, X } from 'lucide-react';
+import { useMemo } from 'react';
 import { formatRelative, SOURCE_LABEL_MAP } from './item-utils';
 import { ItemMetricsBadge } from './item-metrics-badge';
 import { ItemCommentList } from './item-comment-list';
-import type { RawItemRecord } from '@/server/trpc/routers/subscriptions';
+import type { RawItemRecord, SourceEnum } from '@/server/trpc/routers/subscriptions';
+import { useCommentsForParent } from '@/hooks/use-comments-for-parent';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -12,15 +14,36 @@ import { Separator } from '@/components/ui/separator';
 
 interface ItemDetailPanelProps {
   item: RawItemRecord | null;
-  allItems: RawItemRecord[];
+  subscriptionId: number;
+  dateRange: { start: string; end: string };
   onClose: () => void;
 }
 
-export function ItemDetailPanel({ item, allItems, onClose }: ItemDetailPanelProps) {
+export function ItemDetailPanel({
+  item,
+  subscriptionId,
+  dateRange,
+  onClose,
+}: ItemDetailPanelProps) {
+  const parent = useMemo(
+    () => (item ? { source: item.source as SourceEnum, sourceId: item.sourceId } : null),
+    [item],
+  );
+
+  const {
+    data: commentsData,
+    isLoading: commentsLoading,
+    isError: commentsError,
+  } = useCommentsForParent(subscriptionId, parent, dateRange);
+
+  const comments = useMemo<RawItemRecord[]>(
+    () => commentsData?.pages.flatMap((p) => p.items as RawItemRecord[]) ?? [],
+    [commentsData],
+  );
+
   if (!item) return null;
 
   const sourceLabel = SOURCE_LABEL_MAP[item.source] || item.source;
-  const comments = allItems.filter((i) => i.itemType === 'comment');
 
   return (
     <Card className="h-full flex flex-col overflow-hidden">
@@ -58,11 +81,16 @@ export function ItemDetailPanel({ item, allItems, onClose }: ItemDetailPanelProp
           </ScrollArea>
         </div>
 
-        {comments.length > 0 && (
-          <>
-            <Separator />
-            <ItemCommentList parentSourceId={item.sourceId} comments={comments} />
-          </>
+        <Separator />
+
+        {commentsLoading ? (
+          <div className="flex items-center justify-center py-4">
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          </div>
+        ) : commentsError ? (
+          <p className="text-sm text-destructive">댓글을 불러오지 못했습니다</p>
+        ) : (
+          <ItemCommentList parentSourceId={item.sourceId} comments={comments} />
         )}
 
         {item.metrics && (

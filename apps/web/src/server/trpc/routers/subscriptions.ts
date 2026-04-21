@@ -683,14 +683,46 @@ export const subscriptionsRouter = router({
     )
     .query(async ({ input }): Promise<QueryItemsResult> => {
       try {
+        // 뷰어 피드 전용. scope='feed'로 고정해 collector가 기사/영상만 반환하고
+        // COALESCE(published_at, time) DESC로 정렬하도록 한다. 댓글은 queryComments로 lazy load.
         const res = await getCollectorClient().items.query.query({
           subscriptionId: input.subscriptionId,
           dateRange: input.dateRange,
           sources: input.sources,
-          itemTypes: input.itemTypes,
           cursor: input.cursor,
           limit: input.limit,
           mode: 'all',
+          scope: 'feed',
+        });
+        return res as unknown as QueryItemsResult;
+      } catch (err) {
+        handleCollectorError(err);
+      }
+    }),
+
+  queryComments: protectedProcedure
+    .input(
+      z.object({
+        subscriptionId: z.number().int().positive(),
+        dateRange: z.object({ start: z.string(), end: z.string() }),
+        parent: z.object({
+          source: z.enum(SOURCE_ENUM),
+          sourceId: z.string().min(1),
+        }),
+        cursor: z.string().datetime().optional(),
+        limit: z.number().int().min(1).max(500).default(100),
+      }),
+    )
+    .query(async ({ input }): Promise<QueryItemsResult> => {
+      try {
+        const res = await getCollectorClient().items.query.query({
+          subscriptionId: input.subscriptionId,
+          dateRange: input.dateRange,
+          cursor: input.cursor,
+          limit: input.limit,
+          mode: 'all',
+          scope: 'comments-for-parent',
+          parent: input.parent,
         });
         return res as unknown as QueryItemsResult;
       } catch (err) {

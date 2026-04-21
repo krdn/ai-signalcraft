@@ -13,7 +13,7 @@ interface ItemFeedProps {
   subscriptionId: number;
   filterState: FilterState;
   selectedItem: RawItemRecord | null;
-  onSelectItem: (item: RawItemRecord, allComments: RawItemRecord[]) => void;
+  onSelectItem: (item: RawItemRecord) => void;
 }
 
 export function ItemFeed({
@@ -44,21 +44,8 @@ export function ItemFeed({
     return () => observer.disconnect();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  const allItems = data?.pages.flatMap((p) => p.items) ?? [];
-  const feedItems = allItems.filter((i) => i.itemType !== 'comment');
-  const commentItems = allItems.filter((i) => i.itemType === 'comment');
-
-  const loadedCommentCountByParent = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const c of commentItems) {
-      if (!c.parentSourceId) continue;
-      map.set(
-        `${c.source}::${c.parentSourceId}`,
-        (map.get(`${c.source}::${c.parentSourceId}`) ?? 0) + 1,
-      );
-    }
-    return map;
-  }, [commentItems]);
+  // 서버가 scope='feed'로 기사/영상만 반환하므로 클라이언트 필터 불필요.
+  const feedItems = data?.pages.flatMap((p) => p.items) ?? [];
 
   const { data: serverCommentCounts } = useQuery({
     queryKey: ['comment-count-by-parent', subscriptionId, filterState],
@@ -110,15 +97,12 @@ export function ItemFeed({
       {feedItems.map((item, idx) => {
         const key = `${item.source}::${item.sourceId}`;
         const serverCount = serverCommentCountByParent.get(key);
-        const loadedCount = loadedCommentCountByParent.get(key) ?? 0;
         const metricCommentCount = item.metrics?.commentCount ?? null;
-        // 우선순위: metrics(소스가 제공하는 공식 수치) → 서버 집계 → 로드된 댓글로 추정
+        // 우선순위: metrics(소스가 제공하는 공식 수치) → 서버 집계 → 0
         const commentCount =
           metricCommentCount !== null && metricCommentCount !== undefined
             ? metricCommentCount
-            : serverCount !== undefined
-              ? serverCount
-              : loadedCount;
+            : (serverCount ?? 0);
         return (
           <ItemCard
             key={`${idx}-${item.source}-${item.sourceId}`}
@@ -127,7 +111,7 @@ export function ItemFeed({
             isSelected={
               selectedItem?.sourceId === item.sourceId && selectedItem?.source === item.source
             }
-            onClick={() => onSelectItem(item, commentItems)}
+            onClick={() => onSelectItem(item)}
           />
         );
       })}

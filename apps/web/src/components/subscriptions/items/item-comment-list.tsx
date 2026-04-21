@@ -9,20 +9,23 @@ interface ItemCommentListProps {
   comments: RawItemRecord[];
 }
 
-export function ItemCommentList({ parentSourceId, comments }: ItemCommentListProps) {
+export function ItemCommentList({
+  parentSourceId: _parentSourceId,
+  comments,
+}: ItemCommentListProps) {
   const [expanded, setExpanded] = useState(false);
 
-  const filtered = comments.filter((c) => c.parentSourceId === parentSourceId);
-  const displayed = expanded ? filtered : filtered.slice(0, 5);
-  const hasMore = filtered.length > 5;
+  // 서버가 이미 parent 기준으로 필터해 반환하므로 여기서 재필터하지 않는다.
+  const displayed = expanded ? comments : comments.slice(0, 5);
+  const hasMore = comments.length > 5;
 
-  if (filtered.length === 0) {
+  if (comments.length === 0) {
     return <p className="text-sm text-muted-foreground">댓글이 없습니다</p>;
   }
 
   return (
     <div className="space-y-2">
-      <h4 className="text-sm font-semibold">댓글 ({filtered.length})</h4>
+      <h4 className="text-sm font-semibold">댓글 ({comments.length})</h4>
       <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
         {displayed.map((comment, idx) => (
           <div
@@ -45,7 +48,7 @@ export function ItemCommentList({ parentSourceId, comments }: ItemCommentListPro
       </div>
       {hasMore && !expanded && (
         <Button size="sm" variant="ghost" className="w-full" onClick={() => setExpanded(true)}>
-          댓글 {filtered.length - 5}개 더 보기
+          댓글 {comments.length - 5}개 더 보기
         </Button>
       )}
     </div>

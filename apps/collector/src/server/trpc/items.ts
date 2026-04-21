@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { and, between, desc, eq, inArray, lt, sql } from 'drizzle-orm';
+import { and, asc, between, desc, eq, inArray, lt, sql } from 'drizzle-orm';
 import { rawItems } from '../../db/schema';
 import { embedQuery } from '../../services/embedding';
 import { protectedProcedure, router } from './init';
@@ -20,13 +20,27 @@ const dateRangeSchema = z.object({
   end: z.string().datetime(),
 });
 
-const queryInput = z.object({
+/**
+ * scope:
+ *   - all: 기사+영상+댓글 혼재(ORDER BY time DESC, cursor=fetchedAt). 분석 파이프라인 기본값.
+ *   - feed: 기사/영상만(ORDER BY COALESCE(published_at, time) DESC). 뷰어 피드 전용.
+ *   - comments-for-parent: 특정 parent(source,sourceId)의 댓글만(ORDER BY time ASC). 뷰어 상세 패널.
+ *     parent.source='naver-news'일 때 source 조건을 'naver-comments'로 치환한다.
+ */
+export const queryInput = z.object({
   keyword: z.string().trim().min(1).optional(),
   dateRange: dateRangeSchema,
   sources: z.array(z.enum(SOURCE_ENUM)).optional(),
   itemTypes: z.array(z.enum(ITEM_TYPE_ENUM)).optional(),
   subscriptionId: z.number().int().positive().optional(),
   mode: z.enum(['all', 'rag', 'head']).default('all'),
+  scope: z.enum(['all', 'feed', 'comments-for-parent']).default('all'),
+  parent: z
+    .object({
+      source: z.enum(SOURCE_ENUM),
+      sourceId: z.string().min(1),
+    })
+    .optional(),
   ragOptions: z
     .object({
       topK: z.number().int().min(1).max(500).default(50),
@@ -57,27 +71,51 @@ export const itemsRouter = router({
       throw new Error('keyword 또는 subscriptionId 중 하나는 필수입니다');
     }
 
+    if (input.scope === 'comments-for-parent' && !input.parent) {
+      throw new Error("scope='comments-for-parent'는 parent(source, sourceId)가 필수입니다");
+    }
+
     const start = new Date(input.dateRange.start);
     const end = new Date(input.dateRange.end);
 
     // 네이버 뉴스 fan-out: 기사(source='naver-news')와 댓글(source='naver-comments')이
-    // 서로 다른 source로 저장된다. sources 필터가 'naver-news'만 포함해도 해당 기사들의
-    // 댓글을 함께 조회할 수 있도록 'naver-comments'를 암묵적으로 확장.
-    const expandedSources = input.sources?.length
-      ? Array.from(
-          new Set(
-            input.sources.includes('naver-news')
-              ? [...input.sources, 'naver-comments' as const]
-              : input.sources,
-          ),
-        )
-      : undefined;
+    // 서로 다른 source로 저장된다. scope='all'에서만 sources 필터를 확장 (기존 호환성).
+    // scope='feed'/'comments-for-parent'는 scope 자체가 item_type을 제약하므로 확장 불필요.
+    const expandedSources =
+      input.scope === 'all' && input.sources?.length
+        ? Array.from(
+            new Set(
+              input.sources.includes('naver-news')
+                ? [...input.sources, 'naver-comments' as const]
+                : input.sources,
+            ),
+          )
+        : input.sources?.length
+          ? input.sources
+          : undefined;
 
     const conds = [between(rawItems.time, start, end)];
-    if (expandedSources?.length) conds.push(inArray(rawItems.source, expandedSources));
-    if (input.itemTypes?.length) conds.push(inArray(rawItems.itemType, input.itemTypes));
     if (input.subscriptionId) conds.push(eq(rawItems.subscriptionId, input.subscriptionId));
     if (input.cursor) conds.push(lt(rawItems.fetchedAt, new Date(input.cursor)));
+
+    if (input.scope === 'feed') {
+      // 기사/영상 전용. itemTypes 입력은 무시(있으면 feed 정의와 충돌하므로 scope가 우선).
+      conds.push(inArray(rawItems.itemType, ['article', 'video']));
+      if (expandedSources?.length) conds.push(inArray(rawItems.source, expandedSources));
+    } else if (input.scope === 'comments-for-parent') {
+      // parent는 위 가드에서 확인됨
+      const parent = input.parent!;
+      // 네이버는 기사=naver-news, 댓글=naver-comments로 분리 저장. 상세 패널에서 parent.source가
+      // 'naver-news'로 들어오면 댓글 테이블 source를 'naver-comments'로 치환해 조회한다.
+      const commentSource = parent.source === 'naver-news' ? 'naver-comments' : parent.source;
+      conds.push(eq(rawItems.itemType, 'comment'));
+      conds.push(eq(rawItems.source, commentSource));
+      conds.push(eq(rawItems.parentSourceId, parent.sourceId));
+    } else {
+      // scope='all' — 기존 호환: sources/itemTypes 필터 그대로 적용
+      if (expandedSources?.length) conds.push(inArray(rawItems.source, expandedSources));
+      if (input.itemTypes?.length) conds.push(inArray(rawItems.itemType, input.itemTypes));
+    }
 
     const columns = {
       time: rawItems.time,
@@ -114,18 +152,33 @@ export const itemsRouter = router({
         .orderBy(distExpr)
         .limit(Math.min(input.ragOptions.topK, input.limit))) as Array<Record<string, unknown>>;
     } else {
-      const orderCol =
-        input.mode === 'head'
-          ? (rawItems.publishedAt ?? rawItems.time)
-          : input.cursor
-            ? rawItems.fetchedAt
-            : rawItems.time;
+      // 정렬 규칙:
+      //   scope='feed' — COALESCE(published_at, time) DESC로 기사 발행 시각 기준.
+      //     cursor가 오면 fetchedAt 기준(무한스크롤 커서와 정렬키가 일치해야 cursor lt가 의미 있음).
+      //   scope='comments-for-parent' — 댓글 시간순(ASC), cursor는 fetchedAt 기준.
+      //   scope='all' — 기존 동작(mode=head면 publishedAt, 그 외 time / cursor면 fetchedAt).
+      let orderByClause;
+      if (input.scope === 'comments-for-parent') {
+        orderByClause = input.cursor ? asc(rawItems.fetchedAt) : asc(rawItems.time);
+      } else if (input.scope === 'feed') {
+        orderByClause = input.cursor
+          ? desc(rawItems.fetchedAt)
+          : desc(sql`COALESCE(${rawItems.publishedAt}, ${rawItems.time})`);
+      } else {
+        const orderCol =
+          input.mode === 'head'
+            ? (rawItems.publishedAt ?? rawItems.time)
+            : input.cursor
+              ? rawItems.fetchedAt
+              : rawItems.time;
+        orderByClause = desc(orderCol);
+      }
 
       rows = (await ctx.db
         .select(columns)
         .from(rawItems)
         .where(and(...conds))
-        .orderBy(desc(orderCol))
+        .orderBy(orderByClause)
         .limit(input.limit)) as Array<Record<string, unknown>>;
     }
 
@@ -139,14 +192,8 @@ export const itemsRouter = router({
       rows = limitCommentsPerParent(rows, input.maxComments);
     }
 
-    // 네이버 뉴스 fan-out 정규화: 응답에서 'naver-comments' source를 'naver-news'로 표시해
-    // 프론트엔드가 기사와 댓글을 동일한 source 네임스페이스에서 매칭할 수 있게 한다.
-    // 원본 source는 rawPayload/metadata 쪽에 남지 않으므로 필요 시 itemType으로 구분.
-    for (const r of rows) {
-      if ((r as Record<string, unknown>).source === 'naver-comments') {
-        (r as Record<string, unknown>).source = 'naver-news';
-      }
-    }
+    // fan-out 정규화(naver-comments → naver-news)는 제거됨. 응답은 DB 저장 상태 그대로 반환한다.
+    // 표시 계층에서 parent 매칭이 필요하면 commentCountByParent가 서버측 정규화된 key를 제공한다.
 
     const lastRow = rows[rows.length - 1] as { fetchedAt?: Date | string } | undefined;
     const lastFetchedAt = lastRow?.fetchedAt;

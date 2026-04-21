@@ -19,7 +19,6 @@ export default function SubscriptionItemsPage() {
   const id = Number(params.id);
 
   const [selectedItem, setSelectedItem] = useState<RawItemRecord | null>(null);
-  const [commentItems, setCommentItems] = useState<RawItemRecord[]>([]);
   const [showMobilePanel, setShowMobilePanel] = useState(false);
 
   const [filterState, setFilterState] = useState<FilterState>(() => {
@@ -49,9 +48,8 @@ export default function SubscriptionItemsPage() {
     enabled: !!subscription,
   });
 
-  const handleSelectItem = (item: RawItemRecord, comments: RawItemRecord[]) => {
+  const handleSelectItem = (item: RawItemRecord) => {
     setSelectedItem(item);
-    setCommentItems(comments);
     setShowMobilePanel(true);
   };
 
@@ -98,14 +96,15 @@ export default function SubscriptionItemsPage() {
           subscription={subscription}
           value={effectiveFilterState}
           onChange={setFilterState}
-          totalItems={stats?.totalItems ?? 0}
+          stats={stats ?? null}
         />
 
         <div className="lg:row-span-2 lg:sticky lg:top-6 h-fit min-w-0">
           <div className="hidden lg:block">
             <ItemDetailPanel
               item={selectedItem}
-              allItems={commentItems}
+              subscriptionId={id}
+              dateRange={effectiveFilterState.dateRange}
               onClose={() => setSelectedItem(null)}
             />
           </div>
@@ -125,7 +124,8 @@ export default function SubscriptionItemsPage() {
         <SheetContent side="bottom" className="h-[90vh] overflow-y-auto p-4">
           <ItemDetailPanel
             item={selectedItem}
-            allItems={commentItems}
+            subscriptionId={id}
+            dateRange={effectiveFilterState.dateRange}
             onClose={() => setShowMobilePanel(false)}
           />
         </SheetContent>

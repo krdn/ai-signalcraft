@@ -2,7 +2,7 @@
 
 import { X } from 'lucide-react';
 import { SOURCE_LABEL_MAP } from './item-utils';
-import type { SubscriptionRecord } from '@/server/trpc/routers/subscriptions';
+import type { StatsResult, SubscriptionRecord } from '@/server/trpc/routers/subscriptions';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -18,10 +18,10 @@ interface ItemFilterBarProps {
   subscription: SubscriptionRecord | null | undefined;
   value: FilterState;
   onChange: (next: FilterState) => void;
-  totalItems: number;
+  stats: StatsResult | null;
 }
 
-export function ItemFilterBar({ subscription, value, onChange, totalItems }: ItemFilterBarProps) {
+export function ItemFilterBar({ subscription, value, onChange, stats }: ItemFilterBarProps) {
   if (!subscription) {
     return <div className="p-4 text-sm text-muted-foreground">구독 정보 로드 중...</div>;
   }
@@ -56,12 +56,20 @@ export function ItemFilterBar({ subscription, value, onChange, totalItems }: Ite
     });
   };
 
+  const articleCount =
+    stats?.byItemType
+      ?.filter((b) => b.itemType === 'article' || b.itemType === 'video')
+      .reduce((sum, b) => sum + b.count, 0) ?? 0;
+  const commentCount = stats?.byItemType?.find((b) => b.itemType === 'comment')?.count ?? 0;
+
   return (
     <Card className="p-4 space-y-3">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-sm font-semibold">필터</h3>
-          <p className="text-xs text-muted-foreground">총 {totalItems}건</p>
+          <p className="text-xs text-muted-foreground">
+            기사 {articleCount.toLocaleString()} · 댓글 {commentCount.toLocaleString()}
+          </p>
         </div>
         <Button size="sm" variant="ghost" onClick={handleReset}>
           <X className="h-3.5 w-3.5 mr-1" /> 초기화
