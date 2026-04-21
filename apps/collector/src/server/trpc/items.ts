@@ -131,6 +131,8 @@ export const itemsRouter = router({
       publishedAt: rawItems.publishedAt,
       parentSourceId: rawItems.parentSourceId,
       metrics: rawItems.metrics,
+      sentiment: rawItems.sentiment,
+      sentimentScore: rawItems.sentimentScore,
       fetchedAt: rawItems.fetchedAt,
       ...(input.includeEmbeddings ? { embedding: rawItems.embedding } : {}),
     };

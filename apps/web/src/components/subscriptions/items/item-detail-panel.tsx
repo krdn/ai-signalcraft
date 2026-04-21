@@ -5,6 +5,7 @@ import { useMemo } from 'react';
 import { formatRelative, SOURCE_LABEL_MAP } from './item-utils';
 import { ItemMetricsBadge } from './item-metrics-badge';
 import { ItemCommentList } from './item-comment-list';
+import { SentimentBadge } from './sentiment-badge';
 import type { RawItemRecord, SourceEnum } from '@/server/trpc/routers/subscriptions';
 import { useCommentsForParent } from '@/hooks/use-comments-for-parent';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -51,9 +52,12 @@ export function ItemDetailPanel({
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
             <CardTitle className="text-base line-clamp-2">{item.title}</CardTitle>
-            <p className="text-xs text-muted-foreground mt-1">
-              {sourceLabel} · {formatRelative(new Date(item.publishedAt || item.time))}
-            </p>
+            <div className="flex items-center gap-2 flex-wrap mt-1">
+              <p className="text-xs text-muted-foreground">
+                {sourceLabel} · {formatRelative(new Date(item.publishedAt || item.time))}
+              </p>
+              <SentimentBadge sentiment={item.sentiment} score={item.sentimentScore} size="md" />
+            </div>
           </div>
           <Button size="sm" variant="ghost" onClick={onClose} className="flex-shrink-0">
             <X className="h-4 w-4" />

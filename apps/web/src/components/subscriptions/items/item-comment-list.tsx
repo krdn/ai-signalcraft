@@ -1,6 +1,7 @@
 import { ThumbsUp } from 'lucide-react';
 import { useState } from 'react';
 import { formatRelative } from './item-utils';
+import { SentimentBadge } from './sentiment-badge';
 import type { RawItemRecord } from '@/server/trpc/routers/subscriptions';
 import { Button } from '@/components/ui/button';
 
@@ -32,7 +33,10 @@ export function ItemCommentList({
             key={`${idx}-${comment.source}-${comment.sourceId}`}
             className="text-xs border-l-2 border-muted pl-2 py-1"
           >
-            <div className="font-medium">{comment.author || '익명'}</div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-medium">{comment.author || '익명'}</span>
+              <SentimentBadge sentiment={comment.sentiment} score={comment.sentimentScore} />
+            </div>
             <div className="text-muted-foreground line-clamp-3 my-1">{comment.content}</div>
             <div className="flex items-center gap-2 text-muted-foreground">
               {comment.metrics?.likeCount !== undefined && (

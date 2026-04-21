@@ -199,6 +199,8 @@ export interface RawItemRecord {
     commentCount?: number;
     shareCount?: number;
   } | null;
+  sentiment: 'positive' | 'negative' | 'neutral' | null;
+  sentimentScore: number | null;
   fetchedAt: Date | string;
   fetchedFromRun?: string | null;
 }

@@ -1,6 +1,7 @@
 import { MessageCircle, Newspaper, Video } from 'lucide-react';
 import { formatRelative, SOURCE_LABEL_MAP } from './item-utils';
 import { ItemMetricsBadge } from './item-metrics-badge';
+import { SentimentBadge } from './sentiment-badge';
 import type { RawItemRecord } from '@/server/trpc/routers/subscriptions';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -35,6 +36,7 @@ export function ItemCard({ item, commentCount, isSelected, onClick }: ItemCardPr
             {icon}
             {item.itemType === 'video' ? '영상' : '기사'}
           </Badge>
+          <SentimentBadge sentiment={item.sentiment} score={item.sentimentScore} />
         </div>
 
         <h3 className="text-sm font-medium line-clamp-2 leading-snug break-words">
