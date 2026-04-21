@@ -153,6 +153,7 @@ export async function persistComments(jobId: number, data: (typeof comments.$inf
       const rows = await tx
         .insert(comments)
         .values(batch)
+        // first_seen_at은 onConflictDoUpdate.set에서 의도적으로 제외 — 최초 등장 시점 보존
         .onConflictDoUpdate({
           target: [comments.source, comments.sourceId],
           set: {
