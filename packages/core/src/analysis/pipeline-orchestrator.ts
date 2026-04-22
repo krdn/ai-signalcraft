@@ -84,6 +84,39 @@ export async function runAnalysisPipeline(
     options?.useCollectorLoader || jobOptions.useCollectorLoader || shouldUseCollectorLoader()
       ? await loadAnalysisInputViaCollector(jobId)
       : await loadAnalysisInput(jobId);
+
+  // 구독 단축 경로: collector API에서 로드한 데이터 통계를 progress에 기록
+  // (수집/정규화 단계가 없으므로 UI에서 건수를 표시할 수 있도록)
+  if (options?.useCollectorLoader || jobOptions.useCollectorLoader) {
+    const subStats: Record<
+      string,
+      { status: string; articles: number; comments: number; videos: number }
+    > = {};
+    const sourceGroups = new Map<string, { articles: number; comments: number; videos: number }>();
+    for (const a of input.articles) {
+      const src = a.source || 'unknown';
+      const g = sourceGroups.get(src) || { articles: 0, comments: 0, videos: 0 };
+      g.articles++;
+      sourceGroups.set(src, g);
+    }
+    for (const c of input.comments) {
+      const src = c.source || 'unknown';
+      const g = sourceGroups.get(src) || { articles: 0, comments: 0, videos: 0 };
+      g.comments++;
+      sourceGroups.set(src, g);
+    }
+    for (const _v of input.videos) {
+      const src = 'youtube';
+      const g = sourceGroups.get(src) || { articles: 0, comments: 0, videos: 0 };
+      g.videos++;
+      sourceGroups.set(src, g);
+    }
+    for (const [src, g] of sourceGroups) {
+      subStats[src] = { status: 'completed', ...g };
+    }
+    await updateJobProgress(jobId, subStats).catch(() => {});
+  }
+
   const loaded = await loadCompletedResults(jobId, options?.retryModules);
 
   if (Object.keys(loaded.allResults).length > 0) {
