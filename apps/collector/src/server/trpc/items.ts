@@ -48,7 +48,7 @@ export const queryInput = z.object({
     })
     .optional(),
   cursor: z.string().datetime().optional(),
-  limit: z.number().int().min(1).max(2000).default(500),
+  limit: z.number().int().min(1).max(10000).default(500),
   maxContentLength: z.number().int().positive().optional(),
   maxComments: z.number().int().nonnegative().optional(),
   includeEmbeddings: z.boolean().default(false),

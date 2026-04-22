@@ -1,6 +1,6 @@
 // DB에서 jobId 기반으로 수집 데이터를 로드하여 AnalysisInput 형식으로 변환
 // N:M 조인 테이블 경유 조회
-import { eq, desc } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { getDb } from '../db';
 import {
   articles,
@@ -14,10 +14,11 @@ import {
 import { getCollectorClient } from '../collector-client';
 import type { AnalysisInput } from './types';
 import type { AnalysisDomain } from './domain';
+import { applyTimeSeriesSampling, calculateBudget } from './sampling';
 
 // 토큰 절약 상수 — collector API에 인자로 전달 (기본값, 호출부에서 override 가능)
 const MAX_ARTICLE_CONTENT_LENGTH = 500;
-const MAX_COMMENTS = 500;
+const MAX_COMMENTS_RAW = 5000;
 
 /**
  * 수집 작업 데이터를 분석 입력 형식으로 로드
@@ -76,15 +77,13 @@ export async function loadAnalysisInput(jobId: number): Promise<AnalysisInput> {
       })
       .from(comments)
       .innerJoin(commentJobs, eq(comments.id, commentJobs.commentId))
-      .where(eq(commentJobs.jobId, jobId))
-      .orderBy(desc(comments.likeCount))
-      .limit(MAX_COMMENTS),
+      .where(eq(commentJobs.jobId, jobId)),
   ]);
 
   // Drizzle ORM이 timestamp 컬럼을 문자열로 반환할 수 있으므로 Date 객체로 보장
   const ensureDate = (d: Date | string): Date => (d instanceof Date ? d : new Date(d));
 
-  return {
+  const rawInput: AnalysisInput = {
     jobId,
     keyword: job.keyword,
     articles: articleRows.map((a) => ({
@@ -106,6 +105,15 @@ export async function loadAnalysisInput(jobId: number): Promise<AnalysisInput> {
     },
     domain: (job.domain as AnalysisDomain) || undefined,
   };
+
+  const budget = calculateBudget({
+    dateRange: rawInput.dateRange,
+    totalArticles: rawInput.articles.length,
+    totalComments: rawInput.comments.length,
+    totalVideos: rawInput.videos.length,
+  });
+
+  return applyTimeSeriesSampling(rawInput, budget);
 }
 
 export interface LoadFromCollectorOptions {
@@ -170,7 +178,6 @@ export async function loadAnalysisInputFromCollector(
 ): Promise<AnalysisInput> {
   const client = getCollectorClient();
   const maxContentLength = opts.maxContentLength ?? MAX_ARTICLE_CONTENT_LENGTH;
-  const maxComments = opts.maxComments ?? MAX_COMMENTS;
 
   // 기사/영상과 댓글은 다른 itemType — 병렬 호출
   const [articlesVideosResp, commentsResp] = await Promise.all([
@@ -197,8 +204,8 @@ export async function loadAnalysisInputFromCollector(
       itemTypes: ['comment'],
       subscriptionId: opts.subscriptionId,
       mode: 'all',
-      maxComments,
-      limit: maxComments,
+      maxComments: maxContentLength,
+      limit: MAX_COMMENTS_RAW,
     }),
   ]);
 
@@ -251,7 +258,7 @@ export async function loadAnalysisInputFromCollector(
       publishedAt: toDate(c.publishedAt),
     }));
 
-  return {
+  const rawInput: AnalysisInput = {
     jobId: opts.jobId,
     keyword: opts.keyword,
     articles: articlesOut,
@@ -263,4 +270,13 @@ export async function loadAnalysisInputFromCollector(
     },
     domain: opts.domain,
   };
+
+  const budget = calculateBudget({
+    dateRange: rawInput.dateRange,
+    totalArticles: rawInput.articles.length,
+    totalComments: rawInput.comments.length,
+    totalVideos: rawInput.videos.length,
+  });
+
+  return applyTimeSeriesSampling(rawInput, budget);
 }
