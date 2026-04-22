@@ -19,6 +19,7 @@ const NAV_ITEMS = [
   { label: '대시보드', href: '/subscriptions' },
   { label: '모니터링', href: '/subscriptions/monitor' },
   { label: '시스템 건강', href: '/subscriptions/health' },
+  { label: '분석 실행', href: '/subscriptions/analyze' },
 ] as const;
 
 export default function SubscriptionsLayout({ children }: { children: React.ReactNode }) {
