@@ -188,7 +188,6 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
       limitMode?: 'perDay' | 'total';
       breakpoints?: BreakpointValue[];
       forceRefetch?: boolean;
-      subscriptionId?: number;
     }) => trpcClient.analysis.trigger.mutate(input as any),
     onSuccess: (data) => {
       toast.success('분석이 시작되었습니다');
@@ -228,10 +227,14 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
     setCustomSourceIds((prev) => (checked ? [...prev, id] : prev.filter((v) => v !== id)));
   };
 
+  // 구독 소스명 → 분석 트리거 소스명 매핑 (collector: 'naver-news' → analysis: 'naver')
+  const mapSubSources = (srcs: string[]): SourceId[] =>
+    srcs.map((s) => (s === 'naver-news' ? 'naver' : s) as SourceId);
+
   const handleSubscriptionSelect = (sub: SubscriptionSummary) => {
     setSubscriptionMode({ isActive: true, subscription: sub });
     setKeyword(sub.keyword);
-    setSources(sub.sources as SourceId[]);
+    setSources(mapSubSources(sub.sources));
     setForceRefetch(false);
     setEnableItemAnalysis(sub.options.includeComments !== false);
     setCollectTranscript(!!sub.options.collectTranscript);
@@ -296,8 +299,6 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
       ...(selectedSeriesId && { seriesId: selectedSeriesId }),
       ...(createNewSeries && { createNewSeries: true }),
       ...(!isSubMode && forceRefetch && { forceRefetch: true }),
-      ...(isSubMode &&
-        subscriptionMode.subscription && { subscriptionId: subscriptionMode.subscription.id }),
     });
   };
 
