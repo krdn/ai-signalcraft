@@ -5,6 +5,7 @@ export * from './db/schema';
 export {
   triggerCollection,
   triggerAnalysisResume,
+  triggerSubscriptionAnalysis,
   createCollectorWorker,
   createPipelineWorker,
   redisConnection,

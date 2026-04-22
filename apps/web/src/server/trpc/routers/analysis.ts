@@ -8,6 +8,7 @@ import {
   analysisPresets,
   analysisSeries,
   triggerCollection,
+  triggerSubscriptionAnalysis,
   triggerAnalysisResume,
   cleanupBeforeNewPipeline,
   resumePipelineWithMode,
@@ -25,7 +26,10 @@ export const analysisRouter = router({
     .input(
       z.object({
         keyword: z.string().min(1).max(50),
-        sources: z.array(z.enum(['naver', 'youtube', 'dcinside', 'fmkorea', 'clien'])).optional(),
+        sources: z
+          .array(z.enum(['naver', 'naver-news', 'youtube', 'dcinside', 'fmkorea', 'clien']))
+          .optional()
+          .transform((v) => v?.map((s) => (s === 'naver-news' ? 'naver' : s))),
         customSourceIds: z.array(z.string().uuid()).optional(),
         startDate: z.string(), // ISO date string
         endDate: z.string(),
@@ -90,11 +94,10 @@ export const analysisRouter = router({
         seriesId: z.number().optional(),
         createNewSeries: z.boolean().optional(),
         forceRefetch: z.boolean().optional(),
-        subscriptionId: z.number().optional(),
       }),
     )
     .mutation(async ({ input, ctx }) => {
-      // 최소 하나의 소스(하드코딩 또는 동적) 선택 필수
+      // 최소 하나의 소스(하드코딩는지 동적) 선택 필수
       const hasSources = (input.sources?.length ?? 0) > 0;
       const hasCustom = (input.customSourceIds?.length ?? 0) > 0;
       if (!hasSources && !hasCustom) {
@@ -248,27 +251,8 @@ export const analysisRouter = router({
         ? {
             ...effectiveOptions,
             limitMode,
-            ...(input.subscriptionId && { subscriptionId: input.subscriptionId }),
           }
-        : { limitMode, ...(input.subscriptionId && { subscriptionId: input.subscriptionId }) };
-
-      // 구독 모드 검증: subscriptionId가 있으면 실제 활성 구독인지, 본인 소유인지 확인
-      if (input.subscriptionId) {
-        try {
-          const sub = await getCollectorClient().subscriptions.get.query({
-            id: input.subscriptionId,
-          });
-          if (!sub || sub.ownerId !== ctx.userId) {
-            throw new TRPCError({ code: 'FORBIDDEN', message: '해당 구독에 접근할 수 없습니다.' });
-          }
-          if (sub.status !== 'active') {
-            throw new TRPCError({ code: 'BAD_REQUEST', message: '비활성 구독입니다.' });
-          }
-        } catch (err) {
-          if (err instanceof TRPCError) throw err;
-          throw new TRPCError({ code: 'BAD_REQUEST', message: '구독 정보를 확인할 수 없습니다.' });
-        }
-      }
+        : { limitMode };
 
       // 1. collectionJobs 레코드 생성 (팀 ID 포함)
       const [job] = await ctx.db
@@ -293,8 +277,7 @@ export const analysisRouter = router({
         })
         .returning();
 
-      // 구독 모드: forceRefetch 강제 false
-      const effectiveForceRefetch = input.subscriptionId ? false : (input.forceRefetch ?? false);
+      const effectiveForceRefetch = input.forceRefetch ?? false;
 
       // 2. BullMQ 트리거 -- CollectionTrigger 형식 (INT-01: sources 전달)
       await triggerCollection(
@@ -313,6 +296,82 @@ export const analysisRouter = router({
       );
 
       return { jobId: job.id };
+    }),
+
+  // 구독 분석 트리거 -- 구독 기반 단축 경로 (수집 생략, 분석만 실행)
+  triggerSubscription: protectedProcedure
+    .input(
+      z.object({
+        subscriptionId: z.number(),
+        startDate: z.string(),
+        endDate: z.string(),
+        domain: z
+          .enum([
+            'political',
+            'economic',
+            'social',
+            'technology',
+            'fandom',
+            'pr',
+            'corporate',
+            'finance',
+            'healthcare',
+            'sports',
+            'education',
+            'general',
+          ])
+          .optional(),
+        optimizationPreset: z
+          .enum([
+            'none',
+            'light',
+            'standard',
+            'aggressive',
+            'rag-light',
+            'rag-standard',
+            'rag-aggressive',
+          ])
+          .optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      // 1. 구독 검증
+      const sub = await getCollectorClient().subscriptions.get.query({
+        id: input.subscriptionId,
+      });
+      if (!sub || sub.ownerId !== ctx.userId) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: '해당 구독에 접근할 수 없습니다.' });
+      }
+      if (sub.status !== 'active') {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: '비활성 구독입니다.' });
+      }
+
+      // 2. collection_jobs 레코드 생성
+      const [job] = await ctx.db
+        .insert(collectionJobs)
+        .values({
+          keyword: sub.keyword,
+          startDate: new Date(input.startDate),
+          endDate: new Date(input.endDate),
+          sources: sub.sources,
+          status: 'running',
+          domain: input.domain || sub.domain || 'general',
+          userId: ctx.userId,
+          options: {
+            subscriptionId: input.subscriptionId,
+            skipItemAnalysis: true,
+            useCollectorLoader: true,
+            tokenOptimization: input.optimizationPreset ?? 'rag-standard',
+          },
+        })
+        .returning({ id: collectionJobs.id });
+
+      if (!job) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: '잡 생성 실패' });
+
+      // 3. 단축 경로 — analysis 큐에 직접 등록
+      await triggerSubscriptionAnalysis(job.id, sub.keyword);
+
+      return { jobId: job.id, keyword: sub.keyword };
     }),
 
   // 분석 재실행 -- 실패 모듈 자동 탐지 또는 지정 모듈만 재실행
