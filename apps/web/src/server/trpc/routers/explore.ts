@@ -6,6 +6,7 @@ import {
   articleJobs,
   commentJobs,
   analysisResults,
+  getCollectorClient,
 } from '@ai-signalcraft/core';
 import { eq, and, desc, sql, inArray, gte, isNotNull, type SQL } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
@@ -229,6 +230,26 @@ export const exploreRouter = router({
     )
     .query(async ({ input, ctx }) => {
       const job = await verifyJobAccess(ctx, input.jobId);
+      const jobOptions = (job.options as Record<string, unknown>) || {};
+      const isCollectorJob = !!jobOptions.useCollectorLoader || !!jobOptions.subscriptionId;
+
+      // 구독 단축 경로: article_jobs/comment_jobs가 없으므로 collector API에서 집계
+      if (isCollectorJob) {
+        try {
+          const client = getCollectorClient();
+          return await client.items.sentimentBySource.query({
+            dateRange: {
+              start: (job.startDate as Date).toISOString(),
+              end: (job.endDate as Date).toISOString(),
+            },
+            subscriptionId: jobOptions.subscriptionId as number | undefined,
+          });
+        } catch (err) {
+          console.error('[explore] collector sentimentBySource 실패:', err);
+          return { articles: [], comments: [] };
+        }
+      }
+
       const jobStartDate = input.dateScope === 'job' ? (job.startDate as Date) : undefined;
 
       const articleFilters: SQL[] = [eq(articleJobs.jobId, input.jobId)];
