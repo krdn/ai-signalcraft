@@ -460,4 +460,221 @@ export const itemsRouter = router({
 
       return { articles, comments };
     }),
+
+  /** 일자별 감성 카운트 시계열 (explore StreamChart / CalendarHeatmap용) */
+  sentimentTimeSeries: protectedProcedure
+    .input(
+      z.object({
+        subscriptionId: z.number().int().positive(),
+        dateRange: dateRangeSchema,
+        sources: z.array(z.enum(SOURCE_ENUM)).optional(),
+        sentiments: z.array(z.enum(['positive', 'negative', 'neutral'])).optional(),
+        itemType: z.enum(['article', 'video', 'comment']).optional(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const start = new Date(input.dateRange.start);
+      const end = new Date(input.dateRange.end);
+
+      const kstDay = sql<string>`to_char(((${rawItems.time} AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Seoul')::date, 'YYYY-MM-DD')`;
+
+      const conds = [
+        between(rawItems.time, start, end),
+        eq(rawItems.subscriptionId, input.subscriptionId),
+        sql`${rawItems.sentiment} IS NOT NULL`,
+      ];
+      if (input.sources?.length) conds.push(inArray(rawItems.source, input.sources));
+      if (input.sentiments?.length) conds.push(inArray(rawItems.sentiment, input.sentiments));
+      if (input.itemType) conds.push(eq(rawItems.itemType, input.itemType));
+
+      const rows = await ctx.db
+        .select({
+          date: kstDay,
+          sentiment: rawItems.sentiment,
+          count: sql<number>`count(*)::int`,
+        })
+        .from(rawItems)
+        .where(and(...conds))
+        .groupBy(kstDay, rawItems.sentiment);
+
+      // source 정규화는 필요 없음 — 시계열은 source 무관하게 날짜×감성만 집계
+
+      // explore 포맷: [{ date, positive, negative, neutral, total }]
+      const buckets = new Map<
+        string,
+        { date: string; positive: number; negative: number; neutral: number; total: number }
+      >();
+      for (const r of rows) {
+        if (!r.date) continue;
+        const key = r.date.slice(0, 10);
+        const existing = buckets.get(key) ?? {
+          date: key,
+          positive: 0,
+          negative: 0,
+          neutral: 0,
+          total: 0,
+        };
+        if (r.sentiment === 'positive') existing.positive += r.count;
+        else if (r.sentiment === 'negative') existing.negative += r.count;
+        else if (r.sentiment === 'neutral') existing.neutral += r.count;
+        existing.total += r.count;
+        buckets.set(key, existing);
+      }
+      return Array.from(buckets.values()).sort((a, b) => a.date.localeCompare(b.date));
+    }),
+
+  /** 소스 × 감성 매트릭스 (explore SourceSentimentMatrix용) */
+  sentimentBySourceMatrix: protectedProcedure
+    .input(
+      z.object({
+        subscriptionId: z.number().int().positive(),
+        dateRange: dateRangeSchema,
+        sources: z.array(z.enum(SOURCE_ENUM)).optional(),
+        sentiments: z.array(z.enum(['positive', 'negative', 'neutral'])).optional(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const start = new Date(input.dateRange.start);
+      const end = new Date(input.dateRange.end);
+
+      const conds = [
+        between(rawItems.time, start, end),
+        eq(rawItems.subscriptionId, input.subscriptionId),
+      ];
+      if (input.sources?.length) conds.push(inArray(rawItems.source, input.sources));
+      if (input.sentiments?.length) conds.push(inArray(rawItems.sentiment, input.sentiments));
+
+      const rows = await ctx.db
+        .select({
+          source: rawItems.source,
+          sentiment: rawItems.sentiment,
+          count: sql<number>`count(*)::int`,
+        })
+        .from(rawItems)
+        .where(and(...conds, sql`${rawItems.sentiment} IS NOT NULL`))
+        .groupBy(rawItems.source, rawItems.sentiment);
+
+      // source 정규화: naver-comments → naver-news
+      const bucket = new Map<string, { source: string; sentiment: string; count: number }>();
+      for (const r of rows) {
+        const normalizedSource = r.source === 'naver-comments' ? 'naver-news' : r.source;
+        const s = r.sentiment ?? 'neutral';
+        const k = `${normalizedSource}::${s}`;
+        const prev = bucket.get(k);
+        if (prev) prev.count += r.count;
+        else bucket.set(k, { source: normalizedSource, sentiment: s, count: r.count });
+      }
+      return Array.from(bucket.values()).sort((a, b) => b.count - a.count);
+    }),
+
+  /** 확신도 분포 20-bin (explore ScoreHistogram용) */
+  scoreDistribution: protectedProcedure
+    .input(
+      z.object({
+        subscriptionId: z.number().int().positive(),
+        dateRange: dateRangeSchema,
+        sources: z.array(z.enum(SOURCE_ENUM)).optional(),
+        sentiments: z.array(z.enum(['positive', 'negative', 'neutral'])).optional(),
+        itemType: z.enum(['article', 'video', 'comment']).optional(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const start = new Date(input.dateRange.start);
+      const end = new Date(input.dateRange.end);
+
+      const conds = [
+        between(rawItems.time, start, end),
+        eq(rawItems.subscriptionId, input.subscriptionId),
+        sql`${rawItems.sentimentScore} IS NOT NULL`,
+      ];
+      if (input.sources?.length) conds.push(inArray(rawItems.source, input.sources));
+      if (input.sentiments?.length) conds.push(inArray(rawItems.sentiment, input.sentiments));
+      if (input.itemType) conds.push(eq(rawItems.itemType, input.itemType));
+
+      const rows = await ctx.db
+        .select({
+          sentimentScore: rawItems.sentimentScore,
+          sentiment: rawItems.sentiment,
+          count: sql<number>`count(*)::int`,
+        })
+        .from(rawItems)
+        .where(and(...conds))
+        .groupBy(rawItems.sentimentScore, rawItems.sentiment);
+
+      const BIN_COUNT = 20;
+      const bins = Array.from({ length: BIN_COUNT }, (_, i) => ({
+        bin: i,
+        binStart: i / BIN_COUNT,
+        binEnd: (i + 1) / BIN_COUNT,
+        positive: 0,
+        negative: 0,
+        neutral: 0,
+      }));
+
+      for (const r of rows) {
+        if (r.sentimentScore == null) continue;
+        const clamped = Math.min(Math.max(r.sentimentScore, 0), 0.9999);
+        const idx = Math.min(BIN_COUNT - 1, Math.floor(clamped * BIN_COUNT));
+        const target = bins[idx];
+        if (!target) continue;
+        if (r.sentiment === 'positive') target.positive += r.count;
+        else if (r.sentiment === 'negative') target.negative += r.count;
+        else if (r.sentiment === 'neutral') target.neutral += r.count;
+      }
+
+      return bins;
+    }),
+
+  /** 인게이지먼트 × 감정 산점도 — 댓글 상위 500개 (explore ScatterEngagement용) */
+  engagementScatter: protectedProcedure
+    .input(
+      z.object({
+        subscriptionId: z.number().int().positive(),
+        dateRange: dateRangeSchema,
+        sources: z.array(z.enum(SOURCE_ENUM)).optional(),
+        sentiments: z.array(z.enum(['positive', 'negative', 'neutral'])).optional(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const start = new Date(input.dateRange.start);
+      const end = new Date(input.dateRange.end);
+
+      const conds = [
+        between(rawItems.time, start, end),
+        eq(rawItems.subscriptionId, input.subscriptionId),
+        eq(rawItems.itemType, 'comment'),
+        sql`${rawItems.sentiment} IS NOT NULL`,
+        sql`${rawItems.sentimentScore} IS NOT NULL`,
+      ];
+      if (input.sources?.length) conds.push(inArray(rawItems.source, input.sources));
+      if (input.sentiments?.length) conds.push(inArray(rawItems.sentiment, input.sentiments));
+
+      // metrics->>'likeCount'를 정렬 키로 사용
+      const rows = await ctx.db
+        .select({
+          sourceId: rawItems.sourceId,
+          source: rawItems.source,
+          likeCount: sql<number>`coalesce((${rawItems.metrics}->>'likeCount')::int, 0)`,
+          sentiment: rawItems.sentiment,
+          sentimentScore: rawItems.sentimentScore,
+          content: rawItems.content,
+          parentSourceId: rawItems.parentSourceId,
+          publishedAt: rawItems.publishedAt,
+        })
+        .from(rawItems)
+        .where(and(...conds))
+        .orderBy(desc(sql`coalesce((${rawItems.metrics}->>'likeCount')::int, 0)`))
+        .limit(500);
+
+      return rows.map((r, idx) => ({
+        id: idx,
+        source: r.source,
+        likeCount: r.likeCount ?? 0,
+        sentiment: r.sentiment ?? 'neutral',
+        sentimentScore: r.sentimentScore ?? 0,
+        contentPreview: (r.content ?? '').slice(0, 240),
+        articleId: null as number | null,
+        publishedAt: r.publishedAt?.toISOString() ?? null,
+      }));
+    }),
 });

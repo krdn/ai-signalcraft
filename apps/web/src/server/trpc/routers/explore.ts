@@ -107,6 +107,86 @@ export const exploreRouter = router({
    */
   getSentimentTimeSeries: protectedProcedure.input(exploreInput).query(async ({ input, ctx }) => {
     const job = await verifyJobAccess(ctx, input.jobId);
+    const jobOptions = (job.options as Record<string, unknown>) || {};
+    const isCollector = !!jobOptions.useCollectorLoader || !!jobOptions.subscriptionId;
+
+    // 구독 잡 단축 경로: collector API에서 시계열 집계
+    if (isCollector && jobOptions.subscriptionId) {
+      try {
+        const client = getCollectorClient();
+        // articles/comments 분리 호출 대신 item_type 없이 전체 조회
+        const [articleTS, commentTS] = await Promise.all([
+          input.itemType === 'comments'
+            ? Promise.resolve([])
+            : client.items.sentimentTimeSeries.query({
+                subscriptionId: jobOptions.subscriptionId as number,
+                dateRange: {
+                  start: (job.startDate as Date).toISOString(),
+                  end: (job.endDate as Date).toISOString(),
+                },
+                sources: input.sources as
+                  | Array<
+                      'naver-news' | 'naver-comments' | 'youtube' | 'dcinside' | 'fmkorea' | 'clien'
+                    >
+                  | undefined,
+                sentiments: input.sentiments,
+                itemType: 'article',
+              }),
+          input.itemType === 'articles'
+            ? Promise.resolve([])
+            : client.items.sentimentTimeSeries.query({
+                subscriptionId: jobOptions.subscriptionId as number,
+                dateRange: {
+                  start: (job.startDate as Date).toISOString(),
+                  end: (job.endDate as Date).toISOString(),
+                },
+                sources: input.sources as
+                  | Array<
+                      'naver-news' | 'naver-comments' | 'youtube' | 'dcinside' | 'fmkorea' | 'clien'
+                    >
+                  | undefined,
+                sentiments: input.sentiments,
+                itemType: 'comment',
+              }),
+        ]);
+
+        // 두 시계열 병합
+        const buckets = new Map<string, TimeSeriesRow>();
+        const addRow = (date: string, sentiment: string | null, count: number) => {
+          if (!date) return;
+          const key = date.slice(0, 10);
+          const existing = buckets.get(key) ?? {
+            date: key,
+            positive: 0,
+            negative: 0,
+            neutral: 0,
+            total: 0,
+          };
+          if (sentiment === 'positive') existing.positive += count;
+          else if (sentiment === 'negative') existing.negative += count;
+          else if (sentiment === 'neutral') existing.neutral += count;
+          existing.total += count;
+          buckets.set(key, existing);
+        };
+        for (const row of [...articleTS, ...commentTS]) {
+          const r = row as {
+            date: string;
+            positive: number;
+            negative: number;
+            neutral: number;
+            total: number;
+          };
+          addRow(r.date, 'positive', r.positive);
+          addRow(r.date, 'negative', r.negative);
+          addRow(r.date, 'neutral', r.neutral);
+        }
+        return Array.from(buckets.values()).sort((a, b) => a.date.localeCompare(b.date));
+      } catch (err) {
+        console.error('[explore] collector sentimentTimeSeries 실패:', err);
+        return [];
+      }
+    }
+
     const jobStartDate = input.dateScope === 'job' ? (job.startDate as Date) : undefined;
 
     const needArticles = input.itemType === 'articles' || input.itemType === 'both';
@@ -171,6 +251,30 @@ export const exploreRouter = router({
    */
   getSentimentBySource: protectedProcedure.input(exploreInput).query(async ({ input, ctx }) => {
     const job = await verifyJobAccess(ctx, input.jobId);
+    const jobOptions = (job.options as Record<string, unknown>) || {};
+    const isCollector = !!jobOptions.useCollectorLoader || !!jobOptions.subscriptionId;
+
+    // 구독 잡 단축 경로
+    if (isCollector && jobOptions.subscriptionId) {
+      try {
+        const client = getCollectorClient();
+        return await client.items.sentimentBySourceMatrix.query({
+          subscriptionId: jobOptions.subscriptionId as number,
+          dateRange: {
+            start: (job.startDate as Date).toISOString(),
+            end: (job.endDate as Date).toISOString(),
+          },
+          sources: input.sources as
+            | Array<'naver-news' | 'naver-comments' | 'youtube' | 'dcinside' | 'fmkorea' | 'clien'>
+            | undefined,
+          sentiments: input.sentiments,
+        });
+      } catch (err) {
+        console.error('[explore] collector sentimentBySourceMatrix 실패:', err);
+        return [];
+      }
+    }
+
     const jobStartDate = input.dateScope === 'job' ? (job.startDate as Date) : undefined;
 
     const needArticles = input.itemType === 'articles' || input.itemType === 'both';
@@ -301,6 +405,30 @@ export const exploreRouter = router({
    */
   getScoreDistribution: protectedProcedure.input(exploreInput).query(async ({ input, ctx }) => {
     const job = await verifyJobAccess(ctx, input.jobId);
+    const jobOptions = (job.options as Record<string, unknown>) || {};
+    const isCollector = !!jobOptions.useCollectorLoader || !!jobOptions.subscriptionId;
+
+    // 구독 잡 단축 경로
+    if (isCollector && jobOptions.subscriptionId) {
+      try {
+        const client = getCollectorClient();
+        return await client.items.scoreDistribution.query({
+          subscriptionId: jobOptions.subscriptionId as number,
+          dateRange: {
+            start: (job.startDate as Date).toISOString(),
+            end: (job.endDate as Date).toISOString(),
+          },
+          sources: input.sources as
+            | Array<'naver-news' | 'naver-comments' | 'youtube' | 'dcinside' | 'fmkorea' | 'clien'>
+            | undefined,
+          sentiments: input.sentiments,
+        });
+      } catch (err) {
+        console.error('[explore] collector scoreDistribution 실패:', err);
+        return [];
+      }
+    }
+
     const jobStartDate = input.dateScope === 'job' ? (job.startDate as Date) : undefined;
 
     const BIN_COUNT = 20;
@@ -370,6 +498,30 @@ export const exploreRouter = router({
    */
   getEngagementScatter: protectedProcedure.input(exploreInput).query(async ({ input, ctx }) => {
     const job = await verifyJobAccess(ctx, input.jobId);
+    const jobOptions = (job.options as Record<string, unknown>) || {};
+    const isCollector = !!jobOptions.useCollectorLoader || !!jobOptions.subscriptionId;
+
+    // 구독 잡 단축 경로
+    if (isCollector && jobOptions.subscriptionId) {
+      try {
+        const client = getCollectorClient();
+        return await client.items.engagementScatter.query({
+          subscriptionId: jobOptions.subscriptionId as number,
+          dateRange: {
+            start: (job.startDate as Date).toISOString(),
+            end: (job.endDate as Date).toISOString(),
+          },
+          sources: input.sources as
+            | Array<'naver-news' | 'naver-comments' | 'youtube' | 'dcinside' | 'fmkorea' | 'clien'>
+            | undefined,
+          sentiments: input.sentiments,
+        });
+      } catch (err) {
+        console.error('[explore] collector engagementScatter 실패:', err);
+        return [];
+      }
+    }
+
     const jobStartDate = input.dateScope === 'job' ? (job.startDate as Date) : undefined;
 
     const rows = await ctx.db
