@@ -62,6 +62,12 @@ export const collectionJobs = pgTable(
         | 'rag-aggressive';
       // 기간 모드에서 수집 한도를 '날짜별' 단위로 해석. 미지정 시 'total'로 폴백.
       limitMode?: 'perDay' | 'total';
+      // 구독 모드에서 연결된 구독 ID
+      subscriptionId?: number;
+      // 개별 항목 분석 스킵 여부
+      skipItemAnalysis?: boolean;
+      // CollectorLoader 사용 여부
+      useCollectorLoader?: boolean;
     }>(),
     keywordType: text('keyword_type'),
     domain: text('domain').notNull().default('political'),
