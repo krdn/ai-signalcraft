@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import type { SubscriptionSummary } from '../subscription-picker';
+import type { SubscriptionSummary } from '@/components/analysis/subscription-picker';
 import { trpcClient } from '@/lib/trpc';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
