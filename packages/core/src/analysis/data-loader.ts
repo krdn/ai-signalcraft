@@ -146,6 +146,7 @@ export async function loadAnalysisInputViaCollector(jobId: number): Promise<Anal
   }
 
   const ensureDate = (d: Date | string): Date => (d instanceof Date ? d : new Date(d));
+  const opts = job.options as Record<string, unknown> | undefined;
 
   return loadAnalysisInputFromCollector({
     jobId,
@@ -155,6 +156,7 @@ export async function loadAnalysisInputViaCollector(jobId: number): Promise<Anal
       end: ensureDate(job.endDate),
     },
     domain: (job.domain as AnalysisDomain) || undefined,
+    subscriptionId: (opts?.subscriptionId as number) || undefined,
   });
 }
 
