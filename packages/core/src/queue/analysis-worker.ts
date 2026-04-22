@@ -13,7 +13,7 @@ export function createAnalysisWorker(): Worker {
   return new Worker(
     'analysis',
     async (job: Job) => {
-      const { dbJobId, keyword, resumeOptions } = job.data;
+      const { dbJobId, keyword, resumeOptions, useCollectorLoader } = job.data;
 
       if (job.name === 'run-analysis') {
         const isResume = !!resumeOptions;
@@ -36,7 +36,10 @@ export function createAnalysisWorker(): Worker {
 
         let result;
         try {
-          result = await runAnalysisPipeline(dbJobId, resumeOptions);
+          result = await runAnalysisPipeline(dbJobId, {
+            ...resumeOptions,
+            useCollectorLoader,
+          });
         } finally {
           clearInterval(lockExtender);
         }

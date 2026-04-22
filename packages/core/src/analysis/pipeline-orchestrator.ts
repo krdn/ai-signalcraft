@@ -48,6 +48,8 @@ import {
 export interface ResumeOptions {
   retryModules?: string[];
   reportOnly?: boolean;
+  useCollectorLoader?: boolean;
+  skipItemAnalysis?: boolean;
 }
 
 /**
@@ -69,9 +71,19 @@ export async function runAnalysisPipeline(
   cancelledByUser?: boolean;
   costLimitExceeded?: boolean;
 }> {
-  let input = shouldUseCollectorLoader()
-    ? await loadAnalysisInputViaCollector(jobId)
-    : await loadAnalysisInput(jobId);
+  // 구독 단축 경로: 잡 데이터 또는 DB options에서 useCollectorLoader 확인
+  const cjRow = await getDb()
+    .select()
+    .from(collectionJobs)
+    .where(eq(collectionJobs.id, jobId))
+    .limit(1)
+    .then((r) => r[0]);
+  const jobOptions = (cjRow?.options as Record<string, unknown>) || {};
+
+  let input =
+    options?.useCollectorLoader || jobOptions.useCollectorLoader || shouldUseCollectorLoader()
+      ? await loadAnalysisInputViaCollector(jobId)
+      : await loadAnalysisInput(jobId);
   const loaded = await loadCompletedResults(jobId, options?.retryModules);
 
   if (Object.keys(loaded.allResults).length > 0) {
@@ -210,13 +222,25 @@ export async function runAnalysisPipeline(
   }
 
   // Stage 0: 개별 항목 분석 — Stage 1(AI 분석) 시작 전 필수 선행 단계
-  try {
-    await analyzeItems(jobId);
-  } catch (error) {
-    console.error(`[runner] 개별 항목 분석 실패:`, error);
-    await updateJobProgress(jobId, {
-      'item-analysis': { status: 'failed', phase: 'error' },
-    }).catch(() => {});
+  // 구독 단축 경로에서는 이미 collector에서 감정 분석 완료
+  const shouldSkipItemAnalysis = options?.skipItemAnalysis || jobOptions.skipItemAnalysis;
+
+  if (!shouldSkipItemAnalysis) {
+    try {
+      await analyzeItems(jobId);
+    } catch (error) {
+      console.error(`[runner] 개별 항목 분석 실패:`, error);
+      await updateJobProgress(jobId, {
+        'item-analysis': { status: 'failed', phase: 'error' },
+      }).catch(() => {});
+    }
+  } else {
+    console.log(`[pipeline] 구독 단축 경로: Stage 0(개별 감정 분석) 스킵`);
+    await appendJobEvent(
+      jobId,
+      'info',
+      '구독 단축 경로: 개별 감정 분석 스킵 (collector에서 이미 완료)',
+    ).catch(() => {});
   }
 
   // BP 게이트: 개별 감정 분석 완료 후
