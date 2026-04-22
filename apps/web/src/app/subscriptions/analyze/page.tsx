@@ -1,9 +1,10 @@
-import dynamic from 'next/dynamic';
+import type { Metadata } from 'next';
+import SubscriptionAnalyzeContent from './subscription-analyze-content';
 
-const SubscriptionAnalyzeClient = dynamic(() => import('./subscription-analyze-client'), {
-  ssr: false,
-});
+export const metadata: Metadata = {
+  title: '구독 분석 실행',
+};
 
 export default function SubscriptionAnalyzePage() {
-  return <SubscriptionAnalyzeClient />;
+  return <SubscriptionAnalyzeContent />;
 }

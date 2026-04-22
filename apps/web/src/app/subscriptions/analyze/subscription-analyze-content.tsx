@@ -6,7 +6,7 @@ import { AnalysisConfigStep } from '@/components/subscriptions/analyze/analysis-
 import { AnalysisRunningStep } from '@/components/subscriptions/analyze/analysis-running-step';
 import { AnalysisResultStep } from '@/components/subscriptions/analyze/analysis-result-step';
 
-export default function SubscriptionAnalyzeClient() {
+export default function SubscriptionAnalyzeContent() {
   return (
     <div className="container mx-auto max-w-4xl py-6">
       <div className="mb-6">
