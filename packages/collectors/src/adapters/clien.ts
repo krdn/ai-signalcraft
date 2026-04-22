@@ -29,8 +29,10 @@ export class ClienCollector extends CommunityBaseCollector {
     comment: ['.comment_row[data-role="comment-row"]'],
   };
 
+  // 클리앙 검색 sort=recency는 최신순이지만 페이지 간 날짜 정렬이 엄밀하지 않아
+  // dayWindow 경로에서 중간 날짜 누락 발생 → legacy 순차 경로 사용
   protected override sortedByDateDescending(): boolean {
-    return true;
+    return false;
   }
 
   protected detectBlocked(html: string): boolean {
