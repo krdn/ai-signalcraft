@@ -1,4 +1,4 @@
-import { FlowProducer } from 'bullmq';
+import { FlowProducer, Queue } from 'bullmq';
 import { and, eq, inArray } from 'drizzle-orm';
 import type { DataSourceSnapshot } from '@ai-signalcraft/collectors';
 import type { CollectionTrigger, ReusePlanPayload } from '../types';
@@ -500,6 +500,31 @@ export async function triggerAnalysis(dbJobId: number, keyword: string) {
     },
   });
   return flow;
+}
+
+/**
+ * 구독 분석 단축 경로 — 수집/정규화/persist/classify를 건너뛰고
+ * analysis 큐에 바로 run-analysis 잡을 등록.
+ */
+export async function triggerSubscriptionAnalysis(dbJobId: number, keyword: string) {
+  const queue = new Queue('analysis', getBullMQOptions());
+  try {
+    const job = await queue.add(
+      'run-analysis',
+      {
+        dbJobId,
+        keyword,
+        useCollectorLoader: true,
+      },
+      {
+        removeOnComplete: { age: 3600 },
+        removeOnFail: { age: 86400 },
+      },
+    );
+    return job;
+  } finally {
+    await queue.close();
+  }
 }
 
 // 분석 재실행 트리거 -- 완료된 모듈은 DB에서 로드하고 실패/미실행 모듈만 재실행
