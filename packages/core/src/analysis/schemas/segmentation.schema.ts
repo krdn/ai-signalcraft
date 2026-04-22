@@ -1,42 +1,60 @@
 import { z } from 'zod';
 
 // 모듈2: 집단별 반응 분석 스키마 (ANLZ-04)
-export const SegmentationSchema = z.object({
-  platformSegments: z
-    .array(
-      z.object({
-        platform: z.string().catch(''),
-        sentiment: z.enum(['positive', 'negative', 'mixed']).catch('mixed'),
-        keyTopics: z.array(z.string()).default([]),
-        volume: z.number().catch(0),
-        characteristics: z.string().catch(''),
-      }),
-    )
-    .default([])
-    .describe('플랫폼별 반응 세분화'),
-  audienceGroups: z
-    .array(
-      z.object({
-        groupName: z.string().catch(''),
-        // z.string()으로 완화: 도메인별 집단 타입이 다름 (정치: core/opposition/swing,
-        // 팬덤: core-fan/casual-fan/anti-fan/general-public, PR: advocates/critics/neutrals/media 등)
-        // 기존 z.enum(['core','opposition','swing'])은 다른 도메인 결과를 모두 'swing'으로 강제 변환하는 버그 유발
-        type: z.string().catch('swing'),
-        characteristics: z.string().catch(''),
-        sentiment: z.enum(['positive', 'negative', 'mixed']).catch('mixed'),
-        influence: z.enum(['high', 'medium', 'low']).catch('medium'),
-      }),
-    )
-    .default([])
-    .describe('집단별 반응 (Core/Opposition/Swing)'),
-  highInfluenceGroup: z
-    .object({
-      name: z.string().catch('미확인'),
-      reason: z.string().catch('데이터 부족'),
-    })
-    .catch({ name: '미확인', reason: '데이터 부족' })
-    .describe('가장 영향력 높은 집단'),
-});
+export const SegmentationSchema = z.union([
+  z.object({
+    platformSegments: z
+      .array(
+        z.object({
+          platform: z.string().catch(''),
+          sentiment: z.enum(['positive', 'negative', 'mixed']).catch('mixed'),
+          keyTopics: z.array(z.string()).default([]),
+          volume: z.number().catch(0),
+          characteristics: z.string().catch(''),
+        }),
+      )
+      .default([])
+      .describe('플랫폼별 반응 세분화'),
+    audienceGroups: z
+      .array(
+        z.object({
+          groupName: z.string().catch(''),
+          type: z.string().catch('swing'),
+          characteristics: z.string().catch(''),
+          sentiment: z.enum(['positive', 'negative', 'mixed']).catch('mixed'),
+          influence: z.enum(['high', 'medium', 'low']).catch('medium'),
+        }),
+      )
+      .default([])
+      .describe('집단별 반응 (Core/Opposition/Swing)'),
+    highInfluenceGroup: z
+      .object({
+        name: z.string().catch('미확인'),
+        reason: z.string().catch('데이터 부족'),
+      })
+      .catch({ name: '미확인', reason: '데이터 부족' })
+      .describe('가장 영향력 높은 집단'),
+  }),
+  // AI가 최상위 응답을 배열로 반환하는 경우 안전하게 래핑
+  z.array(z.any()).transform((arr) => {
+    const first = arr[0];
+    if (first && typeof first === 'object' && !Array.isArray(first)) {
+      return {
+        platformSegments: (first as any).platformSegments ?? [],
+        audienceGroups: (first as any).audienceGroups ?? [],
+        highInfluenceGroup: (first as any).highInfluenceGroup ?? {
+          name: '미확인',
+          reason: '데이터 부족',
+        },
+      };
+    }
+    return {
+      platformSegments: [],
+      audienceGroups: [],
+      highInfluenceGroup: { name: '미확인', reason: '데이터 부족' },
+    };
+  }),
+]);
 
 export type SegmentationResult = z.infer<typeof SegmentationSchema>;
 
