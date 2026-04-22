@@ -26,36 +26,36 @@ const PERIOD_CONFIGS: Array<{ maxDays: number; config: PeriodConfig }> = [
     maxDays: 1,
     config: {
       intervalMs: 4 * 3600_000,
-      articlesPerBin: { min: 3, max: 10 },
-      commentsPerBin: { min: 10, max: 30 },
-      videosPerBin: { min: 1, max: 5 },
+      articlesPerBin: { min: 5, max: 30 },
+      commentsPerBin: { min: 30, max: 150 },
+      videosPerBin: { min: 2, max: 10 },
     },
   },
   {
     maxDays: 3,
     config: {
       intervalMs: 8 * 3600_000,
-      articlesPerBin: { min: 3, max: 15 },
-      commentsPerBin: { min: 15, max: 50 },
-      videosPerBin: { min: 1, max: 5 },
+      articlesPerBin: { min: 5, max: 40 },
+      commentsPerBin: { min: 30, max: 200 },
+      videosPerBin: { min: 2, max: 10 },
     },
   },
   {
     maxDays: 14,
     config: {
       intervalMs: 24 * 3600_000,
-      articlesPerBin: { min: 3, max: 20 },
-      commentsPerBin: { min: 10, max: 80 },
-      videosPerBin: { min: 1, max: 5 },
+      articlesPerBin: { min: 5, max: 50 },
+      commentsPerBin: { min: 20, max: 250 },
+      videosPerBin: { min: 2, max: 10 },
     },
   },
   {
     maxDays: 60,
     config: {
       intervalMs: 2 * 24 * 3600_000,
-      articlesPerBin: { min: 3, max: 25 },
-      commentsPerBin: { min: 10, max: 100 },
-      videosPerBin: { min: 1, max: 5 },
+      articlesPerBin: { min: 5, max: 60 },
+      commentsPerBin: { min: 20, max: 300 },
+      videosPerBin: { min: 2, max: 10 },
     },
   },
 ];
@@ -92,9 +92,9 @@ export function calculateBudget(params: {
   const targetVideos = Math.min(params.totalVideos, config.videosPerBin.max * binCount);
 
   // 토큰 예산 체크: 댓글 평균 40자 ≈ 10토큰, 기사 평균 200자 ≈ 50토큰, 영상 100자 ≈ 25토큰
-  // 목표: 분석 입력 총 토큰 ≤ 80K (컨텍스트 윈도우의 ~63%)
+  // 목표: 분석 입력 총 토큰 ≤ 200K (대형 컨텍스트 윈도우 모델 기준)
   const estimatedTokens = targetArticles * 50 + targetComments * 10 + targetVideos * 25;
-  if (estimatedTokens > 80_000) {
+  if (estimatedTokens > 200_000) {
     // 댓글 비율 축소로 조정 (댓글이 대량이므로 가장 효과적)
     const excess = estimatedTokens - 80_000;
     const commentsToReduce = Math.ceil(excess / 10);

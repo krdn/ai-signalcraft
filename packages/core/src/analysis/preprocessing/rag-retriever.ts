@@ -18,19 +18,19 @@ export const RAG_CONFIGS: Record<string, RAGConfig> = {
   'rag-light': {
     articleTopK: 0,
     clusterRepresentatives: 0,
-    commentTopK: 50,
+    commentTopK: 200,
     minSimilarity: 0.3,
   },
   'rag-standard': {
-    articleTopK: 30,
-    clusterRepresentatives: 10,
-    commentTopK: 30,
+    articleTopK: 100,
+    clusterRepresentatives: 30,
+    commentTopK: 200,
     minSimilarity: 0.35,
   },
   'rag-aggressive': {
-    articleTopK: 15,
-    clusterRepresentatives: 5,
-    commentTopK: 15,
+    articleTopK: 50,
+    clusterRepresentatives: 15,
+    commentTopK: 100,
     minSimilarity: 0.4,
   },
 };
