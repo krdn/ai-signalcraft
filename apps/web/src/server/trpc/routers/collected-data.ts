@@ -10,14 +10,38 @@ import {
   DEFAULT_COLLECTION_LIMITS,
   applyPerDayInflation,
   computeDayCount,
+  getCollectorClient,
 } from '@ai-signalcraft/core';
 import { eq, and, desc, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { protectedProcedure, router } from '../init';
 import { buildJobCondition } from '../shared/query-helpers';
 
+type JobWithOptions = {
+  id: number;
+  keyword: string;
+  startDate: Date;
+  endDate: Date;
+  status: string;
+  limits: unknown;
+  options: unknown;
+  appliedPreset: unknown;
+  createdAt: Date;
+  progress: unknown;
+};
+
+function isCollectorJob(job: JobWithOptions): boolean {
+  const opts = (job.options as Record<string, unknown>) || {};
+  return !!opts.useCollectorLoader || !!opts.subscriptionId;
+}
+
+function getSubscriptionId(job: JobWithOptions): number | undefined {
+  const opts = (job.options as Record<string, unknown>) || {};
+  return opts.subscriptionId as number | undefined;
+}
+
 export const collectedDataRouter = router({
-  // 수집된 기사 목록 조회 (조인 테이블 경유)
+  // 수집된 기사 목록 조회 (조인 테이블 경유 / 구독 잡은 collector API 경유)
   getArticles: protectedProcedure
     .input(
       z.object({
@@ -41,6 +65,58 @@ export const collectedDataRouter = router({
           }),
         );
       if (!job) throw new TRPCError({ code: 'NOT_FOUND' });
+
+      // 구독 잡: collector query API로 라우팅
+      if (isCollectorJob(job as JobWithOptions)) {
+        const subscriptionId = getSubscriptionId(job as JobWithOptions);
+        if (!subscriptionId)
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'subscriptionId 없음' });
+        try {
+          const client = getCollectorClient();
+          const collectorItems = await client.items.query.query({
+            subscriptionId,
+            dateRange: {
+              start: job.startDate.toISOString(),
+              end: job.endDate.toISOString(),
+            },
+            scope: 'feed',
+            itemTypes: ['article'],
+            ...(input.source ? { sources: [input.source as any] } : {}),
+            limit: input.perPage,
+          });
+
+          const items = collectorItems.items.map((item: Record<string, unknown>) => ({
+            id: 0,
+            source: item.source as string,
+            sourceId: item.sourceId as string,
+            url: item.url as string,
+            title: item.title as string,
+            content: item.content as string,
+            author: item.author as string,
+            publisher: item.publisher as string,
+            publishedAt: item.publishedAt ? new Date(item.publishedAt as string) : null,
+            collectedAt: item.fetchedAt ? new Date(item.fetchedAt as string) : null,
+            sentiment: item.sentiment as string | null,
+            sentimentScore: item.sentimentScore as number | null,
+            summary: null,
+            commentCount: 0,
+          }));
+
+          return {
+            items,
+            total: collectorItems.total,
+            page: input.page,
+            perPage: input.perPage,
+            totalPages: Math.ceil(collectorItems.total / input.perPage),
+          };
+        } catch (err) {
+          console.error('[collectedData] collector articles query 실패:', err);
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'collector 기사 조회 실패',
+          });
+        }
+      }
 
       const offset = (input.page - 1) * input.perPage;
 
@@ -105,7 +181,7 @@ export const collectedDataRouter = router({
       };
     }),
 
-  // 수집된 영상 목록 조회 (조인 테이블 경유)
+  // 수집된 영상 목록 조회 (조인 테이블 경유 / 구독 잡은 collector API 경유)
   getVideos: protectedProcedure
     .input(
       z.object({
@@ -128,6 +204,56 @@ export const collectedDataRouter = router({
           }),
         );
       if (!job) throw new TRPCError({ code: 'NOT_FOUND' });
+
+      // 구독 잡: collector query API로 라우팅
+      if (isCollectorJob(job as JobWithOptions)) {
+        const subscriptionId = getSubscriptionId(job as JobWithOptions);
+        if (!subscriptionId)
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'subscriptionId 없음' });
+        try {
+          const client = getCollectorClient();
+          const collectorItems = await client.items.query.query({
+            subscriptionId,
+            dateRange: {
+              start: job.startDate.toISOString(),
+              end: job.endDate.toISOString(),
+            },
+            scope: 'feed',
+            itemTypes: ['video'],
+            ...(input.source ? { sources: [input.source as any] } : {}),
+            limit: input.perPage,
+          });
+
+          const items = collectorItems.items.map((item: Record<string, unknown>) => ({
+            id: 0,
+            source: item.source as string,
+            sourceId: item.sourceId as string,
+            url: item.url as string,
+            title: item.title as string,
+            description: item.content as string,
+            channelTitle: item.author as string,
+            viewCount: (item.metrics as Record<string, number>)?.viewCount ?? null,
+            likeCount: (item.metrics as Record<string, number>)?.likeCount ?? null,
+            publishedAt: item.publishedAt ? new Date(item.publishedAt as string) : null,
+            collectedAt: item.fetchedAt ? new Date(item.fetchedAt as string) : null,
+            commentCount: 0,
+          }));
+
+          return {
+            items,
+            total: collectorItems.total,
+            page: input.page,
+            perPage: input.perPage,
+            totalPages: Math.ceil(collectorItems.total / input.perPage),
+          };
+        } catch (err) {
+          console.error('[collectedData] collector videos query 실패:', err);
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'collector 영상 조회 실패',
+          });
+        }
+      }
 
       const offset = (input.page - 1) * input.perPage;
 
@@ -190,7 +316,7 @@ export const collectedDataRouter = router({
       };
     }),
 
-  // 수집된 댓글 목록 조회 (조인 테이블 경유)
+  // 수집된 댓글 목록 조회 (조인 테이블 경유 / 구독 잡은 collector API 경유)
   getComments: protectedProcedure
     .input(
       z.object({
@@ -203,7 +329,6 @@ export const collectedDataRouter = router({
       }),
     )
     .query(async ({ input, ctx }) => {
-      // 팀 소속 확인
       const [job] = await ctx.db
         .select()
         .from(collectionJobs)
@@ -216,6 +341,53 @@ export const collectedDataRouter = router({
           }),
         );
       if (!job) throw new TRPCError({ code: 'NOT_FOUND' });
+
+      // 구독 잡: collector query API로 라우팅
+      if (isCollectorJob(job as JobWithOptions)) {
+        const subscriptionId = getSubscriptionId(job as JobWithOptions);
+        if (!subscriptionId)
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'subscriptionId 없음' });
+        try {
+          const client = getCollectorClient();
+          const collectorItems = await client.items.query.query({
+            subscriptionId,
+            dateRange: {
+              start: job.startDate.toISOString(),
+              end: job.endDate.toISOString(),
+            },
+            itemTypes: ['comment'],
+            ...(input.source ? { sources: [input.source as any] } : {}),
+            limit: input.perPage,
+          });
+
+          const items = collectorItems.items.map((item: Record<string, unknown>) => ({
+            id: 0,
+            source: item.source as string,
+            content: item.content as string,
+            author: item.author as string,
+            likeCount: (item.metrics as Record<string, number>)?.likeCount ?? null,
+            dislikeCount: (item.metrics as Record<string, number>)?.dislikeCount ?? null,
+            publishedAt: item.publishedAt ? new Date(item.publishedAt as string) : null,
+            articleId: null as number | null,
+            sentiment: item.sentiment as string | null,
+            sentimentScore: item.sentimentScore as number | null,
+          }));
+
+          return {
+            items,
+            total: collectorItems.total,
+            page: input.page,
+            perPage: input.perPage,
+            totalPages: Math.ceil(collectorItems.total / input.perPage),
+          };
+        } catch (err) {
+          console.error('[collectedData] collector comments query 실패:', err);
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'collector 댓글 조회 실패',
+          });
+        }
+      }
 
       const offset = (input.page - 1) * input.perPage;
 
@@ -266,7 +438,7 @@ export const collectedDataRouter = router({
       };
     }),
 
-  // 수집 통계 요약 (조인 테이블 경유)
+  // 수집 통계 요약 (조인 테이블 경유 / 구독 잡은 collector API 경유)
   getSummary: protectedProcedure
     .input(z.object({ jobId: z.number() }))
     .query(async ({ input, ctx }) => {
@@ -283,6 +455,68 @@ export const collectedDataRouter = router({
         );
       if (!job) throw new TRPCError({ code: 'NOT_FOUND' });
 
+      // 구독 잡: collector stats API로 라우팅
+      if (isCollectorJob(job as JobWithOptions)) {
+        const subscriptionId = getSubscriptionId(job as JobWithOptions);
+        if (!subscriptionId)
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'subscriptionId 없음' });
+        try {
+          const client = getCollectorClient();
+          const stats = await client.items.stats.query({
+            subscriptionId,
+            dateRange: {
+              start: job.startDate.toISOString(),
+              end: job.endDate.toISOString(),
+            },
+          });
+
+          // bySourceAndType을 web 스키마에 맞게 변환
+          const articleSourceBreakdown = stats.bySourceAndType
+            .filter((r) => r.itemType === 'article')
+            .map((r) => ({ source: r.source, count: r.count }));
+          const videoSourceBreakdown = stats.bySourceAndType
+            .filter((r) => r.itemType === 'video')
+            .map((r) => ({ source: r.source, count: r.count }));
+          const commentSourceBreakdown = stats.bySourceAndType
+            .filter((r) => r.itemType === 'comment')
+            .map((r) => ({ source: r.source, count: r.count }));
+
+          const totalArticles = articleSourceBreakdown.reduce((s, r) => s + r.count, 0);
+          const totalVideos = videoSourceBreakdown.reduce((s, r) => s + r.count, 0);
+          const totalComments = commentSourceBreakdown.reduce((s, r) => s + r.count, 0);
+
+          const volumeBySource = new Map<string, number>();
+          for (const { source, count } of stats.bySourceAndType) {
+            const norm = source === 'naver-comments' ? 'naver-news' : source;
+            volumeBySource.set(norm, (volumeBySource.get(norm) ?? 0) + count);
+          }
+          const sourceVolume = Array.from(volumeBySource.entries()).map(([source, count]) => ({
+            source,
+            count,
+          }));
+
+          return {
+            totalArticles,
+            totalVideos,
+            totalComments,
+            sourceBreakdown: [...articleSourceBreakdown, ...videoSourceBreakdown],
+            sourceVolume,
+            keyword: job.keyword,
+            period: {
+              start: job.startDate.toISOString(),
+              end: job.endDate.toISOString(),
+            },
+          };
+        } catch (err) {
+          console.error('[collectedData] collector stats 실패:', err);
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'collector 통계 조회 실패',
+          });
+        }
+      }
+
+      // 일반 잡: web DB 조인 테이블 쿼리 (기존 로직)
       const [
         articleCount,
         videoCount,
@@ -365,8 +599,6 @@ export const collectedDataRouter = router({
     .input(
       z.object({
         jobId: z.number(),
-        // 타임라인 X축 기준: 'published'(기본, 실제 작성일) | 'collected'(수집 실행 시점).
-        // 기존 차트가 'collected' 고정이어서 8일치가 수집일 1일에 몰려 보이던 문제를 해결.
         timelineBasis: z.enum(['published', 'collected']).default('published'),
       }),
     )
@@ -387,9 +619,200 @@ export const collectedDataRouter = router({
       const jobId = input.jobId;
       const timelineBasis = input.timelineBasis;
 
-      // KST 일자 변환 식 (타임스탬프 컬럼을 받아 'YYYY-MM-DD' 문자열 반환).
-      // 'published' 기준에서는 published_at이 null인 경우 collected_at으로 폴백하여
-      // 일자별 합계가 항상 totalCount와 일치하도록 보정한다.
+      // ── 공통: 한도/타임라인 보정 로직 ──
+      const jobLimits = job.limits ?? null;
+      const rawLimits = {
+        naverArticles: jobLimits?.naverArticles ?? DEFAULT_COLLECTION_LIMITS.naverArticles,
+        youtubeVideos: jobLimits?.youtubeVideos ?? DEFAULT_COLLECTION_LIMITS.youtubeVideos,
+        communityPosts: jobLimits?.communityPosts ?? DEFAULT_COLLECTION_LIMITS.communityPosts,
+        commentsPerItem: jobLimits?.commentsPerItem ?? DEFAULT_COLLECTION_LIMITS.commentsPerItem,
+      };
+      const limitsSource: 'job' | 'default' = jobLimits ? 'job' : 'default';
+      const limitMode = ((job.options as Record<string, unknown>)?.limitMode ?? 'total') as
+        | 'total'
+        | 'perDay';
+      const dayCount = computeDayCount(job.startDate.toISOString(), job.endDate.toISOString());
+      const perDayInflated = applyPerDayInflation(rawLimits, dayCount, limitMode);
+
+      const sources = ((job.appliedPreset as Record<string, unknown>)?.sources ?? {}) as Record<
+        string,
+        boolean
+      >;
+      const COMMUNITY_SOURCE_KEYS = ['dcinside', 'fmkorea', 'clien'] as const;
+      const activeCommunityCount = COMMUNITY_SOURCE_KEYS.filter((k) => sources[k]).length || 1;
+      const effectiveLimits = {
+        ...perDayInflated,
+        communityPosts: perDayInflated.communityPosts * activeCommunityCount,
+      };
+
+      const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+      const toKstDateStr = (iso: Date | string | null | undefined): string | null => {
+        if (iso == null) return null;
+        const d = typeof iso === 'string' ? new Date(iso) : iso;
+        if (!(d instanceof Date) || Number.isNaN(d.getTime())) return null;
+        return new Date(d.getTime() + KST_OFFSET_MS).toISOString().slice(0, 10);
+      };
+      const startStr = toKstDateStr(job.startDate);
+      const endStr = toKstDateStr(job.endDate);
+
+      const fullDates: string[] = [];
+      if (startStr && endStr) {
+        const cursor = new Date(`${startStr}T00:00:00Z`);
+        const limit = new Date(`${endStr}T00:00:00Z`);
+        let guard = 0;
+        while (cursor <= limit && guard < 400) {
+          fullDates.push(cursor.toISOString().slice(0, 10));
+          cursor.setUTCDate(cursor.getUTCDate() + 1);
+          guard += 1;
+        }
+      }
+      const inRangeSet = new Set(fullDates);
+      const executionKstDate = toKstDateStr(job.createdAt);
+      const futureDates = executionKstDate ? fullDates.filter((d) => d > executionKstDate) : [];
+
+      const pct = (actual: number, limit: number) =>
+        limit > 0 ? Math.round((actual / limit) * 1000) / 10 : 0;
+
+      // ── 구독 잡: collector collectionStats API로 라우팅 ──
+      if (isCollectorJob(job as JobWithOptions)) {
+        const subscriptionId = getSubscriptionId(job as JobWithOptions);
+        if (!subscriptionId)
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'subscriptionId 없음' });
+
+        try {
+          const client = getCollectorClient();
+          const collectorStats = await client.items.collectionStats.query({
+            subscriptionId,
+            dateRange: {
+              start: job.startDate.toISOString(),
+              end: job.endDate.toISOString(),
+            },
+          });
+
+          // 소스×타입 분해를 web 스키마에 맞게 변환
+          const articleBySource = collectorStats.bySourceAndType
+            .filter((r) => r.itemType === 'article')
+            .map((r) => ({ source: r.source, count: r.count }));
+          const videoBySource = collectorStats.bySourceAndType
+            .filter((r) => r.itemType === 'video')
+            .map((r) => ({ source: r.source, count: r.count }));
+          const commentBySource = collectorStats.bySourceAndType
+            .filter((r) => r.itemType === 'comment')
+            .map((r) => ({ source: r.source, count: r.count }));
+
+          // 매체별 실적
+          const naverArticleCount = articleBySource
+            .filter((r) => r.source === 'naver-news')
+            .reduce((sum, r) => sum + r.count, 0);
+          const youtubeVideoCount = videoBySource
+            .filter((r) => r.source === 'youtube-videos' || r.source === 'youtube')
+            .reduce((sum, r) => sum + r.count, 0);
+          const communityPostCount = articleBySource
+            .filter((r) => r.source !== 'naver-news')
+            .reduce((sum, r) => sum + r.count, 0);
+
+          // 댓글 평균/최대는 collector에서 직접 구하기 어려우므로 commentCountByParent 사용
+          let combinedAvg = 0;
+          let combinedMax = 0;
+          try {
+            const commentCounts = await client.items.commentCountByParent.query({
+              subscriptionId,
+              dateRange: {
+                start: job.startDate.toISOString(),
+                end: job.endDate.toISOString(),
+              },
+            });
+            if (commentCounts.length > 0) {
+              const counts = commentCounts.map((r) => r.count);
+              combinedAvg = counts.reduce((a, b) => a + b, 0) / counts.length;
+              combinedMax = Math.max(...counts);
+            }
+          } catch {
+            // 댓글 통계 실패 시 0 유지
+          }
+
+          // 타임라인 병합
+          const dayMap = new Map<string, { articles: number; videos: number; comments: number }>();
+          const ensureDay = (d: string) => {
+            const existing = dayMap.get(d);
+            if (existing) return existing;
+            const fresh = { articles: 0, videos: 0, comments: 0 };
+            dayMap.set(d, fresh);
+            return fresh;
+          };
+          for (const r of collectorStats.articleDaily) ensureDay(r.date).articles = r.count;
+          for (const r of collectorStats.videoDaily) ensureDay(r.date).videos = r.count;
+          for (const r of collectorStats.commentDaily) ensureDay(r.date).comments = r.count;
+
+          const timeline = fullDates.map((date) => ({
+            date,
+            articles: dayMap.get(date)?.articles ?? 0,
+            videos: dayMap.get(date)?.videos ?? 0,
+            comments: dayMap.get(date)?.comments ?? 0,
+          }));
+
+          const outOfRange = { articles: 0, videos: 0, comments: 0, days: 0 };
+          for (const [date, counts] of dayMap.entries()) {
+            if (inRangeSet.has(date)) continue;
+            outOfRange.articles += counts.articles;
+            outOfRange.videos += counts.videos;
+            outOfRange.comments += counts.comments;
+            if (counts.articles + counts.videos + counts.comments > 0) outOfRange.days += 1;
+          }
+
+          return {
+            byTypeAndSource: {
+              articles: articleBySource,
+              videos: videoBySource,
+              comments: commentBySource,
+            },
+            limits: {
+              naverArticles: {
+                limit: effectiveLimits.naverArticles,
+                actual: naverArticleCount,
+                pct: pct(naverArticleCount, effectiveLimits.naverArticles),
+              },
+              youtubeVideos: {
+                limit: effectiveLimits.youtubeVideos,
+                actual: youtubeVideoCount,
+                pct: pct(youtubeVideoCount, effectiveLimits.youtubeVideos),
+              },
+              communityPosts: {
+                limit: effectiveLimits.communityPosts,
+                actual: communityPostCount,
+                pct: pct(communityPostCount, effectiveLimits.communityPosts),
+              },
+              commentsPerItem: {
+                limit: effectiveLimits.commentsPerItem,
+                actual: Math.round(combinedAvg),
+                actualAvg: Math.round(combinedAvg * 10) / 10,
+                actualMax: combinedMax,
+                pct: pct(combinedAvg, effectiveLimits.commentsPerItem),
+              },
+            },
+            limitsSource,
+            limitMode: limitMode as 'total' | 'perDay',
+            dayCount,
+            rawLimits,
+            activeCommunityCount,
+            timeline,
+            timelineBasis,
+            outOfRange,
+            executionKstDate,
+            futureDates,
+          };
+        } catch (err) {
+          console.error('[collectedData] collector collectionStats 실패:', err);
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'collector 통계 조회 실패',
+          });
+        }
+      }
+
+      // ── 일반 잡: web DB 조인 테이블 직접 쿼리 (기존 로직) ──
+
+      // KST 일자 변환 식
       const articleBasisCol =
         timelineBasis === 'published'
           ? sql`COALESCE(${articles.publishedAt}, ${articles.collectedAt})`
@@ -403,15 +826,10 @@ export const collectedDataRouter = router({
           ? sql`COALESCE(${comments.publishedAt}, ${comments.collectedAt})`
           : sql`${comments.collectedAt}`;
 
-      // ⚠️ DB 컬럼은 timestamp WITHOUT time zone이지만 실제 저장값은 UTC 시각.
-      //   - 수집기에서 +09:00 명시 Date를 INSERT → 드라이버가 ISO 변환 시 UTC 시각만 박힘
-      //   - 따라서 먼저 UTC로 해석한 뒤 KST로 변환해야 사용자가 보는 일자(KST)와 일치한다.
-      // 단순 `AT TIME ZONE 'Asia/Seoul'`만 쓰면 DB값을 KST로 가정해 9시간 어긋난 일자가 나옴.
       const kstDayArticles = sql<string>`to_char(((${articleBasisCol} AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Seoul')::date, 'YYYY-MM-DD')`;
       const kstDayVideos = sql<string>`to_char(((${videoBasisCol} AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Seoul')::date, 'YYYY-MM-DD')`;
       const kstDayComments = sql<string>`to_char(((${commentBasisCol} AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Seoul')::date, 'YYYY-MM-DD')`;
 
-      // 기사별 댓글 수 서브쿼리
       const articleCommentSq = ctx.db
         .select({
           articleId: comments.articleId,
@@ -423,7 +841,6 @@ export const collectedDataRouter = router({
         .groupBy(comments.articleId)
         .as('article_comment_cnt');
 
-      // 영상별 댓글 수 서브쿼리
       const videoCommentSq = ctx.db
         .select({
           videoId: comments.videoId,
@@ -513,33 +930,6 @@ export const collectedDataRouter = router({
           .from(videoCommentSq),
       ]);
 
-      // 한도 fallback
-      const jobLimits = job.limits ?? null;
-      const rawLimits = {
-        naverArticles: jobLimits?.naverArticles ?? DEFAULT_COLLECTION_LIMITS.naverArticles,
-        youtubeVideos: jobLimits?.youtubeVideos ?? DEFAULT_COLLECTION_LIMITS.youtubeVideos,
-        communityPosts: jobLimits?.communityPosts ?? DEFAULT_COLLECTION_LIMITS.communityPosts,
-        commentsPerItem: jobLimits?.commentsPerItem ?? DEFAULT_COLLECTION_LIMITS.commentsPerItem,
-      };
-      const limitsSource: 'job' | 'default' = jobLimits ? 'job' : 'default';
-
-      // 실제 수집기에 전달된 한도와 동일한 기준으로 환산 (limitMode='perDay'이면 일수만큼 곱함).
-      // 이전에는 rawLimits를 그대로 표시해 8일×20=160건이 "한도 20의 800%"로 과장됐음.
-      const limitMode = job.options?.limitMode ?? 'total';
-      const dayCount = computeDayCount(job.startDate.toISOString(), job.endDate.toISOString());
-      const perDayInflated = applyPerDayInflation(rawLimits, dayCount, limitMode);
-
-      // 커뮤니티 한도는 수집기에 '매체당'으로 전달되므로 활성 커뮤니티 매체 수만큼 가중.
-      // (flows.ts에서 dcinside/fmkorea/clien 각각에 communityPosts를 그대로 넘김)
-      const sources = job.appliedPreset?.sources ?? {};
-      const COMMUNITY_SOURCE_KEYS = ['dcinside', 'fmkorea', 'clien'] as const;
-      const activeCommunityCount = COMMUNITY_SOURCE_KEYS.filter((k) => sources[k]).length || 1;
-      const effectiveLimits = {
-        ...perDayInflated,
-        communityPosts: perDayInflated.communityPosts * activeCommunityCount,
-      };
-
-      // 매체별 실적 계산 (source 문자열: 'naver-news', 'youtube-videos', 'dcinside', 'fmkorea', 'clien', 'rss', 'html')
       const naverArticleCount = articleBySource
         .filter((r) => r.source === 'naver-news')
         .reduce((sum, r) => sum + r.count, 0);
@@ -550,10 +940,6 @@ export const collectedDataRouter = router({
         .filter((r) => r.source !== 'naver-news')
         .reduce((sum, r) => sum + r.count, 0);
 
-      const pct = (actual: number, limit: number) =>
-        limit > 0 ? Math.round((actual / limit) * 1000) / 10 : 0;
-
-      // 기사 + 영상 댓글 평균 가중 평균
       const aAvg = Number(articleCommentStats[0]?.avg ?? 0);
       const aMax = Number(articleCommentStats[0]?.max ?? 0);
       const vAvg = Number(videoCommentStats[0]?.avg ?? 0);
@@ -564,9 +950,8 @@ export const collectedDataRouter = router({
         totalItems > 0 ? (aAvg * totalArticleLikeItems + vAvg * youtubeVideoCount) / totalItems : 0;
       const combinedMax = Math.max(aMax, vMax);
 
-      // 타임라인 병합 (KST 일자 기준)
       const dayMap = new Map<string, { articles: number; videos: number; comments: number }>();
-      const ensureDay = (d: string): { articles: number; videos: number; comments: number } => {
+      const ensureDay = (d: string) => {
         const existing = dayMap.get(d);
         if (existing) return existing;
         const fresh = { articles: 0, videos: 0, comments: 0 };
@@ -577,32 +962,6 @@ export const collectedDataRouter = router({
       for (const r of videoDaily) ensureDay(r.date).videos = r.count;
       for (const r of commentDaily) ensureDay(r.date).comments = r.count;
 
-      // 타임라인은 Job 기간(startDate~endDate)으로만 그린다.
-      // 기간을 벗어난 데이터는 차트에서 제외하고 outOfRange 메타에만 집계해 사용자에게 알린다.
-      // (네이버/커뮤니티 수집기 버그로 기간 외 데이터가 혼입된 과거 Job도 차트는 기간만 보이게 된다.)
-      const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
-      const toKstDateStr = (iso: Date | string | null | undefined): string | null => {
-        if (iso == null) return null;
-        const d = typeof iso === 'string' ? new Date(iso) : iso;
-        if (!(d instanceof Date) || Number.isNaN(d.getTime())) return null;
-        return new Date(d.getTime() + KST_OFFSET_MS).toISOString().slice(0, 10);
-      };
-      const startStr = toKstDateStr(job.startDate);
-      const endStr = toKstDateStr(job.endDate);
-
-      const fullDates: string[] = [];
-      if (startStr && endStr) {
-        const cursor = new Date(`${startStr}T00:00:00Z`);
-        const limit = new Date(`${endStr}T00:00:00Z`);
-        // 안전장치: 최대 400일로 제한 (무한 루프 방지)
-        let guard = 0;
-        while (cursor <= limit && guard < 400) {
-          fullDates.push(cursor.toISOString().slice(0, 10));
-          cursor.setUTCDate(cursor.getUTCDate() + 1);
-          guard += 1;
-        }
-      }
-      const inRangeSet = new Set(fullDates);
       const timeline = fullDates.map((date) => ({
         date,
         articles: dayMap.get(date)?.articles ?? 0,
@@ -610,7 +969,6 @@ export const collectedDataRouter = router({
         comments: dayMap.get(date)?.comments ?? 0,
       }));
 
-      // 기간 외 데이터 메타 집계 (차트 주석/경고 배지용)
       const outOfRange = { articles: 0, videos: 0, comments: 0, days: 0 };
       for (const [date, counts] of dayMap.entries()) {
         if (inRangeSet.has(date)) continue;
@@ -620,12 +978,6 @@ export const collectedDataRouter = router({
         if (counts.articles + counts.videos + counts.comments > 0) outOfRange.days += 1;
       }
 
-      // 수집 실행 시점보다 미래인 날짜 수 집계.
-      // 기간 종료일이 Job 실행 시점보다 미래면 그 날짜들의 데이터는 아직 존재할 수 없음 → UI 경고.
-      const executionKstDate = toKstDateStr(job.createdAt);
-      const futureDates = executionKstDate ? fullDates.filter((d) => d > executionKstDate) : [];
-
-      // 진단용 로그 (dev only)
       if (process.env.NODE_ENV !== 'production') {
         console.warn('[getCollectionStats]', {
           jobId,
@@ -670,7 +1022,7 @@ export const collectedDataRouter = router({
           },
         },
         limitsSource,
-        limitMode,
+        limitMode: limitMode as 'total' | 'perDay',
         dayCount,
         rawLimits,
         activeCommunityCount,

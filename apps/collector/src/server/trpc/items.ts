@@ -346,6 +346,74 @@ export const itemsRouter = router({
       return Array.from(merged.values());
     }),
 
+  /**
+   * 수집 데이터 대시보드용 종합 통계 — 일자별 수집량, 소스×타입 분해.
+   * web의 collected-data.ts에서 구독 잡 라우팅 시 호출.
+   */
+  collectionStats: protectedProcedure
+    .input(
+      z.object({
+        subscriptionId: z.number().int().positive(),
+        dateRange: dateRangeSchema,
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const start = new Date(input.dateRange.start);
+      const end = new Date(input.dateRange.end);
+
+      const conds = [
+        between(rawItems.time, start, end),
+        eq(rawItems.subscriptionId, input.subscriptionId),
+      ];
+
+      // KST 일자 변환 — web DB와 동일한 방식 (UTC → KST)
+      const kstDay = (col: typeof rawItems.time) =>
+        sql<string>`to_char(((${col} AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Seoul')::date, 'YYYY-MM-DD')`;
+
+      const [bySourceAndType, articleDaily, commentDaily, videoDaily] = await Promise.all([
+        ctx.db
+          .select({
+            source: rawItems.source,
+            itemType: rawItems.itemType,
+            count: sql<number>`count(*)::int`,
+          })
+          .from(rawItems)
+          .where(and(...conds))
+          .groupBy(rawItems.source, rawItems.itemType),
+        ctx.db
+          .select({
+            date: kstDay(rawItems.time),
+            count: sql<number>`count(*)::int`,
+          })
+          .from(rawItems)
+          .where(and(...conds, eq(rawItems.itemType, 'article')))
+          .groupBy(kstDay(rawItems.time)),
+        ctx.db
+          .select({
+            date: kstDay(rawItems.time),
+            count: sql<number>`count(*)::int`,
+          })
+          .from(rawItems)
+          .where(and(...conds, eq(rawItems.itemType, 'comment')))
+          .groupBy(kstDay(rawItems.time)),
+        ctx.db
+          .select({
+            date: kstDay(rawItems.time),
+            count: sql<number>`count(*)::int`,
+          })
+          .from(rawItems)
+          .where(and(...conds, eq(rawItems.itemType, 'video')))
+          .groupBy(kstDay(rawItems.time)),
+      ]);
+
+      return {
+        bySourceAndType,
+        articleDaily,
+        commentDaily,
+        videoDaily,
+      };
+    }),
+
   /** 소스 × 아이템타입 × 감성 건수 집계 (대시보드 소스별 감성 비교용) */
   sentimentBySource: protectedProcedure
     .input(
