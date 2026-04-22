@@ -39,19 +39,31 @@ export class FMKoreaCollector extends CommunityBaseCollector {
   // 차단 감지 override (에펨코리아 전용) — 다양한 차단 신호를 폭넓게 검출
   protected detectBlocked(html: string): boolean {
     if (!html) return true;
-    // 응답이 비정상적으로 짧으면 차단/에러 페이지로 간주 (정상 검색결과는 보통 50KB+)
+    // 응답이 비정상적으로 짧으면 차단/에러 페이지로 간주 (정상 검색결과는 보통 30KB+)
     if (html.length < 2000) return true;
-    return (
+    // 명시적 차단/에러 신호
+    if (
       html.includes('자동등록방지') ||
       html.includes('captcha') ||
       html.includes('접근이 제한') ||
       html.includes('에펨코리아 보안 시스템') ||
       html.includes('Too Many Requests') ||
-      html.includes('429') ||
-      html.includes('일시적으로 접근이 차단') ||
-      // 검색결과 컨테이너가 아예 없으면 차단 또는 비정상 응답
-      (!html.includes('searchResult') && !html.includes('search_list'))
-    );
+      html.includes('일시적으로 접근이 차단')
+    ) {
+      return true;
+    }
+    // 정상 검색 결과 마커 확인 (fetch 응답은 HTML 구조가 Playwright와 다를 수 있음)
+    const hasSearchMarker =
+      html.includes('searchResult') ||
+      html.includes('search_list') ||
+      html.includes('is_keyword') ||
+      html.includes('act=IS') ||
+      html.includes('document_srl');
+    if (hasSearchMarker) return false;
+    // 검색 결과 마커도 없고 30KB 미만이면 비정상
+    if (html.length < 30000) return true;
+    // 30KB+면 정상 페이지일 가능성이 높음 (다른 콘텐츠 포함)
+    return false;
   }
 
   /**
@@ -105,14 +117,14 @@ export class FMKoreaCollector extends CommunityBaseCollector {
   protected buildSearchUrl(
     keyword: string,
     page: number,
-    _dateRange?: { start: string; end: string },
+    dateRange?: { start: string; end: string },
   ): string {
-    return buildSearchUrl('fmkorea', keyword, page);
+    return buildSearchUrl('fmkorea', keyword, page, dateRange);
   }
 
-  // 에펨은 URL 레벨 날짜 필터 미지원 → 레거시 순차 + 사전 날짜 필터 경로 사용
+  // 에펨코리아 search.php는 s_date/e_date 파라미터로 날짜 범위 필터 지원
   protected override supportsDateRangeSearch(): boolean {
-    return false;
+    return true;
   }
 
   /**

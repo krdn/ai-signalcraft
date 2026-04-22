@@ -59,6 +59,7 @@ export class ClienCollector extends CommunityBaseCollector {
   private sessionUserAgent?: string;
   private sessionCookies = new Map<string, string>();
   private consecutiveFetchFails = 0;
+  private sessionInitialized = false;
 
   private saveCookiesFromResponse(response: Response): void {
     const setCookies = response.headers.get('set-cookie');
@@ -93,6 +94,7 @@ export class ClienCollector extends CommunityBaseCollector {
     this.sessionCookies.clear();
     this.sessionUserAgent = getRandomUserAgent();
     this.consecutiveFetchFails = 0;
+    this.sessionInitialized = false;
     console.info(`[clien] 세션 리셋 — 새 UA + 쿠키 초기화`);
   }
 
@@ -108,16 +110,34 @@ export class ClienCollector extends CommunityBaseCollector {
     }
   }
 
-  // --- 검색 페이지: fetch 우선 + Playwright fallback ---
+  // --- 검색 페이지: 세션 초기화 후 fetch 우선 + Playwright fallback ---
 
   protected override async loadSearchPage(
     page: Page,
     searchUrl: string,
     pageNum: number,
   ): Promise<{ url: string; title: string; publishedAt?: Date | null }[] | null> {
-    // 연속 실패 3회 → 세션 리셋 후 Playwright 우선
+    // 연속 실패 3회 → 세션 리셋
     if (this.consecutiveFetchFails >= 3) {
       this.resetSession();
+      this.sessionInitialized = false;
+    }
+
+    // 세션 미초기화: Playwright로 첫 방문하여 쿠키 확보
+    if (!this.sessionInitialized) {
+      const initUrl = pageNum === 1 ? searchUrl : this.buildSearchUrl('_', 1);
+      console.info(`[clien] 세션 초기화 — Playwright로 쿠키 확보 중`);
+      try {
+        await page.goto(initUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+        await page.waitForTimeout(1500);
+        await this.collectCookiesFromPage(page);
+        if (this.sessionCookies.size > 0) {
+          this.sessionInitialized = true;
+          console.info(`[clien] 세션 초기화 완료 — 쿠키 ${this.sessionCookies.size}개 확보`);
+        }
+      } catch (err) {
+        console.warn(`[clien] 세션 초기화 실패:`, err instanceof Error ? err.message : err);
+      }
     }
 
     // 1차: fetch
@@ -136,6 +156,7 @@ export class ClienCollector extends CommunityBaseCollector {
     if (playwrightResult) {
       await this.collectCookiesFromPage(page);
       this.consecutiveFetchFails = 0;
+      this.sessionInitialized = true;
     }
     return playwrightResult;
   }

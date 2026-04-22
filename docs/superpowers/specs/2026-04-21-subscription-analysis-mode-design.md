@@ -69,7 +69,7 @@ const [subscriptionMode, setSubscriptionMode] = useState<SubscriptionMode>({
 
 구독 모드 해제:
 - 선택된 구독 옆 X 버튼으로 일반 모드 복귀
-- 복귀 시 폼 값 초기화 (또는 유지, 사용자 경험에 따라)
+- 복귀 시 폼 값 초기화 (빈 폼으로 되돌림)
 
 ### 3. 조건부 렌더링 규칙
 
