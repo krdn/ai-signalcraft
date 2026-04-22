@@ -353,7 +353,6 @@ export const analysisRouter = router({
           keyword: sub.keyword,
           startDate: new Date(input.startDate),
           endDate: new Date(input.endDate),
-          sources: sub.sources,
           status: 'running',
           domain: input.domain || sub.domain || 'general',
           userId: ctx.userId,
