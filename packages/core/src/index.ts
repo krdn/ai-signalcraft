@@ -31,3 +31,4 @@ export {
   getCollectorClient,
   type CollectorClient,
 } from './collector-client';
+export * from './alerts';
