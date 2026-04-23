@@ -20,3 +20,9 @@ export function createLogger(moduleName: string): Logger {
     error: (...args: unknown[]) => console.error(prefix, ...args),
   };
 }
+
+/** .catch(() => {}) 대신 사용하는 에러 로깅 유틸 */
+export function logError(context: string, err: unknown): void {
+  const msg = err instanceof Error ? err.message : String(err);
+  console.error(`[${context}] ${msg}`);
+}

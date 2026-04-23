@@ -29,7 +29,7 @@ import { getDb } from '../db';
 import { dataSources } from '../db/schema/sources';
 import { isPipelineCancelled } from '../pipeline/control';
 import { awaitStageGate } from '../pipeline/pipeline-checks';
-import { createLogger } from '../utils/logger';
+import { createLogger, logError } from '../utils/logger';
 import {
   persistArticleEmbeddings,
   persistCommentEmbeddings,
@@ -571,7 +571,7 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
           classifyJobId,
           'warn',
           `개별 감정 분석 실패 (분석은 계속 진행됨): ${msg}`,
-        ).catch(() => void 0);
+        ).catch((err) => logError('pipeline-worker', err));
       }
 
       // BP 게이트: 정규화 완료 후 (analysis 트리거 직전)

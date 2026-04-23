@@ -3,6 +3,8 @@ import { eq } from 'drizzle-orm';
 import { getSkippedModules } from '../pipeline/control';
 import { awaitStageGate } from '../pipeline/pipeline-checks';
 import { appendJobEvent, updateJobProgress } from '../pipeline/persist';
+import { logError } from '../utils/logger';
+import { evaluateAlerts } from '../alerts';
 import { getDb } from '../db';
 import { collectionJobs } from '../db/schema/collections';
 import { recordStageDuration, withSpan } from '../metrics';
@@ -114,7 +116,7 @@ export async function runAnalysisPipeline(
     for (const [src, g] of sourceGroups) {
       subStats[src] = { status: 'completed', ...g };
     }
-    await updateJobProgress(jobId, subStats).catch(() => {});
+    await updateJobProgress(jobId, subStats).catch((err) => logError('pipeline-orchestrator', err));
   }
 
   const loaded = await loadCompletedResults(jobId, options?.retryModules);
@@ -127,7 +129,7 @@ export async function runAnalysisPipeline(
       jobId,
       'info',
       `체크포인트 복원: ${Object.keys(loaded.allResults).join(', ')} (DB에서 로드)`,
-    ).catch(() => {});
+    ).catch((err) => logError('pipeline-orchestrator', err));
   }
 
   // reportOnly 모드 — ctx 구성 전 조기 반환
@@ -193,7 +195,7 @@ export async function runAnalysisPipeline(
       try {
         await updateJobProgress(jobId, {
           normalization: { status: 'running', domain: input.domain ?? 'default' },
-        }).catch(() => {});
+        }).catch((err) => logError('pipeline-orchestrator', err));
         const { input: normalizedInput, stats: normStats } = normalizeAnalysisInput(
           input,
           input.domain,
@@ -202,13 +204,13 @@ export async function runAnalysisPipeline(
         ctx.input = input;
         await updateJobProgress(jobId, {
           normalization: { status: 'completed', ...normStats },
-        }).catch(() => {});
+        }).catch((err) => logError('pipeline-orchestrator', err));
         await recordStageDuration('normalization', Date.now() - normStart, 'completed');
       } catch (error) {
         console.error(`[pipeline] 도메인 정규화 실패 (원본 유지):`, error);
         await updateJobProgress(jobId, {
           normalization: { status: 'failed' },
-        }).catch(() => {});
+        }).catch((err) => logError('pipeline-orchestrator', err));
         await recordStageDuration('normalization', Date.now() - normStart, 'failed');
       }
     },
@@ -223,7 +225,7 @@ export async function runAnalysisPipeline(
     try {
       await updateJobProgress(jobId, {
         'token-optimization': { status: 'running', preset: tokenOptimization },
-      }).catch(() => {});
+      }).catch((err) => logError('pipeline-orchestrator', err));
       const preprocessed = await preprocessAnalysisInput(input, tokenOptimization, jobId, {
         skipNormalization: true,
       });
@@ -235,17 +237,19 @@ export async function runAnalysisPipeline(
           phase: 'preprocessing',
           ...preprocessed.stats,
         },
-      }).catch(() => {});
+      }).catch((err) => logError('pipeline-orchestrator', err));
       await recordStageDuration('token-optimization', Date.now() - tokenStart, 'completed');
     } catch (error) {
       console.error(`[pipeline] 토큰 최적화 실패:`, error);
       await updateJobProgress(jobId, {
         'token-optimization': { status: 'failed', phase: 'error' },
-      }).catch(() => {});
+      }).catch((err) => logError('pipeline-orchestrator', err));
       await recordStageDuration('token-optimization', Date.now() - tokenStart, 'failed');
     }
   } else {
-    await updateJobProgress(jobId, { 'token-optimization': { status: 'skipped' } }).catch(() => {});
+    await updateJobProgress(jobId, { 'token-optimization': { status: 'skipped' } }).catch((err) =>
+      logError('pipeline-orchestrator', err),
+    );
   }
 
   // BP 게이트: 토큰 최적화 완료 후
@@ -265,7 +269,7 @@ export async function runAnalysisPipeline(
       console.error(`[runner] 개별 항목 분석 실패:`, error);
       await updateJobProgress(jobId, {
         'item-analysis': { status: 'failed', phase: 'error' },
-      }).catch(() => {});
+      }).catch((err) => logError('pipeline-orchestrator', err));
     }
   } else {
     console.log(`[pipeline] 구독 단축 경로: Stage 0(개별 감정 분석) 스킵`);
@@ -273,7 +277,7 @@ export async function runAnalysisPipeline(
       jobId,
       'info',
       '구독 단축 경로: 개별 감정 분석 스킵 (collector에서 이미 완료)',
-    ).catch(() => {});
+    ).catch((err) => logError('pipeline-orchestrator', err));
   }
 
   // BP 게이트: 개별 감정 분석 완료 후
@@ -306,30 +310,34 @@ export async function runAnalysisPipeline(
     const mv = macroResult.result as Record<string, unknown>;
     const trend = mv.dailyMentionTrend as Array<Record<string, unknown>> | undefined;
     if (!trend || trend.length === 0) {
-      const dailyMap = new Map<string, { count: number; pos: number; neg: number; neu: number }>();
+      const dailyMap = new Map<string, { count: number }>();
       for (const item of [...ctx.input.articles, ...ctx.input.comments]) {
         const ts = item.publishedAt;
         if (!ts) continue;
         const date = new Date(ts).toISOString().split('T')[0];
         if (date === '1970-01-01') continue;
-        const entry = dailyMap.get(date) || { count: 0, pos: 0, neg: 0, neu: 0 };
+        const entry = dailyMap.get(date) || { count: 0 };
         entry.count++;
         dailyMap.set(date, entry);
       }
       if (dailyMap.size > 0) {
-        const total = Array.from(dailyMap.values()).reduce((s, e) => s + e.count, 0);
+        // AI가 sentimentRatio를 제공하지 않았으므로 null로 설정.
+        // 가짜 비율을 만들어내지 않기 위함 — 대시보드에서는 null을 미제공으로 표시.
         mv.dailyMentionTrend = Array.from(dailyMap.entries())
           .sort(([a], [b]) => a.localeCompare(b))
           .map(([date, entry]) => ({
             date,
             count: entry.count,
-            sentimentRatio: {
-              positive: +(total > 0 ? ((entry.count / total) * 0.4).toFixed(2) : 0),
-              negative: +(total > 0 ? ((entry.count / total) * 0.3).toFixed(2) : 0),
-              neutral: +(total > 0 ? (1 - (entry.count / total) * 0.7).toFixed(2) : 1),
-            },
+            sentimentRatio: null,
           }));
-        console.log(`[pipeline] dailyMentionTrend 보정: ${dailyMap.size}일 분량 주입`);
+        console.log(
+          `[pipeline] dailyMentionTrend 보정: ${dailyMap.size}일 분량 주입 (sentimentRatio=null — AI 결과 누락)`,
+        );
+        appendJobEvent(
+          jobId,
+          'warn',
+          `macro-view dailyMentionTrend: AI가 빈 배열 반환 — ${dailyMap.size}일치 count만 주입, sentimentRatio=null`,
+        ).catch((err) => logError('pipeline-orchestrator', err));
       }
     }
   }
@@ -493,6 +501,11 @@ export async function runAnalysisPipeline(
   } catch (e) {
     console.error('[delta] 델타 분석 실패:', e);
   }
+
+  // 알림 규칙 평가 — 사용자 정의 임계값 검사 후 알림 전송 (비차단)
+  evaluateAlerts(jobId, ctx.allResults as unknown as Record<string, unknown>).catch((err) =>
+    logError('alerts', err),
+  );
 
   const completedModules = Object.values(ctx.allResults)
     .filter((r) => r.status === 'completed')

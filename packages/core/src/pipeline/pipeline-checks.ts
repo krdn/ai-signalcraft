@@ -1,6 +1,7 @@
 // 파이프라인 런타임 체크 — runner에서 매 모듈 실행 전후 호출
 import { eq } from 'drizzle-orm';
 import { getDb } from '../db';
+import { logError } from '../utils/logger';
 import { collectionJobs } from '../db/schema/collections';
 import { analysisResults } from '../db/schema/analysis';
 import type { BreakpointStage } from '../types/breakpoints';
@@ -168,7 +169,7 @@ export async function awaitStageGate(jobId: number, stageName: BreakpointStage):
     jobId,
     'info',
     `브레이크포인트: ${stageName} 완료 후 정지 (24시간 내 재개하지 않으면 자동 취소)`,
-  ).catch(() => {});
+  ).catch((err) => logError('pipeline-checks', err));
 
   for (const phase of POLL_SCHEDULE) {
     for (let i = 0; i < phase.count; i++) {
@@ -200,7 +201,9 @@ export async function awaitStageGate(jobId: number, stageName: BreakpointStage):
             .where(eq(collectionJobs.id, jobId));
         }
 
-        await appendJobEvent(jobId, 'info', `브레이크포인트 재개: ${stageName}`).catch(() => {});
+        await appendJobEvent(jobId, 'info', `브레이크포인트 재개: ${stageName}`).catch((err) =>
+          logError('pipeline-checks', err),
+        );
         return true;
       }
     }
@@ -212,6 +215,6 @@ export async function awaitStageGate(jobId: number, stageName: BreakpointStage):
     jobId,
     'warn',
     '브레이크포인트 24시간 초과 — 작업이 자동 취소되었습니다',
-  ).catch(() => {});
+  ).catch((err) => logError('pipeline-checks', err));
   return false;
 }

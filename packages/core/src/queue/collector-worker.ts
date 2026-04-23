@@ -8,7 +8,7 @@ import {
 } from '@ai-signalcraft/collectors';
 import { updateJobProgress, appendJobEvent } from '../pipeline';
 import { isPipelineCancelled } from '../pipeline/control';
-import { createLogger } from '../utils/logger';
+import { createLogger, logError } from '../utils/logger';
 import { progressKey, countBySourceType } from './worker-config';
 
 const logger = createLogger('collector-worker');
@@ -121,7 +121,7 @@ export function createCollectorHandler(): (job: Job) => Promise<CollectorResult>
             dbJobId,
             'info',
             `[${source}] 종료: reason=${s.endReason} lastPage=${s.lastPage}${quotaInfo}${fallbackInfo} 분포(KST)={${distStr}} capSkip=${s.perDayCapSkip ?? 0} preFilterSkip=${s.preFilterSkip ?? 0} outOfRange=${s.outOfRange ?? 0} pageEmpty=${s.pageEmptyCount ?? 0}`,
-          ).catch(() => {});
+          ).catch((err) => logError('collector-worker', err));
         }
       }
 
@@ -135,7 +135,9 @@ export function createCollectorHandler(): (job: Job) => Promise<CollectorResult>
         await updateJobProgress(dbJobId, {
           [pKey]: { status: 'failed', ...countBySourceType(source, []) },
         });
-        appendJobEvent(dbJobId, 'error', `${source} 수집 실패: ${errMsg}`).catch(() => {});
+        appendJobEvent(dbJobId, 'error', `${source} 수집 실패: ${errMsg}`).catch((err) =>
+          logError('collector-worker', err),
+        );
       }
       return { source, items: [], count: 0 };
     }

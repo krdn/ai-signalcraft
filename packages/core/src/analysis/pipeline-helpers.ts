@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import { isPipelineCancelled, waitIfPaused, checkCostLimit } from '../pipeline/control';
 import { appendJobEvent } from '../pipeline/persist';
 import { getDb } from '../db';
+import { logError } from '../utils/logger';
 import { analysisResults as analysisResultsTable } from '../db/schema/analysis';
 import { persistAnalysisResult } from './persist-analysis';
 import type { AnalysisModuleResult } from './types';
@@ -92,7 +93,7 @@ export function checkFailAndAbort(ctx: PipelineContext, stageName: string): bool
       ctx.jobId,
       'warn',
       `${stageName}에서 부분 실패 (${failedNames}), 성공한 결과로 계속 진행`,
-    ).catch(() => {});
+    ).catch((err) => logError('pipeline-helpers', err));
     return false;
   }
 
@@ -105,7 +106,7 @@ export function checkFailAndAbort(ctx: PipelineContext, stageName: string): bool
     ctx.jobId,
     'error',
     `${stageName}에서 전체 실패 (${failedNames}), 파이프라인 중단`,
-  ).catch(() => {});
+  ).catch((err) => logError('pipeline-helpers', err));
   return true;
 }
 

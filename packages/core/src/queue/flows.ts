@@ -1,6 +1,7 @@
 import { FlowProducer, Queue } from 'bullmq';
 import { and, eq, inArray } from 'drizzle-orm';
 import type { DataSourceSnapshot } from '@ai-signalcraft/collectors';
+import { logError } from '../utils/logger';
 import type { CollectionTrigger, ReusePlanPayload } from '../types';
 import type { ResumeOptions } from '../analysis/pipeline-orchestrator';
 import { getDb } from '../db';
@@ -65,7 +66,7 @@ async function safePlanArticleReuse(
       dbJobId,
       'warn',
       `reuse plan failed (${source}): ${err instanceof Error ? err.message : String(err)}`,
-    ).catch(() => void 0);
+    ).catch((err) => logError('flows', err));
     return { reuseArticleIds: [], skipUrls: [], refetchCommentsFor: [], evaluated: 0 };
   }
 }
@@ -92,7 +93,7 @@ async function safePlanVideoReuse(
       dbJobId,
       'warn',
       `reuse plan failed (${source}): ${err instanceof Error ? err.message : String(err)}`,
-    ).catch(() => void 0);
+    ).catch((err) => logError('flows', err));
     return { reuseVideoIds: [], skipVideoUrls: [], refetchCommentsFor: [], evaluated: 0 };
   }
 }
@@ -143,7 +144,7 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
       dbJobId,
       'info',
       `per-day limits applied: dayCount=${dayCount}, naver=${effective.naverArticles}, youtube=${effective.youtubeVideos}, community=${effective.communityPosts}`,
-    ).catch(() => void 0);
+    ).catch((err) => logError('flows', err));
   }
 
   // D-05: 3단계 분리 -- collect -> normalize -> persist
@@ -224,7 +225,7 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
       dbJobId,
       'warn',
       `reuse linkage failed: ${err instanceof Error ? err.message : String(err)}`,
-    ).catch(() => void 0);
+    ).catch((err) => logError('flows', err));
   }
 
   // 재사용 요약 로깅 (이벤트 + progress._reuse 필드)
@@ -233,7 +234,7 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
       dbJobId,
       'info',
       `reuse: articles=${totalReusedArticles}, videos=${totalReusedVideos}, comments=${totalReusedComments} (forceRefetch=${forceRefetch})`,
-    ).catch(() => void 0);
+    ).catch((err) => logError('flows', err));
 
     const bySource: Record<string, number> = {};
     for (const [src, plan] of Object.entries(articleReusePlans)) {
@@ -251,7 +252,9 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
       forceRefetch,
       evaluatedAt: new Date().toISOString(),
     };
-    await updateJobProgress(dbJobId, { _reuse: reuseSummary }).catch(() => void 0);
+    await updateJobProgress(dbJobId, { _reuse: reuseSummary }).catch((err) =>
+      logError('flows', err),
+    );
   }
   // ---------------------------------------------------------------------
 

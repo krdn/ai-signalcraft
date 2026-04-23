@@ -2,7 +2,7 @@
 import { Worker, Job } from 'bullmq';
 import { eq } from 'drizzle-orm';
 import { runAnalysisPipeline } from '../analysis/runner';
-import { createLogger } from '../utils/logger';
+import { createLogger, logError } from '../utils/logger';
 import { getDb } from '../db';
 import { collectionJobs } from '../db/schema/collections';
 import { getBullMQOptions } from './connection';
@@ -25,12 +25,16 @@ export function createAnalysisWorker(): Worker {
         let lockLost = false;
         const lockExtender = setInterval(async () => {
           try {
+            if (lockLost) {
+              clearInterval(lockExtender);
+              return;
+            }
             await job.extendLock(job.token!, 600_000);
           } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
             logger.warn(`lock 갱신 실패 (job=${dbJobId}): ${msg}`);
-            // lock 연속 실패 시 중복 실행 방지를 위해 플래그 설정
             lockLost = true;
+            clearInterval(lockExtender);
           }
         }, 120_000);
 
@@ -86,6 +90,20 @@ export function createAnalysisWorker(): Worker {
         logger.info(
           `분석 완료: completed=${result.completedModules.length}, failed=${result.failedModules.length}, status=${finalStatus}`,
         );
+
+        // 리포트 자동 배포 (설정된 경우)
+        const jobOpts = job.data as Record<string, unknown>;
+        if (jobOpts.distributionChannels) {
+          const { distributeReport } = await import('../report/distributor');
+          await distributeReport({
+            channels: jobOpts.distributionChannels as any,
+            reportUrl: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/reports/${dbJobId}`,
+            jobId: dbJobId,
+            keyword,
+            status: finalStatus,
+          }).catch((err) => logError('report-distribution', err));
+        }
+
         return result;
       }
     },

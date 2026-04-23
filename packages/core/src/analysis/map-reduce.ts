@@ -6,6 +6,7 @@ import {
   normalizeUsage,
   type AIGatewayOptions,
 } from '@krdn/ai-analysis-kit/gateway';
+import { logError } from '../utils/logger';
 import { appendJobEvent } from '../pipeline/persist';
 import { isPipelineCancelled } from '../pipeline/control';
 import { persistAnalysisResult } from './persist-analysis';
@@ -139,7 +140,7 @@ async function callWithRetry<T>(fn: () => Promise<T>, label: string, jobId?: num
         const backoffMs = Math.max(retryAfterSec * 1000, rateLimitAttempts * 3000);
         const msg = `${label}: Rate limit 도달, ${Math.round(backoffMs / 1000)}초 후 재시도 (${rateLimitAttempts}/${MAX_RATE_LIMIT_RETRIES})`;
         console.log(`[map-reduce] ${msg}`);
-        if (jobId) appendJobEvent(jobId, 'warn', msg).catch(() => {});
+        if (jobId) appendJobEvent(jobId, 'warn', msg).catch((err) => logError('map-reduce', err));
         await sleep(backoffMs);
         continue;
       }
@@ -148,7 +149,7 @@ async function callWithRetry<T>(fn: () => Promise<T>, label: string, jobId?: num
         timeoutAttempts++;
         const msg = `${label}: 서버 과부하, 15초 후 재시도 (${timeoutAttempts}/${MAX_TIMEOUT_RETRIES})`;
         console.log(`[map-reduce] ${msg}`);
-        if (jobId) appendJobEvent(jobId, 'warn', msg).catch(() => {});
+        if (jobId) appendJobEvent(jobId, 'warn', msg).catch((err) => logError('map-reduce', err));
         await sleep(15_000);
         continue;
       }
@@ -157,7 +158,7 @@ async function callWithRetry<T>(fn: () => Promise<T>, label: string, jobId?: num
         timeoutAttempts++;
         const msg = `${label}: 타임아웃 발생, 10초 후 재시도 (${timeoutAttempts}/${MAX_TIMEOUT_RETRIES})`;
         console.log(`[map-reduce] ${msg}`);
-        if (jobId) appendJobEvent(jobId, 'warn', msg).catch(() => {});
+        if (jobId) appendJobEvent(jobId, 'warn', msg).catch((err) => logError('map-reduce', err));
         await sleep(10_000);
         continue;
       }
@@ -342,7 +343,7 @@ export async function runModuleMapReduce<T>(
             input.jobId,
             'warn',
             `${module.name} 청크 분석 실패 (계속 진행): ${errMsg}`,
-          ).catch(() => {});
+          ).catch((err) => logError('map-reduce', err));
         }
       }
     }
@@ -471,7 +472,7 @@ export async function runModuleMapReduce<T>(
       input.jobId,
       'error',
       `${module.name} Map-Reduce 분석 실패: ${errorMessage}`,
-    ).catch(() => {});
+    ).catch((err) => logError('map-reduce', err));
     return { module: module.name, status: 'failed', errorMessage };
   }
 }
