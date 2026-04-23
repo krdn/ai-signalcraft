@@ -1,120 +1,143 @@
-import { pgTable, text, timestamp, integer, boolean, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, integer, boolean, jsonb, index } from 'drizzle-orm/pg-core';
 import { users } from './auth';
 import { collectionJobs } from './collections';
 
 // ─── 리드 관리 ───
 
-export const leads = pgTable('leads', {
-  id: text('id')
-    .primaryKey()
-    .$defaultFn(() => crypto.randomUUID()),
+export const leads = pgTable(
+  'leads',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
 
-  // 리드 정보
-  companyName: text('company_name').notNull(),
-  contactName: text('contact_name').notNull(),
-  contactEmail: text('contact_email'),
-  contactPhone: text('contact_phone'),
-  companySize: text('company_size', {
-    enum: ['1-10', '11-50', '51-200', '201-1000', '1000+'],
-  }),
-  industry: text('industry'), // 'PR에이전시', '정치캠프', '기업홍보팀' 등
+    // 리드 정보
+    companyName: text('company_name').notNull(),
+    contactName: text('contact_name').notNull(),
+    contactEmail: text('contact_email'),
+    contactPhone: text('contact_phone'),
+    companySize: text('company_size', {
+      enum: ['1-10', '11-50', '51-200', '201-1000', '1000+'],
+    }),
+    industry: text('industry'), // 'PR에이전시', '정치캠프', '기업홍보팀' 등
 
-  // 소스 추적
-  source: text('source', {
-    enum: ['cold_email', 'inbound', 'partner_referral', 'demo_signup', 'event', 'other'],
-  })
-    .notNull()
-    .default('other'),
-  sourceDetail: text('source_detail'),
-  partnerId: text('partner_id').references(() => users.id, { onDelete: 'set null' }),
+    // 소스 추적
+    source: text('source', {
+      enum: ['cold_email', 'inbound', 'partner_referral', 'demo_signup', 'event', 'other'],
+    })
+      .notNull()
+      .default('other'),
+    sourceDetail: text('source_detail'),
+    partnerId: text('partner_id').references(() => users.id, { onDelete: 'set null' }),
 
-  // 파이프라인 상태
-  stage: text('stage', {
-    enum: ['lead', 'contacted', 'demo', 'proposal', 'negotiation', 'closed_won', 'closed_lost'],
-  })
-    .notNull()
-    .default('lead'),
+    // 파이프라인 상태
+    stage: text('stage', {
+      enum: ['lead', 'contacted', 'demo', 'proposal', 'negotiation', 'closed_won', 'closed_lost'],
+    })
+      .notNull()
+      .default('lead'),
 
-  // 예상 거래 정보
-  expectedPlan: text('expected_plan', { enum: ['starter', 'professional', 'campaign'] }),
-  expectedRevenue: integer('expected_revenue'), // 만원/월
-  expectedCloseDate: timestamp('expected_close_date'),
+    // 예상 거래 정보
+    expectedPlan: text('expected_plan', { enum: ['starter', 'professional', 'campaign'] }),
+    expectedRevenue: integer('expected_revenue'), // 만원/월
+    expectedCloseDate: timestamp('expected_close_date'),
 
-  // 리드 스코어
-  score: integer('score').notNull().default(0),
+    // 리드 스코어
+    score: integer('score').notNull().default(0),
 
-  // 담당자
-  assignedTo: text('assigned_to').references(() => users.id, { onDelete: 'set null' }),
+    // 담당자
+    assignedTo: text('assigned_to').references(() => users.id, { onDelete: 'set null' }),
 
-  // 전환 추적
-  demoAccountId: text('demo_account_id').references(() => users.id, { onDelete: 'set null' }),
-  convertedUserId: text('converted_user_id').references(() => users.id, { onDelete: 'set null' }),
-  /** 전환된 고객사 (stage='closed_won' 시 자동 생성) — customers.id */
-  convertedCustomerId: text('converted_customer_id'),
+    // 전환 추적
+    demoAccountId: text('demo_account_id').references(() => users.id, { onDelete: 'set null' }),
+    convertedUserId: text('converted_user_id').references(() => users.id, { onDelete: 'set null' }),
+    /** 전환된 고객사 (stage='closed_won' 시 자동 생성) — customers.id */
+    convertedCustomerId: text('converted_customer_id'),
 
-  lostReason: text('lost_reason'),
-  notes: text('notes'),
+    lostReason: text('lost_reason'),
+    notes: text('notes'),
 
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
-  closedAt: timestamp('closed_at'),
-});
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+    closedAt: timestamp('closed_at'),
+  },
+  (table) => [
+    index('leads_stage_idx').on(table.stage),
+    index('leads_source_idx').on(table.source),
+    index('leads_assigned_to_idx').on(table.assignedTo),
+    index('leads_created_at_idx').on(table.createdAt),
+  ],
+);
 
 // ─── 리드 활동 로그 ───
 
-export const leadActivities = pgTable('lead_activities', {
-  id: text('id')
-    .primaryKey()
-    .$defaultFn(() => crypto.randomUUID()),
-  leadId: text('lead_id')
-    .references(() => leads.id, { onDelete: 'cascade' })
-    .notNull(),
-  userId: text('user_id').references(() => users.id, { onDelete: 'set null' }),
+export const leadActivities = pgTable(
+  'lead_activities',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    leadId: text('lead_id')
+      .references(() => leads.id, { onDelete: 'cascade' })
+      .notNull(),
+    userId: text('user_id').references(() => users.id, { onDelete: 'set null' }),
 
-  type: text('type', {
-    enum: ['call', 'email', 'meeting', 'demo', 'proposal_sent', 'note', 'stage_change'],
-  }).notNull(),
+    type: text('type', {
+      enum: ['call', 'email', 'meeting', 'demo', 'proposal_sent', 'note', 'stage_change'],
+    }).notNull(),
 
-  title: text('title').notNull(),
-  description: text('description'),
-  metadata: jsonb('metadata').$type<Record<string, unknown>>(),
+    title: text('title').notNull(),
+    description: text('description'),
+    metadata: jsonb('metadata').$type<Record<string, unknown>>(),
 
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-});
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [
+    index('lead_activities_lead_id_idx').on(table.leadId),
+    index('lead_activities_created_at_idx').on(table.createdAt),
+  ],
+);
 
 // ─── 리포트 공유 링크 ───
 
-export const reportShareLinks = pgTable('report_share_links', {
-  id: text('id')
-    .primaryKey()
-    .$defaultFn(() => crypto.randomUUID()),
-  token: text('token').notNull().unique(),
+export const reportShareLinks = pgTable(
+  'report_share_links',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    token: text('token').notNull().unique(),
 
-  jobId: integer('job_id')
-    .references(() => collectionJobs.id, { onDelete: 'cascade' })
-    .notNull(),
-  createdBy: text('created_by')
-    .references(() => users.id, { onDelete: 'set null' })
-    .notNull(),
+    jobId: integer('job_id')
+      .references(() => collectionJobs.id, { onDelete: 'cascade' })
+      .notNull(),
+    createdBy: text('created_by')
+      .references(() => users.id, { onDelete: 'set null' })
+      .notNull(),
 
-  // 커스터마이징
-  customTitle: text('custom_title'),
-  customLogo: text('custom_logo'),
-  watermark: text('watermark'),
+    // 커스터마이징
+    customTitle: text('custom_title'),
+    customLogo: text('custom_logo'),
+    watermark: text('watermark'),
 
-  // 접근 제어
-  password: text('password'), // bcrypt 해시
-  expiresAt: timestamp('expires_at'),
-  maxViews: integer('max_views'),
+    // 접근 제어
+    password: text('password'), // bcrypt 해시
+    expiresAt: timestamp('expires_at'),
+    maxViews: integer('max_views'),
 
-  // 통계
-  viewCount: integer('view_count').notNull().default(0),
-  downloadCount: integer('download_count').notNull().default(0),
-  lastViewedAt: timestamp('last_viewed_at'),
+    // 통계
+    viewCount: integer('view_count').notNull().default(0),
+    downloadCount: integer('download_count').notNull().default(0),
+    lastViewedAt: timestamp('last_viewed_at'),
 
-  isActive: boolean('is_active').notNull().default(true),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-});
+    isActive: boolean('is_active').notNull().default(true),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [
+    index('report_share_links_token_idx').on(table.token),
+    index('report_share_links_job_id_idx').on(table.jobId),
+  ],
+);
 
 // ─── 이메일 템플릿 ───
 
@@ -140,26 +163,34 @@ export const emailTemplates = pgTable('email_templates', {
 
 // ─── 이메일 발송 로그 ───
 
-export const emailSendLogs = pgTable('email_send_logs', {
-  id: text('id')
-    .primaryKey()
-    .$defaultFn(() => crypto.randomUUID()),
+export const emailSendLogs = pgTable(
+  'email_send_logs',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
 
-  templateId: text('template_id').references(() => emailTemplates.id, { onDelete: 'set null' }),
-  leadId: text('lead_id').references(() => leads.id, { onDelete: 'set null' }),
-  sentBy: text('sent_by')
-    .references(() => users.id, { onDelete: 'set null' })
-    .notNull(),
+    templateId: text('template_id').references(() => emailTemplates.id, { onDelete: 'set null' }),
+    leadId: text('lead_id').references(() => leads.id, { onDelete: 'set null' }),
+    sentBy: text('sent_by')
+      .references(() => users.id, { onDelete: 'set null' })
+      .notNull(),
 
-  recipientEmail: text('recipient_email').notNull(),
-  subject: text('subject').notNull(),
+    recipientEmail: text('recipient_email').notNull(),
+    subject: text('subject').notNull(),
 
-  status: text('status', {
-    enum: ['sent', 'delivered', 'opened', 'bounced', 'failed'],
-  })
-    .notNull()
-    .default('sent'),
-  resendMessageId: text('resend_message_id'),
+    status: text('status', {
+      enum: ['sent', 'delivered', 'opened', 'bounced', 'failed'],
+    })
+      .notNull()
+      .default('sent'),
+    resendMessageId: text('resend_message_id'),
 
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-});
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [
+    index('email_send_logs_lead_id_idx').on(table.leadId),
+    index('email_send_logs_status_idx').on(table.status),
+    index('email_send_logs_created_at_idx').on(table.createdAt),
+  ],
+);

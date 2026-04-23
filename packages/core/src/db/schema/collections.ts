@@ -105,6 +105,7 @@ export const collectionJobs = pgTable(
     index('collection_jobs_featured_idx').on(table.isFeatured),
     index('collection_jobs_paused_at_idx').on(table.pausedAt),
     index('collection_jobs_series_id_idx').on(table.seriesId),
+    index('collection_jobs_status_idx').on(table.status),
   ],
 );
 
@@ -203,7 +204,12 @@ export const comments = pgTable(
     collectedAt: timestamp('collected_at').defaultNow().notNull(),
     firstSeenAt: timestamp('first_seen_at').defaultNow().notNull(),
   },
-  (table) => [uniqueIndex('comments_source_id_idx').on(table.source, table.sourceId)],
+  (table) => [
+    uniqueIndex('comments_source_id_idx').on(table.source, table.sourceId),
+    index('comments_article_id_idx').on(table.articleId),
+    index('comments_video_id_idx').on(table.videoId),
+    index('comments_job_id_idx').on(table.jobId),
+  ],
 );
 
 // N:M 조인 테이블 — 기사/영상/댓글이 여러 수집 작업에서 참조 가능

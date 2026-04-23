@@ -1,26 +1,33 @@
-import { pgTable, text, timestamp, integer, uniqueIndex } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, integer, uniqueIndex, index } from 'drizzle-orm/pg-core';
 import { users } from './auth';
 
 // 파트너 신청
-export const partnerApplications = pgTable('partner_applications', {
-  id: text('id')
-    .primaryKey()
-    .$defaultFn(() => crypto.randomUUID()),
-  name: text('name').notNull(),
-  email: text('email').notNull(),
-  phone: text('phone'),
-  businessType: text('business_type', { enum: ['individual', 'corporation'] }).notNull(),
-  program: text('program', { enum: ['reseller', 'partner'] }).notNull(),
-  salesArea: text('sales_area'),
-  introduction: text('introduction'),
-  status: text('status', { enum: ['pending', 'approved', 'rejected'] })
-    .notNull()
-    .default('pending'),
-  reviewedBy: text('reviewed_by').references(() => users.id, { onDelete: 'set null' }),
-  reviewNote: text('review_note'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  reviewedAt: timestamp('reviewed_at'),
-});
+export const partnerApplications = pgTable(
+  'partner_applications',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    name: text('name').notNull(),
+    email: text('email').notNull(),
+    phone: text('phone'),
+    businessType: text('business_type', { enum: ['individual', 'corporation'] }).notNull(),
+    program: text('program', { enum: ['reseller', 'partner'] }).notNull(),
+    salesArea: text('sales_area'),
+    introduction: text('introduction'),
+    status: text('status', { enum: ['pending', 'approved', 'rejected'] })
+      .notNull()
+      .default('pending'),
+    reviewedBy: text('reviewed_by').references(() => users.id, { onDelete: 'set null' }),
+    reviewNote: text('review_note'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    reviewedAt: timestamp('reviewed_at'),
+  },
+  (table) => [
+    index('partner_applications_status_idx').on(table.status),
+    index('partner_applications_email_idx').on(table.email),
+  ],
+);
 
 // 파트너 계약
 export const partnerContracts = pgTable('partner_contracts', {
@@ -42,25 +49,32 @@ export const partnerContracts = pgTable('partner_contracts', {
 });
 
 // 파트너가 유치한 고객
-export const partnerClients = pgTable('partner_clients', {
-  id: text('id')
-    .primaryKey()
-    .$defaultFn(() => crypto.randomUUID()),
-  partnerId: text('partner_id')
-    .references(() => users.id, { onDelete: 'cascade' })
-    .notNull(),
-  clientName: text('client_name').notNull(),
-  clientEmail: text('client_email'),
-  clientCompany: text('client_company'),
-  planType: text('plan_type', { enum: ['starter', 'professional', 'campaign'] }),
-  status: text('status', { enum: ['prospect', 'negotiating', 'contracted', 'churned'] })
-    .notNull()
-    .default('prospect'),
-  monthlyRevenue: integer('monthly_revenue'), // 만원 단위
-  contractedAt: timestamp('contracted_at'),
-  notes: text('notes'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-});
+export const partnerClients = pgTable(
+  'partner_clients',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    partnerId: text('partner_id')
+      .references(() => users.id, { onDelete: 'cascade' })
+      .notNull(),
+    clientName: text('client_name').notNull(),
+    clientEmail: text('client_email'),
+    clientCompany: text('client_company'),
+    planType: text('plan_type', { enum: ['starter', 'professional', 'campaign'] }),
+    status: text('status', { enum: ['prospect', 'negotiating', 'contracted', 'churned'] })
+      .notNull()
+      .default('prospect'),
+    monthlyRevenue: integer('monthly_revenue'), // 만원 단위
+    contractedAt: timestamp('contracted_at'),
+    notes: text('notes'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [
+    index('partner_clients_partner_id_idx').on(table.partnerId),
+    index('partner_clients_status_idx').on(table.status),
+  ],
+);
 
 // 수수료 추적
 export const commissions = pgTable(
@@ -90,5 +104,6 @@ export const commissions = pgTable(
       table.clientId,
       table.periodMonth,
     ),
+    index('commissions_status_idx').on(table.status),
   ],
 );
