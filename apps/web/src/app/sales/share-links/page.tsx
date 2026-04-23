@@ -140,13 +140,25 @@ export default function ShareLinksPage() {
               <caption className="sr-only">공유 링크 목록</caption>
               <thead>
                 <tr className="border-b bg-muted/50">
-                  <th className="text-left px-4 py-3 font-medium">제목 / 키워드</th>
-                  <th className="text-center px-4 py-3 font-medium">상태</th>
-                  <th className="text-center px-4 py-3 font-medium">조회수</th>
-                  <th className="text-center px-4 py-3 font-medium">다운로드</th>
-                  <th className="text-left px-4 py-3 font-medium">만료일</th>
-                  <th className="text-left px-4 py-3 font-medium">생성일</th>
-                  <th className="px-4 py-3"></th>
+                  <th scope="col" className="text-left px-4 py-3 font-medium">
+                    제목 / 키워드
+                  </th>
+                  <th scope="col" className="text-center px-4 py-3 font-medium">
+                    상태
+                  </th>
+                  <th scope="col" className="text-center px-4 py-3 font-medium">
+                    조회수
+                  </th>
+                  <th scope="col" className="text-center px-4 py-3 font-medium">
+                    다운로드
+                  </th>
+                  <th scope="col" className="text-left px-4 py-3 font-medium">
+                    만료일
+                  </th>
+                  <th scope="col" className="text-left px-4 py-3 font-medium">
+                    생성일
+                  </th>
+                  <th scope="col" className="px-4 py-3"></th>
                 </tr>
               </thead>
               <tbody>
