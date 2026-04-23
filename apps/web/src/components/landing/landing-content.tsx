@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import {
@@ -8,6 +8,8 @@ import {
   BarChart3,
   Brain,
   CheckCircle2,
+  ChevronDown,
+  ChevronUp,
   Clock,
   Globe,
   ExternalLink,
@@ -54,6 +56,14 @@ export function LandingContent() {
   const selectedDetail = selectedUseCase ? (USE_CASE_DETAILS[selectedUseCase.title] ?? null) : null;
   const [selectedDomainId, setSelectedDomainId] = useState<string | null>(null);
   const selectedDomainHelp = selectedDomainId ? (DOMAIN_HELP_DATA[selectedDomainId] ?? null) : null;
+  const [modulesExpanded, setModulesExpanded] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setShowScrollTop(window.scrollY > 600);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -506,89 +516,134 @@ export function LandingContent() {
               도출합니다.
             </p>
           </div>
-          <div className="grid gap-6 md:grid-cols-3">
-            {MODULES.map((group) => (
-              <Card key={group.stage}>
-                <CardHeader>
-                  <Badge variant="outline" className={group.color}>
-                    {group.stage}
-                  </Badge>
-                  <CardTitle>
-                    {group.label}
-                    <span className="ml-2 text-xs font-normal text-muted-foreground">
-                      {group.labelEn}
-                    </span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-2">
-                    {group.items.map((item) => (
-                      <li key={item.name} className="flex items-center gap-2 text-sm">
-                        <Brain className="size-4 shrink-0 text-primary" />
-                        <span className="flex-1">
-                          {item.name}
-                          {item.nameEn && (
-                            <span className="block text-[10px] text-muted-foreground/70 leading-tight">
-                              {item.nameEn}
-                            </span>
-                          )}
-                        </span>
-                        <Popover>
-                          <PopoverTrigger
-                            className="text-muted-foreground/50 hover:text-primary transition-colors cursor-help shrink-0"
-                            aria-label={`${item.name} 도움말`}
-                          >
-                            <HelpCircle className="size-4" />
-                          </PopoverTrigger>
-                          <PopoverContent side="top" sideOffset={8} className="w-80 p-0">
-                            <div className="p-3 pb-2 border-b">
-                              <h4 className="font-semibold text-sm">{item.name}</h4>
-                              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                                {item.help}
-                              </p>
-                            </div>
-                            <div className="p-3 pt-2 space-y-2">
-                              <div>
-                                <p className="text-[11px] font-medium text-muted-foreground mb-1">
-                                  분석 내용
+          {!modulesExpanded && (
+            <div className="grid gap-4 md:grid-cols-3 mb-6">
+              {MODULES.slice(0, 3).map((group) => (
+                <Card key={group.stage}>
+                  <CardHeader className="pb-3">
+                    <Badge variant="outline" className={group.color}>
+                      {group.stage}
+                    </Badge>
+                    <CardTitle className="text-sm">
+                      {group.label}
+                      <span className="ml-2 text-xs font-normal text-muted-foreground">
+                        {group.labelEn}
+                      </span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <p className="text-xs text-muted-foreground">
+                      {group.items.map((i) => i.name).join(', ')}
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+          {modulesExpanded && (
+            <div className="grid gap-6 md:grid-cols-3">
+              {MODULES.map((group) => (
+                <Card key={group.stage}>
+                  <CardHeader>
+                    <Badge variant="outline" className={group.color}>
+                      {group.stage}
+                    </Badge>
+                    <CardTitle>
+                      {group.label}
+                      <span className="ml-2 text-xs font-normal text-muted-foreground">
+                        {group.labelEn}
+                      </span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-2">
+                      {group.items.map((item) => (
+                        <li key={item.name} className="flex items-center gap-2 text-sm">
+                          <Brain className="size-4 shrink-0 text-primary" />
+                          <span className="flex-1">
+                            {item.name}
+                            {item.nameEn && (
+                              <span className="block text-[10px] text-muted-foreground/70 leading-tight">
+                                {item.nameEn}
+                              </span>
+                            )}
+                          </span>
+                          <Popover>
+                            <PopoverTrigger
+                              className="text-muted-foreground/50 hover:text-primary transition-colors cursor-help shrink-0"
+                              aria-label={`${item.name} 도움말`}
+                            >
+                              <HelpCircle className="size-4" />
+                            </PopoverTrigger>
+                            <PopoverContent side="top" sideOffset={8} className="w-80 p-0">
+                              <div className="p-3 pb-2 border-b">
+                                <h4 className="font-semibold text-sm">{item.name}</h4>
+                                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                                  {item.help}
                                 </p>
-                                <ul className="space-y-1">
-                                  {item.details.map((detail) => (
-                                    <li
-                                      key={detail}
-                                      className="text-xs text-muted-foreground flex gap-1.5"
-                                    >
-                                      <span className="shrink-0 mt-0.5 text-primary/60">•</span>
-                                      <span>{detail}</span>
-                                    </li>
-                                  ))}
-                                </ul>
                               </div>
-                              <div className="pt-1.5 border-t">
-                                <p className="text-[11px] font-medium text-muted-foreground mb-0.5">
-                                  출력 결과
-                                </p>
-                                <p className="text-xs text-muted-foreground">{item.output}</p>
-                              </div>
-                              {item.theory && (
+                              <div className="p-3 pt-2 space-y-2">
+                                <div>
+                                  <p className="text-[11px] font-medium text-muted-foreground mb-1">
+                                    분석 내용
+                                  </p>
+                                  <ul className="space-y-1">
+                                    {item.details.map((detail) => (
+                                      <li
+                                        key={detail}
+                                        className="text-xs text-muted-foreground flex gap-1.5"
+                                      >
+                                        <span className="shrink-0 mt-0.5 text-primary/60">•</span>
+                                        <span>{detail}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
                                 <div className="pt-1.5 border-t">
                                   <p className="text-[11px] font-medium text-muted-foreground mb-0.5">
-                                    이론적 출처
+                                    출력 결과
                                   </p>
-                                  <p className="text-[11px] text-muted-foreground/80 italic">
-                                    {item.theory}
-                                  </p>
+                                  <p className="text-xs text-muted-foreground">{item.output}</p>
                                 </div>
-                              )}
-                            </div>
-                          </PopoverContent>
-                        </Popover>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            ))}
+                                {item.theory && (
+                                  <div className="pt-1.5 border-t">
+                                    <p className="text-[11px] font-medium text-muted-foreground mb-0.5">
+                                      이론적 출처
+                                    </p>
+                                    <p className="text-[11px] text-muted-foreground/80 italic">
+                                      {item.theory}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+          <div className="mt-6 text-center">
+            <button
+              type="button"
+              onClick={() => setModulesExpanded(!modulesExpanded)}
+              className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors"
+            >
+              {modulesExpanded ? (
+                <>
+                  <ChevronUp className="size-4" />
+                  모듈 목록 접기
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="size-4" />
+                  전체 모듈 상세 보기
+                </>
+              )}
+            </button>
           </div>
         </div>
       </section>
@@ -1267,6 +1322,18 @@ export function LandingContent() {
           if (!open) setSelectedDomainId(null);
         }}
       />
+
+      {/* Scroll to Top */}
+      {showScrollTop && (
+        <button
+          type="button"
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="fixed bottom-6 right-6 z-50 flex size-10 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-opacity hover:bg-primary/90"
+          aria-label="페이지 상단으로 이동"
+        >
+          <ChevronUp className="size-5" />
+        </button>
+      )}
     </div>
   );
 }

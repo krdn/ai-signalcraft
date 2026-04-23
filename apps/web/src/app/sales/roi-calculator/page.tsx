@@ -24,14 +24,28 @@ export default function RoiCalculatorPage() {
   const [staffCount, setStaffCount] = useState(2); // 모니터링 인력 수
   const [hoursPerAnalysis, setHoursPerAnalysis] = useState(8); // 분석 1건당 소요 시간
   const [analysisPerMonth, setAnalysisPerMonth] = useState(4); // 월 분석 횟수
+
+  // 음수/NaN 방지 헬퍼
+  const clampPositive = (value: number, min = 0) => {
+    const n = Number(value);
+    return Number.isNaN(n) || n < min ? min : n;
+  };
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [selectedPlan, setSelectedPlan] = useState<'starter' | 'professional' | 'campaign'>(
     'professional',
   );
 
   const plan = PLANS[selectedPlan];
 
+  // 계산 (음수/NaN 방지)
+  const safeCost = clampPositive(currentCost);
+  const safeStaff = clampPositive(staffCount);
+  const safeHours = clampPositive(hoursPerAnalysis, 1);
+  const safeAnalysis = clampPositive(analysisPerMonth, 1);
+
   // 계산
-  const currentMonthlyTotal = currentCost; // 현재 월 비용
+  const currentMonthlyTotal = safeCost; // 현재 월 비용
   const signalCraftCost = plan.price; // SignalCraft 비용
   const monthlySaving = currentMonthlyTotal - signalCraftCost;
   const yearlySaving = monthlySaving * 12;
@@ -39,13 +53,13 @@ export default function RoiCalculatorPage() {
     currentMonthlyTotal > 0 ? Math.round((monthlySaving / currentMonthlyTotal) * 100) : 0;
 
   // 시간 절감
-  const currentHoursPerMonth = hoursPerAnalysis * analysisPerMonth;
-  const signalCraftHoursPerMonth = analysisPerMonth * 0.5; // 건당 30분 (트리거 + 확인)
+  const currentHoursPerMonth = safeHours * safeAnalysis;
+  const signalCraftHoursPerMonth = safeAnalysis * 0.5; // 건당 30분 (트리거 + 확인)
   const savedHoursPerMonth = currentHoursPerMonth - signalCraftHoursPerMonth;
 
   // 인력 절감
   const staffSalaryPerPerson = 350; // 만원/월 (평균)
-  const staffCostSaving = staffCount > 1 ? Math.floor(staffCount * 0.5) * staffSalaryPerPerson : 0;
+  const staffCostSaving = safeStaff > 1 ? Math.floor(safeStaff * 0.5) * staffSalaryPerPerson : 0;
 
   return (
     <div className="space-y-6">
@@ -72,9 +86,19 @@ export default function RoiCalculatorPage() {
                 id="roi-current-cost"
                 type="number"
                 value={currentCost}
-                onChange={(e) => setCurrentCost(Number(e.target.value))}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  setCurrentCost(v);
+                  setErrors((prev) => ({
+                    ...prev,
+                    currentCost: v < 0 ? '0 이상의 값을 입력하세요' : '',
+                  }));
+                }}
                 min={0}
               />
+              {errors.currentCost && (
+                <p className="text-xs text-destructive mt-1">{errors.currentCost}</p>
+              )}
               <p className="text-xs text-muted-foreground mt-1">인건비 + 도구 비용 포함</p>
             </div>
             <div>
@@ -83,9 +107,19 @@ export default function RoiCalculatorPage() {
                 id="roi-staff-count"
                 type="number"
                 value={staffCount}
-                onChange={(e) => setStaffCount(Number(e.target.value))}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  setStaffCount(v);
+                  setErrors((prev) => ({
+                    ...prev,
+                    staffCount: v < 0 ? '0 이상의 값을 입력하세요' : '',
+                  }));
+                }}
                 min={0}
               />
+              {errors.staffCount && (
+                <p className="text-xs text-destructive mt-1">{errors.staffCount}</p>
+              )}
             </div>
             <div>
               <Label htmlFor="roi-hours">분석 1건당 소요 시간 (시간)</Label>
@@ -93,9 +127,19 @@ export default function RoiCalculatorPage() {
                 id="roi-hours"
                 type="number"
                 value={hoursPerAnalysis}
-                onChange={(e) => setHoursPerAnalysis(Number(e.target.value))}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  setHoursPerAnalysis(v);
+                  setErrors((prev) => ({
+                    ...prev,
+                    hoursPerAnalysis: v < 1 ? '1 이상의 값을 입력하세요' : '',
+                  }));
+                }}
                 min={1}
               />
+              {errors.hoursPerAnalysis && (
+                <p className="text-xs text-destructive mt-1">{errors.hoursPerAnalysis}</p>
+              )}
             </div>
             <div>
               <Label htmlFor="roi-analysis-count">월 분석 횟수</Label>
@@ -103,9 +147,19 @@ export default function RoiCalculatorPage() {
                 id="roi-analysis-count"
                 type="number"
                 value={analysisPerMonth}
-                onChange={(e) => setAnalysisPerMonth(Number(e.target.value))}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  setAnalysisPerMonth(v);
+                  setErrors((prev) => ({
+                    ...prev,
+                    analysisPerMonth: v < 1 ? '1 이상의 값을 입력하세요' : '',
+                  }));
+                }}
                 min={1}
               />
+              {errors.analysisPerMonth && (
+                <p className="text-xs text-destructive mt-1">{errors.analysisPerMonth}</p>
+              )}
             </div>
             <div>
               <Label htmlFor="roi-plan">SignalCraft 요금제</Label>
