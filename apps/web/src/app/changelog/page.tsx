@@ -77,7 +77,7 @@ export default function ChangelogPage() {
   const totalPages = data ? Math.ceil(data.total / data.pageSize) : 0;
 
   return (
-    <div className="container max-w-4xl mx-auto py-8 space-y-6">
+    <main aria-label="업데이트 히스토리" className="container max-w-4xl mx-auto py-8 space-y-6">
       <div>
         <h1 className="text-3xl font-bold">업데이트 히스토리</h1>
         <p className="text-muted-foreground mt-2">
@@ -189,6 +189,6 @@ export default function ChangelogPage() {
           </Button>
         </div>
       )}
-    </div>
+    </main>
   );
 }

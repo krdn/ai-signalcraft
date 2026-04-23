@@ -176,6 +176,7 @@ export default function PartnerClientsPage() {
             </div>
           ) : (
             <Table>
+              <caption className="sr-only">고객 관리 목록</caption>
               <TableHeader>
                 <TableRow>
                   <TableHead>고객명</TableHead>

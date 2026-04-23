@@ -113,6 +113,7 @@ export default function AdminShowcasePage() {
             <>
               <TooltipProvider>
                 <Table>
+                  <caption className="sr-only">완료된 분석 작업 목록</caption>
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-16">쇼케이스</TableHead>

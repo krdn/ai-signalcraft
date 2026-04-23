@@ -121,7 +121,9 @@ export default function AdminFeatureRequestsPage() {
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between gap-3 flex-wrap">
                 <div className="flex-1 min-w-0">
-                  <CardTitle className="text-base">{item.title}</CardTitle>
+                  <CardTitle as="h2" className="text-base">
+                    {item.title}
+                  </CardTitle>
                   <p className="text-xs text-muted-foreground mt-1">
                     {item.submitterName ?? item.submitterEmail} ·{' '}
                     {new Date(item.createdAt).toLocaleString('ko-KR')} ·{' '}

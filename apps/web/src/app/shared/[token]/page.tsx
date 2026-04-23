@@ -93,7 +93,11 @@ export default function SharedReportPage() {
         <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             {data.branding.customLogo ? (
-              <img src={data.branding.customLogo} alt="" className="h-8" />
+              <img
+                src={data.branding.customLogo}
+                alt={`${data.branding.customName ?? 'SignalCraft'} 로고`}
+                className="h-8"
+              />
             ) : (
               <span className="text-lg font-semibold text-primary">SignalCraft</span>
             )}

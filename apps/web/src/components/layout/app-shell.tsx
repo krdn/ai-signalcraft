@@ -33,7 +33,9 @@ export function AppShell({ sidebar, header, children }: AppShellProps) {
 
       <div className="flex flex-1 flex-col overflow-hidden">
         {header(() => setSidebarOpen(true))}
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">{children}</main>
+        <main aria-label="대시보드 콘텐츠" className="flex-1 overflow-y-auto p-4 md:p-6">
+          {children}
+        </main>
       </div>
     </div>
   );

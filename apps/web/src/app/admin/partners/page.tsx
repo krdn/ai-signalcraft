@@ -112,6 +112,7 @@ function ApplicationsTab() {
           </div>
         ) : (
           <Table>
+            <caption className="sr-only">파트너 신청 목록</caption>
             <TableHeader>
               <TableRow>
                 <TableHead>이름</TableHead>
@@ -310,6 +311,7 @@ function PartnersTab() {
           </div>
         ) : (
           <Table>
+            <caption className="sr-only">활성 파트너 목록</caption>
             <TableHeader>
               <TableRow>
                 <TableHead>이름</TableHead>
@@ -386,6 +388,7 @@ function CommissionsTab() {
           </div>
         ) : (
           <Table>
+            <caption className="sr-only">월별 수수료 현황</caption>
             <TableHeader>
               <TableRow>
                 <TableHead>기간</TableHead>

@@ -302,17 +302,34 @@ export default function LeadsPage() {
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
+              <caption className="sr-only">리드 목록</caption>
               <thead>
                 <tr className="border-b bg-muted/50">
-                  <th className="text-left px-4 py-3 font-medium">회사명</th>
-                  <th className="text-left px-4 py-3 font-medium">담당자</th>
-                  <th className="text-left px-4 py-3 font-medium">스테이지</th>
-                  <th className="text-left px-4 py-3 font-medium">소스</th>
-                  <th className="text-right px-4 py-3 font-medium">예상 매출</th>
-                  <th className="text-center px-4 py-3 font-medium">점수</th>
-                  <th className="text-left px-4 py-3 font-medium">담당</th>
-                  <th className="text-left px-4 py-3 font-medium">수정일</th>
-                  <th className="px-4 py-3"></th>
+                  <th scope="col" className="text-left px-4 py-3 font-medium">
+                    회사명
+                  </th>
+                  <th scope="col" className="text-left px-4 py-3 font-medium">
+                    담당자
+                  </th>
+                  <th scope="col" className="text-left px-4 py-3 font-medium">
+                    스테이지
+                  </th>
+                  <th scope="col" className="text-left px-4 py-3 font-medium">
+                    소스
+                  </th>
+                  <th scope="col" className="text-right px-4 py-3 font-medium">
+                    예상 매출
+                  </th>
+                  <th scope="col" className="text-center px-4 py-3 font-medium">
+                    점수
+                  </th>
+                  <th scope="col" className="text-left px-4 py-3 font-medium">
+                    담당
+                  </th>
+                  <th scope="col" className="text-left px-4 py-3 font-medium">
+                    수정일
+                  </th>
+                  <th scope="col" className="px-4 py-3"></th>
                 </tr>
               </thead>
               <tbody>

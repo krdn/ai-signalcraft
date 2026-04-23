@@ -67,8 +67,9 @@ export default function RoiCalculatorPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label>현재 월 모니터링/분석 비용 (만원)</Label>
+              <Label htmlFor="roi-current-cost">현재 월 모니터링/분석 비용 (만원)</Label>
               <Input
+                id="roi-current-cost"
                 type="number"
                 value={currentCost}
                 onChange={(e) => setCurrentCost(Number(e.target.value))}
@@ -77,8 +78,9 @@ export default function RoiCalculatorPage() {
               <p className="text-xs text-muted-foreground mt-1">인건비 + 도구 비용 포함</p>
             </div>
             <div>
-              <Label>모니터링/분석 인력 수</Label>
+              <Label htmlFor="roi-staff-count">모니터링/분석 인력 수</Label>
               <Input
+                id="roi-staff-count"
                 type="number"
                 value={staffCount}
                 onChange={(e) => setStaffCount(Number(e.target.value))}
@@ -86,8 +88,9 @@ export default function RoiCalculatorPage() {
               />
             </div>
             <div>
-              <Label>분석 1건당 소요 시간 (시간)</Label>
+              <Label htmlFor="roi-hours">분석 1건당 소요 시간 (시간)</Label>
               <Input
+                id="roi-hours"
                 type="number"
                 value={hoursPerAnalysis}
                 onChange={(e) => setHoursPerAnalysis(Number(e.target.value))}
@@ -95,8 +98,9 @@ export default function RoiCalculatorPage() {
               />
             </div>
             <div>
-              <Label>월 분석 횟수</Label>
+              <Label htmlFor="roi-analysis-count">월 분석 횟수</Label>
               <Input
+                id="roi-analysis-count"
                 type="number"
                 value={analysisPerMonth}
                 onChange={(e) => setAnalysisPerMonth(Number(e.target.value))}
@@ -104,12 +108,12 @@ export default function RoiCalculatorPage() {
               />
             </div>
             <div>
-              <Label>SignalCraft 요금제</Label>
+              <Label htmlFor="roi-plan">SignalCraft 요금제</Label>
               <Select
                 value={selectedPlan}
                 onValueChange={(v) => v && setSelectedPlan(v as typeof selectedPlan)}
               >
-                <SelectTrigger>
+                <SelectTrigger id="roi-plan">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

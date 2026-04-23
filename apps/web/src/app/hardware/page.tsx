@@ -102,7 +102,10 @@ export default function HardwarePage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Nav */}
-      <nav className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-lg">
+      <nav
+        aria-label="하드웨어 네비게이션"
+        className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-lg"
+      >
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
           <Link href="/" className="flex items-center gap-2">
             <Sparkles className="size-5 text-primary" />
@@ -268,11 +271,16 @@ export default function HardwarePage() {
             <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
+                  <caption className="sr-only">SaaS와 온프레미스 비교</caption>
                   <thead>
                     <tr className="border-b">
-                      <th className="p-4 text-left font-medium">항목</th>
-                      <th className="p-4 text-center font-medium">SaaS (클라우드)</th>
-                      <th className="p-4 text-center font-medium text-primary">
+                      <th scope="col" className="p-4 text-left font-medium">
+                        항목
+                      </th>
+                      <th scope="col" className="p-4 text-center font-medium">
+                        SaaS (클라우드)
+                      </th>
+                      <th scope="col" className="p-4 text-center font-medium text-primary">
                         온프레미스 (자체 서버)
                       </th>
                     </tr>

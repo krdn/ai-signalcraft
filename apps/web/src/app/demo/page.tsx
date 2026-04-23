@@ -67,15 +67,18 @@ export default function DemoSignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+    <main
+      aria-label="데모 회원가입"
+      className="min-h-screen flex items-center justify-center bg-background px-4"
+    >
       <div className="w-full max-w-md space-y-6">
         {/* 로고 */}
-        <div className="text-center">
+        <header className="text-center">
           <Link href="/" className="inline-flex items-center gap-2">
             <Activity className="h-8 w-8 text-primary" />
             <span className="text-2xl font-bold text-primary">SignalCraft</span>
           </Link>
-        </div>
+        </header>
 
         <Card>
           <CardHeader className="text-center">
@@ -177,6 +180,6 @@ export default function DemoSignupPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </main>
   );
 }

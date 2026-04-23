@@ -137,6 +137,7 @@ export default function ShareLinksPage() {
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
+              <caption className="sr-only">공유 링크 목록</caption>
               <thead>
                 <tr className="border-b bg-muted/50">
                   <th className="text-left px-4 py-3 font-medium">제목 / 키워드</th>

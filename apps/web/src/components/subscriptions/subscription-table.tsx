@@ -213,6 +213,7 @@ export function SubscriptionTable({
 
       <div className="rounded-md border">
         <Table>
+          <caption className="sr-only">키워드 구독 목록</caption>
           <TableHeader>
             <TableRow>
               <TableHead className="w-[32px]" />

@@ -29,7 +29,10 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="fixed top-0 left-0 right-0 z-50 flex h-14 items-center border-b bg-card px-4 md:px-8">
+      <header
+        aria-label="파트너 상단 바"
+        className="fixed top-0 left-0 right-0 z-50 flex h-14 items-center border-b bg-card px-4 md:px-8"
+      >
         <Link href="/partner" className="flex items-center gap-1.5">
           <Activity className="h-5 w-5 text-primary" />
           <span className="text-lg font-semibold text-primary">SignalCraft</span>
@@ -47,8 +50,11 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
       </header>
 
       <div className="flex pt-14">
-        <aside className="fixed left-0 top-14 bottom-0 hidden w-56 border-r bg-card md:block">
-          <nav className="flex flex-col gap-1 p-3">
+        <aside
+          aria-label="파트너 사이드바"
+          className="fixed left-0 top-14 bottom-0 hidden w-56 border-r bg-card md:block"
+        >
+          <nav aria-label="파트너 메뉴" className="flex flex-col gap-1 p-3">
             {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
               const isActive =
                 href === '/partner' ? pathname === '/partner' : pathname.startsWith(href);
@@ -72,7 +78,9 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
           </nav>
         </aside>
 
-        <main className="flex-1 md:ml-56 p-6">{children}</main>
+        <main aria-label="파트너 콘텐츠" className="flex-1 md:ml-56 p-6">
+          {children}
+        </main>
       </div>
     </div>
   );

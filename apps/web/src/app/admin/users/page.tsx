@@ -167,6 +167,7 @@ export default function AdminUsersPage() {
           ) : (
             <>
               <Table>
+                <caption className="sr-only">사용자 목록</caption>
                 <TableHeader>
                   <TableRow>
                     <TableHead>이름</TableHead>
@@ -192,7 +193,10 @@ export default function AdminUsersPage() {
                             })
                           }
                         >
-                          <SelectTrigger className="w-24 h-7 text-xs">
+                          <SelectTrigger
+                            className="w-24 h-7 text-xs"
+                            aria-label={`${user.name ?? user.email} 역할 변경`}
+                          >
                             <Badge variant={ROLE_VARIANTS[user.role]}>
                               {ROLE_LABELS[user.role]}
                             </Badge>

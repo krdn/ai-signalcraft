@@ -61,6 +61,7 @@ export function LoginForm() {
             <Input
               id="email"
               type="email"
+              aria-label="이메일"
               placeholder="이메일"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -73,6 +74,7 @@ export function LoginForm() {
             <Input
               id="password"
               type="password"
+              aria-label="비밀번호"
               placeholder="비밀번호"
               value={password}
               onChange={(e) => setPassword(e.target.value)}

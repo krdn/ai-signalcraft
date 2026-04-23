@@ -134,7 +134,9 @@ export default function AdminDemoPage() {
         <div className="grid gap-4 md:grid-cols-4">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-muted-foreground">총 데모 가입</CardTitle>
+              <CardTitle as="h2" className="text-sm text-muted-foreground">
+                총 데모 가입
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{conversionStats.totalDemos}</div>
@@ -142,7 +144,9 @@ export default function AdminDemoPage() {
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-muted-foreground">체험 사용</CardTitle>
+              <CardTitle as="h2" className="text-sm text-muted-foreground">
+                체험 사용
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{conversionStats.usedAtLeastOnce}</div>
@@ -150,7 +154,9 @@ export default function AdminDemoPage() {
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-muted-foreground">정식 전환</CardTitle>
+              <CardTitle as="h2" className="text-sm text-muted-foreground">
+                정식 전환
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{conversionStats.converted}</div>
@@ -158,7 +164,9 @@ export default function AdminDemoPage() {
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-muted-foreground">전환율</CardTitle>
+              <CardTitle as="h2" className="text-sm text-muted-foreground">
+                전환율
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{conversionStats.conversionRate}%</div>
@@ -170,7 +178,9 @@ export default function AdminDemoPage() {
       {/* 데모 사용자 목록 */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">데모 사용자 목록</CardTitle>
+          <CardTitle as="h2" className="text-base">
+            데모 사용자 목록
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -181,6 +191,7 @@ export default function AdminDemoPage() {
             </div>
           ) : demoUsers && demoUsers.length > 0 ? (
             <Table>
+              <caption className="sr-only">데모 사용자 목록</caption>
               <TableHeader>
                 <TableRow>
                   <TableHead>이름</TableHead>

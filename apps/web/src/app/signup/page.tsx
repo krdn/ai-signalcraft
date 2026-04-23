@@ -50,22 +50,27 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+    <main
+      aria-label="회원가입"
+      className="min-h-screen flex items-center justify-center bg-background px-4"
+    >
       <div className="w-full max-w-md space-y-6">
-        <div className="text-center">
+        <header className="text-center">
           <Link href="/" className="inline-flex items-center gap-2">
             <Activity className="h-8 w-8 text-primary" />
             <span className="text-2xl font-bold text-primary">SignalCraft</span>
           </Link>
-        </div>
+        </header>
 
         <Card>
           <CardHeader className="text-center">
-            <CardTitle className="text-xl">{isDemo ? '정식 가입으로 전환' : '회원가입'}</CardTitle>
+            <CardTitle className="text-xl">
+              {isDemo ? '정식 가입으로 전환' : '무료 체험 신청'}
+            </CardTitle>
             <p className="text-sm text-muted-foreground mt-1">
               {isDemo
                 ? '비밀번호를 설정하면 정식 회원으로 전환됩니다'
-                : '데모 계정에서 정식 전환이 필요합니다'}
+                : '무료 데모 체험을 통해 AI SignalCraft를 경험해 보세요'}
             </p>
           </CardHeader>
           <CardContent>
@@ -145,6 +150,6 @@ export default function SignupPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </main>
   );
 }

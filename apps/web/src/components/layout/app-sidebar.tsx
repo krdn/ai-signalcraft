@@ -218,7 +218,10 @@ export function AppSidebar({
   const userRole = session?.user?.role;
 
   return (
-    <aside className="flex h-screen w-60 shrink-0 flex-col border-r border-slate-200 bg-white dark:bg-slate-800 dark:border-slate-700">
+    <aside
+      aria-label="대시보드 사이드바"
+      className="flex h-screen w-60 shrink-0 flex-col border-r border-slate-200 bg-white dark:bg-slate-800 dark:border-slate-700"
+    >
       {/* 로고 */}
       <Link
         href="/"
@@ -274,7 +277,7 @@ export function AppSidebar({
       </div>
 
       {/* 네비게이션 */}
-      <nav className="flex-1 overflow-y-auto px-1 py-2">
+      <nav aria-label="대시보드 메뉴" className="flex-1 overflow-y-auto px-1 py-2">
         <NavSection
           label="결과"
           items={RESULT_ITEMS}

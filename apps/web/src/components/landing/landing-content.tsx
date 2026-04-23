@@ -58,7 +58,10 @@ export function LandingContent() {
   return (
     <div className="min-h-screen bg-background">
       {/* Nav */}
-      <nav className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-lg">
+      <nav
+        aria-label="메인 네비게이션"
+        className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-lg"
+      >
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
           <Link href="/" className="flex items-center gap-2">
             <Sparkles className="size-5 text-primary" />
@@ -127,7 +130,7 @@ export function LandingContent() {
                 <SheetHeader>
                   <SheetTitle>메뉴</SheetTitle>
                 </SheetHeader>
-                <nav className="mt-6 flex flex-col gap-1 px-4 text-base">
+                <nav aria-label="모바일 메뉴" className="mt-6 flex flex-col gap-1 px-4 text-base">
                   <SheetClose
                     nativeButton={false}
                     render={

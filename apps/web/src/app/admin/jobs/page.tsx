@@ -101,7 +101,9 @@ export default function AdminJobsPage() {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="text-base">전체 작업 {data && `(${data.total}건)`}</CardTitle>
+            <CardTitle as="h2" className="text-base">
+              전체 작업 {data && `(${data.total}건)`}
+            </CardTitle>
             <Select
               value={statusFilter}
               onValueChange={(v) => {

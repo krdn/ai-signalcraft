@@ -2631,7 +2631,7 @@ export const REPORT_MODULES: ReportModule[] = [
 export const REPORT_META = {
   title: 'AI SignalCraft 종합 기술 리포트',
   subtitle:
-    '59개 AI 분석 모듈 + 1개 파이프라인 오케스트레이션의 작동 원리·방법론·이론적 근거 — 영업 담당자 및 의사결정자를 위한 상세 명세서',
+    '14개 AI 분석 모듈 + 1개 파이프라인 오케스트레이션의 작동 원리·방법론·이론적 근거 — 영업 담당자 및 의사결정자를 위한 상세 명세서',
   classification: '영업 자료 (사내 배포용)',
   audience: '영업 담당자, 도입 검토 의사결정자, 기술 평가자',
   version: '2.0',
@@ -2642,7 +2642,7 @@ export const REPORT_SECTIONS = [
   { id: 'overview', no: '0', title: '제품 개요' },
   { id: 'pipeline', no: '1', title: '4단계 파이프라인' },
   { id: 'sources', no: '2', title: '5개 데이터 소스' },
-  { id: 'modules', no: '3', title: '59개 분석 모듈 상세' },
+  { id: 'modules', no: '3', title: '14개 분석 모듈 상세' },
   { id: 'model-strategy', no: '4', title: '멀티 LLM 모델 전략' },
   { id: 'theory', no: '5', title: '이론적 기반 종합' },
   { id: 'comparison', no: '6', title: '경쟁 접근과의 차이' },

@@ -48,6 +48,7 @@ export default function PartnerCommissionsPage() {
             </div>
           ) : (
             <Table>
+              <caption className="sr-only">수수료 내역</caption>
               <TableHeader>
                 <TableRow>
                   <TableHead>기간</TableHead>

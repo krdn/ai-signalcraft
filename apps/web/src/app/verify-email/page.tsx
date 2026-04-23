@@ -163,9 +163,9 @@ function VerifyEmailContent() {
 
                 {email && (
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
-                    className="text-xs text-muted-foreground"
+                    className="text-xs text-primary"
                     onClick={handleResend}
                     disabled={resending || cooldown > 0}
                   >

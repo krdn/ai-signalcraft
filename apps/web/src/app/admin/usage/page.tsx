@@ -200,14 +200,27 @@ export default function AdminUsagePage() {
           <CardContent>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
+                <caption className="sr-only">프로바이더/모델별 사용량 상세</caption>
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left py-2 px-2">프로바이더</th>
-                    <th className="text-left py-2 px-2">모델</th>
-                    <th className="text-right py-2 px-2">입력 토큰</th>
-                    <th className="text-right py-2 px-2">출력 토큰</th>
-                    <th className="text-right py-2 px-2">비용</th>
-                    <th className="text-right py-2 px-2">횟수</th>
+                    <th scope="col" className="text-left py-2 px-2">
+                      프로바이더
+                    </th>
+                    <th scope="col" className="text-left py-2 px-2">
+                      모델
+                    </th>
+                    <th scope="col" className="text-right py-2 px-2">
+                      입력 토큰
+                    </th>
+                    <th scope="col" className="text-right py-2 px-2">
+                      출력 토큰
+                    </th>
+                    <th scope="col" className="text-right py-2 px-2">
+                      비용
+                    </th>
+                    <th scope="col" className="text-right py-2 px-2">
+                      횟수
+                    </th>
                   </tr>
                 </thead>
                 <tbody>

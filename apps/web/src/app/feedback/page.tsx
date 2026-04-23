@@ -87,7 +87,7 @@ export default function FeedbackPage() {
   };
 
   return (
-    <div className="container max-w-3xl mx-auto py-8 space-y-6">
+    <main aria-label="피드백 콘텐츠" className="container max-w-3xl mx-auto py-8 space-y-6">
       <div>
         <h1 className="text-3xl font-bold">기능 제안 & 피드백</h1>
         <p className="text-muted-foreground mt-2">
@@ -105,7 +105,7 @@ export default function FeedbackPage() {
             <div className="space-y-2">
               <Label htmlFor="category">분류</Label>
               <Select value={category} onValueChange={(v) => setCategory(v as Category)}>
-                <SelectTrigger id="category">
+                <SelectTrigger id="category" aria-label="분류">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -122,6 +122,7 @@ export default function FeedbackPage() {
               <Label htmlFor="title">제목</Label>
               <Input
                 id="title"
+                aria-label="제목"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="예: 분석 결과 PDF 내보내기 기능"
@@ -199,6 +200,6 @@ export default function FeedbackPage() {
           </Card>
         ))}
       </div>
-    </div>
+    </main>
   );
 }
