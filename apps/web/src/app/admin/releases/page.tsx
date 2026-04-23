@@ -40,13 +40,14 @@ export default function AdminReleasesPage() {
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState<Status | 'all'>('draft');
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; version: string } | null>(null);
+  const [page, setPage] = useState(1);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['admin', 'releases', 'list', statusFilter],
+    queryKey: ['admin', 'releases', 'list', statusFilter, page],
     queryFn: () =>
       trpcClient.admin.releases.listAll.query({
-        page: 1,
-        pageSize: 50,
+        page,
+        pageSize: 20,
         status: statusFilter === 'all' ? undefined : statusFilter,
       }),
   });
@@ -117,7 +118,9 @@ export default function AdminReleasesPage() {
               <div className="flex items-start justify-between gap-3 flex-wrap">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <CardTitle className="text-lg">{release.version}</CardTitle>
+                    <CardTitle as="h2" className="text-lg">
+                      {release.version}
+                    </CardTitle>
                     <Badge variant={STATUS_VARIANT[release.status as Status]}>
                       {STATUS_LABEL[release.status as Status]}
                     </Badge>
@@ -167,6 +170,29 @@ export default function AdminReleasesPage() {
           </Card>
         ))}
       </div>
+
+      {/* 페이지네이션 */}
+      {data && data.items.length >= 20 && (
+        <div className="flex items-center justify-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page <= 1}
+            onClick={() => setPage((p) => p - 1)}
+          >
+            이전
+          </Button>
+          <span className="text-sm text-muted-foreground">{page}</span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={data.items.length < 20}
+            onClick={() => setPage((p) => p + 1)}
+          >
+            다음
+          </Button>
+        </div>
+      )}
 
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <AlertDialogContent>

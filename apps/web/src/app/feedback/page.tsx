@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
@@ -50,6 +51,8 @@ export default function FeedbackPage() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<Category>('feature');
+  const [titleTouched, setTitleTouched] = useState(false);
+  const [descriptionTouched, setDescriptionTouched] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['featureRequest', 'myList'],
@@ -71,6 +74,8 @@ export default function FeedbackPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setTitleTouched(true);
+    setDescriptionTouched(true);
     if (title.trim().length < 3) {
       toast.error('제목은 3자 이상 입력해주세요');
       return;
@@ -85,6 +90,10 @@ export default function FeedbackPage() {
       category,
     });
   };
+
+  const titleError = titleTouched && title.trim().length > 0 && title.trim().length < 3;
+  const descriptionError =
+    descriptionTouched && description.trim().length > 0 && description.trim().length < 10;
 
   return (
     <main aria-label="피드백 콘텐츠" className="container max-w-3xl mx-auto py-8 space-y-6">
@@ -125,9 +134,14 @@ export default function FeedbackPage() {
                 aria-label="제목"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
+                onBlur={() => setTitleTouched(true)}
                 placeholder="예: 분석 결과 PDF 내보내기 기능"
                 maxLength={200}
+                aria-invalid={titleError}
               />
+              {titleError && (
+                <p className="text-xs text-destructive">제목은 3자 이상 입력해주세요</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -136,13 +150,20 @@ export default function FeedbackPage() {
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
+                onBlur={() => setDescriptionTouched(true)}
                 placeholder="제안 배경과 기대 효과를 자세히 적어주세요"
                 rows={5}
                 maxLength={2000}
+                aria-invalid={descriptionError}
               />
-              <p className="text-xs text-muted-foreground text-right">
-                {description.length} / 2000
-              </p>
+              <div className="flex items-center justify-between">
+                {descriptionError && (
+                  <p className="text-xs text-destructive">설명은 10자 이상 입력해주세요</p>
+                )}
+                <p className="text-xs text-muted-foreground text-right ml-auto">
+                  {description.length} / 2000
+                </p>
+              </div>
             </div>
 
             <Button type="submit" disabled={createMutation.isPending}>
@@ -164,8 +185,11 @@ export default function FeedbackPage() {
 
         {!isLoading && (!data || data.items.length === 0) && (
           <Card>
-            <CardContent className="py-8 text-center text-muted-foreground">
-              아직 등록한 제안이 없습니다.
+            <CardContent>
+              <EmptyState
+                title="아직 등록한 제안이 없습니다"
+                description="위 폼을 통해 기능 제안이나 버그 신고를 자유롭게 등록해보세요"
+              />
             </CardContent>
           </Card>
         )}

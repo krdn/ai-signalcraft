@@ -53,7 +53,9 @@ export function PresetCard({
               <h3 className="font-semibold text-sm leading-tight">{title}</h3>
               <DomainBadge domain={domain} />
             </div>
-            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{description}</p>
+            <p className="text-xs text-muted-foreground mt-1 line-clamp-3 group-hover:line-clamp-none transition-all">
+              {description}
+            </p>
           </div>
         </div>
         <div className="flex items-center justify-between">

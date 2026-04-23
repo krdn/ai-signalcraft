@@ -6,6 +6,7 @@ import { Mail, Plus, Send, Trash2, Sparkles } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -199,7 +200,7 @@ export default function EmailsPage() {
       </div>
 
       <Tabs defaultValue="templates">
-        <TabsList>
+        <TabsList aria-label="이메일 탭">
           <TabsTrigger value="templates">템플릿 ({templates?.length ?? 0})</TabsTrigger>
           <TabsTrigger value="logs">발송 이력 ({logs?.total ?? 0})</TabsTrigger>
         </TabsList>
@@ -207,11 +208,22 @@ export default function EmailsPage() {
         <TabsContent value="templates" className="space-y-4 mt-4">
           {(templates ?? []).length === 0 && (
             <Card>
-              <CardContent className="py-12 text-center">
-                <Mail className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
-                <p className="text-muted-foreground">
-                  템플릿이 없습니다. 기본 템플릿을 생성해 보세요.
-                </p>
+              <CardContent>
+                <EmptyState
+                  icon={<Mail className="h-12 w-12" />}
+                  title="템플릿이 없습니다"
+                  description="기본 템플릿을 생성하여 이메일 발송을 시작해보세요"
+                  action={
+                    <Button
+                      variant="outline"
+                      onClick={() => seedMutation.mutate()}
+                      disabled={seedMutation.isPending}
+                    >
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      기본 템플릿 생성
+                    </Button>
+                  }
+                />
               </CardContent>
             </Card>
           )}
@@ -300,8 +312,11 @@ export default function EmailsPage() {
                     ))}
                     {(logs?.items ?? []).length === 0 && (
                       <tr>
-                        <td colSpan={5} className="px-4 py-12 text-center text-muted-foreground">
-                          발송 이력이 없습니다
+                        <td colSpan={5}>
+                          <EmptyState
+                            title="발송 이력이 없습니다"
+                            description="이메일을 발송하면 이력이 여기에 표시됩니다"
+                          />
                         </td>
                       </tr>
                     )}

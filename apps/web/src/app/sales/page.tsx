@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { EmptyState } from '@/components/ui/empty-state';
 import { trpcClient } from '@/lib/trpc';
 
 const STAGE_LABELS: Record<string, string> = {
@@ -51,20 +52,24 @@ function StatCard({
   value,
   subtitle,
   icon: Icon,
+  isZero,
 }: {
   title: string;
   value: string | number;
   subtitle?: string;
   icon: React.ElementType;
+  isZero?: boolean;
 }) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+        <CardTitle as="h2" className="text-sm font-medium text-muted-foreground">
+          {title}
+        </CardTitle>
         <Icon className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
+        <div className={`text-2xl font-bold ${isZero ? 'text-muted-foreground' : ''}`}>{value}</div>
         {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
       </CardContent>
     </Card>
@@ -125,24 +130,28 @@ export default function SalesDashboardPage() {
           value={`${(stats?.monthlyRevenue ?? 0).toLocaleString()}만원`}
           subtitle={`${stats?.monthlyWonCount ?? 0}건 계약 성사`}
           icon={DollarSign}
+          isZero={(stats?.monthlyRevenue ?? 0) === 0}
         />
         <StatCard
           title="파이프라인 가치"
           value={`${(stats?.pipelineValue ?? 0).toLocaleString()}만원`}
           subtitle={`${stats?.activeLeads ?? 0}건 진행 중`}
           icon={BarChart3}
+          isZero={(stats?.pipelineValue ?? 0) === 0}
         />
         <StatCard
           title="전환율"
           value={`${stats?.conversionRate ?? 0}%`}
           subtitle="성사 / (성사+상실)"
           icon={TrendingUp}
+          isZero={(stats?.conversionRate ?? 0) === 0}
         />
         <StatCard
           title="평균 거래 기간"
           value={`${stats?.avgDealDays ?? 0}일`}
           subtitle="리드 → 계약까지"
           icon={Clock}
+          isZero={(stats?.avgDealDays ?? 0) === 0}
         />
       </div>
 
@@ -150,7 +159,9 @@ export default function SalesDashboardPage() {
         {/* 파이프라인 차트 */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">파이프라인 현황</CardTitle>
+            <CardTitle as="h2" className="text-base">
+              파이프라인 현황
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -171,9 +182,10 @@ export default function SalesDashboardPage() {
                 </div>
               ))}
               {activeStages.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-8">
-                  아직 리드가 없습니다
-                </p>
+                <EmptyState
+                  title="아직 리드가 없습니다"
+                  description="리드를 등록하면 파이프라인 현황이 여기에 표시됩니다"
+                />
               )}
             </div>
           </CardContent>
@@ -182,7 +194,9 @@ export default function SalesDashboardPage() {
         {/* 최근 활동 */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">최근 활동</CardTitle>
+            <CardTitle as="h2" className="text-base">
+              최근 활동
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4 max-h-80 overflow-y-auto">
@@ -204,9 +218,10 @@ export default function SalesDashboardPage() {
                 );
               })}
               {(activities ?? []).length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-8">
-                  아직 활동이 없습니다
-                </p>
+                <EmptyState
+                  title="아직 활동이 없습니다"
+                  description="리드 활동이 발생하면 최근 내역이 여기에 표시됩니다"
+                />
               )}
             </div>
           </CardContent>

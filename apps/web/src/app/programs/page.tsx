@@ -300,7 +300,9 @@ function CopyTabs({ data, idPrefix }: { data: CopyData; idPrefix: string }) {
               <Card key={copy.title}>
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-base">{copy.title}</CardTitle>
+                    <CardTitle as="h2" className="text-base">
+                      {copy.title}
+                    </CardTitle>
                     <CopyButton text={copy.text} />
                   </div>
                 </CardHeader>
@@ -415,7 +417,9 @@ export default function PartnerProgramPage() {
                 )}
                 <CardHeader>
                   <CardDescription>{program.subtitle}</CardDescription>
-                  <CardTitle className="text-2xl">{program.name}</CardTitle>
+                  <CardTitle as="h3" className="text-2xl">
+                    {program.name}
+                  </CardTitle>
                   <div className="mt-2">
                     <span className="text-3xl font-bold text-primary">
                       {program.commissionRange}

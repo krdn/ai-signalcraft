@@ -43,7 +43,10 @@ export function SubscriptionKpiCards({
 
   const nextRun = subscriptions
     .filter((s) => s.status === 'active' && s.nextRunAt)
-    .sort((a, b) => new Date(a.nextRunAt!).getTime() - new Date(b.nextRunAt!).getTime())[0];
+    .sort(
+      (a, b) =>
+        new Date(a.nextRunAt as string).getTime() - new Date(b.nextRunAt as string).getTime(),
+    )[0];
 
   const articleCount = itemStats?.byItemType?.find((t) => t.itemType === 'article')?.count ?? 0;
   const videoCount = itemStats?.byItemType?.find((t) => t.itemType === 'video')?.count ?? 0;
@@ -111,9 +114,9 @@ export function SubscriptionKpiCards({
               <span className="text-xs font-medium">{card.title}</span>
             </div>
             <p className="text-xl font-bold truncate">{card.value}</p>
-            {card.subtitle && (
+            {card.subtitle ? (
               <p className="text-xs text-muted-foreground mt-1 truncate">{card.subtitle}</p>
-            )}
+            ) : null}
           </CardContent>
         </Card>
       ))}

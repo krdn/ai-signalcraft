@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { FileText } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Skeleton } from '@/components/ui/skeleton';
 import { trpcClient } from '@/lib/trpc';
 
@@ -47,10 +48,12 @@ export default function PartnerContractPage() {
       <div className="space-y-6">
         <h1 className="text-2xl font-bold">계약 정보</h1>
         <Card>
-          <CardContent className="flex flex-col items-center py-12 text-center">
-            <FileText className="mb-4 size-12 text-muted-foreground" />
-            <p className="text-muted-foreground">활성 계약이 없습니다</p>
-            <p className="mt-1 text-sm text-muted-foreground">관리자에게 문의해주세요</p>
+          <CardContent>
+            <EmptyState
+              icon={<FileText className="h-12 w-12" />}
+              title="활성 계약이 없습니다"
+              description="관리자에게 문의하여 계약을 진행해주세요"
+            />
           </CardContent>
         </Card>
       </div>

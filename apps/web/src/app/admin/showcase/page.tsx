@@ -67,7 +67,9 @@ export default function AdminShowcasePage() {
       {data?.items.filter((i) => i.isFeatured).length ? (
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">현재 쇼케이스 항목</CardTitle>
+            <CardTitle as="h2" className="text-base">
+              현재 쇼케이스 항목
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -100,7 +102,9 @@ export default function AdminShowcasePage() {
       {/* 완료 작업 테이블 */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">완료된 분석 작업</CardTitle>
+          <CardTitle as="h2" className="text-base">
+            완료된 분석 작업
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (

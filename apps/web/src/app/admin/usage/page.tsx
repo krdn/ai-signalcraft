@@ -13,12 +13,21 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { ArrowUpDown } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { trpcClient } from '@/lib/trpc';
 
 type Period = '7d' | '30d' | '90d';
+type SortKey =
+  | 'provider'
+  | 'model'
+  | 'inputTokens'
+  | 'outputTokens'
+  | 'estimatedCostUsd'
+  | 'analysisCount';
+type SortDir = 'asc' | 'desc';
 
 function getDateRange(period: Period) {
   const end = new Date();
@@ -31,6 +40,8 @@ function getDateRange(period: Period) {
 
 export default function AdminUsagePage() {
   const [period, setPeriod] = useState<Period>('30d');
+  const [sortKey, setSortKey] = useState<SortKey>('estimatedCostUsd');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
   const range = useMemo(() => getDateRange(period), [period]);
 
   const { data: summary, isLoading: summaryLoading } = useQuery({
@@ -64,6 +75,30 @@ export default function AdminUsagePage() {
       .sort((a, b) => b.cost - a.cost);
   }, [byModule]);
 
+  const sortedSummary = useMemo(() => {
+    if (!summary) return [];
+    const sorted = [...summary].sort((a, b) => {
+      const aVal = a[sortKey];
+      const bVal = b[sortKey];
+      if (typeof aVal === 'string' && typeof bVal === 'string') {
+        return sortDir === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+      }
+      const numA = Number(aVal) || 0;
+      const numB = Number(bVal) || 0;
+      return sortDir === 'asc' ? numA - numB : numB - numA;
+    });
+    return sorted;
+  }, [summary, sortKey, sortDir]);
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir('desc');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -86,7 +121,9 @@ export default function AdminUsagePage() {
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">총 비용 (추정)</CardTitle>
+            <CardTitle as="h2" className="text-sm text-muted-foreground">
+              총 비용 (추정)
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {summaryLoading ? (
@@ -98,7 +135,9 @@ export default function AdminUsagePage() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">총 토큰</CardTitle>
+            <CardTitle as="h2" className="text-sm text-muted-foreground">
+              총 토큰
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {summaryLoading ? (
@@ -114,7 +153,9 @@ export default function AdminUsagePage() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">분석 실행 횟수</CardTitle>
+            <CardTitle as="h2" className="text-sm text-muted-foreground">
+              분석 실행 횟수
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {summaryLoading ? (
@@ -129,7 +170,9 @@ export default function AdminUsagePage() {
       {/* 일별 비용 추이 */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">일별 비용 추이</CardTitle>
+          <CardTitle as="h2" className="text-base">
+            일별 비용 추이
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {trendLoading ? (
@@ -170,7 +213,9 @@ export default function AdminUsagePage() {
       {/* 모듈별 비용 분포 */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">모듈별 비용</CardTitle>
+          <CardTitle as="h2" className="text-base">
+            모듈별 비용
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {moduleData.length > 0 ? (
@@ -192,10 +237,12 @@ export default function AdminUsagePage() {
       </Card>
 
       {/* 프로바이더/모델별 상세 */}
-      {summary && summary.length > 0 && (
+      {sortedSummary.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">프로바이더/모델별 상세</CardTitle>
+            <CardTitle as="h2" className="text-base">
+              프로바이더/모델별 상세
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
@@ -204,27 +251,63 @@ export default function AdminUsagePage() {
                 <thead>
                   <tr className="border-b">
                     <th scope="col" className="text-left py-2 px-2">
-                      프로바이더
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-1 hover:text-foreground"
+                        onClick={() => toggleSort('provider')}
+                      >
+                        프로바이더 <ArrowUpDown className="h-3 w-3" />
+                      </button>
                     </th>
                     <th scope="col" className="text-left py-2 px-2">
-                      모델
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-1 hover:text-foreground"
+                        onClick={() => toggleSort('model')}
+                      >
+                        모델 <ArrowUpDown className="h-3 w-3" />
+                      </button>
                     </th>
                     <th scope="col" className="text-right py-2 px-2">
-                      입력 토큰
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-1 ml-auto hover:text-foreground"
+                        onClick={() => toggleSort('inputTokens')}
+                      >
+                        입력 토큰 <ArrowUpDown className="h-3 w-3" />
+                      </button>
                     </th>
                     <th scope="col" className="text-right py-2 px-2">
-                      출력 토큰
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-1 ml-auto hover:text-foreground"
+                        onClick={() => toggleSort('outputTokens')}
+                      >
+                        출력 토큰 <ArrowUpDown className="h-3 w-3" />
+                      </button>
                     </th>
                     <th scope="col" className="text-right py-2 px-2">
-                      비용
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-1 ml-auto hover:text-foreground"
+                        onClick={() => toggleSort('estimatedCostUsd')}
+                      >
+                        비용 <ArrowUpDown className="h-3 w-3" />
+                      </button>
                     </th>
                     <th scope="col" className="text-right py-2 px-2">
-                      횟수
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-1 ml-auto hover:text-foreground"
+                        onClick={() => toggleSort('analysisCount')}
+                      >
+                        횟수 <ArrowUpDown className="h-3 w-3" />
+                      </button>
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {summary.map((row, i) => (
+                  {sortedSummary.map((row, i) => (
                     <tr key={i} className="border-b last:border-0">
                       <td className="py-2 px-2">{row.provider}</td>
                       <td className="py-2 px-2 font-mono text-xs">{row.model}</td>

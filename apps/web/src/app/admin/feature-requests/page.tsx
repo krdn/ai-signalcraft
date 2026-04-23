@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -90,7 +91,7 @@ export default function AdminFeatureRequestsPage() {
       <h1 className="text-2xl font-bold">기능 제안 관리</h1>
 
       <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as Status | 'all')}>
-        <TabsList className="flex-wrap h-auto">
+        <TabsList aria-label="기능 제안 상태 필터" className="flex-wrap h-auto">
           <TabsTrigger value="pending">검토 대기</TabsTrigger>
           <TabsTrigger value="reviewing">검토 중</TabsTrigger>
           <TabsTrigger value="accepted">반영 예정</TabsTrigger>
@@ -109,8 +110,11 @@ export default function AdminFeatureRequestsPage() {
 
       {!isLoading && data && data.items.length === 0 && (
         <Card>
-          <CardContent className="py-12 text-center text-muted-foreground">
-            제안이 없습니다.
+          <CardContent>
+            <EmptyState
+              title="제안이 없습니다"
+              description="사용자로부터 기능 제안이 들어오면 여기에 표시됩니다"
+            />
           </CardContent>
         </Card>
       )}

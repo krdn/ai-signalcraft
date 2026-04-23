@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -108,8 +109,9 @@ export default function PartnerClientsPage() {
             </DialogHeader>
             <form onSubmit={handleAdd} className="space-y-4">
               <div className="space-y-2">
-                <Label>고객명 *</Label>
+                <Label htmlFor="partner-clientName">고객명 *</Label>
                 <Input
+                  id="partner-clientName"
                   value={form.clientName}
                   onChange={(e) => setForm({ ...form, clientName: e.target.value })}
                   required
@@ -117,30 +119,32 @@ export default function PartnerClientsPage() {
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>이메일</Label>
+                  <Label htmlFor="partner-clientEmail">이메일</Label>
                   <Input
+                    id="partner-clientEmail"
                     type="email"
                     value={form.clientEmail}
                     onChange={(e) => setForm({ ...form, clientEmail: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>회사명</Label>
+                  <Label htmlFor="partner-clientCompany">회사명</Label>
                   <Input
+                    id="partner-clientCompany"
                     value={form.clientCompany}
                     onChange={(e) => setForm({ ...form, clientCompany: e.target.value })}
                   />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>관심 플랜</Label>
+                <Label htmlFor="partner-planType">관심 플랜</Label>
                 <Select
                   value={form.planType}
                   onValueChange={(v) => {
                     if (v) setForm({ ...form, planType: v });
                   }}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="partner-planType">
                     <SelectValue placeholder="선택" />
                   </SelectTrigger>
                   <SelectContent>
@@ -151,8 +155,9 @@ export default function PartnerClientsPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>메모</Label>
+                <Label htmlFor="partner-notes">메모</Label>
                 <Input
+                  id="partner-notes"
                   value={form.notes}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}
                 />
@@ -189,8 +194,11 @@ export default function PartnerClientsPage() {
               <TableBody>
                 {data?.items.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                      등록된 고객이 없습니다
+                    <TableCell colSpan={5}>
+                      <EmptyState
+                        title="등록된 고객이 없습니다"
+                        description="고객 추가 버튼으로 유치한 고객을 등록하세요"
+                      />
                     </TableCell>
                   </TableRow>
                 ) : (

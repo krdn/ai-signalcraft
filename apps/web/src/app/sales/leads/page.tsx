@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Search, ExternalLink } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -244,6 +245,7 @@ export default function LeadsPage() {
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
+            aria-label="리드 검색"
             placeholder="회사명, 담당자, 이메일 검색..."
             value={search}
             onChange={(e) => {
@@ -262,7 +264,7 @@ export default function LeadsPage() {
             }
           }}
         >
-          <SelectTrigger className="w-[140px]">
+          <SelectTrigger className="w-[140px]" aria-label="스테이지 필터">
             <SelectValue placeholder="스테이지" />
           </SelectTrigger>
           <SelectContent>
@@ -389,8 +391,11 @@ export default function LeadsPage() {
                 ))}
                 {!isLoading && data?.items.length === 0 && (
                   <tr>
-                    <td colSpan={9} className="px-4 py-12 text-center text-muted-foreground">
-                      리드가 없습니다. 첫 리드를 등록해 보세요.
+                    <td colSpan={9}>
+                      <EmptyState
+                        title="리드가 없습니다"
+                        description="첫 리드를 등록하여 영업 파이프라인을 시작해보세요"
+                      />
                     </td>
                   </tr>
                 )}

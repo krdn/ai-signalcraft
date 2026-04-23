@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
@@ -62,8 +63,11 @@ export default function PartnerCommissionsPage() {
               <TableBody>
                 {data?.items.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                      수수료 내역이 없습니다
+                    <TableCell colSpan={6}>
+                      <EmptyState
+                        title="수수료 내역이 없습니다"
+                        description="고객 계약이 성사되면 수수료 내역이 여기에 표시됩니다"
+                      />
                     </TableCell>
                   </TableRow>
                 ) : (

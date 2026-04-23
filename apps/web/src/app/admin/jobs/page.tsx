@@ -111,7 +111,7 @@ export default function AdminJobsPage() {
                 setPage(1);
               }}
             >
-              <SelectTrigger className="w-32">
+              <SelectTrigger aria-label="작업 상태 필터" className="w-32">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
