@@ -32,5 +32,10 @@ export function createPipelineWorker(processJob: (job: Job) => Promise<any>) {
     lockDuration: 600_000,
     stalledInterval: 300_000,
     maxStalledCount: 2,
+    // 일시적 장애(네트워크, DB 연결) 시 자동 재시도
+    settings: {
+      backoffStrategy: (attemptsMade: number) =>
+        Math.min(30_000 * Math.pow(2, attemptsMade), 300_000),
+    },
   });
 }

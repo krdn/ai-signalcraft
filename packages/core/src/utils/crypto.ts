@@ -16,7 +16,14 @@ function getEncryptionKey(): Buffer {
     return createHash('sha256').update(envKey).digest();
   }
 
-  // 폴백: 경고 출력 후 고정 시드 기반 키 생성 (개발용)
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(
+      'FATAL: ENCRYPTION_KEY 환경변수가 설정되지 않았습니다. ' +
+        '프로덕션에서는 반드시 ENCRYPTION_KEY를 설정해야 합니다.',
+    );
+  }
+
+  // 폴백: 개발 환경에서만 사용. 경고 출력 후 고정 시드 기반 키 생성
   console.warn(
     '[crypto] ENCRYPTION_KEY 환경변수가 설정되지 않았습니다. 기본 폴백 키를 사용합니다. 프로덕션에서는 반드시 ENCRYPTION_KEY를 설정하세요.',
   );
