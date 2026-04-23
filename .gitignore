@@ -442,3 +442,6 @@ claude-proxy.sh
 
 # Git worktrees
 .worktrees/
+
+# UX 테스트 에이전트 출력
+.ux-test/
