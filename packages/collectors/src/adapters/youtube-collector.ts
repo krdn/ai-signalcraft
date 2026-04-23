@@ -27,10 +27,12 @@ export class YoutubeCollector implements Collector<YoutubeVideo> {
   private quota = new QuotaTracker();
   private stats: CollectionStats | null = null;
   private fallbackActive = false;
+  private collectionStartDate: string | null = null;
 
   async *collect(options: CollectionOptions): AsyncGenerator<YoutubeVideo[], void, unknown> {
     this.quota.reset();
     this.fallbackActive = false;
+    this.collectionStartDate = options.startDate;
     const maxItems = options.maxItems ?? DEFAULT_MAX_ITEMS;
     const maxComments = options.maxComments ?? DEFAULT_MAX_COMMENTS;
     const commentOrder = options.commentOrder ?? 'relevance';
@@ -236,7 +238,10 @@ export class YoutubeCollector implements Collector<YoutubeVideo> {
   ): Promise<{ videos: YoutubeVideo[]; nextPageToken?: string }> {
     this.fallbackActive = true;
     const innertube = await getInnertubeClient();
-    const results = await innertube.search(keyword, { type: 'video', upload_date: 'week' });
+    const results = await innertube.search(keyword, {
+      type: 'video',
+      upload_date: this.computeUploadDate(),
+    });
 
     const videos: YoutubeVideo[] = ((results as any).videos ?? (results as any).results ?? []).map(
       (v: any) => ({
@@ -471,6 +476,17 @@ export class YoutubeCollector implements Collector<YoutubeVideo> {
       publishedAt: s.publishedAt ? new Date(s.publishedAt) : null,
       rawData: item as unknown as Record<string, unknown>,
     };
+  }
+
+  /** collectionStartDate 기준으로 InnerTube upload_date 필터 값 계산 */
+  private computeUploadDate(): 'today' | 'week' | 'month' | 'year' {
+    if (!this.collectionStartDate) return 'week';
+    const diffMs = Date.now() - new Date(this.collectionStartDate).getTime();
+    const diffDays = diffMs / (1000 * 60 * 60 * 24);
+    if (diffDays <= 1) return 'today';
+    if (diffDays <= 7) return 'week';
+    if (diffDays <= 30) return 'month';
+    return 'year';
   }
 
   private shouldUseFallback(): boolean {

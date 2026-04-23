@@ -110,8 +110,10 @@ export class FMKoreaCollector extends CommunityBaseCollector {
       }
     }
 
-    console.warn(`[fmkorea] 보안 챌린지 쿠키 대기 타임아웃 (${maxWait}ms) -- 재시도`);
-    return true;
+    console.warn(
+      `[fmkorea] 보안 챌린지 쿠키 대기 타임아웃 (${maxWait}ms) — lite_year 쿠키 미확보, 챌린지 실패`,
+    );
+    return false;
   }
 
   protected buildSearchUrl(
