@@ -10,7 +10,7 @@ import {
   cleanupOrphanedData,
   getDataStats,
 } from '@ai-signalcraft/core';
-import { desc, sql, eq, and } from 'drizzle-orm';
+import { desc, sql, eq, and, inArray } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { protectedProcedure, adminProcedure, router } from '../init';
 import { verifyJobOwnership } from '../shared/verify-job-ownership';
@@ -283,8 +283,25 @@ export const historyRouter = router({
   bulkDelete: protectedProcedure
     .input(z.object({ jobIds: z.array(z.number()).min(1).max(100) }))
     .mutation(async ({ input, ctx }) => {
-      for (const jobId of input.jobIds) {
-        await verifyJobOwnership(ctx, jobId, ctx.defaultFilterMode);
+      // 단일 쿼리로 접근 권한 있는 잡 ID 조회
+      const accessibleJobs = await ctx.db
+        .select({ id: collectionJobs.id })
+        .from(collectionJobs)
+        .where(
+          and(
+            inArray(collectionJobs.id, input.jobIds),
+            ctx.teamId
+              ? eq(collectionJobs.teamId, ctx.teamId)
+              : eq(collectionJobs.userId, ctx.userId),
+          ),
+        );
+      const accessibleIds = new Set(accessibleJobs.map((j) => j.id));
+      const unauthorized = input.jobIds.filter((id) => !accessibleIds.has(id));
+      if (unauthorized.length > 0) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: `접근 권한 없는 작업: ${unauthorized.join(',')}`,
+        });
       }
       return deleteJobs(input.jobIds);
     }),

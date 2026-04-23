@@ -1,4 +1,7 @@
+import { db } from '@ai-signalcraft/core';
 import { getPipelineStatus } from '@/server/pipeline-status';
+import { auth } from '@/server/auth';
+import { verifyJobOwnership } from '@/server/trpc/shared/verify-job-ownership';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,10 +15,21 @@ function stableStringify(obj: unknown): string {
 }
 
 export async function GET(req: Request, { params }: { params: Promise<{ jobId: string }> }) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return new Response('Unauthorized', { status: 401 });
+  }
+
   const { jobId: jobIdStr } = await params;
   const jobId = parseInt(jobIdStr, 10);
   if (isNaN(jobId)) {
     return new Response('Invalid jobId', { status: 400 });
+  }
+
+  try {
+    await verifyJobOwnership({ userId: session.user.id, db }, jobId);
+  } catch {
+    return new Response('Not found', { status: 404 });
   }
 
   const encoder = new TextEncoder();

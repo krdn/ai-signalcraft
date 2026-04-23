@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { getCollectorClient } from '@ai-signalcraft/core';
-import { protectedProcedure, router } from '../init';
+import { protectedProcedure, adminProcedure, router } from '../init';
+import { verifySubscriptionOwnership } from '../shared/verify-subscription-ownership';
 
 // collector DB 스키마 타입이 트랜지티브 추론으로 새어나오지 않도록,
 // web 경계에서 반환 형태를 명시적으로 선언한다(TS2742 방지).
@@ -279,8 +280,9 @@ export const subscriptionsRouter = router({
 
   get: protectedProcedure
     .input(z.object({ id: z.number().int().positive() }))
-    .query(async ({ input }): Promise<SubscriptionRecord> => {
+    .query(async ({ ctx, input }): Promise<SubscriptionRecord> => {
       try {
+        await verifySubscriptionOwnership(ctx, input.id);
         const res = await getCollectorClient().subscriptions.get.query({ id: input.id });
         return res as unknown as SubscriptionRecord;
       } catch (err) {
@@ -333,8 +335,9 @@ export const subscriptionsRouter = router({
         domain: z.string().optional(),
       }),
     )
-    .mutation(async ({ input }): Promise<SubscriptionRecord> => {
+    .mutation(async ({ ctx, input }): Promise<SubscriptionRecord> => {
       try {
+        await verifySubscriptionOwnership(ctx, input.id);
         const res = await getCollectorClient().subscriptions.update.mutate(input);
         return res as unknown as SubscriptionRecord;
       } catch (err) {
@@ -344,8 +347,9 @@ export const subscriptionsRouter = router({
 
   pause: protectedProcedure
     .input(z.object({ id: z.number().int().positive() }))
-    .mutation(async ({ input }): Promise<SubscriptionRecord> => {
+    .mutation(async ({ ctx, input }): Promise<SubscriptionRecord> => {
       try {
+        await verifySubscriptionOwnership(ctx, input.id);
         const res = await getCollectorClient().subscriptions.pause.mutate(input);
         return res as unknown as SubscriptionRecord;
       } catch (err) {
@@ -355,8 +359,9 @@ export const subscriptionsRouter = router({
 
   resume: protectedProcedure
     .input(z.object({ id: z.number().int().positive() }))
-    .mutation(async ({ input }): Promise<SubscriptionRecord> => {
+    .mutation(async ({ ctx, input }): Promise<SubscriptionRecord> => {
       try {
+        await verifySubscriptionOwnership(ctx, input.id);
         const res = await getCollectorClient().subscriptions.resume.mutate(input);
         return res as unknown as SubscriptionRecord;
       } catch (err) {
@@ -366,8 +371,9 @@ export const subscriptionsRouter = router({
 
   remove: protectedProcedure
     .input(z.object({ id: z.number().int().positive() }))
-    .mutation(async ({ input }): Promise<{ id: number }> => {
+    .mutation(async ({ ctx, input }): Promise<{ id: number }> => {
       try {
+        await verifySubscriptionOwnership(ctx, input.id);
         const res = await getCollectorClient().subscriptions.remove.mutate(input);
         return res as unknown as { id: number };
       } catch (err) {
@@ -383,8 +389,9 @@ export const subscriptionsRouter = router({
         ignoreCooldown: z.boolean().optional(),
       }),
     )
-    .mutation(async ({ input }): Promise<TriggerNowResult> => {
+    .mutation(async ({ ctx, input }): Promise<TriggerNowResult> => {
       try {
+        await verifySubscriptionOwnership(ctx, input.id);
         const res = await getCollectorClient().subscriptions.triggerNow.mutate(input);
         return res as unknown as TriggerNowResult;
       } catch (err) {
@@ -575,8 +582,9 @@ export const subscriptionsRouter = router({
         mode: z.enum(['graceful', 'force']).default('graceful'),
       }),
     )
-    .mutation(async ({ input }): Promise<{ cancelled: number; runIds: string[] }> => {
+    .mutation(async ({ ctx, input }): Promise<{ cancelled: number; runIds: string[] }> => {
       try {
+        await verifySubscriptionOwnership(ctx, input.subscriptionId);
         const res = await getCollectorClient().runs.cancelBySubscription.mutate(input);
         return res as unknown as { cancelled: number; runIds: string[] };
       } catch (err) {
@@ -584,7 +592,7 @@ export const subscriptionsRouter = router({
       }
     }),
 
-  cancelAll: protectedProcedure
+  cancelAll: adminProcedure
     .input(
       z.object({
         mode: z.enum(['graceful', 'force']).default('graceful'),

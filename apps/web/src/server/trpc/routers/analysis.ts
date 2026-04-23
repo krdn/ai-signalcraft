@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, sql, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import {
   collectionJobs,
@@ -404,13 +404,16 @@ export const analysisRouter = router({
         retryModules = failedRows.map((r) => r.module).filter((m) => m !== null);
       }
 
-      // 해당 모듈 status를 pending으로 리셋
-      for (const mod of retryModules) {
-        await ctx.db
-          .update(analysisResults)
-          .set({ status: 'pending', errorMessage: null, updatedAt: new Date() })
-          .where(and(eq(analysisResults.jobId, input.jobId), eq(analysisResults.module, mod)));
-      }
+      // 해당 모듈 status를 pending으로 리셋 (배치 UPDATE)
+      await ctx.db
+        .update(analysisResults)
+        .set({ status: 'pending', errorMessage: null, updatedAt: new Date() })
+        .where(
+          and(
+            eq(analysisResults.jobId, input.jobId),
+            inArray(analysisResults.module, retryModules),
+          ),
+        );
 
       // 작업 상태를 running으로 변경
       await ctx.db

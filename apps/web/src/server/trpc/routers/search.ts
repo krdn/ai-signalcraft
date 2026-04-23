@@ -8,6 +8,7 @@ import {
   searchEntities,
 } from '@ai-signalcraft/core';
 import { protectedProcedure, router } from '../init';
+import { verifyJobOwnership } from '../shared/verify-job-ownership';
 
 export const searchRouter = router({
   // 의미 기반 문서 검색
@@ -22,7 +23,10 @@ export const searchRouter = router({
         sentiment: z.enum(['positive', 'negative', 'neutral']).optional(),
       }),
     )
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
+      if (input.jobId) {
+        await verifyJobOwnership(ctx, input.jobId, ctx.defaultFilterMode);
+      }
       return await semanticSearch(input);
     }),
 
@@ -37,14 +41,18 @@ export const searchRouter = router({
         minSimilarity: z.number().min(0).max(1).default(0.5),
       }),
     )
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
+      if (input.jobId) {
+        await verifyJobOwnership(ctx, input.jobId, ctx.defaultFilterMode);
+      }
       return await findSimilarDocuments(input);
     }),
 
   // Job의 임베딩 보유 현황 (검색 가능 여부)
   embeddingStats: protectedProcedure
     .input(z.object({ jobId: z.number() }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
+      await verifyJobOwnership(ctx, input.jobId, ctx.defaultFilterMode);
       return await getEmbeddingStats(input.jobId);
     }),
 
@@ -57,7 +65,8 @@ export const searchRouter = router({
         limit: z.number().min(1).max(50).default(20),
       }),
     )
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
+      await verifyJobOwnership(ctx, input.jobId, ctx.defaultFilterMode);
       return await searchEntities(input.jobId, input.query, input.limit);
     }),
 
