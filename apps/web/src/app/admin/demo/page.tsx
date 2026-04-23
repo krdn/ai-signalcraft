@@ -18,6 +18,16 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   Table,
   TableBody,
   TableCell,
@@ -40,6 +50,11 @@ export default function AdminDemoPage() {
   const [editTarget, setEditTarget] = useState<EditTarget | null>(null);
   const [editDailyLimit, setEditDailyLimit] = useState('');
   const [editExtendDays, setEditExtendDays] = useState('');
+  const [resetTarget, setResetTarget] = useState<{
+    userId: string;
+    userName: string | null;
+  } | null>(null);
+  const [cleanupConfirm, setCleanupConfirm] = useState(false);
 
   const { data: demoUsers, isLoading } = useQuery({
     queryKey: ['admin', 'demo', 'list'],
@@ -122,7 +137,7 @@ export default function AdminDemoPage() {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => cleanupExpired.mutate()}
+          onClick={() => setCleanupConfirm(true)}
           disabled={cleanupExpired.isPending}
         >
           만료 계정 정리
@@ -245,7 +260,9 @@ export default function AdminDemoPage() {
                             variant="ghost"
                             size="sm"
                             className="text-xs"
-                            onClick={() => resetQuota.mutate(demo.userId)}
+                            onClick={() =>
+                              setResetTarget({ userId: demo.userId, userName: demo.userName })
+                            }
                           >
                             리셋
                           </Button>
@@ -320,6 +337,57 @@ export default function AdminDemoPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* 쿼터 리셋 확인 */}
+      <AlertDialog
+        open={resetTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setResetTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>쿼터 리셋</AlertDialogTitle>
+            <AlertDialogDescription>
+              {resetTarget?.userName ?? '사용자'}의 오늘 사용량을 리셋하시겠습니까?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction onClick={() => resetTarget && resetQuota.mutate(resetTarget.userId)}>
+              리셋
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* 만료 계정 정리 확인 */}
+      <AlertDialog
+        open={cleanupConfirm}
+        onOpenChange={(open) => {
+          if (!open) setCleanupConfirm(false);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>만료 계정 정리</AlertDialogTitle>
+            <AlertDialogDescription>
+              만료된 데모 계정을 일괄 정리하시겠습니까? 이 작업은 되돌릴 수 없습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setCleanupConfirm(false);
+                cleanupExpired.mutate();
+              }}
+            >
+              정리
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

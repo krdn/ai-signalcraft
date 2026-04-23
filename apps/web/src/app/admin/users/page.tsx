@@ -64,6 +64,19 @@ export default function AdminUsersPage() {
     name: string | null;
     email: string;
   } | null>(null);
+  const [toggleTarget, setToggleTarget] = useState<{
+    id: string;
+    name: string | null;
+    email: string;
+    isActive: boolean;
+  } | null>(null);
+  const [roleChangeTarget, setRoleChangeTarget] = useState<{
+    userId: string;
+    userName: string | null;
+    userEmail: string;
+    currentRole: string;
+    newRole: string;
+  } | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin', 'users', page, search, roleFilter],
@@ -120,7 +133,9 @@ export default function AdminUsersPage() {
       <Card>
         <CardHeader>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <CardTitle className="text-base">사용자 목록 {data && `(${data.total}명)`}</CardTitle>
+            <CardTitle as="h2" className="text-base">
+              사용자 목록 {data && `(${data.total}명)`}
+            </CardTitle>
             <div className="flex gap-2">
               <div className="relative">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -187,9 +202,12 @@ export default function AdminUsersPage() {
                         <Select
                           value={user.role}
                           onValueChange={(role) =>
-                            updateRole.mutate({
+                            setRoleChangeTarget({
                               userId: user.id,
-                              role: role as 'admin' | 'member' | 'demo',
+                              userName: user.name,
+                              userEmail: user.email,
+                              currentRole: user.role,
+                              newRole: role ?? user.role,
                             })
                           }
                         >
@@ -226,9 +244,11 @@ export default function AdminUsersPage() {
                             size="sm"
                             className="text-xs"
                             onClick={() =>
-                              toggleActive.mutate({
-                                userId: user.id,
-                                isActive: !user.isActive,
+                              setToggleTarget({
+                                id: user.id,
+                                name: user.name,
+                                email: user.email,
+                                isActive: user.isActive,
                               })
                             }
                           >
@@ -304,6 +324,88 @@ export default function AdminUsersPage() {
               onClick={() => deleteTarget && deleteUser.mutate(deleteTarget.id)}
             >
               {deleteUser.isPending ? '삭제 중...' : '삭제'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* 활성/비활성 전환 확인 다이얼로그 */}
+      <AlertDialog
+        open={toggleTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setToggleTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {toggleTarget?.isActive ? '사용자 비활성화' : '사용자 활성화'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {toggleTarget?.isActive
+                ? `${toggleTarget?.name ?? toggleTarget?.email} 계정을 비활성화하시겠습니까? 비활성화된 계정은 로그인할 수 없습니다.`
+                : `${toggleTarget?.name ?? toggleTarget?.email} 계정을 활성화하시겠습니까?`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={toggleActive.isPending}
+              onClick={() =>
+                toggleTarget &&
+                toggleActive.mutate({
+                  userId: toggleTarget.id,
+                  isActive: !toggleTarget.isActive,
+                })
+              }
+            >
+              {toggleTarget?.isActive ? '비활성화' : '활성화'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* 역할 변경 확인 다이얼로그 */}
+      <AlertDialog
+        open={roleChangeTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setRoleChangeTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>역할 변경 확인</AlertDialogTitle>
+            <AlertDialogDescription>
+              <strong>{roleChangeTarget?.userName ?? roleChangeTarget?.userEmail}</strong>의 역할을{' '}
+              <Badge variant={ROLE_VARIANTS[roleChangeTarget?.currentRole ?? '']}>
+                {ROLE_LABELS[roleChangeTarget?.currentRole ?? '']}
+              </Badge>{' '}
+              에서{' '}
+              <Badge variant={ROLE_VARIANTS[roleChangeTarget?.newRole ?? '']}>
+                {ROLE_LABELS[roleChangeTarget?.newRole ?? '']}
+              </Badge>{' '}
+              로 변경하시겠습니까?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={updateRole.isPending}
+              onClick={() =>
+                roleChangeTarget &&
+                updateRole.mutate({
+                  userId: roleChangeTarget.userId,
+                  role: roleChangeTarget.newRole as
+                    | 'admin'
+                    | 'leader'
+                    | 'sales'
+                    | 'partner'
+                    | 'member'
+                    | 'demo',
+                })
+              }
+            >
+              {updateRole.isPending ? '변경 중...' : '변경'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -17,6 +17,16 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { PresetFormDialog } from '@/components/admin/preset-form-dialog';
 
 type PresetRow = Awaited<ReturnType<typeof trpcClient.admin.presets.list.query>>[number];
@@ -25,6 +35,7 @@ export default function AdminPresetsPage() {
   const qc = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<PresetRow | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<PresetRow | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin', 'presets'],
@@ -72,7 +83,9 @@ export default function AdminPresetsPage() {
 
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">등록된 프리셋</CardTitle>
+          <CardTitle as="h2" className="text-base">
+            등록된 프리셋
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -142,10 +155,7 @@ export default function AdminPresetsPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => {
-                            if (confirm(`"${preset.title}"을(를) 비활성화하시겠습니까?`))
-                              deleteMutation.mutate(preset.id);
-                          }}
+                          onClick={() => setDeleteTarget(preset)}
                           disabled={deleteMutation.isPending}
                           title="삭제"
                         >
@@ -162,6 +172,31 @@ export default function AdminPresetsPage() {
       </Card>
 
       <PresetFormDialog open={dialogOpen} onOpenChange={setDialogOpen} editData={editTarget} />
+
+      <AlertDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>프리셋 삭제</AlertDialogTitle>
+            <AlertDialogDescription>
+              &quot;{deleteTarget?.title}&quot; 프리셋을 비활성화하시겠습니까? 이 작업은 되돌릴 수
+              없습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
+            >
+              삭제
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

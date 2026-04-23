@@ -6,6 +6,7 @@ import { Plus, Power, Trash2, Rss, Globe } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Badge } from '@/components/ui/badge';
 import {
   Table,
@@ -18,6 +19,18 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { trpcClient } from '@/lib/trpc';
 import { SourceFormDialog } from '@/components/admin/source-form-dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+
+type SourceRow = Awaited<ReturnType<typeof trpcClient.admin.sources.list.query>>[number];
 
 function formatDateTime(value: Date | string | null | undefined): string {
   if (!value) return '—';
@@ -34,6 +47,7 @@ function formatDateTime(value: Date | string | null | undefined): string {
 export default function AdminSourcesPage() {
   const qc = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<SourceRow | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin', 'sources'],
@@ -76,7 +90,9 @@ export default function AdminSourcesPage() {
 
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">등록된 소스</CardTitle>
+          <CardTitle as="h2" className="text-base">
+            등록된 소스
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -86,9 +102,16 @@ export default function AdminSourcesPage() {
               <Skeleton className="h-10 w-full" />
             </div>
           ) : !data || data.length === 0 ? (
-            <div className="py-12 text-center text-sm text-muted-foreground">
-              등록된 소스가 없습니다. "소스 추가" 버튼을 눌러 시작하세요.
-            </div>
+            <EmptyState
+              title="등록된 소스가 없습니다"
+              description='"소스 추가" 버튼을 눌러 데이터 소스를 등록하세요'
+              action={
+                <Button onClick={() => setDialogOpen(true)}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  소스 추가
+                </Button>
+              }
+            />
           ) : (
             <Table>
               <TableHeader>
@@ -142,11 +165,7 @@ export default function AdminSourcesPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => {
-                            if (confirm(`"${s.name}"을(를) 비활성화하시겠습니까?`)) {
-                              deleteMutation.mutate(s.id);
-                            }
-                          }}
+                          onClick={() => setDeleteTarget(s)}
                           disabled={deleteMutation.isPending}
                           title="삭제"
                         >
@@ -163,6 +182,31 @@ export default function AdminSourcesPage() {
       </Card>
 
       <SourceFormDialog open={dialogOpen} onOpenChange={setDialogOpen} />
+
+      <AlertDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>소스 삭제</AlertDialogTitle>
+            <AlertDialogDescription>
+              &quot;{deleteTarget?.name}&quot; 소스를 비활성화하시겠습니까? 이 작업은 되돌릴 수
+              없습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
+            >
+              삭제
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

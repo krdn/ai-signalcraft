@@ -6,6 +6,7 @@ import { Copy, ExternalLink, Link2, XCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -15,12 +16,25 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { trpcClient } from '@/lib/trpc';
 
 export default function ShareLinksPage() {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [deactivateTarget, setDeactivateTarget] = useState<{ id: string; title: string } | null>(
+    null,
+  );
 
   const { data, isLoading } = useQuery({
     queryKey: ['sales', 'shareLinks'],
@@ -223,7 +237,10 @@ export default function ShareLinksPage() {
                               size="icon"
                               className="h-8 w-8 text-red-500 hover:text-red-600"
                               onClick={() =>
-                                toggleMutation.mutate({ id: link.id, isActive: false })
+                                setDeactivateTarget({
+                                  id: link.id,
+                                  title: link.customTitle ?? link.keyword ?? `작업 #${link.jobId}`,
+                                })
                               }
                             >
                               <XCircle className="h-3.5 w-3.5" />
@@ -236,8 +253,11 @@ export default function ShareLinksPage() {
                 })}
                 {!isLoading && data?.items.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">
-                      공유 링크가 없습니다
+                    <td colSpan={7}>
+                      <EmptyState
+                        title="공유 링크가 없습니다"
+                        description="공유 링크 생성 버튼으로 리포트를 외부에 공유해보세요"
+                      />
                     </td>
                   </tr>
                 )}
@@ -246,6 +266,34 @@ export default function ShareLinksPage() {
           </div>
         </CardContent>
       </Card>
+
+      <AlertDialog
+        open={deactivateTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeactivateTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>공유 링크 비활성화</AlertDialogTitle>
+            <AlertDialogDescription>
+              &quot;{deactivateTarget?.title}&quot; 링크를 비활성화하시겠습니까? 비활성화된 링크는
+              더 이상 접근할 수 없습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() =>
+                deactivateTarget &&
+                toggleMutation.mutate({ id: deactivateTarget.id, isActive: false })
+              }
+            >
+              비활성화
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

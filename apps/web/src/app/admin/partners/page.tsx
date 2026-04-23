@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, Loader2, Plus, XCircle } from 'lucide-react';
+import { CheckCircle2, ClipboardList, Loader2, Plus, Users, XCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +18,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import {
   Select,
   SelectContent,
@@ -62,6 +73,11 @@ export default function AdminPartnersPage() {
 function ApplicationsTab() {
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState<string>('pending');
+  const [reviewTarget, setReviewTarget] = useState<{
+    id: string;
+    name: string;
+    action: 'approved' | 'rejected';
+  } | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin', 'partners', 'applications', statusFilter],
@@ -84,110 +100,146 @@ function ApplicationsTab() {
   });
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-lg">파트너 신청</CardTitle>
-        <Select
-          value={statusFilter}
-          onValueChange={(v) => {
-            if (v) setStatusFilter(v);
-          }}
-        >
-          <SelectTrigger className="w-32">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="pending">대기중</SelectItem>
-            <SelectItem value="approved">승인</SelectItem>
-            <SelectItem value="rejected">거절</SelectItem>
-          </SelectContent>
-        </Select>
-      </CardHeader>
-      <CardContent className="p-0">
-        {isLoading ? (
-          <div className="p-6 space-y-3">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-10 w-full" />
-            ))}
-          </div>
-        ) : (
-          <Table>
-            <caption className="sr-only">파트너 신청 목록</caption>
-            <TableHeader>
-              <TableRow>
-                <TableHead>이름</TableHead>
-                <TableHead>이메일</TableHead>
-                <TableHead>사업자</TableHead>
-                <TableHead>프로그램</TableHead>
-                <TableHead>영업 분야</TableHead>
-                <TableHead>신청일</TableHead>
-                <TableHead>액션</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data?.items.length === 0 ? (
+    <>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle as="h2" className="text-lg">
+            파트너 신청
+          </CardTitle>
+          <Select
+            value={statusFilter}
+            onValueChange={(v) => {
+              if (v) setStatusFilter(v);
+            }}
+          >
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="pending">대기중</SelectItem>
+              <SelectItem value="approved">승인</SelectItem>
+              <SelectItem value="rejected">거절</SelectItem>
+            </SelectContent>
+          </Select>
+        </CardHeader>
+        <CardContent className="p-0">
+          {isLoading ? (
+            <div className="p-6 space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-10 w-full" />
+              ))}
+            </div>
+          ) : (
+            <Table>
+              <caption className="sr-only">파트너 신청 목록</caption>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                    신청 내역이 없습니다
-                  </TableCell>
+                  <TableHead>이름</TableHead>
+                  <TableHead>이메일</TableHead>
+                  <TableHead>사업자</TableHead>
+                  <TableHead>프로그램</TableHead>
+                  <TableHead>영업 분야</TableHead>
+                  <TableHead>신청일</TableHead>
+                  <TableHead>액션</TableHead>
                 </TableRow>
-              ) : (
-                data?.items.map((app) => (
-                  <TableRow key={app.id}>
-                    <TableCell className="font-medium">{app.name}</TableCell>
-                    <TableCell>{app.email}</TableCell>
-                    <TableCell>{app.businessType === 'individual' ? '개인' : '법인'}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">
-                        {app.program === 'reseller' ? '리셀러' : '사업 파트너'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="max-w-32 truncate">{app.salesArea ?? '-'}</TableCell>
-                    <TableCell>{new Date(app.createdAt).toLocaleDateString('ko-KR')}</TableCell>
-                    <TableCell>
-                      {app.status === 'pending' ? (
-                        <div className="flex gap-1">
-                          <Button
-                            size="sm"
-                            variant="default"
-                            onClick={() =>
-                              reviewMutation.mutate({
-                                applicationId: app.id,
-                                action: 'approved',
-                              })
-                            }
-                            disabled={reviewMutation.isPending}
-                          >
-                            <CheckCircle2 className="size-3.5" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() =>
-                              reviewMutation.mutate({
-                                applicationId: app.id,
-                                action: 'rejected',
-                              })
-                            }
-                            disabled={reviewMutation.isPending}
-                          >
-                            <XCircle className="size-3.5" />
-                          </Button>
-                        </div>
-                      ) : (
-                        <Badge variant={app.status === 'approved' ? 'default' : 'destructive'}>
-                          {app.status === 'approved' ? '승인' : '거절'}
-                        </Badge>
-                      )}
+              </TableHeader>
+              <TableBody>
+                {data?.items.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7}>
+                      <EmptyState
+                        icon={<ClipboardList className="h-12 w-12" />}
+                        title="신청 내역이 없습니다"
+                        description="새로운 파트너 신청이 들어오면 여기에 표시됩니다"
+                      />
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        )}
-      </CardContent>
-    </Card>
+                ) : (
+                  data?.items.map((app) => (
+                    <TableRow key={app.id}>
+                      <TableCell className="font-medium">{app.name}</TableCell>
+                      <TableCell>{app.email}</TableCell>
+                      <TableCell>{app.businessType === 'individual' ? '개인' : '법인'}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          {app.program === 'reseller' ? '리셀러' : '사업 파트너'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="max-w-32 truncate">{app.salesArea ?? '-'}</TableCell>
+                      <TableCell>{new Date(app.createdAt).toLocaleDateString('ko-KR')}</TableCell>
+                      <TableCell>
+                        {app.status === 'pending' ? (
+                          <div className="flex gap-1">
+                            <Button
+                              size="sm"
+                              variant="default"
+                              onClick={() =>
+                                setReviewTarget({ id: app.id, name: app.name, action: 'approved' })
+                              }
+                              disabled={reviewMutation.isPending}
+                            >
+                              <CheckCircle2 className="size-3.5" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() =>
+                                setReviewTarget({ id: app.id, name: app.name, action: 'rejected' })
+                              }
+                              disabled={reviewMutation.isPending}
+                            >
+                              <XCircle className="size-3.5" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <Badge variant={app.status === 'approved' ? 'default' : 'destructive'}>
+                            {app.status === 'approved' ? '승인' : '거절'}
+                          </Badge>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      <AlertDialog
+        open={reviewTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setReviewTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {reviewTarget?.action === 'approved' ? '파트너 신청 승인' : '파트너 신청 거절'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {reviewTarget?.action === 'approved'
+                ? `"${reviewTarget?.name}"님의 파트너 신청을 승인하시겠습니까?`
+                : `"${reviewTarget?.name}"님의 파트너 신청을 거절하시겠습니까?`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() =>
+                reviewTarget &&
+                reviewMutation.mutate({
+                  applicationId: reviewTarget.id,
+                  action: reviewTarget.action,
+                })
+              }
+            >
+              {reviewTarget?.action === 'approved' ? '승인' : '거절'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 
@@ -219,7 +271,9 @@ function PartnersTab() {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-lg">활성 파트너</CardTitle>
+        <CardTitle as="h2" className="text-lg">
+          활성 파트너
+        </CardTitle>
         <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
           <DialogTrigger
             render={
@@ -325,8 +379,12 @@ function PartnersTab() {
             <TableBody>
               {data?.items.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                    등록된 파트너가 없습니다
+                  <TableCell colSpan={6}>
+                    <EmptyState
+                      icon={<Users className="h-12 w-12" />}
+                      title="등록된 파트너가 없습니다"
+                      description="파트너 초대 버튼으로 새 파트너를 추가할 수 있습니다"
+                    />
                   </TableCell>
                 </TableRow>
               ) : (
@@ -377,7 +435,9 @@ function CommissionsTab() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">월별 수수료 현황</CardTitle>
+        <CardTitle as="h2" className="text-lg">
+          월별 수수료 현황
+        </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
         {isLoading ? (
@@ -400,8 +460,11 @@ function CommissionsTab() {
             <TableBody>
               {!data || data.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
-                    수수료 기록이 없습니다
+                  <TableCell colSpan={4}>
+                    <EmptyState
+                      title="수수료 기록이 없습니다"
+                      description="파트너 활동이 발생하면 월별 수수료 현황이 여기에 표시됩니다"
+                    />
                   </TableCell>
                 </TableRow>
               ) : (
