@@ -65,10 +65,10 @@ jobs:
         working-directory: docker
         run: |
           docker compose -f docker-compose.prod.yml --env-file ../.env.production build \
-            web worker collector-api collector-worker collector-scheduler
+            web worker collector-api collector-worker collector-scheduler whisper-worker
 
           docker compose -f docker-compose.prod.yml --env-file ../.env.production up -d --no-deps \
-            web worker collector-api collector-worker collector-scheduler
+            web worker collector-api collector-worker collector-scheduler whisper-worker
           echo "Deploy completed at $(date)"
 
       - name: Health Check
