@@ -29,9 +29,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Python 의존성: faster-whisper + yt-dlp + curl-cffi (impersonation)
 # PEP 668 bypass — 컨테이너이므로 안전
+# yt-dlp는 빈번히 업데이트되고 PyPI가 이전 버전을 금방 삭제하므로 상한 느슨하게.
+# curl-cffi는 0.15에서 yt-dlp와 non-compatible이라 <0.15 핀 유지.
 RUN pip install --break-system-packages --no-cache-dir \
     "faster-whisper==1.2.*" \
-    "yt-dlp[default]==2026.03.*" \
+    "yt-dlp[default]>=2026.3" \
     "curl-cffi>=0.10,<0.15"
 
 # 모델은 첫 호출 시 HuggingFace에서 자동 다운로드됨 (/root/.cache/huggingface).
