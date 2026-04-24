@@ -45,6 +45,7 @@ FROM node:24-slim AS worker
 RUN apt-get update && apt-get install -y --no-install-recommends \
     chromium \
     fonts-noto-cjk \
+    tini \
     && rm -rf /var/lib/apt/lists/*
 ENV PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium
 RUN corepack enable && corepack prepare pnpm@latest --activate
@@ -66,4 +67,5 @@ COPY --from=builder /app/pnpm-workspace.yaml ./
 # tsx로 워커 실행
 RUN npm install -g tsx
 ENV NODE_ENV=production
+ENTRYPOINT ["tini", "--"]
 CMD ["tsx", "packages/core/src/queue/worker-process.ts"]

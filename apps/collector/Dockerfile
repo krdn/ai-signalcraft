@@ -16,6 +16,7 @@ FROM node:24-slim AS runtime
 RUN apt-get update && apt-get install -y --no-install-recommends \
     chromium \
     fonts-noto-cjk \
+    tini \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 ENV PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium
@@ -36,4 +37,5 @@ ENV NODE_ENV=production
 ENV PORT=3400
 EXPOSE 3400
 
+ENTRYPOINT ["tini", "--"]
 CMD ["tsx", "apps/collector/src/server/index.ts"]
