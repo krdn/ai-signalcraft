@@ -10,6 +10,7 @@ import {
   type CollectionJobResult,
 } from './types';
 import { executeCollectionJob } from './executor';
+import { recoverOrphanedJobs } from './startup-recovery';
 
 /**
  * 소스별 기동 전 환경 검증.
@@ -117,6 +118,10 @@ export async function shutdownWorkers(
 async function main() {
   console.warn('[worker-process] verifying hypertable constraints...');
   await assertHypertableConstraints();
+  // Worker 시작 전 orphaned job 복구
+  await recoverOrphanedJobs().catch((err) =>
+    console.error('[startup-recovery] 복구 실패 (무시하고 계속):', err),
+  );
   console.warn('[worker-process] starting all source workers...');
   const workers = startAllWorkers();
   console.warn(
