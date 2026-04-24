@@ -33,6 +33,7 @@ services:
       target: worker
     container_name: ais-prod-worker
     restart: unless-stopped
+    stop_grace_period: 60s
     env_file:
       - ../.env.production
     volumes:
@@ -40,6 +41,12 @@ services:
       - ${HOME}/.gemini:/root/.gemini
       # HuggingFace/Xenova 모델 캐시 영속화 — 컨테이너 재시작 시 재다운로드 방지
       - ais-prod-model-cache:/root/.cache/xenova
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"process.exit(0)\""]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     depends_on:
       postgres:
         condition: service_healthy
@@ -133,6 +140,7 @@ services:
     container_name: ais-collector-worker
     command: ["tsx", "apps/collector/src/queue/worker-process.ts"]
     restart: unless-stopped
+    stop_grace_period: 60s
     env_file:
       - ../.env.production
     environment:
@@ -142,6 +150,12 @@ services:
       BULL_PREFIX: collector
     volumes:
       - ais-collector-model-cache:/root/.cache/xenova
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"process.exit(0)\""]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     depends_on:
       redis:
         condition: service_healthy
@@ -162,6 +176,7 @@ services:
     container_name: ais-collector-scheduler
     command: ["tsx", "apps/collector/src/scheduler/scanner.ts"]
     restart: unless-stopped
+    stop_grace_period: 30s
     env_file:
       - ../.env.production
     environment:
