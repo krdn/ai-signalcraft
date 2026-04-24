@@ -283,7 +283,14 @@ export async function executeCollectionJob(
         blocked: false,
         durationMs,
       })
-      .where(and(eq(collectionRuns.runId, runId), eq(collectionRuns.source, source)));
+      .where(
+        and(
+          eq(collectionRuns.runId, runId),
+          eq(collectionRuns.source, source),
+          // worker.on('failed')가 이미 finalize한 row를 되돌리지 않도록 가드.
+          eq(collectionRuns.status, 'running'),
+        ),
+      );
 
     // naver-news → naver-comments fan-out
     // 조건: commentsPerItem > 0 AND includeComments !== false AND 기사 URL 1건 이상
@@ -357,7 +364,13 @@ export async function executeCollectionJob(
         errorReason: message.slice(0, 500),
         durationMs,
       })
-      .where(and(eq(collectionRuns.runId, runId), eq(collectionRuns.source, source)));
+      .where(
+        and(
+          eq(collectionRuns.runId, runId),
+          eq(collectionRuns.source, source),
+          eq(collectionRuns.status, 'running'),
+        ),
+      );
 
     if (cancelled) {
       // run_cancellations cancelling→cancelled 전이. race-safe (WHERE status='cancelling').
@@ -540,7 +553,13 @@ async function executeCommentsJob(job: Job<CollectionJobData>): Promise<Collecti
         errorReason,
         durationMs,
       })
-      .where(and(eq(collectionRuns.runId, runId), eq(collectionRuns.source, source)));
+      .where(
+        and(
+          eq(collectionRuns.runId, runId),
+          eq(collectionRuns.source, source),
+          eq(collectionRuns.status, 'running'),
+        ),
+      );
 
     // totalFailure인 경우 BullMQ retry를 위해 에러 throw
     if (totalFailure) {
@@ -568,7 +587,13 @@ async function executeCommentsJob(job: Job<CollectionJobData>): Promise<Collecti
         errorReason: message.slice(0, 500),
         durationMs,
       })
-      .where(and(eq(collectionRuns.runId, runId), eq(collectionRuns.source, source)));
+      .where(
+        and(
+          eq(collectionRuns.runId, runId),
+          eq(collectionRuns.source, source),
+          eq(collectionRuns.status, 'running'),
+        ),
+      );
 
     if (cancelled) {
       // run_cancellations cancelling→cancelled 전이. race-safe (WHERE status='cancelling').

@@ -1,7 +1,10 @@
 import 'dotenv/config';
 import { Worker, type WorkerOptions } from 'bullmq';
+import { and, eq } from 'drizzle-orm';
 import { hasYoutubeApiKey } from '@ai-signalcraft/collectors';
 import { assertHypertableConstraints } from '../db/migrations/verify-hypertable-constraints';
+import { getDb } from '../db';
+import { collectionRuns } from '../db/schema';
 import { getBullMQOptions } from './connection';
 import {
   COLLECTOR_SOURCES,
@@ -81,6 +84,36 @@ function buildWorker(source: CollectorSource): Worker<CollectionJobData, Collect
     console.error(
       `[worker:${source}] failed runId=${job?.data.runId} attempt=${job?.attemptsMade}: ${err.message}`,
     );
+
+    // executor의 catch를 거치지 않는 실패 경로(stalled 초과 등)에서
+    // collection_runs가 status='running'으로 영구 orphan이 되는 것을 방지.
+    // 재시도 경쟁을 피하려고 '마지막 시도'일 때만 finalize.
+    if (!job) return;
+    const maxAttempts = job.opts.attempts ?? 1;
+    const isLastAttempt = job.attemptsMade >= maxAttempts;
+    if (!isLastAttempt) return;
+
+    const runId = job.data.runId;
+    const reason = (err.message ?? 'unknown').slice(0, 500);
+    void getDb()
+      .update(collectionRuns)
+      .set({
+        status: 'failed',
+        errorReason: `worker.failed: ${reason}`,
+      })
+      .where(
+        and(
+          eq(collectionRuns.runId, runId),
+          eq(collectionRuns.source, source),
+          eq(collectionRuns.status, 'running'),
+        ),
+      )
+      .catch((dbErr) => {
+        console.error(
+          `[worker:${source}] failed-hook DB finalize 실패 runId=${runId}:`,
+          dbErr instanceof Error ? dbErr.message : dbErr,
+        );
+      });
   });
 
   worker.on('error', (err) => {
