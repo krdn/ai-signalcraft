@@ -53,7 +53,7 @@ export async function enqueueWhisperForTopVideos(opts: {
     } satisfies WhisperJobData,
     opts: {
       // sourceId 기반 jobId — 같은 영상이 여러 번 enqueue되어도 한 번만 실행
-      jobId: `yt:${c.sourceId}`,
+      jobId: `yt-${c.sourceId}`,
       attempts: 2,
       backoff: { type: 'exponential' as const, delay: 30_000 },
       removeOnComplete: { count: 1000, age: 7 * 24 * 3600 },
@@ -105,7 +105,7 @@ export async function enqueueWhisperBackfill(opts: {
         viewCount: r.viewCount ?? undefined,
       } satisfies WhisperJobData,
       opts: {
-        jobId: `yt:${r.sourceId}`,
+        jobId: `yt-${r.sourceId}`,
         attempts: 2,
         removeOnComplete: { count: 1000, age: 7 * 24 * 3600 },
         removeOnFail: { count: 500, age: 14 * 24 * 3600 },
