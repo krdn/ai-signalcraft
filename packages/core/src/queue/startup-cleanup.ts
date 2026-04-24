@@ -14,7 +14,8 @@ export async function cleanupOrphanedRedisJobs(): Promise<number> {
   const bullOpts = getBullMQOptions();
   let cleaned = 0;
 
-  for (const queueName of ['collectors', 'pipeline', 'analysis']) {
+  // collectors 큐는 collector worker의 startup-recovery.ts가 담당 — 이중 복구 방지
+  for (const queueName of ['pipeline', 'analysis'] as const) {
     const queue = new Queue(queueName, bullOpts);
 
     try {

@@ -60,51 +60,56 @@ export async function recoverOrphanedJobs(): Promise<void> {
         if (orphanedKeys.length === 0) continue;
 
         let recovered = 0;
+        const queue = new Queue<CollectionJobData>(`collect-${source}`, getBullMQOptions());
 
-        for (const key of orphanedKeys) {
-          // 해시에서 finishedOn, processedOn, data 필드 조회
-          const [finishedOn, processedOn, dataRaw] = await redis.hmget(
-            key,
-            'finishedOn',
-            'processedOn',
-            'data',
-          );
+        try {
+          for (const key of orphanedKeys) {
+            // 해시에서 finishedOn, processedOn, data 필드 조회
+            const [finishedOn, processedOn, dataRaw] = await redis.hmget(
+              key,
+              'finishedOn',
+              'processedOn',
+              'data',
+            );
 
-          // processedOn이 없으면 아직 처리 시작 전 — orphaned 아님
-          if (!processedOn) continue;
+            // processedOn이 없으면 아직 처리 시작 전 — orphaned 아님
+            if (!processedOn) continue;
 
-          // finishedOn이 있으면 정상 완료 — orphaned 아님
-          if (finishedOn) continue;
+            // finishedOn이 있으면 정상 완료 — orphaned 아님
+            if (finishedOn) continue;
 
-          // data 필드가 없으면 복구 불가 — 스킵
-          if (!dataRaw) continue;
+            // data 필드가 없으면 복구 불가 — 스킵
+            if (!dataRaw) continue;
 
-          let jobData: CollectionJobData;
-          try {
-            jobData = JSON.parse(dataRaw) as CollectionJobData;
-          } catch {
-            console.warn(`[startup-recovery] data JSON 파싱 실패: ${key}`);
-            continue;
+            let jobData: CollectionJobData;
+            try {
+              jobData = JSON.parse(dataRaw) as CollectionJobData;
+            } catch {
+              console.warn(`[startup-recovery] data JSON 파싱 실패: ${key}`);
+              continue;
+            }
+
+            try {
+              await queue.add(`collect-${source}`, jobData, {
+                jobId: `${jobData.runId}-${source}-recovered-${Date.now()}`,
+                attempts: 3,
+                backoff: { type: 'exponential', delay: 30_000 },
+                removeOnComplete: { age: 3600, count: 1000 },
+                removeOnFail: { age: 24 * 3600 },
+              });
+
+              // 원본 해시 삭제
+              await redis.del(key);
+              recovered++;
+            } catch (err) {
+              console.warn(
+                `[startup-recovery] ${source} job 복구 실패 (key=${key}):`,
+                err instanceof Error ? err.message : err,
+              );
+            }
           }
-
-          // 같은 data로 새 job 적재
-          const queue = new Queue<CollectionJobData>(`collect-${source}`, getBullMQOptions());
-
-          try {
-            await queue.add(`collect-${source}`, jobData, {
-              jobId: `${jobData.runId}-${source}-recovered`,
-              attempts: 3,
-              backoff: { type: 'exponential', delay: 30_000 },
-              removeOnComplete: { age: 3600, count: 1000 },
-              removeOnFail: { age: 24 * 3600 },
-            });
-
-            // 원본 해시 삭제
-            await redis.del(key);
-            recovered++;
-          } finally {
-            await queue.close();
-          }
+        } finally {
+          await queue.close();
         }
 
         if (recovered > 0) {
