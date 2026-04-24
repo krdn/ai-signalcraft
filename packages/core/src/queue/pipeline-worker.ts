@@ -509,9 +509,11 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
       // dbJobId가 없으면(레거시 경로) 스킵 — enqueueWhisperForTopVideos는 jobId 기반 쿼리
       if (newVideoIds.length > 0 && dbJobId) {
         try {
+          // Top-N 100 — whisper-worker가 영상 길이 기반 세그먼트 전략(앞5분/앞5+뒤2/전체)으로
+          // 처리 비용을 제어하므로 후보를 넓게 줘도 안전. runaway 방지용 상한.
           const { enqueued } = await enqueueWhisperForTopVideos({
             jobId: dbJobId,
-            topN: 20,
+            topN: 100,
           });
           if (enqueued > 0) {
             logger.info(`[whisper] ${enqueued}개 영상 전사 큐에 등록 (dbJobId=${dbJobId})`);

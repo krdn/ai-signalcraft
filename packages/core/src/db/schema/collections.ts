@@ -162,6 +162,8 @@ export const videos = pgTable(
     viewCount: integer('view_count'),
     likeCount: integer('like_count'),
     commentCount: integer('comment_count'),
+    /** 영상 길이(초). Whisper 세그먼트 전략 분기에 사용 */
+    durationSec: integer('duration_sec'),
     transcript: text('transcript'),
     transcriptLang: text('transcript_lang'),
     publishedAt: timestamp('published_at'),

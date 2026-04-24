@@ -15,11 +15,27 @@ export interface YoutubeVideo {
   viewCount: number;
   likeCount: number;
   commentCount: number;
+  /** 영상 길이(초). YouTube API contentDetails.duration(ISO 8601) 파싱 결과 */
+  durationSec: number | null;
   publishedAt: Date | null;
   rawData: Record<string, unknown>;
   comments: YoutubeComment[];
   transcript: string | null;
   transcriptLang: string | null;
+}
+
+/**
+ * ISO 8601 duration (예: "PT1H5M30S", "PT45M", "PT1M") → 초 변환.
+ * YouTube contentDetails.duration 형식 전용 — days 단위는 없음.
+ */
+export function parseYoutubeDuration(iso: string | null | undefined): number | null {
+  if (!iso) return null;
+  const m = iso.match(/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/);
+  if (!m) return null;
+  const h = Number(m[1] ?? 0);
+  const min = Number(m[2] ?? 0);
+  const s = Number(m[3] ?? 0);
+  return h * 3600 + min * 60 + s;
 }
 
 // 기본 최대 수집 건수
@@ -103,7 +119,7 @@ export class YoutubeVideosCollector implements Collector<YoutubeVideo> {
         }
 
         const videosResponse = await youtube.videos.list({
-          part: ['snippet', 'statistics'],
+          part: ['snippet', 'statistics', 'contentDetails'],
           id: videoIds,
         });
 
@@ -124,6 +140,7 @@ export class YoutubeVideosCollector implements Collector<YoutubeVideo> {
           viewCount: parseInt(item.statistics?.viewCount ?? '0', 10),
           likeCount: parseInt(item.statistics?.likeCount ?? '0', 10),
           commentCount: parseInt(item.statistics?.commentCount ?? '0', 10),
+          durationSec: parseYoutubeDuration(item.contentDetails?.duration),
           publishedAt: item.snippet?.publishedAt ? new Date(item.snippet.publishedAt) : null,
           rawData: item as unknown as Record<string, unknown>,
           comments: [],

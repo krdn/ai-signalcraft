@@ -5,7 +5,7 @@ import { QuotaTracker } from '../utils/youtube-quota';
 import { fetchTranscript } from '../utils/youtube-transcript';
 import { splitIntoDaysKst, KST_OFFSET_MS } from '../utils/community-parser';
 import type { Collector, CollectionOptions, CollectionStats } from './base';
-import type { YoutubeVideo } from './youtube-videos';
+import { parseYoutubeDuration, type YoutubeVideo } from './youtube-videos';
 import type { YoutubeComment } from './youtube-comments';
 
 // 기본값
@@ -210,7 +210,10 @@ export class YoutubeCollector implements Collector<YoutubeVideo> {
       return { videos: [], nextPageToken: searchRes.data.nextPageToken ?? undefined };
     }
 
-    const detailRes = await youtube.videos.list({ part: ['snippet', 'statistics'], id: ids });
+    const detailRes = await youtube.videos.list({
+      part: ['snippet', 'statistics', 'contentDetails'],
+      id: ids,
+    });
     this.quota.track('videos.list');
 
     const videos: YoutubeVideo[] = (detailRes.data.items ?? []).map((item) => ({
@@ -223,6 +226,7 @@ export class YoutubeCollector implements Collector<YoutubeVideo> {
       viewCount: parseInt(item.statistics?.viewCount ?? '0', 10),
       likeCount: parseInt(item.statistics?.likeCount ?? '0', 10),
       commentCount: parseInt(item.statistics?.commentCount ?? '0', 10),
+      durationSec: parseYoutubeDuration(item.contentDetails?.duration),
       publishedAt: item.snippet?.publishedAt ? new Date(item.snippet.publishedAt) : null,
       rawData: item as unknown as Record<string, unknown>,
       comments: [],
@@ -257,6 +261,8 @@ export class YoutubeCollector implements Collector<YoutubeVideo> {
         ),
         likeCount: 0,
         commentCount: 0,
+        // InnerTube fallback은 duration 정보를 구조적으로 제공하지 않음 — null
+        durationSec: null,
         publishedAt: this.parseInnertubeDate(v.published?.text ?? v.published ?? ''),
         rawData: { innertube: true },
         comments: [],
@@ -452,6 +458,7 @@ export class YoutubeCollector implements Collector<YoutubeVideo> {
           viewCount: 0,
           likeCount: 0,
           commentCount: comments.length,
+          durationSec: null,
           publishedAt: null,
           rawData: { refetchCommentsOnly: true },
           comments,

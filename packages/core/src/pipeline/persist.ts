@@ -103,6 +103,9 @@ export async function persistVideos(jobId: number, data: (typeof videos.$inferIn
           rawData: sql`excluded.raw_data`,
           collectedAt: sql`excluded.collected_at`,
           lastFetchedAt: sql`now()`,
+          // duration_sec은 NULL인 경우(refetchCommentsOnly/innertube fallback)
+          // 기존 값을 보존. COALESCE로 null 들어와도 이전 값 유지.
+          durationSec: sql`COALESCE(excluded.duration_sec, ${videos.durationSec})`,
           transcript: sql`excluded.transcript`,
           transcriptLang: sql`excluded.transcript_lang`,
         },

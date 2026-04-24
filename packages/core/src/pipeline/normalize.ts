@@ -93,6 +93,7 @@ export function normalizeYoutubeVideo(video: YoutubeVideo): typeof videos.$infer
     viewCount: video.viewCount,
     likeCount: video.likeCount,
     commentCount: video.commentCount,
+    durationSec: video.durationSec ?? null,
     publishedAt: toDate(video.publishedAt),
     rawData: video.rawData,
     transcript: video.transcript ?? null,
