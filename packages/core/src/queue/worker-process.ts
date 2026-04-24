@@ -10,6 +10,7 @@ import { createPipelineHandler } from './pipeline-worker';
 import { createAnalysisWorker } from './analysis-worker';
 import { getBullPrefix } from './connection';
 import { sendToDLQ } from './dlq';
+import { startWorkerHealthHeartbeat, stopWorkerHealthHeartbeat } from './worker-health';
 
 // 1. 환경 설정
 initEnv();
@@ -47,6 +48,9 @@ for (const worker of [collectorWorker, pipelineWorker, analysisWorker]) {
   });
 }
 
+// 2.6. Worker health heartbeat 시작
+startWorkerHealthHeartbeat([collectorWorker, pipelineWorker, analysisWorker]);
+
 // 현재 BullMQ prefix 표시 — 개발/운영 구분 명시
 const prefix = getBullPrefix();
 const envLabel = process.env.NODE_ENV === 'production' ? '운영' : '개발';
@@ -57,6 +61,7 @@ console.log(`  - Analysis worker (${prefix}:analysis queue)`);
 
 // 3. Graceful shutdown
 const shutdown = async () => {
+  stopWorkerHealthHeartbeat();
   await collectorWorker.close();
   await pipelineWorker.close();
   await analysisWorker.close();
