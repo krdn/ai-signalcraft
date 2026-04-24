@@ -36,6 +36,7 @@ import {
 } from '../analysis/preprocessing/embedding-persist';
 import { analyzeItems } from '../analysis/item-analyzer';
 import { triggerAnalysis, triggerClassify } from './flows';
+import { enqueueWhisperForTopVideos } from './whisper-enqueue';
 import { COMMUNITY_SOURCES } from './worker-config';
 
 const logger = createLogger('pipeline-worker');
@@ -498,6 +499,26 @@ export function createPipelineHandler(): (job: Job) => Promise<any> {
           ]);
         } catch (err) {
           logger.warn('[persist] keyword linkage 실패:', err);
+        }
+      }
+
+      // Whisper 전사 큐 push — YouTube 영상이 이번 job에 있고 자막이 아직 없는 것 중
+      // 조회수 상위 N개. whisper-worker 컨테이너가 yt-dlp로 오디오 다운로드 후
+      // faster-whisper로 전사해 videos.transcript를 UPDATE한다.
+      // 분석은 기다리지 않음 — 다음 실행부터 혜택을 받는 eventual-consistency 방식.
+      // dbJobId가 없으면(레거시 경로) 스킵 — enqueueWhisperForTopVideos는 jobId 기반 쿼리
+      if (newVideoIds.length > 0 && dbJobId) {
+        try {
+          const { enqueued } = await enqueueWhisperForTopVideos({
+            jobId: dbJobId,
+            topN: 20,
+          });
+          if (enqueued > 0) {
+            logger.info(`[whisper] ${enqueued}개 영상 전사 큐에 등록 (dbJobId=${dbJobId})`);
+          }
+        } catch (err) {
+          // Whisper enqueue 실패는 파이프라인을 막지 않음 — 분석은 description 폴백으로 진행
+          logger.warn('[whisper] enqueue 실패:', err instanceof Error ? err.message : err);
         }
       }
 

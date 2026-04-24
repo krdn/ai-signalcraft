@@ -1,4 +1,11 @@
-export { redisConnection, getRedisConnection } from './connection';
+export { redisConnection, getRedisConnection, getBullMQOptions, getBullPrefix } from './connection';
+export {
+  WHISPER_QUEUE_NAME,
+  getWhisperQueue,
+  type WhisperJobData,
+  type WhisperJobResult,
+} from './whisper-queue';
+export { enqueueWhisperForTopVideos } from './whisper-enqueue';
 export {
   triggerCollection,
   triggerAnalysis,

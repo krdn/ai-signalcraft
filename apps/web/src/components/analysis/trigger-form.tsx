@@ -673,12 +673,8 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
                 <div className="space-y-1">
                   <span className="text-sm font-medium">유튜브 자막 수집</span>
                   <p className="text-xs text-muted-foreground">
-                    영상의 자막(자동 생성 포함)을 텍스트로 수집하여 AI 분석에 활용합니다. 자막이
-                    없는 영상은 건너뜁니다.
-                  </p>
-                  <p className="text-xs text-amber-600 dark:text-amber-400">
-                    ⚠️ 현재 YouTube의 봇 방지 정책으로 장편 영상 자막은 대부분 실패합니다.
-                    설명문으로 자동 폴백되므로 분석에 미치는 영향은 제한적입니다.
+                    영상 자막을 수집합니다. YouTube 자막이 없는 영상은 조회수 상위 20건에 한해
+                    오디오를 자동 전사(Whisper)해 채웁니다. 다음 분석 실행부터 반영됩니다.
                   </p>
                 </div>
               </label>

@@ -9,6 +9,13 @@ export {
   createCollectorWorker,
   createPipelineWorker,
   redisConnection,
+  getBullMQOptions,
+  getBullPrefix,
+  WHISPER_QUEUE_NAME,
+  getWhisperQueue,
+  enqueueWhisperForTopVideos,
+  type WhisperJobData,
+  type WhisperJobResult,
 } from './queue';
 export * from './types';
 export * from './pipeline';
