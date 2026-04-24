@@ -2,8 +2,41 @@
 import * as cheerio from 'cheerio';
 import type { CommunityPost, CommunityComment } from '../types/community';
 import { parseDateText, sanitizeContent, buildSearchUrl } from '../utils/community-parser';
+import { buildChromeHeaders, pickUserAgentEntry } from '../utils/browser';
 import { CommunityBaseCollector, type SiteSelectors } from './community-base-collector';
 import type { BrowserCollectorConfig } from './browser-collector';
+
+// 차단 cooldown — 모듈 스코프(=프로세스 lifetime). 같은 워커 내 모든 인스턴스 공유.
+// detectBlocked 또는 HTTP 429를 N회 연속 만나면 cooldown 진입 → 그 동안 신규 run은 즉시 종료.
+let fmCooldownUntilMs = 0;
+let fmConsecutiveBlocks = 0;
+// ⚠️ 환경변수로 조정 가능. 배포 직후 검증 시간을 확보하려면 FM_BLOCK_THRESHOLD를 크게 두고
+//    안정 후 기본값(3)으로 되돌린다. cooldown은 모듈 스코프라 워커 재시작 시 리셋됨.
+const FM_BLOCK_THRESHOLD = parseInt(process.env.FM_BLOCK_THRESHOLD ?? '3', 10);
+const FM_COOLDOWN_MS = parseInt(process.env.FM_COOLDOWN_MS ?? `${30 * 60 * 1000}`, 10);
+
+function fmRecordBlock(reason: string): void {
+  fmConsecutiveBlocks++;
+  if (fmConsecutiveBlocks >= FM_BLOCK_THRESHOLD) {
+    fmCooldownUntilMs = Date.now() + FM_COOLDOWN_MS;
+    console.warn(
+      `[fmkorea] cooldown 진입 — ${Math.round(FM_COOLDOWN_MS / 60000)}분간 신규 수집 차단 (사유: ${reason}, 연속 ${fmConsecutiveBlocks}회)`,
+    );
+    fmConsecutiveBlocks = 0;
+  }
+}
+
+function fmRecordSuccess(): void {
+  if (fmConsecutiveBlocks > 0 || fmCooldownUntilMs > 0) {
+    console.warn(`[fmkorea] 수집 성공 — block 카운터/cooldown 리셋`);
+  }
+  fmConsecutiveBlocks = 0;
+  fmCooldownUntilMs = 0;
+}
+
+function fmIsInCooldown(): boolean {
+  return Date.now() < fmCooldownUntilMs;
+}
 
 /**
  * 에펨코리아 수집기
@@ -27,10 +60,13 @@ export class FMKoreaCollector extends CommunityBaseCollector {
 
   protected readonly selectors: SiteSelectors = {
     list: [
-      'ul.searchResult li dt a', // IS 모듈 검색 결과 (ul > li > dl > dt > a)
-      '.searchResult .title a', // 이전 구조 (fallback)
-      '.search_list .title a', // 대체 검색 결과 셀렉터
-      'li.searchResult a.title', // 리스트 아이템 형식
+      // 2026-04 신규 구조: <li class="li ..."> 컨테이너 + <h3 class="title"> 안의 마지막 a
+      'li.li h3.title a',
+      // 폴백: 구 구조
+      'ul.searchResult li dt a',
+      '.searchResult .title a',
+      '.search_list .title a',
+      'li.searchResult a.title',
     ],
     content: ['.xe_content', '.rd_body .xe_content', '#xe_content'],
     comment: ['.fdb_lst_ul .xe_content', '.comment_content .xe_content'],
@@ -58,7 +94,9 @@ export class FMKoreaCollector extends CommunityBaseCollector {
       html.includes('search_list') ||
       html.includes('is_keyword') ||
       html.includes('act=IS') ||
-      html.includes('document_srl');
+      html.includes('document_srl') ||
+      html.includes('searchContextDoc') || // 2026-04 신규 구조: <strong class="searchContextDoc">키워드</strong>
+      html.includes('hotdeal_var'); // 2026-04 신규 구조: <a class="hotdeal_var*"> 본문 링크
     if (hasSearchMarker) return false;
     // 검색 결과 마커도 없고 30KB 미만이면 비정상
     if (html.length < 30000) return true;
@@ -91,7 +129,7 @@ export class FMKoreaCollector extends CommunityBaseCollector {
       return false;
     }
 
-    console.log(`[fmkorea] 보안 챌린지 감지 -- WASM 쿠키 생성 대기 중...`);
+    console.warn(`[fmkorea] 보안 챌린지 감지 -- WASM 쿠키 생성 대기 중...`);
 
     // WASM 실행 완료를 기다림 (쿠키가 설정될 때까지 폴링)
     const maxWait = 15000;
@@ -105,7 +143,7 @@ export class FMKoreaCollector extends CommunityBaseCollector {
       const cookies = await page.context().cookies();
       const hasLiteYear = cookies.some((c) => c.name === 'lite_year');
       if (hasLiteYear) {
-        console.log(`[fmkorea] 보안 쿠키 확인됨 (lite_year) -- ${elapsed}ms 소요`);
+        console.warn(`[fmkorea] 보안 쿠키 확인됨 (lite_year) -- ${elapsed}ms 소요`);
         return true;
       }
     }
@@ -146,29 +184,40 @@ export class FMKoreaCollector extends CommunityBaseCollector {
     searchUrl: string,
     pageNum: number,
   ): Promise<{ url: string; title: string; publishedAt?: Date | null }[] | null> {
+    // 0차: cooldown — 이전 run이 봇 차단을 연속으로 맞은 직후라면 신규 요청을 보내지 않고 즉시 종료.
+    //      WAF가 "최근 N분 이내 요청한 IP/UA"를 더 강하게 의심하므로 휴식이 신뢰도 회복에 더 효과적.
+    if (fmIsInCooldown()) {
+      const remainSec = Math.ceil((fmCooldownUntilMs - Date.now()) / 1000);
+      console.warn(`[fmkorea] cooldown 중 — page ${pageNum} 요청 생략 (${remainSec}s 남음)`);
+      return null;
+    }
     // 1차: fetch 시도 (쿠키 확보 후)
     if (this.fmCookiesReady) {
       const result = await this.fetchSearchPage(searchUrl, pageNum);
-      if (result) return result;
-      // fetch 실패 → Playwright fallback (쿠키 갱신 포함)
+      if (result && result.length > 0) return result;
+      // fetch 실패(null) 또는 빈 결과 → Playwright fallback (쿠키 갱신 포함)
       console.warn(`[fmkorea] fetch 실패 → Playwright fallback (page ${pageNum})`);
       this.fmCookiesReady = false;
     }
     // 2차: Playwright 경로 (첫 방문 또는 fetch 실패 복구)
     const result = await super.loadSearchPage(page, searchUrl, pageNum);
-    // Playwright가 성공했으면 쿠키 수집해서 이후 fetch에 사용
-    if (result) {
+    // Playwright가 실제로 결과를 뽑았을 때만 쿠키를 신뢰. 빈 배열은 차단 페이지일 가능성이 높음.
+    if (result && result.length > 0) {
       try {
         const cookies = await page.context().cookies('https://www.fmkorea.com');
         this.fmCookies.clear();
         for (const c of cookies) this.fmCookies.set(c.name, c.value);
-        if (this.fmCookies.has('lite_year') || this.fmCookies.size > 0) {
+        if (this.fmCookies.has('lite_year') || this.fmCookies.size > 1) {
           this.fmCookiesReady = true;
-          console.info(`[fmkorea] 쿠키 확보 완료 (${this.fmCookies.size}개) — 이후 fetch 사용`);
+          console.warn(`[fmkorea] 쿠키 확보 완료 (${this.fmCookies.size}개) — 이후 fetch 사용`);
         }
       } catch {
         /* 쿠키 획득 실패 → Playwright 계속 사용 */
       }
+      fmRecordSuccess();
+    } else if (!result || result.length === 0) {
+      // null 또는 빈 배열 — 차단 신호로 카운트
+      fmRecordBlock(`Playwright 결과 비어있음 (page ${pageNum})`);
     }
     return result;
   }
@@ -185,18 +234,16 @@ export class FMKoreaCollector extends CommunityBaseCollector {
       const cookieHeader = Array.from(this.fmCookies.entries())
         .map(([k, v]) => `${k}=${v}`)
         .join('; ');
-      const response = await fetch(searchUrl, {
-        headers: {
-          'User-Agent':
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-          Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-          'Accept-Language': 'ko-KR,ko;q=0.9',
-          Referer: 'https://www.fmkorea.com/',
-          ...(cookieHeader ? { Cookie: cookieHeader } : {}),
-        },
-      });
+      const headers: Record<string, string> = {
+        ...buildChromeHeaders(pickUserAgentEntry(), 'https://www.fmkorea.com/'),
+        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+      };
+      const response = await fetch(searchUrl, { headers });
       if (!response.ok) {
         console.warn(`[fmkorea] fetch HTTP ${response.status} (page ${pageNum})`);
+        if (response.status === 429 || response.status === 403 || response.status === 430) {
+          fmRecordBlock(`HTTP ${response.status}`);
+        }
         return null;
       }
       const html = await response.text();
@@ -211,9 +258,12 @@ export class FMKoreaCollector extends CommunityBaseCollector {
       // 차단 감지
       if (this.detectBlocked(html)) {
         console.warn(`[fmkorea] fetch 차단 감지 (page ${pageNum}, size=${html.length})`);
+        fmRecordBlock(`detectBlocked (size=${html.length})`);
         return null;
       }
-      return this.parseSearchResults(html);
+      const parsed = this.parseSearchResults(html);
+      if (parsed.length > 0) fmRecordSuccess();
+      return parsed;
     } catch (err) {
       console.warn(
         `[fmkorea] fetch 예외 (page ${pageNum}):`,
@@ -247,17 +297,57 @@ export class FMKoreaCollector extends CommunityBaseCollector {
     }[] = [];
 
     const parseFmTime = (text: string): Date | null => {
-      // "YYYY-MM-DD HH:MM" (에펨 기본) 또는 "YYYY.MM.DD HH:MM"
-      const m = text.trim().match(/(\d{4})[-.](\d{1,2})[-.](\d{1,2})\s+(\d{1,2}):(\d{1,2})/);
-      if (!m) return null;
-      // 로컬 타임존(컨테이너는 UTC지만 에펨 서버 시각은 KST)이라
-      // +09:00을 명시해 안전하게 Date 생성.
-      const iso = `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}T${m[4].padStart(2, '0')}:${m[5].padStart(2, '0')}:00+09:00`;
-      const d = new Date(iso);
-      return Number.isNaN(d.getTime()) ? null : d;
+      // 1) "YYYY-MM-DD HH:MM" 또는 "YYYY.MM.DD HH:MM" (시간 포함)
+      const t = text.trim();
+      const full = t.match(/(\d{4})[-.](\d{1,2})[-.](\d{1,2})\s+(\d{1,2}):(\d{1,2})/);
+      if (full) {
+        const iso = `${full[1]}-${full[2].padStart(2, '0')}-${full[3].padStart(2, '0')}T${full[4].padStart(2, '0')}:${full[5].padStart(2, '0')}:00+09:00`;
+        const d = new Date(iso);
+        return Number.isNaN(d.getTime()) ? null : d;
+      }
+      // 2) "YYYY.MM.DD" 또는 "YYYY-MM-DD" (검색 결과 .regdate는 시각이 빠진 날짜만 옴)
+      // → 그 날 자정 KST로 normalize. 일자별 cap에는 정확하고, 시각 없는 비교는 보수적으로 in-range 처리됨.
+      const dateOnly = t.match(/(\d{4})[-.](\d{1,2})[-.](\d{1,2})/);
+      if (dateOnly) {
+        const iso = `${dateOnly[1]}-${dateOnly[2].padStart(2, '0')}-${dateOnly[3].padStart(2, '0')}T00:00:00+09:00`;
+        const d = new Date(iso);
+        return Number.isNaN(d.getTime()) ? null : d;
+      }
+      return null;
     };
 
-    // 1차: 검색 결과 <li> 블록을 통째로 순회하며 link + title + time 동시 추출
+    // 1차 (2026-04 신규): <li class="li ..."> 컨테이너 + <h3 class="title">의 마지막 <a>가 본문 링크
+    // 추가 메타: .regdate(YYYY.MM.DD), .author, .comment_count [숫자], .pc_voted_count .count
+    $('li.li').each((_, li) => {
+      const $li = $(li);
+      const $title = $li.find('h3.title').first();
+      if (!$title.length) return;
+      const $a = $title.find('a').last(); // 마지막 a = hotdeal_var* 본문 링크
+      const href = $a.attr('href');
+      // 강조 태그(<strong>) 안의 검색어 + 평문이 섞이므로 .text()로 통합
+      const title = $a.find('.ellipsis-target').text().trim() || $a.text().trim();
+      if (!href || !title) return;
+      const url = href.startsWith('http') ? href : `${this.baseUrl}${href}`;
+
+      const regdateText = $li.find('.regdate').first().text().trim();
+      const publishedAt = parseFmTime(regdateText);
+
+      // ".author" 텍스트는 "/ 닉네임" 형태 — 슬래시 제거
+      const rawAuthor = $li.find('.author').first().text().trim();
+      const author = rawAuthor.replace(/^\/\s*/, '') || undefined;
+
+      const recomText = $li.find('.pc_voted_count .count').first().text().trim();
+      const recomCount = recomText ? parseInt(recomText, 10) : undefined;
+
+      // ".comment_count" 텍스트는 "[숫자]" 형태
+      const commentText = $li.find('.comment_count').first().text().trim().replace(/[\][]/g, '');
+      const commentCount = commentText ? parseInt(commentText, 10) : undefined;
+
+      results.push({ url, title, publishedAt, author, recomCount, commentCount });
+    });
+    if (results.length > 0) return results;
+
+    // 2차 (구 구조): 검색 결과 <li> 블록을 통째로 순회하며 link + title + time 동시 추출
     $('ul.searchResult > li').each((_, li) => {
       const $li = $(li);
       const $a = $li.find('dt > a').first();
@@ -328,11 +418,7 @@ export class FMKoreaCollector extends CommunityBaseCollector {
       const cookieHeader = cookies.map((c) => `${c.name}=${c.value}`).join('; ');
       const response = await fetch(url, {
         headers: {
-          'User-Agent':
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-          Accept: 'text/html,application/xhtml+xml',
-          'Accept-Language': 'ko-KR,ko;q=0.9',
-          Referer: 'https://www.fmkorea.com/',
+          ...buildChromeHeaders(pickUserAgentEntry(), 'https://www.fmkorea.com/'),
           ...(cookieHeader ? { Cookie: cookieHeader } : {}),
         },
       });
@@ -340,6 +426,8 @@ export class FMKoreaCollector extends CommunityBaseCollector {
         html = await response.text();
         // 차단 감지 → Playwright fallback
         if (this.detectBlocked(html) || html.length < 3000) html = '';
+      } else if (response.status === 429 || response.status === 403 || response.status === 430) {
+        fmRecordBlock(`fetchPost HTTP ${response.status}`);
       }
     } catch {
       /* fetch 실패 시 Playwright fallback */
@@ -410,11 +498,7 @@ export class FMKoreaCollector extends CommunityBaseCollector {
             const cookieHeader = cookies.map((c) => `${c.name}=${c.value}`).join('; ');
             const cpRes = await fetch(cpageUrl, {
               headers: {
-                'User-Agent':
-                  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-                Accept: 'text/html,application/xhtml+xml',
-                'Accept-Language': 'ko-KR,ko;q=0.9',
-                Referer: url,
+                ...buildChromeHeaders(pickUserAgentEntry(), url),
                 ...(cookieHeader ? { Cookie: cookieHeader } : {}),
               },
             });
