@@ -19,8 +19,10 @@ export function createCollectorWorker(processJob: (job: Job) => Promise<any>) {
     // stalled는 dayCount Map 리셋으로 cap을 우회시키는 결정적 위반 원인이 되므로 보수적으로 30분.
     lockDuration: 1_800_000, // 30분
     stalledInterval: 600_000, // 10분마다 stall check
-    // ⚠️ stalled 재실행은 dayCount 리셋 → 한도 초과 위험. 0으로 비활성화.
-    maxStalledCount: 0,
+    // stalled 재실행 허용 (1회). 수집은 ON CONFLICT DO NOTHING으로 멱등성 보장.
+    // executor의 dayCount Map은 job 재시작 시 초기화되지만,
+    // TimescaleDB에서 이미 수집된 날짜의 데이터는 중복 저장되지 않음.
+    maxStalledCount: 1,
   });
 }
 

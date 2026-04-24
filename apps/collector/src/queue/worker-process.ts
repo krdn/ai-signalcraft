@@ -50,8 +50,13 @@ function buildWorker(source: CollectorSource): Worker<CollectionJobData, Collect
     // BullMQ 기본 lockDuration=30s로는 CPU가 임베딩 추론에 점유될 때 갱신 실패 →
     // "stalled" 오판으로 같은 job이 중복 재실행되거나 실패 기록됨.
     // 5분으로 늘려 정상적으로 오래 걸리는 작업을 stalled로 오판하지 않도록 한다.
-    lockDuration: 300_000,
-    stalledInterval: 60_000,
+    // YouTube 대량 수집(수천 건 비디오+댓글+임베딩)은 5분 이상 소요 가능.
+    // 10분으로 늘려 stalled 오판 방지.
+    lockDuration: 600_000,
+    // 2분마다 stall check — 10분 lockDuration의 1/5.
+    stalledInterval: 120_000,
+    // Worker 재시작 시 orphaned job 복구 허용. 수집은 멱등.
+    maxStalledCount: 1,
     // 차단 방지: 작업 간 최소 간격 (ms). 소스별로 별도 튜닝 여지.
     limiter: {
       max: source === 'youtube' ? 5 : 2,
