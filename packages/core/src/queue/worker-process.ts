@@ -6,7 +6,7 @@ import { ensureGeminiTokenFresh, startGeminiTokenAutoRefresh } from '../utils/ge
 import { initEnv, validateApiKeys, registerAllCollectors } from './worker-config';
 import { createCollectorWorker, createPipelineWorker } from './workers';
 import { createCollectorHandler } from './collector-worker';
-import { createPipelineHandler } from './pipeline-handler';
+import { createPipelineHandler } from './pipeline-worker';
 import { createAnalysisWorker } from './analysis-worker';
 import { getBullPrefix } from './connection';
 import { sendToDLQ } from './dlq';
