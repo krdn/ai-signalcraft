@@ -68,6 +68,40 @@ export async function cleanupOrphanedRedisJobs(): Promise<number> {
           }
         }
       }
+
+      // active 상태이지만 finishedOn이 없는 job → orphaned, 재큐잉
+      const activeJobs = await queue.getJobs(['active']);
+      for (const job of activeJobs) {
+        if (!job) continue;
+
+        // finishedOn이 있으면 정상 완료/실패한 것 — 스킵
+        if (job.finishedOn) continue;
+
+        // processedOn이 없으면 아직 처리 시작 전 — 스킵
+        if (!job.processedOn) continue;
+
+        console.warn(
+          `[startup-cleanup] ${queueName}:${job.id} orphaned active job 감지 — 재큐잉 (dbJobId=${job.data?.dbJobId})`,
+        );
+
+        try {
+          // 같은 data로 새 job 생성
+          await queue.add(job.name, job.data, {
+            removeOnComplete: { age: 3600, count: 1000 },
+            removeOnFail: { age: 86400 },
+            attempts: 3,
+          });
+
+          // 원본 job 제거
+          await job.remove();
+          cleaned++;
+        } catch (err) {
+          console.warn(
+            `[startup-cleanup] ${queueName}:${job.id} 재큐잉 실패:`,
+            err instanceof Error ? err.message : err,
+          );
+        }
+      }
     } catch (err) {
       console.warn(`[startup-cleanup] ${queueName} 큐 정리 중 오류:`, err);
     } finally {
