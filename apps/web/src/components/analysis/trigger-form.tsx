@@ -676,6 +676,10 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
                     영상의 자막(자동 생성 포함)을 텍스트로 수집하여 AI 분석에 활용합니다. 자막이
                     없는 영상은 건너뜁니다.
                   </p>
+                  <p className="text-xs text-amber-600 dark:text-amber-400">
+                    ⚠️ 현재 YouTube의 봇 방지 정책으로 장편 영상 자막은 대부분 실패합니다.
+                    설명문으로 자동 폴백되므로 분석에 미치는 영향은 제한적입니다.
+                  </p>
                 </div>
               </label>
             )}

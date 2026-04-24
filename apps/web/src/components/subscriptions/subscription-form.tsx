@@ -313,6 +313,10 @@ export function SubscriptionForm({ initial, onSaved, onCreated, onCancel }: Subs
             <p className="text-xs text-muted-foreground">
               영상 자막(자동 생성 포함)을 함께 수집. 자막 없으면 건너뜁니다.
             </p>
+            <p className="text-xs text-amber-600 dark:text-amber-400">
+              ⚠️ 현재 YouTube의 봇 방지 정책으로 장편 영상 자막 수집은 대부분 실패합니다. 설명문
+              폴백으로 분석이 진행되므로 실제 영향은 제한적입니다.
+            </p>
           </div>
         </label>
       )}
