@@ -20,6 +20,7 @@ const NAV_ITEMS = [
   { label: '모니터링', href: '/subscriptions/monitor' },
   { label: '시스템 건강', href: '/subscriptions/health' },
   { label: '분석 실행', href: '/subscriptions/analyze' },
+  { label: '워크플로우', href: '/subscriptions/workflow' },
 ] as const;
 
 export default function SubscriptionsLayout({ children }: { children: React.ReactNode }) {
