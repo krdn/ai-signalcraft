@@ -1,6 +1,7 @@
 import type { Job } from 'bullmq';
 import { sql, eq, and } from 'drizzle-orm';
 import { getCollector, NaverCommentsCollector } from '@ai-signalcraft/collectors';
+import { enqueueWhisperForRawItems } from '@ai-signalcraft/core';
 import { getDb } from '../db';
 import { rawItems, collectionRuns, fetchErrors, keywordSubscriptions } from '../db/schema';
 import { buildEmbeddingText, embedPassages } from '../services/embedding';
@@ -121,6 +122,9 @@ export async function executeCollectionJob(
   let itemsNew = 0;
   let blocked = false;
   const collectedArticleUrls: string[] = [];
+  // YouTube 자막이 비어 Whisper 폴백이 필요한 영상 후보. 루프 종료 후 한 번에 enqueue.
+  // 매 chunk마다 enqueue하면 chunk × topN이 큐에 쌓이므로 누적만 하고 마지막에 cap을 적용.
+  const whisperCandidates: { sourceId: string; viewCount?: number }[] = [];
 
   try {
     const collector = resolveCollector(source);
@@ -165,6 +169,23 @@ export async function executeCollectionJob(
         });
       });
       itemsCollected += rows.length;
+
+      // YouTube transcript 폴백 후보 누적 — 자막 수집 옵션 ON + 어댑터가 transcript를 못 채운 영상.
+      // 오디오 다운로드/Whisper는 별도 워커에서 비동기 처리되며 분석은 다음 실행부터 혜택.
+      if (source === 'youtube' && options?.collectTranscript) {
+        for (const raw of chunk) {
+          const r = raw as Record<string, unknown>;
+          const t = r.transcript;
+          const hasTranscript = typeof t === 'string' && t.length > 0;
+          const sid = typeof r.sourceId === 'string' ? r.sourceId : null;
+          if (!hasTranscript && sid) {
+            whisperCandidates.push({
+              sourceId: sid,
+              viewCount: typeof r.viewCount === 'number' ? r.viewCount : undefined,
+            });
+          }
+        }
+      }
 
       // YouTube + 커뮤니티(dcinside/fmkorea/clien)는 게시물에 comments 배열을 포함해 반환한다.
       // executor가 이 배열을 별도 raw_items(item_type='comment')로 풀어주지 않으면
@@ -273,6 +294,28 @@ export async function executeCollectionJob(
     }
 
     const durationMs = Date.now() - startedAt;
+
+    // YouTube Whisper 폴백 enqueue — 수집은 끝났고 분석 트리거 전. 실패해도 수집을 막지 않음.
+    // jobId 'yt-{sourceId}' 멱등이라 중복 후보가 누적돼도 큐에는 sourceId당 1회만 들어감.
+    if (source === 'youtube' && whisperCandidates.length > 0) {
+      try {
+        const { enqueued } = await enqueueWhisperForRawItems({
+          runId,
+          subscriptionId,
+          candidates: whisperCandidates,
+          topN: 20,
+        });
+        if (enqueued > 0) {
+          console.info(
+            `[executor:youtube] whisper ${enqueued}건 enqueue (run=${runId}, candidates=${whisperCandidates.length})`,
+          );
+        }
+      } catch (err) {
+        console.warn(
+          `[executor:youtube] whisper enqueue 실패 (계속): ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
 
     await db
       .update(collectionRuns)

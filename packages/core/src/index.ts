@@ -14,8 +14,10 @@ export {
   WHISPER_QUEUE_NAME,
   getWhisperQueue,
   enqueueWhisperForTopVideos,
+  enqueueWhisperForRawItems,
   type WhisperJobData,
   type WhisperJobResult,
+  type WhisperTarget,
 } from './queue';
 export * from './types';
 export * from './pipeline';

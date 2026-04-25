@@ -16,19 +16,33 @@ import { getBullMQOptions } from './connection';
  */
 export const WHISPER_QUEUE_NAME = 'whisper';
 
+/**
+ * 전사 결과를 어디에 쓸지 식별. 미설정 시 legacy(videos.id) 경로.
+ * 신규 키워드 구독 경로(ais_collection.raw_items)에는 target.kind='raw_items'로 enqueue.
+ */
+export type WhisperTarget = {
+  kind: 'raw_items';
+  source: string;
+  rawSourceId: string;
+  itemType: 'video';
+};
+
 export interface WhisperJobData {
-  /** videos.id (DB PK) — 전사 결과를 UPDATE할 대상 */
-  videoDbId: number;
   /** YouTube videoId — yt-dlp로 다운로드할 영상 식별자 */
   sourceId: string;
   /** 원 구독/트리거 키 — 로그 추적용 */
   subscriptionId?: number;
   /** 조회수 — 우선순위 판단용 (큰 값 먼저) */
   viewCount?: number;
+  /** 신규 경로 — raw_items 식별자 */
+  target?: WhisperTarget;
+  /** legacy 호환 — videos.id (DB PK). target 미설정 시 이 경로 사용 */
+  videoDbId?: number;
 }
 
 export interface WhisperJobResult {
-  videoDbId: number;
+  /** legacy 경로일 때만 채워짐 */
+  videoDbId?: number;
   sourceId: string;
   charsWritten: number;
   audioDurationSec: number;

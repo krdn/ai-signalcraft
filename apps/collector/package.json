@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@ai-signalcraft/collectors": "workspace:*",
+    "@ai-signalcraft/core": "workspace:*",
     "@fastify/cors": "^10.0.0",
     "@trpc/server": "^11.0.0",
     "bullmq": "^5.0.0",

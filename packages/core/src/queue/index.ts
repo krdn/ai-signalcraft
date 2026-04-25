@@ -4,8 +4,9 @@ export {
   getWhisperQueue,
   type WhisperJobData,
   type WhisperJobResult,
+  type WhisperTarget,
 } from './whisper-queue';
-export { enqueueWhisperForTopVideos } from './whisper-enqueue';
+export { enqueueWhisperForTopVideos, enqueueWhisperForRawItems } from './whisper-enqueue';
 export {
   triggerCollection,
   triggerAnalysis,

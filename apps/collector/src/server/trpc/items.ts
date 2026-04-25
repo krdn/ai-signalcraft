@@ -134,6 +134,14 @@ export const itemsRouter = router({
       sentiment: rawItems.sentiment,
       sentimentScore: rawItems.sentimentScore,
       fetchedAt: rawItems.fetchedAt,
+      // YouTube 영상 한정으로 raw_payload에서 promote — 분석 측이 transcript ?? content 우선순위로 사용 가능.
+      transcript: sql<string | null>`${rawItems.rawPayload}->>'transcript'`.as('transcript'),
+      transcriptLang: sql<string | null>`${rawItems.rawPayload}->>'transcriptLang'`.as(
+        'transcript_lang',
+      ),
+      durationSec: sql<number | null>`NULLIF(${rawItems.rawPayload}->>'durationSec', '')::int`.as(
+        'duration_sec',
+      ),
       ...(input.includeEmbeddings ? { embedding: rawItems.embedding } : {}),
     };
 
