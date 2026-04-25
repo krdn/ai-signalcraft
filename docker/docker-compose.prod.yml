@@ -198,10 +198,10 @@ services:
         max-file: "3"
 
   # Whisper 전사 워커 — YouTube 자막 엔드포인트가 PO token 보호로 막힌 이후
-  # yt-dlp로 오디오 다운로드 + faster-whisper로 전사해 videos.transcript를 채움.
-  # pipeline-worker와 같은 Redis/prefix(ais-prod 기본값 'bull')를 공유해
-  # core의 enqueueWhisperForTopVideos()로 등록된 작업을 소비한다.
-  # 주의: BULL_PREFIX를 명시하지 않음 — ais-prod 큐에 속함.
+  # yt-dlp로 오디오 다운로드 + faster-whisper로 전사해 transcript를 채움.
+  # 키워드 구독 collector(BULL_PREFIX=collector)가 enqueue한 작업을 소비하므로
+  # 동일 prefix를 사용해야 한다 (Redis는 ais-prod-redis 공유).
+  # COLLECTOR_DATABASE_URL은 신규 raw_items 경로가 .env.production에서 상속.
   whisper-worker:
     build:
       context: ..
@@ -213,6 +213,7 @@ services:
       - ../.env.production
     environment:
       NODE_ENV: production
+      BULL_PREFIX: collector
       # Whisper 모델 / 동시성 — 운영 부하에 맞게 조정 가능
       WHISPER_MODEL: small
       WHISPER_LANGUAGE: ko
@@ -226,6 +227,8 @@ services:
         condition: service_healthy
     networks:
       - ais-prod-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     logging:
       driver: json-file
       options:
