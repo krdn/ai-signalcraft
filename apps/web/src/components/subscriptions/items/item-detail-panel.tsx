@@ -85,6 +85,23 @@ export function ItemDetailPanel({
           </ScrollArea>
         </div>
 
+        {item.transcript && item.transcript.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-sm font-semibold">자막 (Whisper 전사)</h4>
+              <span className="text-xs text-muted-foreground">
+                {item.transcriptLang ?? '?'} · {item.transcript.length.toLocaleString()}자
+                {item.durationSec ? ` · ${Math.round(item.durationSec)}초` : ''}
+              </span>
+            </div>
+            <ScrollArea className="h-56 border rounded-md p-3 bg-muted/30">
+              <p className="text-sm text-foreground whitespace-pre-wrap text-justify">
+                {item.transcript}
+              </p>
+            </ScrollArea>
+          </div>
+        )}
+
         <Separator />
 
         {commentsLoading ? (

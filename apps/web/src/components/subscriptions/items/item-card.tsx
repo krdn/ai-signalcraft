@@ -1,4 +1,4 @@
-import { MessageCircle, Newspaper, Video } from 'lucide-react';
+import { Captions, MessageCircle, Newspaper, Video } from 'lucide-react';
 import { formatRelative, SOURCE_LABEL_MAP } from './item-utils';
 import { ItemMetricsBadge } from './item-metrics-badge';
 import { SentimentBadge } from './sentiment-badge';
@@ -37,6 +37,16 @@ export function ItemCard({ item, commentCount, isSelected, onClick }: ItemCardPr
             {item.itemType === 'video' ? '영상' : '기사'}
           </Badge>
           <SentimentBadge sentiment={item.sentiment} score={item.sentimentScore} />
+          {item.transcript && item.transcript.length > 0 && (
+            <Badge
+              variant="outline"
+              className="text-xs flex-shrink-0 flex items-center gap-1 border-emerald-500/40 text-emerald-700 dark:text-emerald-400"
+              title={`자막 ${item.transcript.length.toLocaleString()}자 (${item.transcriptLang ?? '?'})`}
+            >
+              <Captions className="h-3 w-3" />
+              자막
+            </Badge>
+          )}
         </div>
 
         <h3 className="text-sm font-medium line-clamp-2 leading-snug break-words">

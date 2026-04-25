@@ -204,6 +204,10 @@ export interface RawItemRecord {
   sentimentScore: number | null;
   fetchedAt: Date | string;
   fetchedFromRun?: string | null;
+  // YouTube 한정. items.query가 raw_payload에서 promote — 자막/Whisper 전사 + 영상 길이.
+  transcript?: string | null;
+  transcriptLang?: string | null;
+  durationSec?: number | null;
 }
 
 export interface QueryItemsResult {
