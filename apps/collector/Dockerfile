@@ -10,6 +10,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY patches/ ./patches/
 COPY apps/collector/package.json ./apps/collector/
 COPY packages/collectors/package.json ./packages/collectors/
+COPY packages/core/package.json ./packages/core/
 RUN pnpm install --frozen-lockfile --filter @ai-signalcraft/collector...
 
 FROM node:24-slim AS runtime
@@ -26,10 +27,12 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/apps/collector/node_modules ./apps/collector/node_modules
 COPY --from=deps /app/packages/collectors/node_modules ./packages/collectors/node_modules
+COPY --from=deps /app/packages/core/node_modules ./packages/core/node_modules
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
 COPY apps/collector ./apps/collector
 COPY packages/collectors ./packages/collectors
+COPY packages/core ./packages/core
 
 RUN npm install -g tsx
 
