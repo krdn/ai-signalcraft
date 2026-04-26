@@ -49,6 +49,25 @@ export const analysisReports = pgTable(
       totalTokens: number;
       reportModel?: { provider: string; model: string };
       generatedAt: string;
+      // Phase 3 신규 필드 — quality-metadata 빌더가 채움 (선택적: fallback 리포트에는 없을 수 있음)
+      modulesPartial?: Array<{
+        module: string;
+        reason: 'rate-limit' | 'parse-error' | 'unknown';
+        chunksTotal: number | null;
+        chunksFailed: number | null;
+      }>;
+      warnings?: Array<{
+        ts: string;
+        phase: string | null;
+        module: string | null;
+        level: 'warn';
+        msg: string;
+      }>;
+      qualityFlags?: {
+        hasRateLimitFailures: boolean;
+        hasPartialModules: boolean;
+        samplingShallow: boolean;
+      };
     }>(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
