@@ -39,4 +39,14 @@ describe('persistFromCollectorPayload', () => {
     expect(persist.persistVideos).toHaveBeenCalledWith(99, []);
     expect(persist.persistComments).toHaveBeenCalledWith(99, []);
   });
+
+  it('propagates rejection from persistArticles', async () => {
+    const persist = await import('../src/pipeline/persist');
+    (persist.persistArticles as never as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+      new Error('DB down'),
+    );
+    await expect(
+      persistFromCollectorPayload(42, { articles: [], videos: [], comments: [] }),
+    ).rejects.toThrow('DB down');
+  });
 });
