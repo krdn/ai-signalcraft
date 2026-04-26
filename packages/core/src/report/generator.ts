@@ -1,7 +1,11 @@
 // 통합 리포트 마크다운 생성기 (D-04 2단계)
 import { analyzeText } from '@krdn/ai-analysis-kit/gateway';
+import { eq } from 'drizzle-orm';
 import { persistAnalysisReport } from '../analysis/persist-analysis';
 import { getModuleModelConfig } from '../analysis/model-config';
+import { buildQualityMetadata, appendQualityFooterToMarkdown } from '../analysis/quality-metadata';
+import { getDb } from '../db';
+import { collectionJobs } from '../db/schema/collections';
 import type { ReportGenerationInput } from '../types/report';
 import type { AnalysisDomain } from '../analysis/domain';
 import { getDomainConfig, getSupportedDomains } from '../analysis/domain';
@@ -116,11 +120,27 @@ ${resultsJson}
   const reportTokens = (result.usage as any)?.totalTokens ?? 0;
   const totalTokens = moduleTokens + reportTokens;
 
+  // Phase 3: 부분 실패·얕은 표본 신호를 metadata + footer에 노출
+  //          (job 271 사례 — completed인데 부분 실패 가시성 부재 결함 수정)
+  let qualityMeta;
+  try {
+    const [jobRow] = await getDb()
+      .select({ progress: collectionJobs.progress })
+      .from(collectionJobs)
+      .where(eq(collectionJobs.id, input.jobId))
+      .limit(1);
+    qualityMeta = buildQualityMetadata(jobRow?.progress as Record<string, unknown> | null);
+  } catch {
+    // progress 조회 실패는 보고서 생성을 막지 않음
+    qualityMeta = buildQualityMetadata(null);
+  }
+  const finalMarkdown = appendQualityFooterToMarkdown(markdownContent, qualityMeta);
+
   // DB에 리포트 저장
   await persistAnalysisReport({
     jobId: input.jobId,
     title: `${input.keyword} 종합 분석 리포트`,
-    markdownContent,
+    markdownContent: finalMarkdown,
     oneLiner,
     metadata: {
       keyword: input.keyword,
@@ -133,8 +153,12 @@ ${resultsJson}
       totalTokens,
       reportModel: { provider: config.provider, model: config.model },
       generatedAt: new Date().toISOString(),
+      // === Phase 3 신규 필드 ===
+      modulesPartial: qualityMeta.modulesPartial,
+      warnings: qualityMeta.warnings,
+      qualityFlags: qualityMeta.qualityFlags,
     },
   });
 
-  return { markdownContent, oneLiner, totalTokens };
+  return { markdownContent: finalMarkdown, oneLiner, totalTokens };
 }
