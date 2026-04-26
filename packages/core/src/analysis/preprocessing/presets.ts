@@ -67,7 +67,7 @@ export const OPTIMIZATION_PRESETS: Record<OptimizationPreset, PresetConfig> = {
     clustering: false,
     commentLimit: null,
     label: 'RAG 경량',
-    description: 'DB 임베딩으로 의미 관련 댓글 상위 50건 선별. 기사는 전체 유지.',
+    description: 'collector 임베딩으로 의미 관련 댓글 상위 200건 선별. 기사는 전체 유지.',
     estimatedReduction: '~40%',
     color: 'cyan',
   },
@@ -77,7 +77,8 @@ export const OPTIMIZATION_PRESETS: Record<OptimizationPreset, PresetConfig> = {
     clustering: false,
     commentLimit: null,
     label: 'RAG 표준',
-    description: 'DB 임베딩으로 의미 관련 기사 30+클러스터 대표 10, 댓글 30건 선별.',
+    description:
+      'collector 임베딩으로 의미 관련 기사 130(=100+대표 30), 댓글 200건을 선별 후 시계열 균등 후샘플.',
     estimatedReduction: '~65%',
     color: 'blue',
   },
@@ -87,7 +88,8 @@ export const OPTIMIZATION_PRESETS: Record<OptimizationPreset, PresetConfig> = {
     clustering: false,
     commentLimit: null,
     label: 'RAG 강력',
-    description: 'DB 임베딩으로 의미 관련 기사 15+클러스터 대표 5, 댓글 15건 선별.',
+    description:
+      'collector 임베딩으로 의미 관련 기사 65(=50+대표 15), 댓글 100건 선별 후 시계열 균등 후샘플.',
     estimatedReduction: '~80%',
     color: 'violet',
   },

@@ -33,6 +33,7 @@ import { runWithProviderGrouping } from './concurrency';
 import { buildResult, generateFinalReport } from './report-builder';
 import { extractEntitiesFromResults } from './ontology-extractor';
 import { persistOntology } from './persist-ontology';
+import { persistAnalysisResult } from './persist-analysis';
 import { runSeriesDeltaAnalysis } from './delta';
 import type { AnalysisModuleResult } from './types';
 import type { PipelineContext } from './pipeline-context';
@@ -82,10 +83,55 @@ export async function runAnalysisPipeline(
     .then((r) => r[0]);
   const jobOptions = (cjRow?.options as Record<string, unknown>) || {};
 
-  let input =
+  const loadResult =
     options?.useCollectorLoader || jobOptions.useCollectorLoader || shouldUseCollectorLoader()
       ? await loadAnalysisInputViaCollector(jobId)
       : await loadAnalysisInput(jobId);
+  let input = loadResult.input;
+  const samplingStats = loadResult.samplingStats;
+
+  // P3: 시계열 샘플링 통계를 progress에 기록 (구간별 입력/샘플 분포)
+  // 폴백 동작·시간 편향 디버깅용. items 배열은 빠지므로 페이로드는 작음.
+  await updateJobProgress(jobId, {
+    sampling: {
+      status: 'completed',
+      binCount: samplingStats.binCount,
+      binIntervalMs: samplingStats.binIntervalMs,
+      articles: {
+        totalInput: samplingStats.articles.totalInput,
+        totalSampled: samplingStats.articles.totalSampled,
+        binsUsed: samplingStats.articles.binsUsed,
+        nullPoolSize: samplingStats.articles.nullPoolSize,
+        nullPoolSampled: samplingStats.articles.nullPoolSampled,
+        perBin: samplingStats.articles.perBin.map((b) => ({
+          start: b.start.toISOString(),
+          end: b.end.toISOString(),
+          inputCount: b.inputCount,
+          sampledCount: b.sampledCount,
+        })),
+      },
+      comments: {
+        totalInput: samplingStats.comments.totalInput,
+        totalSampled: samplingStats.comments.totalSampled,
+        binsUsed: samplingStats.comments.binsUsed,
+        nullPoolSize: samplingStats.comments.nullPoolSize,
+        nullPoolSampled: samplingStats.comments.nullPoolSampled,
+        perBin: samplingStats.comments.perBin.map((b) => ({
+          start: b.start.toISOString(),
+          end: b.end.toISOString(),
+          inputCount: b.inputCount,
+          sampledCount: b.sampledCount,
+        })),
+      },
+      videos: {
+        totalInput: samplingStats.videos.totalInput,
+        totalSampled: samplingStats.videos.totalSampled,
+        binsUsed: samplingStats.videos.binsUsed,
+        nullPoolSize: samplingStats.videos.nullPoolSize,
+        nullPoolSampled: samplingStats.videos.nullPoolSampled,
+      },
+    },
+  }).catch((err) => logError('pipeline-orchestrator', err));
 
   // 구독 단축 경로: collector API에서 로드한 데이터 통계를 progress에 기록
   // (수집/정규화 단계가 없으므로 UI에서 건수를 표시할 수 있도록)
@@ -220,7 +266,97 @@ export async function runAnalysisPipeline(
   // 토큰 최적화 전처리 (정규화는 이미 적용됨 — preprocessAnalysisInput 내부에서
   // 한 번 더 호출되지만 멱등하므로 안전. 단 매칭 카운트만 0에 가깝게 나옴)
   const tokenOptimization = (jobRow?.options?.tokenOptimization ?? 'none') as OptimizationPreset;
-  if (tokenOptimization !== 'none') {
+
+  // P2+P4: RAG 프리셋 + collector loader 경로 → collector가 이미 의미 검색 완료.
+  // 분석 측 ragRetrieve(분석 DB articles 검색)는 구독 경로에서 무효화되어 있어 우회한다.
+  // 시계열 후샘플(stratifiedSample)만 호출해 한도 내로 줄이면서 시간 분포를 보존.
+  const usingCollectorRag =
+    (options?.useCollectorLoader || jobOptions.useCollectorLoader) &&
+    (tokenOptimization === 'rag-light' ||
+      tokenOptimization === 'rag-standard' ||
+      tokenOptimization === 'rag-aggressive');
+
+  if (usingCollectorRag) {
+    // collector RAG로 들어온 의미 풀(topK×3)을 한도(presetTopK)로 시계열 균등 컷
+    const tokenStart = Date.now();
+    try {
+      await updateJobProgress(jobId, {
+        'token-optimization': {
+          status: 'running',
+          preset: tokenOptimization,
+          phase: 'collector-rag-postsample',
+        },
+      }).catch((err) => logError('pipeline-orchestrator', err));
+
+      const { RAG_CONFIGS } = await import('./preprocessing/rag-retriever');
+      const ragConfig = RAG_CONFIGS[tokenOptimization];
+      const articleLimit = ragConfig.articleTopK + ragConfig.clusterRepresentatives;
+      const commentLimit = ragConfig.commentTopK;
+      const originalArticles = input.articles.length;
+      const originalComments = input.comments.length;
+
+      const { calculateBudget, stratifiedSample } = await import('./sampling');
+
+      const cutByTimeStratified = <T>(
+        items: T[],
+        limit: number,
+        getTs: (i: T) => Date | null,
+        getLike: (i: T) => number | null,
+      ): T[] => {
+        if (items.length <= limit || limit <= 0) return items;
+        const budget = calculateBudget({
+          dateRange: input.dateRange,
+          totalArticles: 0,
+          totalComments: items.length,
+          totalVideos: 0,
+        });
+        const tuned = {
+          ...budget,
+          targets: { ...budget.targets, comments: limit },
+          minimums: {
+            ...budget.minimums,
+            comments: Math.max(1, Math.floor(limit / Math.max(1, budget.binCount))),
+          },
+        };
+        return stratifiedSample(items, tuned, getTs, getLike).sampled;
+      };
+
+      const cutArticles = cutByTimeStratified(
+        input.articles,
+        articleLimit,
+        (a) => a.publishedAt,
+        () => null,
+      );
+      const cutComments = cutByTimeStratified(
+        input.comments,
+        commentLimit,
+        (c) => c.publishedAt,
+        (c) => c.likeCount,
+      );
+
+      input = { ...input, articles: cutArticles, comments: cutComments };
+      ctx.input = input;
+
+      await updateJobProgress(jobId, {
+        'token-optimization': {
+          status: 'completed',
+          phase: 'collector-rag-postsample',
+          preset: tokenOptimization,
+          originalArticles,
+          optimizedArticles: cutArticles.length,
+          originalComments,
+          optimizedComments: cutComments.length,
+        },
+      }).catch((err) => logError('pipeline-orchestrator', err));
+      await recordStageDuration('token-optimization', Date.now() - tokenStart, 'completed');
+    } catch (error) {
+      console.error(`[pipeline] collector RAG 후샘플 실패:`, error);
+      await updateJobProgress(jobId, {
+        'token-optimization': { status: 'failed', phase: 'collector-rag-postsample' },
+      }).catch((err) => logError('pipeline-orchestrator', err));
+      await recordStageDuration('token-optimization', Date.now() - tokenStart, 'failed');
+    }
+  } else if (tokenOptimization !== 'none') {
     const tokenStart = Date.now();
     try {
       await updateJobProgress(jobId, {
@@ -338,6 +474,15 @@ export async function runAnalysisPipeline(
           'warn',
           `macro-view dailyMentionTrend: AI가 빈 배열 반환 — ${dailyMap.size}일치 count만 주입, sentimentRatio=null`,
         ).catch((err) => logError('pipeline-orchestrator', err));
+        // DB 동기화 — map-reduce에서 이미 빈 배열이 저장됐으므로 보정값을 덮어써야
+        // 대시보드(DB 직접 조회)가 보정 결과를 볼 수 있다. usage는 기존값 유지.
+        await persistAnalysisResult({
+          jobId,
+          module: 'macro-view',
+          status: 'completed',
+          result: mv as never,
+          usage: macroResult.usage,
+        }).catch((err) => logError('pipeline-orchestrator', err));
       }
     }
   }

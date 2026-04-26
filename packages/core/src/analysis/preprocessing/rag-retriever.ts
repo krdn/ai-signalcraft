@@ -4,10 +4,11 @@
 import { sql } from 'drizzle-orm';
 import type { AnalysisInput } from '../types';
 import { getDb } from '../../db';
+import { calculateBudget, stratifiedSample } from '../sampling';
 import { embedTexts } from './embeddings';
 
 // RAG 모드별 설정
-interface RAGConfig {
+export interface RAGConfig {
   articleTopK: number; // 의미 관련 기사 상위 N개 (0 = 전체 유지)
   clusterRepresentatives: number; // 클러스터 대표 기사 N개
   commentTopK: number; // 의미 관련 댓글 상위 N개 (0 = 전체 유지)
@@ -106,15 +107,15 @@ export async function ragRetrieve(
         source: row.source as string,
       }));
     } else {
-      // fallback: 임베딩 없거나 유사도 미달 → 최신순 상위 N개
-      selectedArticles = input.articles
-        .slice()
-        .sort((a, b) => {
-          const ta = a.publishedAt ? new Date(a.publishedAt).getTime() : 0;
-          const tb = b.publishedAt ? new Date(b.publishedAt).getTime() : 0;
-          return tb - ta;
-        })
-        .slice(0, config.articleTopK + config.clusterRepresentatives);
+      // P1: fallback이 최신순이면 시간 편향 발생 (폭증일에 입력이 몰림).
+      // 시계열 균등 샘플링으로 분석 기간 전체 분포를 보존한다.
+      selectedArticles = fallbackTimeStratified(
+        input,
+        input.articles,
+        config.articleTopK + config.clusterRepresentatives,
+        (a) => a.publishedAt,
+        () => null,
+      );
     }
   }
 
@@ -147,11 +148,15 @@ export async function ragRetrieve(
     if (ragComments.length > 0) {
       selectedComments = ragComments;
     } else {
-      // fallback: 임베딩 없거나 유사도 미달 → 좋아요순 상위 N개
-      selectedComments = input.comments
-        .slice()
-        .sort((a, b) => (b.likeCount ?? 0) - (a.likeCount ?? 0))
-        .slice(0, config.commentTopK);
+      // P1: fallback이 좋아요순이면 다수 의견 증폭 + 시간 편향.
+      // 시계열 균등 샘플링(좋아요 제곱근 가중)으로 다양성과 시간 분포 둘 다 보존.
+      selectedComments = fallbackTimeStratified(
+        input,
+        input.comments,
+        config.commentTopK,
+        (c) => c.publishedAt,
+        (c) => c.likeCount,
+      );
     }
   }
 
@@ -181,4 +186,40 @@ export function isRAGPreset(
   preset: string,
 ): preset is 'rag-light' | 'rag-standard' | 'rag-aggressive' {
   return preset in RAG_CONFIGS;
+}
+
+/**
+ * RAG 폴백용 시계열 균등 샘플링.
+ * dateRange를 budget으로 변환해 stratifiedSample을 재사용한다.
+ * 입력이 한도 이하면 그대로 반환 (정렬 변경 없음).
+ */
+function fallbackTimeStratified<T>(
+  input: AnalysisInput,
+  items: T[],
+  limit: number,
+  getTimestamp: (item: T) => Date | null,
+  getLikeCount: (item: T) => number | null,
+): T[] {
+  if (items.length <= limit) return items;
+
+  // budget의 target은 기사/댓글/영상 중 하나만 의미가 있어 이 호출에서는
+  // commentsPerBin 슬롯(가장 큰 max)에 limit을 주입한다 (stratifiedSample이
+  // budget.targets.comments / budget.minimums.comments만 참조하기 때문).
+  const budget = calculateBudget({
+    dateRange: input.dateRange,
+    totalArticles: 0,
+    totalComments: items.length,
+    totalVideos: 0,
+  });
+  const tunedBudget = {
+    ...budget,
+    targets: { ...budget.targets, comments: limit },
+    minimums: {
+      ...budget.minimums,
+      comments: Math.max(1, Math.floor(limit / Math.max(1, budget.binCount))),
+    },
+  };
+
+  const result = stratifiedSample(items, tunedBudget, getTimestamp, getLikeCount);
+  return result.sampled;
 }

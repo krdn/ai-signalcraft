@@ -14,7 +14,8 @@ import {
 import { getCollectorClient } from '../collector-client';
 import type { AnalysisInput } from './types';
 import type { AnalysisDomain } from './domain';
-import { applyTimeSeriesSampling, calculateBudget } from './sampling';
+import { applyTimeSeriesSampling, calculateBudget, type AppliedSamplingStats } from './sampling';
+import { RAG_CONFIGS, type RAGConfig } from './preprocessing/rag-retriever';
 
 // 토큰 절약 상수 — collector API에 인자로 전달 (기본값, 호출부에서 override 가능)
 const MAX_ARTICLE_CONTENT_LENGTH = 500;
@@ -26,7 +27,9 @@ const MAX_COMMENTS_RAW = 5000;
  * - 기사 본문 500자 제한 (토큰 절약)
  * - 댓글 좋아요순 상위 500개 제한
  */
-export async function loadAnalysisInput(jobId: number): Promise<AnalysisInput> {
+export async function loadAnalysisInput(
+  jobId: number,
+): Promise<{ input: AnalysisInput; samplingStats: AppliedSamplingStats }> {
   // 작업 정보 조회
   const [job] = await getDb()
     .select()
@@ -113,7 +116,8 @@ export async function loadAnalysisInput(jobId: number): Promise<AnalysisInput> {
     totalVideos: rawInput.videos.length,
   });
 
-  return applyTimeSeriesSampling(rawInput, budget);
+  const sampled = applyTimeSeriesSampling(rawInput, budget);
+  return { input: sampled.input, samplingStats: sampled.stats };
 }
 
 export interface LoadFromCollectorOptions {
@@ -126,6 +130,11 @@ export interface LoadFromCollectorOptions {
   domain?: AnalysisDomain;
   /** 분석 jobId — 결과 저장 및 로그용. 실제 데이터와 무관 */
   jobId: number;
+  /**
+   * P2+P4: RAG 프리셋 — 지정 시 collector mode='rag'로 의미 관련 항목만 로드.
+   * undefined면 mode='all'(기존 동작).
+   */
+  ragPreset?: 'rag-light' | 'rag-standard' | 'rag-aggressive';
 }
 
 /**
@@ -142,7 +151,9 @@ export interface LoadFromCollectorOptions {
  * legacy `loadAnalysisInput`(N:M 조인)의 collector-backed 대체.
  * `USE_COLLECTOR_LOADER=1` 환경에서 orchestrator가 선택할 수 있도록 같은 시그니처 제공.
  */
-export async function loadAnalysisInputViaCollector(jobId: number): Promise<AnalysisInput> {
+export async function loadAnalysisInputViaCollector(
+  jobId: number,
+): Promise<{ input: AnalysisInput; samplingStats: AppliedSamplingStats }> {
   const [job] = await getDb()
     .select()
     .from(collectionJobs)
@@ -156,6 +167,13 @@ export async function loadAnalysisInputViaCollector(jobId: number): Promise<Anal
   const ensureDate = (d: Date | string): Date => (d instanceof Date ? d : new Date(d));
   const opts = job.options as Record<string, unknown> | undefined;
 
+  // P2+P4: tokenOptimization이 RAG 프리셋이면 collector RAG 모드 사용
+  const tokenOpt = opts?.tokenOptimization as string | undefined;
+  const ragPreset =
+    tokenOpt === 'rag-light' || tokenOpt === 'rag-standard' || tokenOpt === 'rag-aggressive'
+      ? tokenOpt
+      : undefined;
+
   return loadAnalysisInputFromCollector({
     jobId,
     keyword: job.keyword,
@@ -165,6 +183,7 @@ export async function loadAnalysisInputViaCollector(jobId: number): Promise<Anal
     },
     domain: (job.domain as AnalysisDomain) || undefined,
     subscriptionId: (opts?.subscriptionId as number) || undefined,
+    ragPreset,
   });
 }
 
@@ -175,42 +194,21 @@ export function shouldUseCollectorLoader(): boolean {
 
 export async function loadAnalysisInputFromCollector(
   opts: LoadFromCollectorOptions,
-): Promise<AnalysisInput> {
+): Promise<{ input: AnalysisInput; samplingStats: AppliedSamplingStats }> {
   const client = getCollectorClient();
   const maxContentLength = opts.maxContentLength ?? MAX_ARTICLE_CONTENT_LENGTH;
 
-  // 기사/영상과 댓글은 다른 itemType — 병렬 호출
-  const [articlesVideosResp, commentsResp] = await Promise.all([
-    client.items.query.query({
-      keyword: opts.keyword,
-      dateRange: {
-        start: opts.dateRange.start.toISOString(),
-        end: opts.dateRange.end.toISOString(),
-      },
-      sources: opts.sources,
-      itemTypes: ['article', 'video'],
-      subscriptionId: opts.subscriptionId,
-      mode: 'all',
-      maxContentLength,
-      limit: 2000,
-    }),
-    client.items.query.query({
-      keyword: opts.keyword,
-      dateRange: {
-        start: opts.dateRange.start.toISOString(),
-        end: opts.dateRange.end.toISOString(),
-      },
-      sources: opts.sources,
-      itemTypes: ['comment'],
-      subscriptionId: opts.subscriptionId,
-      mode: 'all',
-      maxComments: maxContentLength,
-      limit: MAX_COMMENTS_RAW,
-    }),
-  ]);
+  // P2+P4: RAG 프리셋이면 collector mode='rag'로 의미 검색 (한도×3 풀) + 부족하면 mode='all' 보충
+  // 그 외(none/light/standard/aggressive)는 기존 mode='all' (legacy 경로)
+  const ragConfig: RAGConfig | null = opts.ragPreset ? RAG_CONFIGS[opts.ragPreset] : null;
+  const dateRangeIso = {
+    start: opts.dateRange.start.toISOString(),
+    end: opts.dateRange.end.toISOString(),
+  };
 
   type CollectorItem = {
     source: string;
+    sourceId: string;
     itemType: 'article' | 'video' | 'comment';
     title: string | null;
     content: string | null;
@@ -220,12 +218,139 @@ export async function loadAnalysisInputFromCollector(
     metrics: { viewCount?: number; likeCount?: number; commentCount?: number } | null;
   };
 
+  /** source+sourceId+itemType 기준 dedup — collector raw_items_dedup_uniq와 동일 */
+  const dedupItems = (items: CollectorItem[]): CollectorItem[] => {
+    const seen = new Set<string>();
+    const out: CollectorItem[] = [];
+    for (const it of items) {
+      const key = `${it.source}::${it.sourceId}::${it.itemType}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(it);
+    }
+    return out;
+  };
+
+  // 기사/영상과 댓글은 다른 itemType — 병렬 호출
+  // RAG 모드일 때 한도(target = articleTopK + clusterRepresentatives, commentTopK)의 3배를 받아
+  // 후속 시계열 샘플링이 의미 풀 안에서 시간 균등 정렬을 다시 적용한다.
+  const articleVideoTarget = ragConfig
+    ? ragConfig.articleTopK + ragConfig.clusterRepresentatives
+    : 0;
+  const commentTarget = ragConfig?.commentTopK ?? 0;
+  // collector ragOptions.topK는 schema에서 max 500으로 제한된다 (apps/collector/src/server/trpc/items.ts:46).
+  // 한도 ×3을 원칙으로 하되 500 cap을 적용 — rag-standard 댓글 600 → 500. 의미 풀이 충분히 큰 데다
+  // 후속 시계열 후샘플(stratifiedSample)이 200으로 줄이므로 300/500 차이는 분석 결과에 큰 영향 없다.
+  const RAG_TOPK_CAP = 500;
+  const articleVideoTopK = Math.min(articleVideoTarget * 3, RAG_TOPK_CAP);
+  const commentTopK = Math.min(commentTarget * 3, RAG_TOPK_CAP);
+
+  const [articlesVideosResp, commentsResp] = await Promise.all([
+    ragConfig && articleVideoTopK > 0
+      ? client.items.query.query({
+          keyword: opts.keyword,
+          dateRange: dateRangeIso,
+          sources: opts.sources,
+          itemTypes: ['article', 'video'],
+          subscriptionId: opts.subscriptionId,
+          mode: 'rag',
+          ragOptions: { topK: articleVideoTopK, semanticQuery: opts.keyword },
+          maxContentLength,
+          limit: articleVideoTopK,
+        })
+      : client.items.query.query({
+          keyword: opts.keyword,
+          dateRange: dateRangeIso,
+          sources: opts.sources,
+          itemTypes: ['article', 'video'],
+          subscriptionId: opts.subscriptionId,
+          mode: 'all',
+          maxContentLength,
+          limit: 2000,
+        }),
+    ragConfig && commentTopK > 0
+      ? client.items.query.query({
+          keyword: opts.keyword,
+          dateRange: dateRangeIso,
+          sources: opts.sources,
+          itemTypes: ['comment'],
+          subscriptionId: opts.subscriptionId,
+          mode: 'rag',
+          ragOptions: { topK: commentTopK, semanticQuery: opts.keyword },
+          maxComments: maxContentLength,
+          limit: commentTopK,
+        })
+      : client.items.query.query({
+          keyword: opts.keyword,
+          dateRange: dateRangeIso,
+          sources: opts.sources,
+          itemTypes: ['comment'],
+          subscriptionId: opts.subscriptionId,
+          mode: 'all',
+          maxComments: maxContentLength,
+          limit: MAX_COMMENTS_RAW,
+        }),
+  ]);
+
+  // RAG 보충 호출: 응답이 요청 topK의 80% 미만이면 mode='all'로 빈자리 채움
+  let articleVideoItems = articlesVideosResp.items as unknown as CollectorItem[];
+  let commentItems = commentsResp.items as unknown as CollectorItem[];
+
+  if (ragConfig) {
+    const fillTasks: Array<Promise<void>> = [];
+    if (articleVideoTopK > 0 && articleVideoItems.length < articleVideoTopK * 0.8) {
+      fillTasks.push(
+        client.items.query
+          .query({
+            keyword: opts.keyword,
+            dateRange: dateRangeIso,
+            sources: opts.sources,
+            itemTypes: ['article', 'video'],
+            subscriptionId: opts.subscriptionId,
+            mode: 'all',
+            maxContentLength,
+            limit: 2000,
+          })
+          .then((fillResp) => {
+            articleVideoItems = dedupItems([
+              ...articleVideoItems,
+              ...(fillResp.items as unknown as CollectorItem[]),
+            ]);
+          }),
+      );
+    }
+    if (commentTopK > 0 && commentItems.length < commentTopK * 0.8) {
+      fillTasks.push(
+        client.items.query
+          .query({
+            keyword: opts.keyword,
+            dateRange: dateRangeIso,
+            sources: opts.sources,
+            itemTypes: ['comment'],
+            subscriptionId: opts.subscriptionId,
+            mode: 'all',
+            maxComments: maxContentLength,
+            limit: MAX_COMMENTS_RAW,
+          })
+          .then((fillResp) => {
+            commentItems = dedupItems([
+              ...commentItems,
+              ...(fillResp.items as unknown as CollectorItem[]),
+            ]);
+          }),
+      );
+    }
+    if (fillTasks.length > 0) {
+      await Promise.all(fillTasks);
+    }
+  }
+
   const toDate = (d: string | Date | null): Date => {
     if (!d) return new Date(0);
     return d instanceof Date ? d : new Date(d);
   };
 
-  const articlesOut = (articlesVideosResp.items as unknown as CollectorItem[])
+  const articlesOut = articleVideoItems
     .filter((i) => i.itemType === 'article' && i.title)
     .map((a) => ({
       title: a.title as string,
@@ -235,7 +360,7 @@ export async function loadAnalysisInputFromCollector(
       source: a.source,
     }));
 
-  const videosOut = (articlesVideosResp.items as unknown as CollectorItem[])
+  const videosOut = articleVideoItems
     .filter((i) => i.itemType === 'video' && i.title)
     .map((v) => ({
       title: v.title as string,
@@ -247,7 +372,7 @@ export async function loadAnalysisInputFromCollector(
       content: v.content,
     }));
 
-  const commentsOut = (commentsResp.items as unknown as CollectorItem[])
+  const commentsOut = commentItems
     .filter((c) => c.content)
     .map((c) => ({
       content: c.content as string,
@@ -278,5 +403,6 @@ export async function loadAnalysisInputFromCollector(
     totalVideos: rawInput.videos.length,
   });
 
-  return applyTimeSeriesSampling(rawInput, budget);
+  const sampled = applyTimeSeriesSampling(rawInput, budget);
+  return { input: sampled.input, samplingStats: sampled.stats };
 }

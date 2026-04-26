@@ -208,11 +208,20 @@ export function stratifiedSample<T>(
   };
 }
 
+/** 시계열 샘플링 결과 통계 — pipeline-orchestrator가 progress에 기록 */
+export interface AppliedSamplingStats {
+  binCount: number;
+  binIntervalMs: number;
+  articles: SamplingStats;
+  comments: SamplingStats;
+  videos: SamplingStats;
+}
+
 /** AnalysisInput 전체에 시계열 샘플링 적용 */
 export function applyTimeSeriesSampling(
   input: AnalysisInput,
   budget: SamplingBudget,
-): AnalysisInput {
+): { input: AnalysisInput; stats: AppliedSamplingStats } {
   // 기사 샘플링
   const articleResult = stratifiedSample(
     input.articles,
@@ -264,9 +273,18 @@ export function applyTimeSeriesSampling(
   }
 
   return {
-    ...input,
-    articles: articleResult.sampled,
-    comments: commentResult.sampled,
-    videos: videoResult.sampled,
+    input: {
+      ...input,
+      articles: articleResult.sampled,
+      comments: commentResult.sampled,
+      videos: videoResult.sampled,
+    },
+    stats: {
+      binCount: budget.binCount,
+      binIntervalMs: budget.binIntervalMs,
+      articles: articleResult.stats,
+      comments: commentResult.stats,
+      videos: videoResult.stats,
+    },
   };
 }

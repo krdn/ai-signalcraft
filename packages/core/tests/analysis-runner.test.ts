@@ -23,13 +23,82 @@ vi.mock('@krdn/ai-analysis-kit/gateway', () => ({
 
 vi.mock('../src/analysis/data-loader', () => ({
   loadAnalysisInput: vi.fn().mockResolvedValue({
-    jobId: 1,
-    keyword: '테스트',
-    articles: [],
-    videos: [],
-    comments: [],
-    dateRange: { start: new Date('2026-03-01'), end: new Date('2026-03-20') },
+    input: {
+      jobId: 1,
+      keyword: '테스트',
+      articles: [],
+      videos: [],
+      comments: [],
+      dateRange: { start: new Date('2026-03-01'), end: new Date('2026-03-20') },
+    },
+    samplingStats: {
+      binCount: 0,
+      binIntervalMs: 0,
+      articles: {
+        totalInput: 0,
+        totalSampled: 0,
+        binsUsed: 0,
+        nullPoolSize: 0,
+        nullPoolSampled: 0,
+        perBin: [],
+      },
+      comments: {
+        totalInput: 0,
+        totalSampled: 0,
+        binsUsed: 0,
+        nullPoolSize: 0,
+        nullPoolSampled: 0,
+        perBin: [],
+      },
+      videos: {
+        totalInput: 0,
+        totalSampled: 0,
+        binsUsed: 0,
+        nullPoolSize: 0,
+        nullPoolSampled: 0,
+        perBin: [],
+      },
+    },
   }),
+  loadAnalysisInputViaCollector: vi.fn().mockResolvedValue({
+    input: {
+      jobId: 1,
+      keyword: '테스트',
+      articles: [],
+      videos: [],
+      comments: [],
+      dateRange: { start: new Date('2026-03-01'), end: new Date('2026-03-20') },
+    },
+    samplingStats: {
+      binCount: 0,
+      binIntervalMs: 0,
+      articles: {
+        totalInput: 0,
+        totalSampled: 0,
+        binsUsed: 0,
+        nullPoolSize: 0,
+        nullPoolSampled: 0,
+        perBin: [],
+      },
+      comments: {
+        totalInput: 0,
+        totalSampled: 0,
+        binsUsed: 0,
+        nullPoolSize: 0,
+        nullPoolSampled: 0,
+        perBin: [],
+      },
+      videos: {
+        totalInput: 0,
+        totalSampled: 0,
+        binsUsed: 0,
+        nullPoolSize: 0,
+        nullPoolSampled: 0,
+        perBin: [],
+      },
+    },
+  }),
+  shouldUseCollectorLoader: vi.fn().mockReturnValue(false),
 }));
 
 vi.mock('../src/analysis/persist-analysis', () => ({
