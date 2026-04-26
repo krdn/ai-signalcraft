@@ -19,6 +19,7 @@ import {
 import { protectedProcedure, router } from '../init';
 import { buildJobCondition } from '../shared/query-helpers';
 import { applyDemoGuard } from '../shared/demo-guard';
+import { buildSubscriptionAnalysisMeta } from './subscription-analysis-meta';
 
 export const analysisRouter = router({
   // 분석 트리거 -- 키워드/소스/기간으로 수집+분석 파이프라인 시작
@@ -346,7 +347,17 @@ export const analysisRouter = router({
         throw new TRPCError({ code: 'BAD_REQUEST', message: '비활성 구독입니다.' });
       }
 
-      // 2. collection_jobs 레코드 생성
+      // 2. 운영 가시성 메타 합성 (순수 함수 — 단위 테스트 대상)
+      const meta = buildSubscriptionAnalysisMeta(
+        {
+          keyword: sub.keyword,
+          sources: sub.sources,
+          limits: sub.limits as Record<string, number> | null,
+        },
+        { subscriptionId: input.subscriptionId, optimizationPreset: input.optimizationPreset },
+      );
+
+      // 3. collection_jobs 레코드 생성
       const [job] = await ctx.db
         .insert(collectionJobs)
         .values({
@@ -356,18 +367,15 @@ export const analysisRouter = router({
           status: 'running',
           domain: input.domain || sub.domain || 'general',
           userId: ctx.userId,
-          options: {
-            subscriptionId: input.subscriptionId,
-            skipItemAnalysis: true,
-            useCollectorLoader: true,
-            tokenOptimization: input.optimizationPreset ?? 'rag-standard',
-          },
+          appliedPreset: meta.appliedPreset,
+          limits: meta.limits,
+          options: meta.options,
         })
         .returning({ id: collectionJobs.id });
 
       if (!job) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: '잡 생성 실패' });
 
-      // 3. 단축 경로 — analysis 큐에 직접 등록
+      // 4. 단축 경로 — analysis 큐에 직접 등록
       await triggerSubscriptionAnalysis(job.id, sub.keyword);
 
       return { jobId: job.id, keyword: sub.keyword };

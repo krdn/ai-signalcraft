@@ -8,6 +8,7 @@ import { evaluateAlerts } from '../alerts';
 import { getDb } from '../db';
 import { collectionJobs } from '../db/schema/collections';
 import { recordStageDuration, withSpan } from '../metrics';
+import { persistFromCollectorPayload } from '../pipeline/persist-from-collector';
 import { finalSummaryModule } from './modules';
 import {
   runModule,
@@ -21,6 +22,7 @@ import {
   loadAnalysisInput,
   loadAnalysisInputViaCollector,
   shouldUseCollectorLoader,
+  type CollectorAnalysisResult,
 } from './data-loader';
 import {
   preprocessAnalysisInput,
@@ -83,12 +85,54 @@ export async function runAnalysisPipeline(
     .then((r) => r[0]);
   const jobOptions = (cjRow?.options as Record<string, unknown>) || {};
 
-  const loadResult =
-    options?.useCollectorLoader || jobOptions.useCollectorLoader || shouldUseCollectorLoader()
-      ? await loadAnalysisInputViaCollector(jobId)
-      : await loadAnalysisInput(jobId);
+  const isCollectorPath =
+    options?.useCollectorLoader || jobOptions.useCollectorLoader || shouldUseCollectorLoader();
+
+  const loadResult = isCollectorPath
+    ? await loadAnalysisInputViaCollector(jobId)
+    : await loadAnalysisInput(jobId);
   let input = loadResult.input;
   const samplingStats = loadResult.samplingStats;
+
+  // 구독 단축 경로에서도 article_jobs/comment_jobs/video_jobs를 채워
+  // RAG SQL과 UI 카운트가 일반 경로와 동일한 의미를 갖도록 보장.
+  // (job 271 사례 — linkage 0건 결함 수정)
+  if (isCollectorPath && 'fullset' in loadResult) {
+    const collectorResult = loadResult as CollectorAnalysisResult;
+    await updateJobProgress(jobId, {
+      persist: { status: 'running', source: 'collector' },
+    }).catch((err) => logError('pipeline-orchestrator', err));
+    try {
+      const persistResult = await persistFromCollectorPayload(jobId, collectorResult.fullset);
+      await updateJobProgress(jobId, {
+        persist: {
+          status: 'completed',
+          source: 'collector',
+          articles: persistResult.articles,
+          videos: persistResult.videos,
+          comments: persistResult.comments,
+        },
+      }).catch((err) => logError('pipeline-orchestrator', err));
+    } catch (err) {
+      await updateJobProgress(jobId, {
+        persist: {
+          status: 'failed',
+          source: 'collector',
+          error: err instanceof Error ? err.message : String(err),
+        },
+      }).catch((err) => logError('pipeline-orchestrator', err));
+      // 분석 자체는 RAG sample 입력으로 계속 진행 (linkage 누락은 가시성 손실이지 분석 차단 아님)
+      try {
+        await appendJobEvent(
+          jobId,
+          'warn',
+          `persistFromCollectorPayload 실패: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      } catch (err) {
+        logError('pipeline-orchestrator', err);
+      }
+    }
+  }
 
   // P3: 시계열 샘플링 통계를 progress에 기록 (구간별 입력/샘플 분포)
   // 폴백 동작·시간 편향 디버깅용. items 배열은 빠지므로 페이로드는 작음.
@@ -135,7 +179,7 @@ export async function runAnalysisPipeline(
 
   // 구독 단축 경로: collector API에서 로드한 데이터 통계를 progress에 기록
   // (수집/정규화 단계가 없으므로 UI에서 건수를 표시할 수 있도록)
-  if (options?.useCollectorLoader || jobOptions.useCollectorLoader) {
+  if (isCollectorPath) {
     const subStats: Record<
       string,
       { status: string; articles: number; comments: number; videos: number }
@@ -271,7 +315,7 @@ export async function runAnalysisPipeline(
   // 분석 측 ragRetrieve(분석 DB articles 검색)는 구독 경로에서 무효화되어 있어 우회한다.
   // 시계열 후샘플(stratifiedSample)만 호출해 한도 내로 줄이면서 시간 분포를 보존.
   const usingCollectorRag =
-    (options?.useCollectorLoader || jobOptions.useCollectorLoader) &&
+    isCollectorPath &&
     (tokenOptimization === 'rag-light' ||
       tokenOptimization === 'rag-standard' ||
       tokenOptimization === 'rag-aggressive');

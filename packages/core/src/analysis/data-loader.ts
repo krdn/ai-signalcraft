@@ -197,6 +197,14 @@ export async function loadAnalysisInputViaCollector(
       ? tokenOpt
       : undefined;
 
+  const VALID_SOURCES = ['naver-news', 'youtube', 'dcinside', 'fmkorea', 'clien'] as const;
+  type ValidSource = (typeof VALID_SOURCES)[number];
+  const optsSources = Array.isArray(opts?.sources)
+    ? (opts.sources as string[]).filter((s): s is ValidSource =>
+        (VALID_SOURCES as readonly string[]).includes(s),
+      )
+    : undefined;
+
   return loadAnalysisInputFromCollector({
     jobId,
     keyword: job.keyword,
@@ -206,6 +214,7 @@ export async function loadAnalysisInputViaCollector(
     },
     domain: (job.domain as AnalysisDomain) || undefined,
     subscriptionId: (opts?.subscriptionId as number) || undefined,
+    sources: optsSources,
     ragPreset,
   });
 }
