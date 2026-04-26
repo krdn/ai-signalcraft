@@ -97,8 +97,21 @@ vi.mock('../src/analysis/data-loader', () => ({
         perBin: [],
       },
     },
+    fullset: { articles: [], videos: [], comments: [] },
+    collectionMeta: {
+      sources: [],
+      sourceCounts: {},
+      window: { start: '', end: '' },
+      truncated: false,
+    },
   }),
   shouldUseCollectorLoader: vi.fn().mockReturnValue(false),
+}));
+
+vi.mock('../src/pipeline/persist-from-collector', () => ({
+  persistFromCollectorPayload: vi
+    .fn()
+    .mockResolvedValue({ articles: 100, videos: 0, comments: 1000 }),
 }));
 
 vi.mock('../src/analysis/persist-analysis', () => ({
@@ -236,6 +249,89 @@ describe('analysis/runner', () => {
   });
 
   // 통합 테스트 — pipeline-orchestrator가 다수의 DB 쿼리를 수행하므로 DB 연결 필요
+  it('useCollectorLoader=true이면 persistFromCollectorPayload를 호출한다', async () => {
+    const { loadAnalysisInputViaCollector } = await import('../src/analysis/data-loader');
+    const { persistFromCollectorPayload } = await import('../src/pipeline/persist-from-collector');
+    const { updateJobProgress } = await import('../src/pipeline/persist');
+
+    // fullset이 포함된 CollectorAnalysisResult 반환
+    const mockFullset = {
+      articles: [{ source: 'naver-news', sourceId: 'a1', url: 'u', title: 't' } as never],
+      videos: [],
+      comments: [],
+    };
+    (loadAnalysisInputViaCollector as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      input: {
+        jobId: 1,
+        keyword: '테스트',
+        articles: [],
+        videos: [],
+        comments: [],
+        dateRange: { start: new Date('2026-03-01'), end: new Date('2026-03-20') },
+      },
+      samplingStats: {
+        binCount: 0,
+        binIntervalMs: 0,
+        articles: {
+          totalInput: 0,
+          totalSampled: 0,
+          binsUsed: 0,
+          nullPoolSize: 0,
+          nullPoolSampled: 0,
+          perBin: [],
+        },
+        comments: {
+          totalInput: 0,
+          totalSampled: 0,
+          binsUsed: 0,
+          nullPoolSize: 0,
+          nullPoolSampled: 0,
+          perBin: [],
+        },
+        videos: {
+          totalInput: 0,
+          totalSampled: 0,
+          binsUsed: 0,
+          nullPoolSize: 0,
+          nullPoolSampled: 0,
+          perBin: [],
+        },
+      },
+      fullset: mockFullset,
+      collectionMeta: {
+        sources: [],
+        sourceCounts: {},
+        window: { start: '', end: '' },
+        truncated: false,
+      },
+    });
+
+    const { runAnalysisPipeline } = await import('../src/analysis/pipeline-orchestrator');
+    await runAnalysisPipeline(1, { useCollectorLoader: true }).catch(() => {
+      /* 분석 모듈 오류 무시 */
+    });
+
+    expect(persistFromCollectorPayload).toHaveBeenCalledWith(1, mockFullset);
+    expect(updateJobProgress).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({
+        persist: expect.objectContaining({ status: 'running', source: 'collector' }),
+      }),
+    );
+  });
+
+  it('일반 경로(useCollectorLoader=false)는 persistFromCollectorPayload를 호출하지 않는다', async () => {
+    const { persistFromCollectorPayload } = await import('../src/pipeline/persist-from-collector');
+    (persistFromCollectorPayload as ReturnType<typeof vi.fn>).mockClear();
+
+    const { runAnalysisPipeline } = await import('../src/analysis/pipeline-orchestrator');
+    await runAnalysisPipeline(1, { useCollectorLoader: false }).catch(() => {
+      /* 분석 모듈 오류 무시 */
+    });
+
+    expect(persistFromCollectorPayload).not.toHaveBeenCalled();
+  });
+
   it.skipIf(!process.env.DATABASE_URL)(
     'runAnalysisPipeline이 모든 모듈 결과를 반환한다',
     async () => {
