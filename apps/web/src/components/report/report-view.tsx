@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { FileText } from 'lucide-react';
 import { SectionNav, type Section } from './section-nav';
 import { ReportViewer } from './report-viewer';
+import { QualityWarningBanner } from './quality-warning-banner';
 import { ReportHelp } from './report-help';
 import { PdfExportButton } from '@/components/ui/pdf-export-button';
 import { trpcClient } from '@/lib/trpc';
@@ -154,6 +155,9 @@ export function ReportView({ jobId, fetchFn }: ReportViewProps) {
           <PdfExportButton targetRef={contentRef} filename={`report-job${jobId}`} />
         </div>
       </div>
+
+      {/* Phase 3: 부분 실패/얕은 표본 가시화 */}
+      <QualityWarningBanner metadata={report.metadata} />
 
       {/* 본문: 섹션 네비 + 마크다운 뷰어 */}
       <div className="flex flex-col md:flex-row" ref={contentRef}>
