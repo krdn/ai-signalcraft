@@ -68,6 +68,8 @@ export const collectionJobs = pgTable(
       skipItemAnalysis?: boolean;
       // CollectorLoader 사용 여부
       useCollectorLoader?: boolean;
+      // 구독 모드에서 수집 대상 소스 목록 스냅샷
+      sources?: string[];
     }>(),
     keywordType: text('keyword_type'),
     domain: text('domain').notNull().default('political'),
