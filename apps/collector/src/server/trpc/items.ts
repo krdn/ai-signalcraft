@@ -55,11 +55,10 @@ export const queryInput = z.object({
 });
 
 export const fetchAnalysisPayloadInput = z.object({
-  keyword: z.string().min(1),
+  keyword: z.string().trim().min(1),
   dateRange: dateRangeSchema,
   sources: z.array(z.enum(SOURCE_ENUM)).optional(),
   subscriptionId: z.number().int().positive().optional(),
-  ragPreset: z.enum(['rag-light', 'rag-standard', 'rag-aggressive']).optional(),
   ragOptions: z
     .object({
       articleVideoTopK: z.number().int().min(1).max(500),
@@ -745,9 +744,9 @@ export const itemsRouter = router({
 
       if (input.maxContentLength) truncateContent(fullsetRows, input.maxContentLength);
 
-      // ragSample: ragPreset+ragOptions가 주어지면 source별 분산 RAG, 아니면 빈 배열
+      // ragSample: ragOptions가 주어지면 source별 분산 RAG, 아니면 빈 배열
       const ragSample: Array<Record<string, unknown>> = [];
-      if (input.ragPreset && input.ragOptions) {
+      if (input.ragOptions) {
         const sources = input.sources?.length
           ? input.sources
           : (['naver-news', 'youtube', 'dcinside', 'fmkorea', 'clien'] as const);
@@ -828,6 +827,7 @@ export const itemsRouter = router({
           sources: Object.keys(sourceCounts),
           sourceCounts,
           window: { start: input.dateRange.start, end: input.dateRange.end },
+          truncated: fullsetRows.length === 50000,
         },
       };
     }),

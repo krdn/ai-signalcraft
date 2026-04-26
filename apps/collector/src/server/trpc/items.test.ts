@@ -99,10 +99,18 @@ describe('fetchAnalysisPayloadInput zod schema', () => {
       keyword: '테스트',
       dateRange: { start: '2026-04-19T00:00:00Z', end: '2026-04-26T00:00:00Z' },
       sources: ['naver-news', 'dcinside'],
-      ragPreset: 'rag-standard',
       ragOptions: { articleVideoTopK: 180, commentTopK: 500 },
     });
     expect(r.success).toBe(true);
+  });
+
+  it('keyword trim 적용', () => {
+    const r = fetchAnalysisPayloadInput.safeParse({
+      keyword: '  테스트  ',
+      dateRange: { start: '2026-04-19T00:00:00Z', end: '2026-04-26T00:00:00Z' },
+    });
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.keyword).toBe('테스트');
   });
 
   it('ragOptions topK는 max 500', () => {
