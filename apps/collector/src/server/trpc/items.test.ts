@@ -121,4 +121,22 @@ describe('fetchAnalysisPayloadInput zod schema', () => {
     });
     expect(r.success).toBe(false);
   });
+
+  it('ragOptions에 articleVideoTopK만 있어도 통과', () => {
+    const r = fetchAnalysisPayloadInput.safeParse({
+      keyword: '테스트',
+      dateRange: { start: '2026-04-19T00:00:00Z', end: '2026-04-26T00:00:00Z' },
+      ragOptions: { articleVideoTopK: 100 },
+    });
+    expect(r.success).toBe(true);
+  });
+
+  it('ragOptions에 commentTopK만 있어도 통과 (rag-light)', () => {
+    const r = fetchAnalysisPayloadInput.safeParse({
+      keyword: '테스트',
+      dateRange: { start: '2026-04-19T00:00:00Z', end: '2026-04-26T00:00:00Z' },
+      ragOptions: { commentTopK: 200 },
+    });
+    expect(r.success).toBe(true);
+  });
 });

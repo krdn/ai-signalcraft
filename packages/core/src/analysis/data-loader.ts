@@ -19,7 +19,30 @@ import { RAG_CONFIGS, type RAGConfig } from './preprocessing/rag-retriever';
 
 // 토큰 절약 상수 — collector API에 인자로 전달 (기본값, 호출부에서 override 가능)
 const MAX_ARTICLE_CONTENT_LENGTH = 500;
-const MAX_COMMENTS_RAW = 5000;
+
+/**
+ * collector fullset payload — 분석 DB 영속화(article_jobs/comment_jobs) 입력으로 사용.
+ * articles/videos/comments는 Drizzle insert 형태.
+ */
+export type CollectorFullset = {
+  articles: (typeof articles.$inferInsert)[];
+  videos: (typeof videos.$inferInsert)[];
+  comments: (typeof comments.$inferInsert)[];
+};
+
+export type CollectionMeta = {
+  sources: string[];
+  sourceCounts: Record<string, { articles: number; comments: number; videos: number }>;
+  window: { start: string; end: string };
+  truncated: boolean;
+};
+
+export type CollectorAnalysisResult = {
+  input: AnalysisInput;
+  samplingStats: AppliedSamplingStats;
+  fullset: CollectorFullset;
+  collectionMeta: CollectionMeta;
+};
 
 /**
  * 수집 작업 데이터를 분석 입력 형식으로 로드
@@ -153,7 +176,7 @@ export interface LoadFromCollectorOptions {
  */
 export async function loadAnalysisInputViaCollector(
   jobId: number,
-): Promise<{ input: AnalysisInput; samplingStats: AppliedSamplingStats }> {
+): Promise<CollectorAnalysisResult> {
   const [job] = await getDb()
     .select()
     .from(collectionJobs)
@@ -194,193 +217,90 @@ export function shouldUseCollectorLoader(): boolean {
 
 export async function loadAnalysisInputFromCollector(
   opts: LoadFromCollectorOptions,
-): Promise<{ input: AnalysisInput; samplingStats: AppliedSamplingStats }> {
+): Promise<CollectorAnalysisResult> {
   const client = getCollectorClient();
   const maxContentLength = opts.maxContentLength ?? MAX_ARTICLE_CONTENT_LENGTH;
 
-  // P2+P4: RAG 프리셋이면 collector mode='rag'로 의미 검색 (한도×3 풀) + 부족하면 mode='all' 보충
-  // 그 외(none/light/standard/aggressive)는 기존 mode='all' (legacy 경로)
   const ragConfig: RAGConfig | null = opts.ragPreset ? RAG_CONFIGS[opts.ragPreset] : null;
+  const articleVideoTarget = ragConfig
+    ? ragConfig.articleTopK + ragConfig.clusterRepresentatives
+    : 0;
+  const commentTarget = ragConfig?.commentTopK ?? 0;
+  const RAG_TOPK_CAP = 500;
+  // 0이면 RAG 안 함(전체 유지 의미). 그 외에는 ×3 + cap.
+  const articleVideoTopK =
+    articleVideoTarget > 0 ? Math.min(articleVideoTarget * 3, RAG_TOPK_CAP) : 0;
+  const commentTopK = commentTarget > 0 ? Math.min(commentTarget * 3, RAG_TOPK_CAP) : 0;
+
   const dateRangeIso = {
     start: opts.dateRange.start.toISOString(),
     end: opts.dateRange.end.toISOString(),
   };
 
-  type CollectorItem = {
-    source: string;
-    sourceId: string;
-    itemType: 'article' | 'video' | 'comment';
-    title: string | null;
-    content: string | null;
-    publisher: string | null;
-    publishedAt: string | Date | null;
-    author: string | null;
-    metrics: { viewCount?: number; likeCount?: number; commentCount?: number } | null;
-  };
+  // 단일 RPC: ragSample + fullset + collectionMeta
+  // articleVideoTopK=0이면 ragOptions에 그 키를 보내지 않는다 —
+  // collector는 미지정 itemType을 ragSample에 넣지 않고, 분석 측이 fullset으로 폴백한다.
+  const resp = await client.items.fetchAnalysisPayload.query({
+    keyword: opts.keyword,
+    dateRange: dateRangeIso,
+    sources: opts.sources,
+    subscriptionId: opts.subscriptionId,
+    ragOptions:
+      articleVideoTopK > 0 || commentTopK > 0
+        ? {
+            ...(articleVideoTopK > 0 ? { articleVideoTopK } : {}),
+            ...(commentTopK > 0 ? { commentTopK } : {}),
+          }
+        : undefined,
+    maxContentLength,
+  });
 
-  /** source+sourceId+itemType 기준 dedup — collector raw_items_dedup_uniq와 동일 */
-  const dedupItems = (items: CollectorItem[]): CollectorItem[] => {
-    const seen = new Set<string>();
-    const out: CollectorItem[] = [];
-    for (const it of items) {
-      const key = `${it.source}::${it.sourceId}::${it.itemType}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      out.push(it);
-    }
-    return out;
-  };
+  // ragSample → AnalysisInput
+  // itemType별로 독립 폴백 — ragSample에 해당 itemType이 없으면 fullset 전체를 사용.
+  // rag-light처럼 articleTopK=0인 프리셋은 ragSample에 기사가 없으므로 fullset에서 전체 유지.
+  // rag-standard처럼 RAG가 유사도 미달로 0건을 반환했을 때도 fullset으로 자동 복구.
+  const ragArticles = resp.ragSample.filter((i) => i.itemType === 'article');
+  const ragVideos = resp.ragSample.filter((i) => i.itemType === 'video');
+  const ragComments = resp.ragSample.filter((i) => i.itemType === 'comment');
 
-  // 기사/영상과 댓글은 다른 itemType — 병렬 호출
-  // RAG 모드일 때 한도(target = articleTopK + clusterRepresentatives, commentTopK)의 3배를 받아
-  // 후속 시계열 샘플링이 의미 풀 안에서 시간 균등 정렬을 다시 적용한다.
-  const articleVideoTarget = ragConfig
-    ? ragConfig.articleTopK + ragConfig.clusterRepresentatives
-    : 0;
-  const commentTarget = ragConfig?.commentTopK ?? 0;
-  // collector ragOptions.topK는 schema에서 max 500으로 제한된다 (apps/collector/src/server/trpc/items.ts:46).
-  // 한도 ×3을 원칙으로 하되 500 cap을 적용 — rag-standard 댓글 600 → 500. 의미 풀이 충분히 큰 데다
-  // 후속 시계열 후샘플(stratifiedSample)이 200으로 줄이므로 300/500 차이는 분석 결과에 큰 영향 없다.
-  const RAG_TOPK_CAP = 500;
-  const articleVideoTopK = Math.min(articleVideoTarget * 3, RAG_TOPK_CAP);
-  const commentTopK = Math.min(commentTarget * 3, RAG_TOPK_CAP);
+  const articleRows =
+    ragArticles.length > 0 ? ragArticles : resp.fullset.filter((i) => i.itemType === 'article');
+  const videoRows =
+    ragVideos.length > 0 ? ragVideos : resp.fullset.filter((i) => i.itemType === 'video');
+  const commentRows =
+    ragComments.length > 0 ? ragComments : resp.fullset.filter((i) => i.itemType === 'comment');
 
-  const [articlesVideosResp, commentsResp] = await Promise.all([
-    ragConfig && articleVideoTopK > 0
-      ? client.items.query.query({
-          keyword: opts.keyword,
-          dateRange: dateRangeIso,
-          sources: opts.sources,
-          itemTypes: ['article', 'video'],
-          subscriptionId: opts.subscriptionId,
-          mode: 'rag',
-          ragOptions: { topK: articleVideoTopK, semanticQuery: opts.keyword },
-          maxContentLength,
-          limit: articleVideoTopK,
-        })
-      : client.items.query.query({
-          keyword: opts.keyword,
-          dateRange: dateRangeIso,
-          sources: opts.sources,
-          itemTypes: ['article', 'video'],
-          subscriptionId: opts.subscriptionId,
-          mode: 'all',
-          maxContentLength,
-          limit: 2000,
-        }),
-    ragConfig && commentTopK > 0
-      ? client.items.query.query({
-          keyword: opts.keyword,
-          dateRange: dateRangeIso,
-          sources: opts.sources,
-          itemTypes: ['comment'],
-          subscriptionId: opts.subscriptionId,
-          mode: 'rag',
-          ragOptions: { topK: commentTopK, semanticQuery: opts.keyword },
-          maxComments: maxContentLength,
-          limit: commentTopK,
-        })
-      : client.items.query.query({
-          keyword: opts.keyword,
-          dateRange: dateRangeIso,
-          sources: opts.sources,
-          itemTypes: ['comment'],
-          subscriptionId: opts.subscriptionId,
-          mode: 'all',
-          maxComments: maxContentLength,
-          limit: MAX_COMMENTS_RAW,
-        }),
-  ]);
-
-  // RAG 보충 호출: 응답이 요청 topK의 80% 미만이면 mode='all'로 빈자리 채움
-  let articleVideoItems = articlesVideosResp.items as unknown as CollectorItem[];
-  let commentItems = commentsResp.items as unknown as CollectorItem[];
-
-  if (ragConfig) {
-    const fillTasks: Array<Promise<void>> = [];
-    if (articleVideoTopK > 0 && articleVideoItems.length < articleVideoTopK * 0.8) {
-      fillTasks.push(
-        client.items.query
-          .query({
-            keyword: opts.keyword,
-            dateRange: dateRangeIso,
-            sources: opts.sources,
-            itemTypes: ['article', 'video'],
-            subscriptionId: opts.subscriptionId,
-            mode: 'all',
-            maxContentLength,
-            limit: 2000,
-          })
-          .then((fillResp) => {
-            articleVideoItems = dedupItems([
-              ...articleVideoItems,
-              ...(fillResp.items as unknown as CollectorItem[]),
-            ]);
-          }),
-      );
-    }
-    if (commentTopK > 0 && commentItems.length < commentTopK * 0.8) {
-      fillTasks.push(
-        client.items.query
-          .query({
-            keyword: opts.keyword,
-            dateRange: dateRangeIso,
-            sources: opts.sources,
-            itemTypes: ['comment'],
-            subscriptionId: opts.subscriptionId,
-            mode: 'all',
-            maxComments: maxContentLength,
-            limit: MAX_COMMENTS_RAW,
-          })
-          .then((fillResp) => {
-            commentItems = dedupItems([
-              ...commentItems,
-              ...(fillResp.items as unknown as CollectorItem[]),
-            ]);
-          }),
-      );
-    }
-    if (fillTasks.length > 0) {
-      await Promise.all(fillTasks);
-    }
-  }
-
-  const toDate = (d: string | Date | null): Date => {
-    if (!d) return new Date(0);
-    return d instanceof Date ? d : new Date(d);
-  };
-
-  const articlesOut = articleVideoItems
-    .filter((i) => i.itemType === 'article' && i.title)
+  const articlesOut = articleRows
+    .filter((a) => a.title)
     .map((a) => ({
       title: a.title as string,
-      content: a.content,
-      publisher: a.publisher,
-      publishedAt: toDate(a.publishedAt),
-      source: a.source,
+      content: (a.content as string) ?? null,
+      publisher: (a.publisher as string) ?? null,
+      publishedAt: toDate(a.publishedAt as string | Date | null),
+      source: a.source as string,
     }));
 
-  const videosOut = articleVideoItems
-    .filter((i) => i.itemType === 'video' && i.title)
+  const videosOut = videoRows
+    .filter((v) => v.title)
     .map((v) => ({
       title: v.title as string,
-      description: v.content,
-      channelTitle: v.publisher,
-      viewCount: v.metrics?.viewCount ?? null,
-      likeCount: v.metrics?.likeCount ?? null,
-      publishedAt: toDate(v.publishedAt),
-      content: v.content,
+      description: (v.content as string) ?? null,
+      channelTitle: (v.publisher as string) ?? null,
+      viewCount: ((v.metrics as Record<string, number> | null)?.viewCount as number) ?? null,
+      likeCount: ((v.metrics as Record<string, number> | null)?.likeCount as number) ?? null,
+      publishedAt: toDate(v.publishedAt as string | Date | null),
+      content: (v.content as string) ?? null,
     }));
 
-  const commentsOut = commentItems
+  const commentsOut = commentRows
     .filter((c) => c.content)
     .map((c) => ({
       content: c.content as string,
-      source: c.source,
-      author: c.author,
-      likeCount: c.metrics?.likeCount ?? null,
+      source: c.source as string,
+      author: (c.author as string) ?? null,
+      likeCount: ((c.metrics as Record<string, number> | null)?.likeCount as number) ?? null,
       dislikeCount: null,
-      publishedAt: toDate(c.publishedAt),
+      publishedAt: toDate(c.publishedAt as string | Date | null),
     }));
 
   const rawInput: AnalysisInput = {
@@ -389,10 +309,7 @@ export async function loadAnalysisInputFromCollector(
     articles: articlesOut,
     videos: videosOut,
     comments: commentsOut,
-    dateRange: {
-      start: opts.dateRange.start,
-      end: opts.dateRange.end,
-    },
+    dateRange: { start: opts.dateRange.start, end: opts.dateRange.end },
     domain: opts.domain,
   };
 
@@ -402,7 +319,78 @@ export async function loadAnalysisInputFromCollector(
     totalComments: rawInput.comments.length,
     totalVideos: rawInput.videos.length,
   });
-
   const sampled = applyTimeSeriesSampling(rawInput, budget);
-  return { input: sampled.input, samplingStats: sampled.stats };
+
+  // fullset → DB upsert 형태로 변환 (linkage 복원용)
+  const fullset = mapFullsetToInsertShape(resp.fullset);
+
+  return {
+    input: sampled.input,
+    samplingStats: sampled.stats,
+    fullset,
+    collectionMeta: resp.collectionMeta,
+  };
+}
+
+function toDate(d: string | Date | null): Date {
+  if (!d) return new Date(0);
+  return d instanceof Date ? d : new Date(d);
+}
+
+function mapFullsetToInsertShape(rows: Array<Record<string, unknown>>): CollectorFullset {
+  const articleRows: (typeof articles.$inferInsert)[] = [];
+  const videoRows: (typeof videos.$inferInsert)[] = [];
+  const commentRows: (typeof comments.$inferInsert)[] = [];
+
+  for (const r of rows) {
+    const itemType = r.itemType as string;
+    const source = r.source as string;
+    const sourceId = r.sourceId as string;
+    const title = (r.title as string) ?? '';
+    const url = (r.url as string) ?? '';
+    const metrics = r.metrics as Record<string, number> | null;
+    const pub = r.publishedAt ? toDate(r.publishedAt as string) : null;
+
+    if (itemType === 'article') {
+      articleRows.push({
+        source,
+        sourceId,
+        url,
+        title,
+        content: (r.content as string) ?? null,
+        author: (r.author as string) ?? null,
+        publisher: (r.publisher as string) ?? null,
+        publishedAt: pub,
+      });
+    } else if (itemType === 'video') {
+      videoRows.push({
+        source,
+        sourceId,
+        url,
+        title,
+        description: (r.content as string) ?? null,
+        channelTitle: (r.publisher as string) ?? null,
+        viewCount: metrics?.viewCount ?? null,
+        likeCount: metrics?.likeCount ?? null,
+        commentCount: metrics?.commentCount ?? null,
+        publishedAt: pub,
+        durationSec: (r.durationSec as number) ?? null,
+        transcript: (r.transcript as string) ?? null,
+        transcriptLang: (r.transcriptLang as string) ?? null,
+      });
+    } else if (itemType === 'comment') {
+      commentRows.push({
+        source,
+        sourceId,
+        content: (r.content as string) ?? '',
+        author: (r.author as string) ?? null,
+        likeCount: metrics?.likeCount ?? 0,
+        dislikeCount: 0,
+        publishedAt: pub,
+        parentId: (r.parentSourceId as string) ?? null,
+      });
+    }
+  }
+
+  return { articles: articleRows, videos: videoRows, comments: commentRows };
 }
