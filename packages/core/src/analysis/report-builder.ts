@@ -1,7 +1,11 @@
 // 파이프라인 리포트 생성 — 조기 종료/정상 종료 시 리포트 빌드
+import { eq } from 'drizzle-orm';
+import { getDb } from '../db';
+import { collectionJobs } from '../db/schema/collections';
 import { generateIntegratedReport } from '../report/generator';
 import { updateJobProgress } from '../pipeline/persist';
 import { persistAnalysisReport } from './persist-analysis';
+import { buildQualityMetadata, appendQualityFooterToMarkdown } from './quality-metadata';
 import type { AnalysisModuleResult, AnalysisInput } from './types';
 
 /** 조기 종료 시 결과 빌드 헬퍼 (취소/비용 한도 초과) */
@@ -110,10 +114,25 @@ async function saveFallbackReport(
   failedModules: string[],
 ) {
   try {
+    // Phase 3: fallback 경로에서도 progress._events에서 부분 실패/얕은 표본 신호를 추출해
+    //          metadata + markdown footer에 반영. (정상 보고서 경로의 generator.ts와 동일 정책)
+    let qualityMeta;
+    try {
+      const [jobRow] = await getDb()
+        .select({ progress: collectionJobs.progress })
+        .from(collectionJobs)
+        .where(eq(collectionJobs.id, input.jobId))
+        .limit(1);
+      qualityMeta = buildQualityMetadata(jobRow?.progress as Record<string, unknown> | null);
+    } catch {
+      qualityMeta = buildQualityMetadata(null);
+    }
+    const finalMarkdown = appendQualityFooterToMarkdown(markdownContent, qualityMeta);
+
     await persistAnalysisReport({
       jobId: input.jobId,
       title: `${input.keyword} 종합 분석 리포트`,
-      markdownContent,
+      markdownContent: finalMarkdown,
       oneLiner,
       metadata: {
         keyword: input.keyword,
@@ -125,6 +144,9 @@ async function saveFallbackReport(
         modulesFailed: failedModules,
         totalTokens: 0,
         generatedAt: new Date().toISOString(),
+        modulesPartial: qualityMeta.modulesPartial,
+        warnings: qualityMeta.warnings,
+        qualityFlags: qualityMeta.qualityFlags,
       },
     });
   } catch (e) {

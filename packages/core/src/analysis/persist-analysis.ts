@@ -75,7 +75,11 @@ export async function persistAnalysisResult(data: typeof analysisResults.$inferI
 
 /**
  * 종합 분석 리포트 upsert (jobId 기준)
- * 기존 리포트가 있으면 갱신, 없으면 삽입
+ * 기존 리포트가 있으면 갱신, 없으면 삽입.
+ *
+ * metadata는 jsonb merge(`||`)로 갱신해 호출자가 부분 metadata를 보내도
+ * 기존에 있던 다른 키(예: qualityFlags/modulesPartial — Phase 3 신호)가 사라지지 않게 한다.
+ * 같은 키는 우측(excluded) 우선이라 의도된 갱신은 그대로 적용된다.
  */
 export async function persistAnalysisReport(data: typeof analysisReports.$inferInsert) {
   const [report] = await getDb()
@@ -87,7 +91,7 @@ export async function persistAnalysisReport(data: typeof analysisReports.$inferI
         title: sql`excluded.title`,
         markdownContent: sql`excluded.markdown_content`,
         oneLiner: sql`excluded.one_liner`,
-        metadata: sql`excluded.metadata`,
+        metadata: sql`COALESCE(${analysisReports.metadata}, '{}'::jsonb) || COALESCE(excluded.metadata, '{}'::jsonb)`,
       },
     })
     .returning();
