@@ -1,158 +1,164 @@
-// P2+P4 패치 검증: collector mode='rag' 호출 + 보충 동작 확인
+// fetchAnalysisPayload 단일 RPC 기반 data-loader 검증
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { loadAnalysisInputViaCollector } from '../src/analysis/data-loader';
 
-const queryMock = vi.fn();
+const fetchAnalysisPayloadMock = vi.fn();
 vi.mock('../src/collector-client', () => ({
   getCollectorClient: () => ({
-    items: { query: { query: queryMock } },
+    items: { fetchAnalysisPayload: { query: fetchAnalysisPayloadMock } },
   }),
 }));
 
+const dbMock = vi.fn();
 vi.mock('../src/db', () => ({
   getDb: () => ({
     select: () => ({
       from: () => ({
         where: () => ({
-          limit: () =>
-            Promise.resolve([
-              {
-                id: 1,
-                keyword: '오세훈',
-                startDate: new Date('2026-04-16T00:00:00Z'),
-                endDate: new Date('2026-04-23T23:59:59Z'),
-                domain: 'political',
-                options: { subscriptionId: 440, tokenOptimization: 'rag-standard' },
-              },
-            ]),
+          limit: () => dbMock(),
         }),
       }),
     }),
   }),
 }));
 
-describe('P2+P4 collector RAG 통합', () => {
+function makeRow(
+  itemType: 'article' | 'video' | 'comment',
+  idx: number,
+  overrides: Record<string, unknown> = {},
+) {
+  return {
+    time: new Date('2026-04-20T12:00:00Z'),
+    subscriptionId: 440,
+    source:
+      itemType === 'video' ? 'youtube' : itemType === 'comment' ? 'naver-comments' : 'naver-news',
+    sourceId: `${itemType}-${idx}`,
+    itemType,
+    url: `https://example.com/${itemType}/${idx}`,
+    title: itemType !== 'comment' ? `${itemType} title ${idx}` : null,
+    content: `내용 ${idx}`,
+    author: itemType === 'comment' ? `user${idx}` : null,
+    publisher: itemType !== 'comment' ? 'pub' : null,
+    publishedAt: new Date('2026-04-20T12:00:00Z').toISOString(),
+    parentSourceId: itemType === 'comment' ? `article-0` : null,
+    metrics: itemType === 'comment' ? { likeCount: idx } : null,
+    sentiment: null,
+    sentimentScore: null,
+    fetchedAt: new Date('2026-04-20T13:00:00Z'),
+    transcript: null,
+    transcriptLang: null,
+    durationSec: null,
+    ...overrides,
+  };
+}
+
+const baseJob = {
+  id: 1,
+  keyword: '오세훈',
+  startDate: new Date('2026-04-16T00:00:00Z'),
+  endDate: new Date('2026-04-23T23:59:59Z'),
+  domain: 'political',
+  options: { subscriptionId: 440, tokenOptimization: 'rag-standard' },
+};
+
+describe('fetchAnalysisPayload 단일 RPC 기반 data-loader', () => {
   beforeEach(() => {
-    queryMock.mockReset();
+    fetchAnalysisPayloadMock.mockReset();
+    dbMock.mockReset();
   });
 
-  function makeItems(itemType: 'article' | 'comment' | 'video', count: number, dayOffset = 0) {
-    return Array.from({ length: count }).map((_, i) => ({
-      source:
-        itemType === 'video' ? 'youtube' : itemType === 'comment' ? 'naver-comments' : 'naver-news',
-      sourceId: `${itemType}-${dayOffset}-${i}`,
-      itemType,
-      title: itemType !== 'comment' ? `${itemType} title ${i}` : null,
-      content: `내용 ${i}`,
-      publisher: itemType !== 'comment' ? 'pub' : null,
-      publishedAt: new Date(Date.UTC(2026, 3, 16 + dayOffset, 12)).toISOString(),
-      author: itemType === 'comment' ? `user${i}` : null,
-      metrics: itemType === 'comment' ? { likeCount: i } : null,
-    }));
-  }
+  it('ragConfig 있을 때(rag-standard): ragSample에서 input 구성, fullset/collectionMeta도 반환', async () => {
+    dbMock.mockResolvedValue([baseJob]);
 
-  it('rag-standard 프리셋 시 collector mode="rag"로 topK*3 호출한다 (500 cap 적용)', async () => {
-    // 두 호출 모두 충분히 채워 fill 발동 안 하도록 (article 390 / comment 500 cap)
-    queryMock.mockImplementation((args: any) => {
-      const isComment = args.itemTypes?.includes('comment');
-      const itemType = isComment ? 'comment' : 'article';
-      const n = isComment ? 500 : 390;
-      return Promise.resolve({
-        items: makeItems(itemType, n),
-        total: n,
-        mode: args.mode,
-        nextCursor: null,
-      });
-    });
+    const ragSample = [
+      ...Array.from({ length: 3 }, (_, i) => makeRow('article', i)),
+      ...Array.from({ length: 2 }, (_, i) => makeRow('comment', i)),
+    ];
+    const fullset = [
+      ...Array.from({ length: 10 }, (_, i) => makeRow('article', i)),
+      ...Array.from({ length: 5 }, (_, i) => makeRow('comment', i)),
+    ];
+    const collectionMeta = {
+      sources: ['naver-news', 'naver-comments'],
+      sourceCounts: {
+        'naver-news': { articles: 10, comments: 0, videos: 0 },
+        'naver-comments': { articles: 0, comments: 5, videos: 0 },
+      },
+      window: { start: '2026-04-16T00:00:00.000Z', end: '2026-04-23T23:59:59.000Z' },
+      truncated: false,
+    };
 
-    await loadAnalysisInputViaCollector(1);
-
-    // RAG 호출만 (보충 없음): article+video 1, comment 1 = 2회
-    expect(queryMock).toHaveBeenCalledTimes(2);
-    const calls = queryMock.mock.calls.map((c) => c[0]);
-    const articleVideoCall = calls.find((c: any) => c.itemTypes?.includes('article'));
-    const commentCall = calls.find((c: any) => c.itemTypes?.includes('comment'));
-
-    // rag-standard: articleTopK 100 + clusterReps 30 = 130 → ×3 = 390 (cap 미적용)
-    expect(articleVideoCall.mode).toBe('rag');
-    expect(articleVideoCall.ragOptions?.topK).toBe(390);
-    expect(articleVideoCall.ragOptions?.semanticQuery).toBe('오세훈');
-
-    // commentTopK 200 → ×3 = 600 → cap 500
-    expect(commentCall.mode).toBe('rag');
-    expect(commentCall.ragOptions?.topK).toBe(500);
-  });
-
-  it('RAG 응답이 topK 80% 미만이면 mode="all"로 보충 호출한다', async () => {
-    let callIdx = 0;
-    queryMock.mockImplementation((args: any) => {
-      callIdx++;
-      // 1,2번째: RAG 응답 (부족)
-      if (args.mode === 'rag') {
-        return Promise.resolve({
-          items: makeItems(args.itemTypes[0], 50), // 80% 미만
-          total: 50,
-          mode: 'rag',
-          nextCursor: null,
-        });
-      }
-      // 3,4번째: mode='all' 보충
-      return Promise.resolve({
-        items: makeItems(args.itemTypes[0], 100, 1),
-        total: 100,
-        mode: 'all',
-        nextCursor: null,
-      });
-    });
+    fetchAnalysisPayloadMock.mockResolvedValue({ ragSample, fullset, collectionMeta });
 
     const result = await loadAnalysisInputViaCollector(1);
 
-    // rag(2) + fill(2) = 4번
-    expect(queryMock).toHaveBeenCalledTimes(4);
-    const fillCalls = queryMock.mock.calls.filter((c) => c[0].mode === 'all');
-    expect(fillCalls.length).toBe(2);
+    // 단일 RPC 호출 확인
+    expect(fetchAnalysisPayloadMock).toHaveBeenCalledTimes(1);
 
-    // 보충된 결과가 input에 반영됨
-    expect(result.input.articles.length).toBeGreaterThan(0);
-    void callIdx;
+    // ragOptions가 rag-standard 프리셋 기준으로 설정되었는지 확인
+    // rag-standard: articleTopK=100, clusterReps=30 → (100+30)*3=390 (cap 미적용)
+    // commentTopK=200 → 200*3=600 → cap 500
+    const call = fetchAnalysisPayloadMock.mock.calls[0][0];
+    expect(call.ragOptions).toBeDefined();
+    expect(call.ragOptions.articleVideoTopK).toBe(390);
+    expect(call.ragOptions.commentTopK).toBe(500);
+
+    // input은 ragSample(3개 article, 2개 comment)에서 구성
+    expect(result.input.articles.length).toBe(3);
+    expect(result.input.comments.length).toBe(2);
+
+    // fullset은 Drizzle insert 형태로 변환
+    expect(result.fullset.articles.length).toBe(10);
+    expect(result.fullset.comments.length).toBe(5);
+    expect(result.fullset.articles[0]).toHaveProperty('source', 'naver-news');
+    expect(result.fullset.articles[0]).toHaveProperty('sourceId');
+    expect(result.fullset.articles[0]).toHaveProperty('url');
+
+    // collectionMeta 전달
+    expect(result.collectionMeta.truncated).toBe(false);
+    expect(result.collectionMeta.sources).toContain('naver-news');
   });
 
-  it('source+sourceId+itemType 중복은 dedup된다', async () => {
-    let call = 0;
-    queryMock.mockImplementation((args: any) => {
-      call++;
-      if (args.mode === 'rag' && args.itemTypes.includes('article')) {
-        // 동일 sourceId 5개 + 다른 5개 (총 10개 중 5개는 fill에서 중복)
-        return Promise.resolve({
-          items: [
-            ...makeItems('article', 5).map((it) => ({ ...it, sourceId: `dup-${it.sourceId}` })),
-            ...makeItems('article', 5),
-          ],
-          total: 10,
-          mode: 'rag',
-          nextCursor: null,
-        });
-      }
-      if (args.mode === 'all' && args.itemTypes.includes('article')) {
-        // fill: 위 dup-* 5개 + 새 5개
-        return Promise.resolve({
-          items: [
-            ...makeItems('article', 5).map((it) => ({ ...it, sourceId: `dup-${it.sourceId}` })),
-            ...makeItems('article', 5).map((it) => ({ ...it, sourceId: `new-${it.sourceId}` })),
-          ],
-          total: 10,
-          mode: 'all',
-          nextCursor: null,
-        });
-      }
-      return Promise.resolve({ items: [], total: 0, mode: args.mode, nextCursor: null });
-    });
+  it('ragConfig 없을 때(tokenOptimization 미설정): ragOptions 미전달, fullset에서 input 구성', async () => {
+    dbMock.mockResolvedValue([
+      {
+        ...baseJob,
+        options: { subscriptionId: 440 }, // tokenOptimization 없음
+      },
+    ]);
+
+    const fullset = [
+      ...Array.from({ length: 5 }, (_, i) => makeRow('article', i)),
+      ...Array.from({ length: 3 }, (_, i) => makeRow('comment', i)),
+    ];
+    const collectionMeta = {
+      sources: ['naver-news', 'naver-comments'],
+      sourceCounts: {
+        'naver-news': { articles: 5, comments: 0, videos: 0 },
+        'naver-comments': { articles: 0, comments: 3, videos: 0 },
+      },
+      window: { start: '2026-04-16T00:00:00.000Z', end: '2026-04-23T23:59:59.000Z' },
+      truncated: false,
+    };
+
+    // ragConfig 없음 → ragSample=[]
+    fetchAnalysisPayloadMock.mockResolvedValue({ ragSample: [], fullset, collectionMeta });
 
     const result = await loadAnalysisInputViaCollector(1);
-    // RAG 10 + fill 10 - 중복 5 = 15개
-    // article만 검증 (comment는 빈 응답이라 0)
-    void call;
-    expect(result.input.articles.length).toBeLessThanOrEqual(15);
-    expect(result.input.articles.length).toBeGreaterThanOrEqual(10);
+
+    expect(fetchAnalysisPayloadMock).toHaveBeenCalledTimes(1);
+
+    // ragOptions가 undefined여야 함
+    const call = fetchAnalysisPayloadMock.mock.calls[0][0];
+    expect(call.ragOptions).toBeUndefined();
+
+    // ragSample이 비어 있으므로 fullset에서 input 구성
+    expect(result.input.articles.length).toBe(5);
+    expect(result.input.comments.length).toBe(3);
+
+    // fullset도 정상 변환
+    expect(result.fullset.articles.length).toBe(5);
+    expect(result.fullset.comments.length).toBe(3);
+    expect(result.collectionMeta.truncated).toBe(false);
   });
 });
