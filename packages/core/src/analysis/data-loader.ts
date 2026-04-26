@@ -199,9 +199,11 @@ export async function loadAnalysisInputViaCollector(
 
   const VALID_SOURCES = ['naver-news', 'youtube', 'dcinside', 'fmkorea', 'clien'] as const;
   type ValidSource = (typeof VALID_SOURCES)[number];
-  const optsSources = (opts?.sources as string[] | undefined)?.filter((s): s is ValidSource =>
-    (VALID_SOURCES as readonly string[]).includes(s),
-  );
+  const optsSources = Array.isArray(opts?.sources)
+    ? (opts.sources as string[]).filter((s): s is ValidSource =>
+        (VALID_SOURCES as readonly string[]).includes(s),
+      )
+    : undefined;
 
   return loadAnalysisInputFromCollector({
     jobId,

@@ -101,7 +101,7 @@ export async function runAnalysisPipeline(
     const collectorResult = loadResult as CollectorAnalysisResult;
     await updateJobProgress(jobId, {
       persist: { status: 'running', source: 'collector' },
-    });
+    }).catch((err) => logError('pipeline-orchestrator', err));
     try {
       const persistResult = await persistFromCollectorPayload(jobId, collectorResult.fullset);
       await updateJobProgress(jobId, {
@@ -112,7 +112,7 @@ export async function runAnalysisPipeline(
           videos: persistResult.videos,
           comments: persistResult.comments,
         },
-      });
+      }).catch((err) => logError('pipeline-orchestrator', err));
     } catch (err) {
       await updateJobProgress(jobId, {
         persist: {
@@ -120,7 +120,7 @@ export async function runAnalysisPipeline(
           source: 'collector',
           error: err instanceof Error ? err.message : String(err),
         },
-      });
+      }).catch((err) => logError('pipeline-orchestrator', err));
       // 분석 자체는 RAG sample 입력으로 계속 진행 (linkage 누락은 가시성 손실이지 분석 차단 아님)
       try {
         await appendJobEvent(
@@ -128,8 +128,8 @@ export async function runAnalysisPipeline(
           'warn',
           `persistFromCollectorPayload 실패: ${err instanceof Error ? err.message : String(err)}`,
         );
-      } catch {
-        // 이벤트 로깅 실패는 무시
+      } catch (err) {
+        logError('pipeline-orchestrator', err);
       }
     }
   }
@@ -179,7 +179,7 @@ export async function runAnalysisPipeline(
 
   // 구독 단축 경로: collector API에서 로드한 데이터 통계를 progress에 기록
   // (수집/정규화 단계가 없으므로 UI에서 건수를 표시할 수 있도록)
-  if (options?.useCollectorLoader || jobOptions.useCollectorLoader) {
+  if (isCollectorPath) {
     const subStats: Record<
       string,
       { status: string; articles: number; comments: number; videos: number }
@@ -315,7 +315,7 @@ export async function runAnalysisPipeline(
   // 분석 측 ragRetrieve(분석 DB articles 검색)는 구독 경로에서 무효화되어 있어 우회한다.
   // 시계열 후샘플(stratifiedSample)만 호출해 한도 내로 줄이면서 시간 분포를 보존.
   const usingCollectorRag =
-    (options?.useCollectorLoader || jobOptions.useCollectorLoader) &&
+    isCollectorPath &&
     (tokenOptimization === 'rag-light' ||
       tokenOptimization === 'rag-standard' ||
       tokenOptimization === 'rag-aggressive');
