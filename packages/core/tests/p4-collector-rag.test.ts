@@ -119,6 +119,53 @@ describe('fetchAnalysisPayload 단일 RPC 기반 data-loader', () => {
     expect(result.collectionMeta.sources).toContain('naver-news');
   });
 
+  it('rag-light 프리셋: 기사는 fullset 전체 유지, 댓글만 RAG 필터', async () => {
+    dbMock.mockResolvedValue([
+      {
+        ...baseJob,
+        options: { subscriptionId: 440, tokenOptimization: 'rag-light' },
+      },
+    ]);
+
+    // ragSample: 댓글만 5건 (RAG 결과 — 기사는 articleTopK=0이므로 collector가 보내지 않음)
+    const ragSample = Array.from({ length: 5 }, (_, i) => makeRow('comment', i));
+    // fullset: 기사 5건 + 댓글 10건
+    const fullset = [
+      ...Array.from({ length: 5 }, (_, i) => makeRow('article', i)),
+      ...Array.from({ length: 10 }, (_, i) => makeRow('comment', i)),
+    ];
+    const collectionMeta = {
+      sources: ['naver-news', 'naver-comments'],
+      sourceCounts: {
+        'naver-news': { articles: 5, comments: 0, videos: 0 },
+        'naver-comments': { articles: 0, comments: 10, videos: 0 },
+      },
+      window: { start: '2026-04-16T00:00:00.000Z', end: '2026-04-23T23:59:59.000Z' },
+      truncated: false,
+    };
+
+    fetchAnalysisPayloadMock.mockResolvedValue({ ragSample, fullset, collectionMeta });
+
+    const result = await loadAnalysisInputViaCollector(1);
+
+    expect(fetchAnalysisPayloadMock).toHaveBeenCalledTimes(1);
+
+    // rag-light: articleTopK=0 → articleVideoTopK 키 없음, commentTopK=200*3=600→cap 500
+    const call = fetchAnalysisPayloadMock.mock.calls[0][0];
+    expect(call.ragOptions).toBeDefined();
+    expect(call.ragOptions).not.toHaveProperty('articleVideoTopK');
+    expect(call.ragOptions.commentTopK).toBe(500);
+
+    // 기사는 ragSample에 없으므로 fullset(5건)에서 폴백
+    expect(result.input.articles.length).toBe(5);
+    // 댓글은 ragSample(5건)에서
+    expect(result.input.comments.length).toBe(5);
+
+    // fullset 변환도 정상
+    expect(result.fullset.articles.length).toBe(5);
+    expect(result.fullset.comments.length).toBe(10);
+  });
+
   it('ragConfig 없을 때(tokenOptimization 미설정): ragOptions 미전달, fullset에서 input 구성', async () => {
     dbMock.mockResolvedValue([
       {

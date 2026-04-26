@@ -61,8 +61,10 @@ export const fetchAnalysisPayloadInput = z.object({
   subscriptionId: z.number().int().positive().optional(),
   ragOptions: z
     .object({
-      articleVideoTopK: z.number().int().min(1).max(500),
-      commentTopK: z.number().int().min(1).max(500),
+      // 각 필드를 독립 optional로 — rag-light처럼 기사는 전체 유지(articleVideoTopK 미지정),
+      // 댓글만 RAG 필터(commentTopK 지정)하는 케이스를 지원한다.
+      articleVideoTopK: z.number().int().min(1).max(500).optional(),
+      commentTopK: z.number().int().min(1).max(500).optional(),
     })
     .optional(),
   maxContentLength: z.number().int().positive().optional(),
@@ -744,69 +746,83 @@ export const itemsRouter = router({
 
       if (input.maxContentLength) truncateContent(fullsetRows, input.maxContentLength);
 
-      // ragSample: ragOptions가 주어지면 source별 분산 RAG, 아니면 빈 배열
+      // ragSample: ragOptions가 주어지면 source별 분산 RAG, 아니면 빈 배열.
+      // articleVideoTopK / commentTopK는 각각 optional — 지정된 itemType에 대해서만 RAG 호출.
+      // 미지정 itemType은 ragSample에 포함하지 않고, data-loader 측이 fullset으로 폴백한다.
       const ragSample: Array<Record<string, unknown>> = [];
       if (input.ragOptions) {
         const sources = input.sources?.length
           ? input.sources
           : (['naver-news', 'youtube', 'dcinside', 'fmkorea', 'clien'] as const);
-        const perSourceArticleTopK = Math.max(
-          1,
-          Math.ceil(input.ragOptions.articleVideoTopK / sources.length),
-        );
-        const perSourceCommentTopK = Math.max(
-          1,
-          Math.ceil(input.ragOptions.commentTopK / sources.length),
-        );
-        const qvec = await embedQuery(input.keyword);
-        const distExpr = sql<number>`${rawItems.embedding} <=> ${JSON.stringify(qvec)}::vector`;
 
-        const sourceQueries = sources.flatMap((s) => {
-          const articleSrcs = s === 'naver-news' ? ['naver-news'] : [s];
-          const commentSrcs = s === 'naver-news' ? ['naver-comments'] : [s];
-          const subCond = input.subscriptionId
-            ? eq(rawItems.subscriptionId, input.subscriptionId)
-            : sql`true`;
-          return [
-            ctx.db
-              .select({ ...baseColumns, _distance: distExpr })
-              .from(rawItems)
-              .where(
-                and(
-                  between(rawItems.time, start, end),
-                  subCond,
-                  inArray(rawItems.source, articleSrcs),
-                  inArray(rawItems.itemType, ['article', 'video']),
-                ),
-              )
-              .orderBy(distExpr)
-              .limit(perSourceArticleTopK),
-            ctx.db
-              .select({ ...baseColumns, _distance: distExpr })
-              .from(rawItems)
-              .where(
-                and(
-                  between(rawItems.time, start, end),
-                  subCond,
-                  inArray(rawItems.source, commentSrcs),
-                  eq(rawItems.itemType, 'comment'),
-                ),
-              )
-              .orderBy(distExpr)
-              .limit(perSourceCommentTopK),
-          ];
-        });
-        const results = await Promise.all(sourceQueries);
-        const seen = new Set<string>();
-        for (const rows of results) {
-          for (const r of rows as Array<Record<string, unknown>>) {
-            const key = `${r.source}::${r.sourceId}::${r.itemType}`;
-            if (seen.has(key)) continue;
-            seen.add(key);
-            ragSample.push(r);
+        const articleTopK = input.ragOptions.articleVideoTopK;
+        const commentTopK = input.ragOptions.commentTopK;
+        const perSourceArticle = articleTopK
+          ? Math.max(1, Math.ceil(articleTopK / sources.length))
+          : 0;
+        const perSourceComment = commentTopK
+          ? Math.max(1, Math.ceil(commentTopK / sources.length))
+          : 0;
+
+        if (perSourceArticle > 0 || perSourceComment > 0) {
+          const qvec = await embedQuery(input.keyword);
+          const distExpr = sql<number>`${rawItems.embedding} <=> ${JSON.stringify(qvec)}::vector`;
+
+          const sourceQueries = sources.flatMap((s) => {
+            const articleSrcs = s === 'naver-news' ? ['naver-news'] : [s];
+            const commentSrcs = s === 'naver-news' ? ['naver-comments'] : [s];
+            const subCond = input.subscriptionId
+              ? eq(rawItems.subscriptionId, input.subscriptionId)
+              : sql`true`;
+            const queries: Promise<Array<Record<string, unknown>>>[] = [];
+            if (perSourceArticle > 0) {
+              queries.push(
+                ctx.db
+                  .select({ ...baseColumns, _distance: distExpr })
+                  .from(rawItems)
+                  .where(
+                    and(
+                      between(rawItems.time, start, end),
+                      subCond,
+                      inArray(rawItems.source, articleSrcs),
+                      inArray(rawItems.itemType, ['article', 'video']),
+                    ),
+                  )
+                  .orderBy(distExpr)
+                  .limit(perSourceArticle) as unknown as Promise<Array<Record<string, unknown>>>,
+              );
+            }
+            if (perSourceComment > 0) {
+              queries.push(
+                ctx.db
+                  .select({ ...baseColumns, _distance: distExpr })
+                  .from(rawItems)
+                  .where(
+                    and(
+                      between(rawItems.time, start, end),
+                      subCond,
+                      inArray(rawItems.source, commentSrcs),
+                      eq(rawItems.itemType, 'comment'),
+                    ),
+                  )
+                  .orderBy(distExpr)
+                  .limit(perSourceComment) as unknown as Promise<Array<Record<string, unknown>>>,
+              );
+            }
+            return queries;
+          });
+          const results = await Promise.all(sourceQueries);
+          const seen = new Set<string>();
+          for (const rows of results) {
+            for (const r of rows) {
+              const key = `${r.source}::${r.sourceId}::${r.itemType}`;
+              if (seen.has(key)) continue;
+              seen.add(key);
+              ragSample.push(r);
+            }
           }
+          if (input.maxContentLength) truncateContent(ragSample, input.maxContentLength);
         }
-        if (input.maxContentLength) truncateContent(ragSample, input.maxContentLength);
       }
 
       // collectionMeta — source별 카운트

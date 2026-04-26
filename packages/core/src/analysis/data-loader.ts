@@ -227,8 +227,10 @@ export async function loadAnalysisInputFromCollector(
     : 0;
   const commentTarget = ragConfig?.commentTopK ?? 0;
   const RAG_TOPK_CAP = 500;
-  const articleVideoTopK = Math.min(articleVideoTarget * 3, RAG_TOPK_CAP);
-  const commentTopK = Math.min(commentTarget * 3, RAG_TOPK_CAP);
+  // 0이면 RAG 안 함(전체 유지 의미). 그 외에는 ×3 + cap.
+  const articleVideoTopK =
+    articleVideoTarget > 0 ? Math.min(articleVideoTarget * 3, RAG_TOPK_CAP) : 0;
+  const commentTopK = commentTarget > 0 ? Math.min(commentTarget * 3, RAG_TOPK_CAP) : 0;
 
   const dateRangeIso = {
     start: opts.dateRange.start.toISOString(),
@@ -236,27 +238,40 @@ export async function loadAnalysisInputFromCollector(
   };
 
   // 단일 RPC: ragSample + fullset + collectionMeta
+  // articleVideoTopK=0이면 ragOptions에 그 키를 보내지 않는다 —
+  // collector는 미지정 itemType을 ragSample에 넣지 않고, 분석 측이 fullset으로 폴백한다.
   const resp = await client.items.fetchAnalysisPayload.query({
     keyword: opts.keyword,
     dateRange: dateRangeIso,
     sources: opts.sources,
     subscriptionId: opts.subscriptionId,
     ragOptions:
-      ragConfig && (articleVideoTopK > 0 || commentTopK > 0)
+      articleVideoTopK > 0 || commentTopK > 0
         ? {
-            articleVideoTopK: Math.max(1, articleVideoTopK),
-            commentTopK: Math.max(1, commentTopK),
+            ...(articleVideoTopK > 0 ? { articleVideoTopK } : {}),
+            ...(commentTopK > 0 ? { commentTopK } : {}),
           }
         : undefined,
     maxContentLength,
   });
 
   // ragSample → AnalysisInput
-  // ragSample이 비어 있으면(ragConfig 없음) fullset에서 분석 입력 생성
-  const sourceRows = resp.ragSample.length > 0 ? resp.ragSample : resp.fullset;
+  // itemType별로 독립 폴백 — ragSample에 해당 itemType이 없으면 fullset 전체를 사용.
+  // rag-light처럼 articleTopK=0인 프리셋은 ragSample에 기사가 없으므로 fullset에서 전체 유지.
+  // rag-standard처럼 RAG가 유사도 미달로 0건을 반환했을 때도 fullset으로 자동 복구.
+  const ragArticles = resp.ragSample.filter((i) => i.itemType === 'article');
+  const ragVideos = resp.ragSample.filter((i) => i.itemType === 'video');
+  const ragComments = resp.ragSample.filter((i) => i.itemType === 'comment');
 
-  const articlesOut = sourceRows
-    .filter((i) => i.itemType === 'article' && i.title)
+  const articleRows =
+    ragArticles.length > 0 ? ragArticles : resp.fullset.filter((i) => i.itemType === 'article');
+  const videoRows =
+    ragVideos.length > 0 ? ragVideos : resp.fullset.filter((i) => i.itemType === 'video');
+  const commentRows =
+    ragComments.length > 0 ? ragComments : resp.fullset.filter((i) => i.itemType === 'comment');
+
+  const articlesOut = articleRows
+    .filter((a) => a.title)
     .map((a) => ({
       title: a.title as string,
       content: (a.content as string) ?? null,
@@ -265,8 +280,8 @@ export async function loadAnalysisInputFromCollector(
       source: a.source as string,
     }));
 
-  const videosOut = sourceRows
-    .filter((i) => i.itemType === 'video' && i.title)
+  const videosOut = videoRows
+    .filter((v) => v.title)
     .map((v) => ({
       title: v.title as string,
       description: (v.content as string) ?? null,
@@ -277,8 +292,8 @@ export async function loadAnalysisInputFromCollector(
       content: (v.content as string) ?? null,
     }));
 
-  const commentsOut = sourceRows
-    .filter((c) => c.itemType === 'comment' && c.content)
+  const commentsOut = commentRows
+    .filter((c) => c.content)
     .map((c) => ({
       content: c.content as string,
       source: c.source as string,
