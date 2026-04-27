@@ -17,6 +17,7 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed-presets": "tsx src/db/seed-presets.ts",
+    "db:seed-manipulation": "tsx src/db/seed-manipulation-configs.ts",
     "worker": "tsx watch src/queue/worker-process.ts"
   },
   "dependencies": {
