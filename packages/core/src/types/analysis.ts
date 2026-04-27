@@ -6,6 +6,8 @@ export interface ModuleModelConfig {
   model: string;
   baseUrl?: string;
   apiKey?: string;
+  /** 모듈별 LLM 출력 토큰 상한 (없으면 kit 기본 8192) */
+  maxOutputTokens?: number;
 }
 
 // 프로바이더 키 정보 (per D-02, from provider-keys.ts)

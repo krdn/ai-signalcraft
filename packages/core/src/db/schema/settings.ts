@@ -17,6 +17,8 @@ export const modelSettings = pgTable(
     moduleName: text('module_name').notNull(),
     provider: text('provider').notNull(), // 'anthropic' | 'openai'
     model: text('model').notNull(),
+    /** 모듈별 LLM 출력 토큰 상한 (NULL이면 kit 기본 8192) */
+    maxOutputTokens: integer('max_output_tokens'),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },
   (table) => [uniqueIndex('model_settings_module_name_idx').on(table.moduleName)],
@@ -31,6 +33,8 @@ export const presetModelSettings = pgTable(
     moduleName: text('module_name').notNull(), // 'macro-view', 'fan-loyalty-index', etc.
     provider: text('provider').notNull(),
     model: text('model').notNull(),
+    /** 프리셋 모듈별 LLM 출력 토큰 상한 (NULL이면 글로벌 → kit 기본) */
+    maxOutputTokens: integer('max_output_tokens'),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },
   (table) => [

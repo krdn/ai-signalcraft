@@ -143,6 +143,7 @@ const dbModelConfigAdapter: ModelConfigAdapter = {
       model: cfg.model,
       ...(cfg.baseUrl ? { baseUrl: cfg.baseUrl } : {}),
       ...(cfg.apiKey ? { apiKey: cfg.apiKey } : {}),
+      ...(cfg.maxOutputTokens != null ? { maxOutputTokens: cfg.maxOutputTokens } : {}),
     };
   },
 };
@@ -157,6 +158,7 @@ export function createModelConfigAdapter(presetSlug?: string): ModelConfigAdapte
         model: cfg.model,
         ...(cfg.baseUrl ? { baseUrl: cfg.baseUrl } : {}),
         ...(cfg.apiKey ? { apiKey: cfg.apiKey } : {}),
+        ...(cfg.maxOutputTokens != null ? { maxOutputTokens: cfg.maxOutputTokens } : {}),
       };
     },
   };

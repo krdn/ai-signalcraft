@@ -45,10 +45,16 @@ export const settingsRouter = router({
         moduleName: z.string().min(1),
         provider: aiProviderEnum,
         model: z.string().min(1),
+        maxOutputTokens: z.number().int().min(512).max(65536).nullable().optional(),
       }),
     )
     .mutation(async ({ input }) => {
-      return upsertModelSetting(input.moduleName, input.provider, input.model);
+      return upsertModelSetting(
+        input.moduleName,
+        input.provider,
+        input.model,
+        input.maxOutputTokens ?? null,
+      );
     }),
 
   // 프리셋별 모듈 모델 설정 저장 (시스템 관리자 전용)
@@ -59,6 +65,7 @@ export const settingsRouter = router({
         moduleName: z.string().min(1),
         provider: aiProviderEnum,
         model: z.string().min(1),
+        maxOutputTokens: z.number().int().min(512).max(65536).nullable().optional(),
       }),
     )
     .mutation(async ({ input }) => {
@@ -67,6 +74,7 @@ export const settingsRouter = router({
         input.moduleName,
         input.provider,
         input.model,
+        input.maxOutputTokens ?? null,
       );
     }),
 
