@@ -491,15 +491,52 @@ export async function runAnalysisPipeline(
     const trend = mv.dailyMentionTrend as Array<Record<string, unknown>> | undefined;
     if (!trend || trend.length === 0) {
       const dailyMap = new Map<string, { count: number }>();
-      for (const item of [...ctx.input.articles, ...ctx.input.comments]) {
-        const ts = item.publishedAt;
-        if (!ts) continue;
-        const date = new Date(ts).toISOString().split('T')[0];
-        if (date === '1970-01-01') continue;
-        const entry = dailyMap.get(date) || { count: 0 };
-        entry.count++;
-        dailyMap.set(date, entry);
+
+      // collector loader 경로: 분석 입력은 RAG topK 한도로 좁아져 있으므로
+      // collector DB의 수집 전체를 기준으로 일별 카운트를 가져온다.
+      // 그래야 trend 차트가 실제 여론 볼륨을 반영한다.
+      const usingCollectorLoader =
+        options?.useCollectorLoader || jobOptions.useCollectorLoader || shouldUseCollectorLoader();
+      const subscriptionId = jobOptions.subscriptionId as number | undefined;
+      let trendSource: 'analysis-input' | 'collector-stats' = 'analysis-input';
+
+      if (usingCollectorLoader && subscriptionId) {
+        try {
+          const { getCollectorClient } = await import('../collector-client');
+          const client = getCollectorClient();
+          const stats = await client.items.collectionStats.query({
+            subscriptionId,
+            dateRange: {
+              start: ctx.input.dateRange.start.toISOString(),
+              end: ctx.input.dateRange.end.toISOString(),
+            },
+          });
+          for (const row of [...stats.articleDaily, ...stats.commentDaily, ...stats.videoDaily]) {
+            if (!row.date) continue;
+            const entry = dailyMap.get(row.date) || { count: 0 };
+            entry.count += row.count;
+            dailyMap.set(row.date, entry);
+          }
+          if (dailyMap.size > 0) trendSource = 'collector-stats';
+        } catch (err) {
+          logError('pipeline-orchestrator', err);
+          // collector 호출 실패 시 분석 입력 폴백으로 떨어진다 (아래 블록).
+        }
       }
+
+      // 분석 입력 폴백 (collector 경로가 아니거나 collector 호출 실패한 경우)
+      if (dailyMap.size === 0) {
+        for (const item of [...ctx.input.articles, ...ctx.input.comments]) {
+          const ts = item.publishedAt;
+          if (!ts) continue;
+          const date = new Date(ts).toISOString().split('T')[0];
+          if (date === '1970-01-01') continue;
+          const entry = dailyMap.get(date) || { count: 0 };
+          entry.count++;
+          dailyMap.set(date, entry);
+        }
+      }
+
       if (dailyMap.size > 0) {
         // AI가 sentimentRatio를 제공하지 않았으므로 null로 설정.
         // 가짜 비율을 만들어내지 않기 위함 — 대시보드에서는 null을 미제공으로 표시.
@@ -511,12 +548,12 @@ export async function runAnalysisPipeline(
             sentimentRatio: null,
           }));
         console.log(
-          `[pipeline] dailyMentionTrend 보정: ${dailyMap.size}일 분량 주입 (sentimentRatio=null — AI 결과 누락)`,
+          `[pipeline] dailyMentionTrend 보정: ${dailyMap.size}일 분량 주입 (source=${trendSource})`,
         );
         appendJobEvent(
           jobId,
           'warn',
-          `macro-view dailyMentionTrend: AI가 빈 배열 반환 — ${dailyMap.size}일치 count만 주입, sentimentRatio=null`,
+          `macro-view dailyMentionTrend: AI 빈 배열 — ${dailyMap.size}일치 count 주입 (source=${trendSource})`,
         ).catch((err) => logError('pipeline-orchestrator', err));
         // DB 동기화 — map-reduce에서 이미 빈 배열이 저장됐으므로 보정값을 덮어써야
         // 대시보드(DB 직접 조회)가 보정 결과를 볼 수 있다. usage는 기존값 유지.
