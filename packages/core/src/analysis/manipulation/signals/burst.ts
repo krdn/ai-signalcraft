@@ -1,16 +1,18 @@
 import { median, mad, zScore, zScoreToScore } from '../utils/stats';
-import type { SignalResult, EvidenceCard } from '../types';
+import type { SignalResult, EvidenceCard, CommentRow } from '../types';
+
+// 후방 호환: burst.ts에서 CommentRow를 import하던 코드를 위해 re-export
+export type { CommentRow };
 
 export const BUCKET_MS = 5 * 60 * 1000;
 const MIN_SAMPLES_FOR_FULL_CONFIDENCE = 30;
-
-export type CommentRow = {
-  itemId: string;
-  parentSourceId: string;
-  source: string;
-  time: Date;
-  excerpt: string;
-};
+const MIN_PARENT_COMMENTS = 5; // 부모별 댓글 수 — MAD 계산에 필요한 baseline
+const MIN_BUCKET_COUNT = 3; // 부모 내 distinct bucket 수 — MAD 의미 보장
+const EVIDENCE_Z_THRESHOLD = 3; // 이 값 이상 z-score만 evidence로 표시
+const MAX_EVIDENCE_CARDS = 10;
+const MAX_RAW_REFS_PER_CARD = 5;
+const SEVERITY_HIGH_Z = 5;
+const SEVERITY_MED_Z = 4;
 
 export function computeBurstFromComments(comments: CommentRow[]): SignalResult {
   const t0 = Date.now();
@@ -34,7 +36,7 @@ export function computeBurstFromComments(comments: CommentRow[]): SignalResult {
   }[] = [];
 
   for (const [parentId, list] of byParent) {
-    if (list.length < 5) continue;
+    if (list.length < MIN_PARENT_COMMENTS) continue;
     const counts = new Map<number, CommentRow[]>();
     for (const c of list) {
       const bucket = Math.floor(c.time.getTime() / BUCKET_MS) * BUCKET_MS;
@@ -42,29 +44,30 @@ export function computeBurstFromComments(comments: CommentRow[]): SignalResult {
       counts.get(bucket)!.push(c);
     }
     const values = Array.from(counts.values()).map((arr) => arr.length);
-    if (values.length < 3) continue;
+    if (values.length < MIN_BUCKET_COUNT) continue;
     const m = median(values);
     // 1.4826 = MAD→σ 보정 상수 (정규분포 가정)
+    // || 1: MAD=0(모든 bucket 동일)이면 raw count delta를 z 단위로 직접 해석
     const scale = mad(values) * 1.4826 || 1;
     for (const [bucket, items] of counts) {
       const z = zScore(items.length, m, scale);
       if (z > maxZ) maxZ = z;
-      if (z >= 3) {
+      if (z >= EVIDENCE_Z_THRESHOLD) {
         topBuckets.push({
           parentId,
           ts: new Date(bucket).toISOString(),
           count: items.length,
           zScore: z,
-          samples: items.slice(0, 5),
+          samples: items.slice(0, MAX_RAW_REFS_PER_CARD),
         });
       }
     }
   }
 
   topBuckets.sort((a, b) => b.zScore - a.zScore);
-  const evidence: EvidenceCard[] = topBuckets.slice(0, 10).map((b, idx) => ({
+  const evidence: EvidenceCard[] = topBuckets.slice(0, MAX_EVIDENCE_CARDS).map((b, idx) => ({
     signal: 'burst',
-    severity: b.zScore >= 5 ? 'high' : b.zScore >= 4 ? 'medium' : 'low',
+    severity: b.zScore >= SEVERITY_HIGH_Z ? 'high' : b.zScore >= SEVERITY_MED_Z ? 'medium' : 'low',
     title: `5분간 댓글 ${b.count}개 집중 (z=${b.zScore.toFixed(1)})`,
     summary: `parent_source_id=${b.parentId}, 시간 ${b.ts}`,
     visualization: {

@@ -55,4 +55,11 @@ describe('burst signal', () => {
   it('5분 bucket 크기 상수 검증', () => {
     expect(BUCKET_MS).toBe(5 * 60 * 1000);
   });
+
+  it('빈 배열은 score=0, confidence=0', () => {
+    const result = computeBurstFromComments([]);
+    expect(result.score).toBe(0);
+    expect(result.confidence).toBe(0);
+    expect(result.evidence).toHaveLength(0);
+  });
 });

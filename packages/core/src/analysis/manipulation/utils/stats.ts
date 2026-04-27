@@ -1,3 +1,4 @@
+/** 중앙값. 빈 배열은 NaN. */
 export function median(values: number[]): number {
   if (values.length === 0) return NaN;
   const sorted = [...values].sort((a, b) => a - b);
@@ -5,6 +6,7 @@ export function median(values: number[]): number {
   return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
 }
 
+/** 중앙값 절대편차 (Median Absolute Deviation). 빈 배열은 NaN. */
 export function mad(values: number[]): number {
   if (values.length === 0) return NaN;
   const m = median(values);

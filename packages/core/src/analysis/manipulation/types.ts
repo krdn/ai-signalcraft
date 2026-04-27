@@ -77,3 +77,12 @@ export type SignalContext = {
 };
 
 export type SignalCalculator = (ctx: SignalContext) => Promise<SignalResult>;
+
+// 댓글 행 — burst, temporal 등 댓글 기반 신호에서 공용
+export type CommentRow = {
+  itemId: string;
+  parentSourceId: string;
+  source: string;
+  time: Date;
+  excerpt: string;
+};
