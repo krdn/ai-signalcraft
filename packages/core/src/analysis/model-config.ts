@@ -285,6 +285,7 @@ export async function getModuleModelConfig(moduleName: string): Promise<ModuleMo
     .select({
       provider: modelSettings.provider,
       model: modelSettings.model,
+      maxOutputTokens: modelSettings.maxOutputTokens,
     })
     .from(modelSettings)
     .where(eq(modelSettings.moduleName, moduleName))
@@ -306,6 +307,7 @@ export async function getModuleModelConfig(moduleName: string): Promise<ModuleMo
       model: dbSetting.model,
       baseUrl: keyInfo?.baseUrl ?? undefined,
       apiKey: keyInfo?.apiKey ?? undefined,
+      maxOutputTokens: dbSetting.maxOutputTokens ?? undefined,
     };
   }
 
@@ -339,23 +341,36 @@ export async function getModuleModelConfig(moduleName: string): Promise<ModuleMo
  * DB 설정을 MODULE_MODEL_MAP에 머지하여 반환
  */
 export async function getAllModelSettings(): Promise<
-  Array<{ moduleName: string; provider: AIProvider; model: string; isCustom: boolean }>
+  Array<{
+    moduleName: string;
+    provider: AIProvider;
+    model: string;
+    maxOutputTokens: number | null;
+    isCustom: boolean;
+  }>
 > {
   const db = getDb();
   const dbSettings = await db.select().from(modelSettings);
 
   // DB 설정을 맵으로 변환
   const dbMap = new Map(
-    dbSettings.map((s) => [s.moduleName, { provider: s.provider as AIProvider, model: s.model }]),
+    dbSettings.map((s) => [
+      s.moduleName,
+      {
+        provider: s.provider as AIProvider,
+        model: s.model,
+        maxOutputTokens: s.maxOutputTokens ?? null,
+      },
+    ]),
   );
 
   // MODULE_MODEL_MAP의 모든 모듈에 대해 설정 반환
   return Object.entries(MODULE_MODEL_MAP).map(([moduleName, defaultConfig]) => {
     const custom = dbMap.get(moduleName);
     if (custom) {
-      return { moduleName, provider: custom.provider, model: custom.model, isCustom: true };
+      return { moduleName, ...custom, isCustom: true };
     }
-    return { moduleName, ...defaultConfig, isCustom: false };
+    return { moduleName, ...defaultConfig, maxOutputTokens: null, isCustom: false };
   });
 }
 
@@ -366,25 +381,44 @@ export async function upsertModelSetting(
   moduleName: string,
   provider: AIProvider,
   model: string,
-): Promise<{ moduleName: string; provider: AIProvider; model: string }> {
+  maxOutputTokens?: number | null,
+): Promise<{
+  moduleName: string;
+  provider: AIProvider;
+  model: string;
+  maxOutputTokens: number | null;
+}> {
   const db = getDb();
   const [result] = await db
     .insert(modelSettings)
-    .values({ moduleName, provider, model, updatedAt: new Date() })
+    .values({
+      moduleName,
+      provider,
+      model,
+      maxOutputTokens: maxOutputTokens ?? null,
+      updatedAt: new Date(),
+    })
     .onConflictDoUpdate({
       target: modelSettings.moduleName,
-      set: { provider, model, updatedAt: new Date() },
+      set: {
+        provider,
+        model,
+        maxOutputTokens: maxOutputTokens ?? null,
+        updatedAt: new Date(),
+      },
     })
     .returning({
       moduleName: modelSettings.moduleName,
       provider: modelSettings.provider,
       model: modelSettings.model,
+      maxOutputTokens: modelSettings.maxOutputTokens,
     });
 
   return {
     moduleName: result.moduleName,
     provider: result.provider as AIProvider,
     model: result.model,
+    maxOutputTokens: result.maxOutputTokens ?? null,
   };
 }
 
@@ -404,6 +438,7 @@ export async function getModuleModelConfigForPreset(
       .select({
         provider: presetModelSettings.provider,
         model: presetModelSettings.model,
+        maxOutputTokens: presetModelSettings.maxOutputTokens,
       })
       .from(presetModelSettings)
       .where(
@@ -421,6 +456,7 @@ export async function getModuleModelConfigForPreset(
         model: presetSetting.model,
         baseUrl: keyInfo?.baseUrl ?? undefined,
         apiKey: keyInfo?.apiKey ?? undefined,
+        maxOutputTokens: presetSetting.maxOutputTokens ?? undefined,
       };
     }
   }
@@ -479,23 +515,49 @@ export async function upsertPresetModelSetting(
   moduleName: string,
   provider: AIProvider,
   model: string,
-): Promise<{ presetSlug: string; moduleName: string; provider: AIProvider; model: string }> {
+  maxOutputTokens?: number | null,
+): Promise<{
+  presetSlug: string;
+  moduleName: string;
+  provider: AIProvider;
+  model: string;
+  maxOutputTokens: number | null;
+}> {
   const db = getDb();
   const [result] = await db
     .insert(presetModelSettings)
-    .values({ presetSlug, moduleName, provider, model, updatedAt: new Date() })
+    .values({
+      presetSlug,
+      moduleName,
+      provider,
+      model,
+      maxOutputTokens: maxOutputTokens ?? null,
+      updatedAt: new Date(),
+    })
     .onConflictDoUpdate({
       target: [presetModelSettings.presetSlug, presetModelSettings.moduleName],
-      set: { provider, model, updatedAt: new Date() },
+      set: {
+        provider,
+        model,
+        maxOutputTokens: maxOutputTokens ?? null,
+        updatedAt: new Date(),
+      },
     })
     .returning({
       presetSlug: presetModelSettings.presetSlug,
       moduleName: presetModelSettings.moduleName,
       provider: presetModelSettings.provider,
       model: presetModelSettings.model,
+      maxOutputTokens: presetModelSettings.maxOutputTokens,
     });
 
-  return { ...result, provider: result.provider as AIProvider };
+  return {
+    presetSlug: result.presetSlug,
+    moduleName: result.moduleName,
+    provider: result.provider as AIProvider,
+    model: result.model,
+    maxOutputTokens: result.maxOutputTokens ?? null,
+  };
 }
 
 /**
