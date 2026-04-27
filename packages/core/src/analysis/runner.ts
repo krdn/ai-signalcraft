@@ -252,8 +252,21 @@ export async function runModule<T>(
     }
   }
 
+  // kit는 도메인 무지(v2.0.0) — buildSystemPrompt를 인자 없이 호출한다.
+  // input.domain을 closure에 박은 모듈 인스턴스로 감싸 도메인이 시스템 프롬프트에 반영되게 한다.
+  const boundModule: AnalysisModule<T> = {
+    ...module,
+    buildSystemPrompt: () => module.buildSystemPrompt(input.domain),
+    ...(module.buildPromptWithContext
+      ? {
+          buildPromptWithContext: (data, prior) =>
+            module.buildPromptWithContext!(data, prior, input.domain),
+        }
+      : {}),
+  };
+
   const result = await kitRunModule<AnalysisInput, T>(
-    module as unknown as KitAnalysisModule<AnalysisInput, T>,
+    boundModule as unknown as KitAnalysisModule<AnalysisInput, T>,
     input,
     {
       configAdapter: configAdapter ?? dbModelConfigAdapter,
