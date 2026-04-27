@@ -36,4 +36,13 @@ describe('temporal anomaly signal', () => {
     const result = computeTemporalAnomaly([], { dcinside: baseline });
     expect(result.confidence).toBe(0);
   });
+
+  it('baseline이 없으면 confidence 0', () => {
+    const current: CommentRow[] = [];
+    for (let i = 0; i < 60; i++) current.push(comment(10));
+    // baselineBySource는 빈 객체 — dcinside 매칭 없음
+    const result = computeTemporalAnomaly(current, {});
+    expect(result.confidence).toBe(0);
+    expect(result.metrics.skippedSources).toBe(1);
+  });
 });
