@@ -78,7 +78,7 @@ export const manipulationEvidence = pgTable(
     severity: text('severity', { enum: SEVERITY }).notNull(),
     title: text('title').notNull(),
     summary: text('summary').notNull(),
-    visualization: jsonb('visualization').notNull(),
+    visualization: jsonb('visualization').$type<Record<string, unknown>>().notNull(),
     rawRefs: jsonb('raw_refs')
       .$type<{ itemId: string; source: string; time: string; excerpt: string }[]>()
       .notNull(),
@@ -108,3 +108,4 @@ export type NewManipulationSignal = typeof manipulationSignals.$inferInsert;
 export type ManipulationEvidence = typeof manipulationEvidence.$inferSelect;
 export type NewManipulationEvidence = typeof manipulationEvidence.$inferInsert;
 export type ManipulationDomainConfig = typeof manipulationDomainConfigs.$inferSelect;
+export type NewManipulationDomainConfig = typeof manipulationDomainConfigs.$inferInsert;
