@@ -15,6 +15,10 @@ describe('ngram utils', () => {
     it('공백 정규화', () => {
       expect(ngramSet('a  b  c', 3)).toEqual(ngramSet('a b c', 3));
     });
+    it('한국어 ngram 수', () => {
+      // 가나다라마바사 — 7글자, n=5 → 3개
+      expect(ngramSet('가나다라마바사', 5).size).toBe(3);
+    });
   });
 
   describe('jaccard', () => {
@@ -30,6 +34,12 @@ describe('ngram utils', () => {
     });
     it('빈 집합 두 개는 0', () => {
       expect(jaccard(new Set(), new Set())).toBe(0);
+    });
+    it('비대칭 크기 (|A|=3, |B|=1) — 교집합 1, 합집합 3', () => {
+      expect(jaccard(new Set(['a', 'b', 'c']), new Set(['b']))).toBeCloseTo(1 / 3, 5);
+    });
+    it('한쪽만 빈 집합은 0', () => {
+      expect(jaccard(new Set(['a']), new Set())).toBe(0);
     });
   });
 });

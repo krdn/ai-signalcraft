@@ -5,6 +5,8 @@ export function normalize(text: string): string {
 
 // 길이 n의 슬라이딩 윈도우로 문자 n-gram 집합 생성
 // 텍스트 길이가 n 미만이면 빈 집합 반환
+// 주의: .length / .slice는 UTF-16 코드 유닛 기준.
+// BMP 한글(가-힣)은 단일 유닛이라 안전. 이모지(U+1F000+)는 서로게이트 쌍 — 추후 Array.from 전환 고려.
 export function ngramSet(text: string, n: number): Set<string> {
   const normalized = normalize(text);
   const set = new Set<string>();
