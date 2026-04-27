@@ -11,6 +11,7 @@ export function mad(values: number[]): number {
   return median(values.map((v) => Math.abs(v - m)));
 }
 
+// Nearest-rank (floor) 방법 — R type=1 / numpy lower와 동일
 export function iqr(values: number[]): number {
   if (values.length === 0) return NaN;
   const sorted = [...values].sort((a, b) => a - b);
@@ -39,10 +40,11 @@ export function zScore(value: number, m: number, scale: number): number {
   return (value - m) / scale;
 }
 
-// sigmoid로 z-score를 0~100 점수로 매핑 (z=4에서 약 70)
+// sigmoid로 |z|-score를 0~100 점수로 매핑
+// 캘리브레이션: z=0→7.6, z=2.5→50, z=3.5→73, z=4→82, z=6→97
 export function zScoreToScore(z: number): number {
   const absZ = Math.abs(z);
-  // 1 / (1 + e^(-(z-2.5)*1.0)) * 100
+  // 1 / (1 + e^(-(absZ-2.5))) * 100, 0..100 클램프
   const sigmoid = 1 / (1 + Math.exp(-(absZ - 2.5) * 1.0));
   return Math.max(0, Math.min(100, sigmoid * 100));
 }
