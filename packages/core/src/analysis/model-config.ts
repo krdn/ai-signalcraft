@@ -474,6 +474,7 @@ export async function getAllModelSettingsForPreset(presetSlug?: string): Promise
     moduleName: string;
     provider: AIProvider;
     model: string;
+    maxOutputTokens: number | null;
     isCustom: boolean;
     source: 'preset' | 'global' | 'default';
   }>
@@ -495,12 +496,16 @@ export async function getAllModelSettingsForPreset(presetSlug?: string): Promise
     .where(eq(presetModelSettings.presetSlug, presetSlug));
 
   const presetMap = new Map(
-    presetRows.map((r) => [r.moduleName, { provider: r.provider as AIProvider, model: r.model }]),
+    presetRows.map((r) => [
+      r.moduleName,
+      { provider: r.provider as AIProvider, model: r.model, maxOutputTokens: r.maxOutputTokens },
+    ]),
   );
 
   return globalSettings.map((s) => {
     const presetOverride = presetMap.get(s.moduleName);
     if (presetOverride) {
+      // presetOverride.maxOutputTokens === null이면 "이 프리셋은 글로벌 값을 명시적으로 클리어 → kit 기본값 사용"
       return { ...s, ...presetOverride, isCustom: true, source: 'preset' as const };
     }
     return { ...s, source: (s.isCustom ? 'global' : 'default') as 'global' | 'default' };
