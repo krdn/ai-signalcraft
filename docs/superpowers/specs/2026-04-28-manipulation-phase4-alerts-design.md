@@ -79,7 +79,7 @@ export const manipulationAlertRules = pgTable(
     name: text('name').notNull(),
     enabled: boolean('enabled').notNull().default(true),
 
-    scoreThreshold: doublePrecision('score_threshold').notNull(), // 0-100
+    scoreThreshold: real('score_threshold').notNull(), // 0-100 (manipulation_runs.manipulationScore와 동일 real 타입)
     cooldownMinutes: integer('cooldown_minutes').notNull().default(360),
 
     channel: jsonb('channel')
@@ -107,10 +107,10 @@ export type NewManipulationAlertRule = typeof manipulationAlertRules.$inferInser
 
 - **DB 분리 주의**: 구독 테이블(`keyword_subscriptions`)은 collector DB에 위치, manipulation 테이블들은 core DB. FK 불가능 → `subscription_id`는 단순 integer (`manipulation_runs.subscription_id`와 동일 패턴). 구독 삭제 시 cascade 자동 정리는 안 됨 → 향후 cleanup 작업 필요 (이번 spec scope 외)
 - `channel`은 discriminated union (`type` 필드로 분기). Zod 스키마에서도 동일 모양으로 받음
-- `scoreThreshold`는 `doublePrecision` (manipulation_runs.manipulationScore와 동일 타입; 점수가 57.21처럼 소수)
+- `scoreThreshold`는 `real` (manipulation_runs.manipulationScore와 동일 타입; 점수가 57.21처럼 소수)
 - `cooldownMinutes` default 360 = 6시간
 - 1구독당 N개 규칙 허용 (점수 60→Slack, 점수 80→ops webhook 등). UNIQUE 제약 없음
-- 마이그레이션: `pnpm db:push` (하이퍼테이블 아님, db:migrate-timescale 불필요). core schema 파일 import에 `doublePrecision`, `boolean` 추가 필요
+- 마이그레이션: `pnpm db:push` (하이퍼테이블 아님, db:migrate-timescale 불필요). core schema 파일 import에 `boolean` 추가 필요 (`real`은 이미 사용 중)
 - 기존 `alert_rules`/`alert_events` 테이블은 **건드리지 않음**
 
 ## 핵심 흐름
