@@ -66,5 +66,6 @@ describe('itemsManipulationRouter.fetchManipulationBaselines', () => {
     const serialized = JSON.stringify(sqlArg);
     expect(serialized).toContain('42');
     expect(serialized).toContain('14');
+    expect(serialized).toContain('2026-04-28');
   });
 });
