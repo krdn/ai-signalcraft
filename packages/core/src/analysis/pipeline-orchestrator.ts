@@ -704,7 +704,7 @@ export async function runAnalysisPipeline(
       await runStage5Manipulation({
         jobId,
         jobOptions,
-        domain: ctx.input.domain,
+        domain: ctx.input.domain ?? 'political',
         dateRange: { start: windowRow.startDate, end: windowRow.endDate },
       });
     } else {
