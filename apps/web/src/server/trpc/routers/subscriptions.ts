@@ -13,7 +13,11 @@ export interface SubscriptionRecord {
   intervalHours: number;
   status: 'active' | 'paused' | 'error';
   limits: { maxPerRun: number; maxPerDay?: number; commentsPerItem?: number };
-  options?: { collectTranscript?: boolean; includeComments?: boolean } | null;
+  options?: {
+    collectTranscript?: boolean;
+    includeComments?: boolean;
+    enableManipulation?: boolean;
+  } | null;
   domain?: string | null;
   ownerId?: string | null;
   nextRunAt: Date | string | null;
@@ -242,6 +246,7 @@ const optionsSchema = z
   .object({
     collectTranscript: z.boolean().optional(),
     includeComments: z.boolean().optional(),
+    enableManipulation: z.boolean().optional(),
   })
   .optional();
 

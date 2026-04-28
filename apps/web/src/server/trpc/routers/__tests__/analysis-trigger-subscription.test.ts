@@ -99,4 +99,45 @@ describe('buildSubscriptionAnalysisMeta', () => {
     expect(result.appliedPreset.optimization).toBe('aggressive');
     expect(result.options.tokenOptimization).toBe('aggressive');
   });
+
+  it('options.enableManipulation:true → meta.options.runManipulation:true', () => {
+    const result = buildSubscriptionAnalysisMeta(
+      {
+        keyword: 'test',
+        sources: ['naver-news'],
+        limits: { maxPerRun: 100 },
+        options: { enableManipulation: true },
+      },
+      { subscriptionId: 1 },
+    );
+
+    expect(result.options.runManipulation).toBe(true);
+  });
+
+  it('options.enableManipulation:false → meta.options에 runManipulation 키 부재', () => {
+    const result = buildSubscriptionAnalysisMeta(
+      {
+        keyword: 'test',
+        sources: ['naver-news'],
+        limits: { maxPerRun: 100 },
+        options: { enableManipulation: false },
+      },
+      { subscriptionId: 1 },
+    );
+
+    expect(result.options).not.toHaveProperty('runManipulation');
+  });
+
+  it('options 부재 → meta.options에 runManipulation 키 부재 (회귀 보호)', () => {
+    const result = buildSubscriptionAnalysisMeta(
+      {
+        keyword: 'test',
+        sources: ['naver-news'],
+        limits: { maxPerRun: 100 },
+      },
+      { subscriptionId: 1 },
+    );
+
+    expect(result.options).not.toHaveProperty('runManipulation');
+  });
 });
