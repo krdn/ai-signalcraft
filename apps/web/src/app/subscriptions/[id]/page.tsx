@@ -22,6 +22,7 @@ import { SourceStatusCard } from '@/components/subscriptions/source-status-card'
 import { RunHistoryTable } from '@/components/subscriptions/run-history-table';
 import { SubscriptionForm } from '@/components/subscriptions/subscription-form';
 import { TimeseriesView } from '@/components/manipulation/timeseries-view';
+import { AlertRulesCard } from '@/components/manipulation/alert-rules-card';
 import {
   SOURCE_LABEL_MAP,
   SOURCE_FANOUT_CHILDREN,
@@ -213,6 +214,7 @@ export default function SubscriptionDetailPage() {
         </TabsContent>
 
         <TabsContent value="manipulation">
+          <AlertRulesCard subscriptionId={id} />
           <TimeseriesView subscriptionId={id} />
         </TabsContent>
 
