@@ -35,6 +35,7 @@ export const createCollectorContext = async ({
 const t = initTRPC.context<CollectorContext>().create();
 
 export const router = t.router;
+export const mergeRouters = t.mergeRouters;
 export const publicProcedure = t.procedure;
 
 /**
