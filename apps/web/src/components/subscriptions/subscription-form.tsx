@@ -81,6 +81,9 @@ export function SubscriptionForm({ initial, onSaved, onCreated, onCancel }: Subs
   const [collectTranscript, setCollectTranscript] = useState(
     initial?.options?.collectTranscript ?? false,
   );
+  const [enableManipulation, setEnableManipulation] = useState(
+    initial?.options?.enableManipulation ?? false,
+  );
 
   const qc = useQueryClient();
 
@@ -95,7 +98,7 @@ export function SubscriptionForm({ initial, onSaved, onCreated, onCancel }: Subs
       sources: string[];
       intervalHours: number;
       limits: { maxPerRun: number; commentsPerItem: number };
-      options?: { collectTranscript?: boolean };
+      options?: { collectTranscript?: boolean; enableManipulation?: boolean };
     }) =>
       trpcClient.subscriptions.create.mutate({
         keyword: input.keyword,
@@ -120,7 +123,7 @@ export function SubscriptionForm({ initial, onSaved, onCreated, onCancel }: Subs
       sources: string[];
       intervalHours: number;
       limits: { maxPerRun: number; commentsPerItem: number };
-      options?: { collectTranscript?: boolean };
+      options?: { collectTranscript?: boolean; enableManipulation?: boolean };
     }) =>
       trpcClient.subscriptions.update.mutate({
         id: input.id,
@@ -176,7 +179,10 @@ export function SubscriptionForm({ initial, onSaved, onCreated, onCancel }: Subs
       sources,
       intervalHours,
       limits: { maxPerRun, commentsPerItem },
-      options: collectTranscript ? { collectTranscript: true } : { collectTranscript: false },
+      options: {
+        collectTranscript,
+        enableManipulation,
+      },
     };
     if (isEdit && initial) {
       const { keyword: _omit, ...rest } = payload;
@@ -330,6 +336,21 @@ export function SubscriptionForm({ initial, onSaved, onCreated, onCancel }: Subs
           </div>
         </label>
       )}
+      <label className="flex items-start gap-2 rounded-lg border p-3 cursor-pointer hover:bg-accent/50">
+        <Checkbox
+          checked={enableManipulation}
+          onCheckedChange={(checked) => setEnableManipulation(!!checked)}
+          disabled={isPending}
+          className="mt-0.5"
+        />
+        <div className="space-y-1">
+          <span className="text-sm font-medium">여론 조작 신호 분석</span>
+          <p className="text-xs text-muted-foreground">
+            분석 실행 시 댓글·기사의 7개 조작 신호(트래픽 폭주, 유사도 클러스터, 매체 동조 등)를
+            추가로 검출합니다. 분석 시간이 약 30~60초 늘어납니다.
+          </p>
+        </div>
+      </label>
 
       <Alert variant={riskLevel === 'danger' ? 'destructive' : 'default'}>
         {riskLevel === 'ok' ? <Info className="size-4" /> : <AlertTriangle className="size-4" />}
