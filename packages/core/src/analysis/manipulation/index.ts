@@ -5,3 +5,6 @@ export type { AggregateResult } from './aggregator';
 export { persistRun, markRunFailed } from './persist';
 export type { PersistInput } from './persist';
 export * from './types';
+export { runStage5Manipulation } from './stage5';
+export type { Stage5Args } from './stage5';
+export { resolveDomainConfig } from './config';
