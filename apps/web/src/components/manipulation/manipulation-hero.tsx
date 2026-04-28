@@ -3,13 +3,13 @@
 import ReactMarkdown from 'react-markdown';
 
 interface ManipulationHeroProps {
-  manipulationScore: number | null | undefined;
-  confidenceFactor: number | null | undefined;
-  weightsVersion: string | null | undefined;
-  narrativeMd: string | null | undefined;
+  manipulationScore: number | null;
+  confidenceFactor: number | null;
+  weightsVersion: string;
+  narrativeMd: string | null;
 }
 
-function severityFromScore(score: number | null | undefined): 'low' | 'medium' | 'high' {
+function severityFromScore(score: number | null): 'low' | 'medium' | 'high' {
   if (score == null) return 'low';
   if (score >= 70) return 'high';
   if (score >= 40) return 'medium';
@@ -47,7 +47,8 @@ export function ManipulationHero({
           <span>심각도: {SEVERITY_LABEL[severity]}</span>
           <span>
             신뢰도 {confidenceFactor != null ? confidenceFactor.toFixed(2) : 'N/A'}
-            {weightsVersion ? ` · ${weightsVersion}` : ''}
+            {' · '}
+            {weightsVersion}
           </span>
         </div>
       </div>

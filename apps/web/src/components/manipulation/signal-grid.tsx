@@ -21,12 +21,15 @@ const SIGNAL_LABELS: Record<string, string> = {
 };
 
 function severityClass(score: number): string {
-  if (score >= 70) return 'bg-red-100 text-red-900 border-red-200';
-  if (score >= 40) return 'bg-yellow-100 text-yellow-900 border-yellow-200';
-  return 'bg-green-100 text-green-900 border-green-200';
+  if (score >= 70) return 'bg-red-100 text-red-800 border-red-200';
+  if (score >= 40) return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+  return 'bg-green-100 text-green-800 border-green-200';
 }
 
 export function SignalGrid({ signals }: SignalGridProps) {
+  // signals 비어있을 때 빈 grid 렌더 대신 null 반환 — spec과 차이.
+  // 빈 그리드 박스가 시각적 잡음이고, 실제로 이 케이스는 manipulation_signals 테이블
+  // INSERT가 실패했을 때만 발생 (Phase 2 정상 흐름은 항상 7건). null이 더 깔끔.
   if (signals.length === 0) return null;
 
   return (
