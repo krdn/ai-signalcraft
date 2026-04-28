@@ -5,7 +5,7 @@ import { cosineSimilarity } from './similarity';
 const WINDOW_MS = 30 * 60 * 1000;
 const COSINE_MIN = 0.88;
 const MIN_SAMPLES_FOR_CONFIDENCE = 50;
-const HIGH_PUBLISHER_COUNT = 4;
+const HIGH_PUBLISHER_COUNT = 4; // severity 임계 only — 점수 가산은 MEDIUM_PUBLISHER_COUNT 기준
 const MEDIUM_PUBLISHER_COUNT = 3;
 const TWO_PUBLISHER_BASE_SCORE = 35;
 const TWO_PUBLISHER_SPEED_BONUS_MAX = 20;
@@ -36,7 +36,7 @@ export function computeMediaSync(items: ArticleEmbedded[]): SignalResult {
       score: 0,
       confidence: 0,
       evidence: [],
-      metrics: { topClusterSize: 0, clusterCount: 0 },
+      metrics: { topClusterSize: 0, clusterCount: 0, sampleCount: 0 },
       computeMs: Date.now() - t0,
     };
   }
@@ -74,7 +74,8 @@ export function computeMediaSync(items: ArticleEmbedded[]): SignalResult {
   // 로컬 변수 clusters는 외부 caller가 보지 않으므로 in-place sort 안전
   const topCluster = clusters.sort((a, b) => b.publisherSet.size - a.publisherSet.size)[0];
   const topSize = topCluster?.publisherSet.size ?? 0;
-  const speedFactor = topCluster ? 1 - topCluster.spanMs / WINDOW_MS : 0;
+  // invariant상 0..1 범위지만 명시적 가드 — spanMs가 WINDOW_MS 초과 시 음수 방지
+  const speedFactor = topCluster ? Math.max(0, 1 - topCluster.spanMs / WINDOW_MS) : 0;
 
   let score = 0;
   if (topSize >= MEDIUM_PUBLISHER_COUNT) {
