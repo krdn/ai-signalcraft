@@ -51,47 +51,51 @@ export function computeCrossPlatform(clusters: SimilarityCluster[]): SignalResul
     };
   }
 
-  let topScore = 0;
-  for (const c of multi) {
-    const platformBonus = Math.min(PLATFORM_BONUS_MAX, c.sourceSet.size * PLATFORM_BONUS_PER);
-    const speedBonus =
-      c.timeSpanMs < SPEED_FAST_THRESHOLD_MS
-        ? SPEED_BONUS_FAST
-        : c.timeSpanMs < SPEED_MED_THRESHOLD_MS
-          ? SPEED_BONUS_MED
-          : SPEED_BONUS_SLOW;
-    const s = platformBonus + speedBonus;
-    if (s > topScore) topScore = s;
-  }
-  const score = clamp(topScore, 0, 100);
+  // 클러스터별 score 사전 계산 후 내림차순 정렬 — rank=0이 최강 시그널 (similarity.ts와 일관)
+  const scoredMulti = multi
+    .map((c) => {
+      const platformBonus = Math.min(PLATFORM_BONUS_MAX, c.sourceSet.size * PLATFORM_BONUS_PER);
+      const speedBonus =
+        c.timeSpanMs < SPEED_FAST_THRESHOLD_MS
+          ? SPEED_BONUS_FAST
+          : c.timeSpanMs < SPEED_MED_THRESHOLD_MS
+            ? SPEED_BONUS_MED
+            : SPEED_BONUS_SLOW;
+      return { cluster: c, score: platformBonus + speedBonus };
+    })
+    .sort((a, b) => b.score - a.score);
 
-  const evidence: EvidenceCard[] = multi.slice(0, MAX_EVIDENCE_CARDS).map((c, idx) => {
-    const sortedMembers = [...c.members].sort((a, b) => a.time.getTime() - b.time.getTime());
-    const hops: { from: string; to: string; time: string; message: string; count: number }[] = [];
-    for (let i = 1; i < sortedMembers.length; i++) {
-      hops.push({
-        from: sortedMembers[i - 1].source,
-        to: sortedMembers[i].source,
-        time: sortedMembers[i].time.toISOString(),
-        message: c.representative.slice(0, MAX_MESSAGE_EXCERPT),
-        count: 1,
-      });
-    }
-    return {
-      signal: 'cross-platform',
-      severity: c.sourceSet.size >= HIGH_PLATFORM_COUNT ? 'high' : 'medium',
-      title: `${c.sourceSet.size}개 플랫폼 동시 출현 (${Math.round(c.timeSpanMs / 60000)}분)`,
-      summary: c.representative.slice(0, 80),
-      visualization: { kind: 'cross-platform-flow', hops },
-      rawRefs: c.members.map((m) => ({
-        itemId: m.itemId,
-        source: m.source,
-        time: m.time.toISOString(),
-        excerpt: m.text.slice(0, MAX_RAW_REF_EXCERPT),
-      })),
-      rank: idx,
-    };
-  });
+  const score = clamp(scoredMulti[0]?.score ?? 0, 0, 100);
+
+  const evidence: EvidenceCard[] = scoredMulti
+    .slice(0, MAX_EVIDENCE_CARDS)
+    .map(({ cluster: c }, idx) => {
+      const sortedMembers = [...c.members].sort((a, b) => a.time.getTime() - b.time.getTime());
+      const hops: { from: string; to: string; time: string; message: string; count: number }[] = [];
+      for (let i = 1; i < sortedMembers.length; i++) {
+        hops.push({
+          from: sortedMembers[i - 1].source,
+          to: sortedMembers[i].source,
+          time: sortedMembers[i].time.toISOString(),
+          message: c.representative.slice(0, MAX_MESSAGE_EXCERPT),
+          count: 1,
+        });
+      }
+      return {
+        signal: 'cross-platform',
+        severity: c.sourceSet.size >= HIGH_PLATFORM_COUNT ? 'high' : 'medium',
+        title: `${c.sourceSet.size}개 플랫폼 동시 출현 (${Math.round(c.timeSpanMs / 60000)}분)`,
+        summary: c.representative.slice(0, 80),
+        visualization: { kind: 'cross-platform-flow', hops },
+        rawRefs: c.members.map((m) => ({
+          itemId: m.itemId,
+          source: m.source,
+          time: m.time.toISOString(),
+          excerpt: m.text.slice(0, MAX_RAW_REF_EXCERPT),
+        })),
+        rank: idx,
+      };
+    });
 
   return {
     signal: 'cross-platform',
