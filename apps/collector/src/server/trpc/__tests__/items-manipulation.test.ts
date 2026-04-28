@@ -27,6 +27,7 @@ describe('itemsManipulationRouter.fetchManipulationBaselines', () => {
     const result = await caller.fetchManipulationBaselines({
       subscriptionId: 42,
       referenceEnd: new Date('2026-04-28T00:00:00Z').toISOString(),
+      referenceStart: new Date('2026-04-21T00:00:00Z').toISOString(),
       days: 30,
     });
 
@@ -44,13 +45,14 @@ describe('itemsManipulationRouter.fetchManipulationBaselines', () => {
     const result = await caller.fetchManipulationBaselines({
       subscriptionId: 99,
       referenceEnd: new Date('2026-04-28T00:00:00Z').toISOString(),
+      referenceStart: new Date('2026-04-21T00:00:00Z').toISOString(),
       days: 30,
     });
 
     expect(result.byHour).toEqual({});
   });
 
-  it('subscriptionId, referenceEnd, days를 SQL 바인딩에 전달', async () => {
+  it('subscriptionId, referenceStart, days를 SQL 바인딩에 전달', async () => {
     execMock.mockResolvedValueOnce({ rows: [] });
 
     const { itemsManipulationRouter } = await import('../items-manipulation');
@@ -58,6 +60,7 @@ describe('itemsManipulationRouter.fetchManipulationBaselines', () => {
     await caller.fetchManipulationBaselines({
       subscriptionId: 42,
       referenceEnd: new Date('2026-04-28T00:00:00Z').toISOString(),
+      referenceStart: new Date('2026-04-21T00:00:00Z').toISOString(),
       days: 14,
     });
 
@@ -66,6 +69,6 @@ describe('itemsManipulationRouter.fetchManipulationBaselines', () => {
     const serialized = JSON.stringify(sqlArg);
     expect(serialized).toContain('42');
     expect(serialized).toContain('14');
-    expect(serialized).toContain('2026-04-28');
+    expect(serialized).toContain('2026-04-21');
   });
 });

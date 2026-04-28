@@ -98,6 +98,7 @@ describe('CollectorManipulationLoader', () => {
     expect(baselinesFn).toHaveBeenCalledWith({
       subscriptionId: 42,
       referenceEnd: baseCtx.dateRange.end.toISOString(),
+      referenceStart: baseCtx.dateRange.start.toISOString(),
       days: 30,
     });
   });

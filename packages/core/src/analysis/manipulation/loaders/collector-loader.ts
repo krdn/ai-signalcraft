@@ -159,6 +159,7 @@ export function createCollectorManipulationLoader(
       const result = await args.client.items.fetchManipulationBaselines.query({
         subscriptionId: args.subscriptionId,
         referenceEnd: args.dateRange.end.toISOString(),
+        referenceStart: args.dateRange.start.toISOString(),
         days: args.baselineDays,
       });
       _baselines = result.byHour;
