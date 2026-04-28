@@ -1,6 +1,7 @@
 import { getDb } from '../../db';
 import { appendJobEvent } from '../../pipeline/persist';
 import { getCollectorClient } from '../../collector-client';
+import { evaluateManipulationAlerts } from '../../alerts/manipulation-evaluator';
 import { resolveDomainConfig } from './config';
 import { createCollectorManipulationLoader } from './loaders/collector-loader';
 import { runManipulationDetection } from './runner';
@@ -52,11 +53,18 @@ export async function runStage5Manipulation(args: Stage5Args): Promise<void> {
       loader,
     });
 
-    await persistRun(getDb(), {
+    const runId = await persistRun(getDb(), {
       jobId: args.jobId,
       subscriptionId,
       output,
       weightsVersion: `v1-${config.domain}`,
+    });
+
+    // 알림 평가 — fire-and-forget. evaluator는 내부에서 모든 예외를 catch.
+    void evaluateManipulationAlerts({
+      runId,
+      jobId: args.jobId,
+      subscriptionId,
     });
 
     await appendJobEvent(
