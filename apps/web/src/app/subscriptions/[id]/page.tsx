@@ -21,6 +21,7 @@ import { SubscriptionTrendChart } from '@/components/subscriptions/subscription-
 import { SourceStatusCard } from '@/components/subscriptions/source-status-card';
 import { RunHistoryTable } from '@/components/subscriptions/run-history-table';
 import { SubscriptionForm } from '@/components/subscriptions/subscription-form';
+import { TimeseriesView } from '@/components/manipulation/timeseries-view';
 import {
   SOURCE_LABEL_MAP,
   SOURCE_FANOUT_CHILDREN,
@@ -144,6 +145,7 @@ export default function SubscriptionDetailPage() {
           <TabsTrigger value="collection">수집 현황</TabsTrigger>
           <TabsTrigger value="items">항목/댓글</TabsTrigger>
           <TabsTrigger value="analysis">분석 히스토리</TabsTrigger>
+          <TabsTrigger value="manipulation">조작 분석</TabsTrigger>
           <TabsTrigger value="settings">설정</TabsTrigger>
         </TabsList>
 
@@ -208,6 +210,10 @@ export default function SubscriptionDetailPage() {
               </a>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="manipulation">
+          <TimeseriesView subscriptionId={id} />
         </TabsContent>
 
         <TabsContent value="settings">

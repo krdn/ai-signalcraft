@@ -24,6 +24,7 @@ const TABS: { label: string; icon: LucideIcon; key: string }[] = [
   { label: '히스토리', icon: History, key: 'history' },
   { label: '고급 분석', icon: Brain, key: 'advanced' },
   { label: '탐색', icon: Telescope, key: 'explore' },
+  { label: '조작 신호', icon: Activity, key: 'manipulation' },
 ];
 
 interface ShowcaseSidebarProps {
