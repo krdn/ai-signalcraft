@@ -42,6 +42,7 @@ export type SubscriptionJobMeta = {
     useCollectorLoader: boolean;
     tokenOptimization: TokenOptimization;
     sources: string[];
+    runManipulation?: boolean;
   };
 };
 
@@ -50,6 +51,7 @@ export function buildSubscriptionAnalysisMeta(
     keyword: string;
     sources?: string[] | null;
     limits?: Record<string, number> | null;
+    options?: { enableManipulation?: boolean } | null;
   },
   args: {
     subscriptionId: number;
@@ -90,6 +92,7 @@ export function buildSubscriptionAnalysisMeta(
       useCollectorLoader: true,
       tokenOptimization,
       sources: subscriptionSources,
+      ...(sub.options?.enableManipulation === true && { runManipulation: true }),
     },
   };
 }
