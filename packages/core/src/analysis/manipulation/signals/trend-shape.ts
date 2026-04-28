@@ -6,7 +6,8 @@ const FULL_CONFIDENCE_POINTS = 14;
 const JUMP_RATIO_EVIDENCE_THRESHOLD = 5;
 const JUMP_RATIO_HIGH_THRESHOLD = 20;
 const JUMP_RATIO_MEDIUM_THRESHOLD = 10;
-const CHANGE_POINT_RATIO = 5;
+const CHANGE_POINT_RATIO = 5; // detectChangePoint: 1-step 차분이 초기 baseline의 N배 이상 시 변화점
+const FLATNESS_WINDOW_SIZE = 5; // post-peak 윈도우 (peak 포함 5점)
 
 export type TrendPoint = { ts: string; count: number };
 
@@ -17,12 +18,14 @@ export type TrendPoint = { ts: string; count: number };
  * @returns SignalResult — score = log10(jumpRatio+1)*30 + flatness*40 (0..100)
  *
  * - jumpRatio: peak 값 / pre-peak **median** (스파이크 오염 방지). pre-peak가 비면 baseline=1
- * - flatness: peak ±2 구간의 변동계수 역수 (1 - cv, 0..1 clamp).
+ * - flatness: peak **이후** 5점 윈도우의 변동계수 역수 (1 - cv, 0..1 clamp).
  *   **단, changePoint가 검출되지 않은 경우 (자연 확산) 0으로 게이트**.
  *   가우시안 같은 부드러운 곡선도 peak 주변은 국소적으로 평평하므로,
  *   "급등 직후의 plateau" 라는 인공 트렌드 의미를 살리려면 changePoint 게이트가 필요.
+ *   윈도우는 post-peak 위주 — pre-jump 값(예: baseline=1)이 섞이면 plateau 측정이 왜곡됨.
  * - confidence: series.length / FULL_CONFIDENCE_POINTS (0..1)
  * - 짧은 시리즈 (MIN_POINTS 미만) 는 score=0, 부분 confidence 만 반환
+ * - peakIdx === 0 (descending 시리즈) 도 score=0 — pre-peak baseline 없어 의미 있는 jumpRatio 산출 불가
  */
 export function computeTrendShape(series: TrendPoint[]): SignalResult {
   const t0 = Date.now();
@@ -40,6 +43,19 @@ export function computeTrendShape(series: TrendPoint[]): SignalResult {
   const counts = series.map((p) => p.count);
   const max = Math.max(...counts);
   const peakIdx = counts.indexOf(max);
+
+  // 가드: peak가 series 시작 지점이면 pre-peak baseline 없음 → 의미 있는 jumpRatio 산출 불가
+  if (peakIdx === 0) {
+    return {
+      signal: 'trend-shape',
+      score: 0,
+      confidence: Math.min(1, series.length / FULL_CONFIDENCE_POINTS),
+      evidence: [],
+      metrics: { jumpRatio: 0, flatness: 0, points: series.length, peakAtStart: 1 },
+      computeMs: Date.now() - t0,
+    };
+  }
+
   const prePeak = counts.slice(0, peakIdx);
   // median은 prePeak에 spike(이미 상승한 값)가 끼어 있어도 baseline을 왜곡하지 않음
   const baseline = prePeak.length > 0 ? Math.max(1, median(prePeak)) : 1;
@@ -47,10 +63,10 @@ export function computeTrendShape(series: TrendPoint[]): SignalResult {
 
   const changeIdx = detectChangePoint(counts);
 
-  // 평탄도: peak 주변 ±2 구간의 변동계수 역수. changePoint 없으면 0으로 게이트
+  // 평탄도: post-jump plateau 측정 — peak 포함 이후 5점 윈도우. changePoint 없으면 0으로 게이트
   let flatness = 0;
   if (changeIdx >= 0) {
-    const window = counts.slice(Math.max(0, peakIdx - 2), Math.min(counts.length, peakIdx + 3));
+    const window = counts.slice(peakIdx, Math.min(counts.length, peakIdx + FLATNESS_WINDOW_SIZE));
     const cv = stdDev(window) / (average(window) || 1);
     flatness = clamp(1 - cv, 0, 1);
   }

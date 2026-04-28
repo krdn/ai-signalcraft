@@ -20,11 +20,22 @@ describe('trend-shape signal', () => {
     const result = computeTrendShape(series);
     expect(result.score).toBeGreaterThanOrEqual(60);
     expect(result.metrics.jumpRatio).toBeGreaterThanOrEqual(20);
+    expect(result.metrics.flatness).toBeGreaterThan(0); // changePoint 게이트 잠금
   });
 
   it('짧은 시리즈는 confidence 낮음', () => {
     const series = [{ ts: new Date().toISOString(), count: 5 }];
     const result = computeTrendShape(series);
     expect(result.confidence).toBeLessThan(0.3);
+  });
+
+  it('descending 시리즈 (peak가 시작점) 는 score 0', () => {
+    const series = [100, 50, 30, 20, 10, 5, 3, 2, 1].map((count, i) => ({
+      ts: new Date(2026, 3, 27, i).toISOString(),
+      count,
+    }));
+    const result = computeTrendShape(series);
+    expect(result.score).toBe(0);
+    expect(result.metrics.peakAtStart).toBe(1);
   });
 });
