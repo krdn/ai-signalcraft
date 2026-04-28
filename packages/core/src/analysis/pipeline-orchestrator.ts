@@ -37,6 +37,7 @@ import { extractEntitiesFromResults } from './ontology-extractor';
 import { persistOntology } from './persist-ontology';
 import { persistAnalysisResult } from './persist-analysis';
 import { runSeriesDeltaAnalysis } from './delta';
+import { runStage5Manipulation } from './manipulation';
 import type { AnalysisModuleResult } from './types';
 import type { PipelineContext } from './pipeline-context';
 import {
@@ -686,6 +687,31 @@ export async function runAnalysisPipeline(
   if (!(await awaitStageGate(jobId, 'analysis-stage4'))) {
     ctx.cancelledByUser = true;
     return buildResult(ctx.allResults, ctx.cancelledByUser, ctx.costLimitExceeded, ctx.input);
+  }
+
+  // Stage 5: Manipulation Detection (옵션, 비차단)
+  // - default OFF: jobOptions.runManipulation === true 일 때만 실행
+  // - 구독 경로 한정: subscriptionId 없으면 SKIP
+  // - dateRange는 collectionJobs.startDate/endDate (분석 데이터 윈도우, 실행 시각이 아님)
+  try {
+    const [windowRow] = await getDb()
+      .select({ startDate: collectionJobs.startDate, endDate: collectionJobs.endDate })
+      .from(collectionJobs)
+      .where(eq(collectionJobs.id, jobId))
+      .limit(1);
+
+    if (windowRow?.startDate && windowRow?.endDate) {
+      await runStage5Manipulation({
+        jobId,
+        jobOptions,
+        domain: ctx.input.domain,
+        dateRange: { start: windowRow.startDate, end: windowRow.endDate },
+      });
+    } else {
+      logError('manipulation-stage5', new Error(`jobId ${jobId}: startDate/endDate 누락`));
+    }
+  } catch (err) {
+    logError('manipulation-stage5', err);
   }
 
   // 리포트 생성
