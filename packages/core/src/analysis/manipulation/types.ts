@@ -1,6 +1,11 @@
 import type { SignalType, Severity } from '../../db/schema/manipulation';
+import type { VoteRow } from './signals/vote';
+import type { EmbeddedItem } from './signals/similarity';
+import type { ArticleEmbedded } from './signals/media-sync';
+import type { TrendPoint } from './signals/trend-shape';
 
 export type { SignalType, Severity };
+export type { VoteRow, EmbeddedItem, ArticleEmbedded, TrendPoint };
 
 export type RawRef = {
   itemId: string;
@@ -85,4 +90,13 @@ export type CommentRow = {
   source: string;
   time: Date;
   excerpt: string;
+};
+
+export type ManipulationDataLoader = {
+  loadComments(ctx: SignalContext): Promise<CommentRow[]>;
+  loadVotes(ctx: SignalContext): Promise<VoteRow[]>;
+  loadEmbeddedComments(ctx: SignalContext): Promise<EmbeddedItem[]>;
+  loadEmbeddedArticles(ctx: SignalContext): Promise<ArticleEmbedded[]>;
+  loadTrendSeries(ctx: SignalContext): Promise<TrendPoint[]>;
+  loadTemporalBaselines(ctx: SignalContext): Promise<Record<string, number[]>>;
 };
