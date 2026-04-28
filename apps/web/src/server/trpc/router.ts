@@ -21,11 +21,13 @@ import { llmInsightsRouter } from './routers/llm-insights';
 import { seriesRouter } from './routers/series';
 import { subscriptionsRouter } from './routers/subscriptions';
 import { manipulationRouter } from './routers/manipulation';
+import { manipulationAlertsRouter } from './routers/manipulation-alerts';
 
 export const appRouter = router({
   analysis: analysisRouter,
   subscriptions: subscriptionsRouter,
   manipulation: manipulationRouter,
+  manipulationAlerts: manipulationAlertsRouter,
   pipeline: pipelineRouter,
   history: historyRouter,
   team: teamRouter,
