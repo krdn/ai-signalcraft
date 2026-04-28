@@ -8,6 +8,15 @@ export type AggregateResult = {
   signalScores: Record<SignalType, number>;
 };
 
+/**
+ * 7개 신호 결과를 단일 manipulation 점수로 집계.
+ *
+ * - 누락 신호: score=0, confidence=0 처리 → confidenceFactor 희석 패널티
+ *   (예: 3개만 들어오면 confidenceFactor = 3/7 ≈ 0.43)
+ * - weighted = Σ(score × weight). weights 합이 1이 아니면 그대로 반영
+ * - manipulationScore = clamp(weighted × confidenceFactor, 0, 100)
+ * - signalScores: SIGNAL_TYPES 모든 키 보장 (Task 14 persist 의존)
+ */
 export function aggregate(signals: SignalResult[], config: DomainConfig): AggregateResult {
   for (const t of SIGNAL_TYPES) {
     if (typeof config.weights[t] !== 'number') {
@@ -20,8 +29,10 @@ export function aggregate(signals: SignalResult[], config: DomainConfig): Aggreg
 
   let weighted = 0;
   let confSum = 0;
-  let confN = 0;
-  const signalScores: Record<SignalType, number> = {} as Record<SignalType, number>;
+  const signalScores = Object.fromEntries(SIGNAL_TYPES.map((t) => [t, 0])) as Record<
+    SignalType,
+    number
+  >;
 
   for (const t of SIGNAL_TYPES) {
     const r = byType.get(t);
@@ -30,10 +41,9 @@ export function aggregate(signals: SignalResult[], config: DomainConfig): Aggreg
     signalScores[t] = score;
     weighted += score * config.weights[t];
     confSum += conf;
-    confN += 1;
   }
 
-  const confidenceFactor = confN === 0 ? 0 : confSum / confN;
+  const confidenceFactor = confSum / SIGNAL_TYPES.length;
   const manipulationScore = clamp(weighted * confidenceFactor, 0, 100);
 
   return {

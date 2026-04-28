@@ -116,6 +116,20 @@ describe('aggregator', () => {
     expect(out.signalScores['cross-platform']).toBe(100);
   });
 
+  it('일부 신호 누락 → 기본 0 + confidence 희석', () => {
+    // 3개만 100점, 나머지 4개 누락 (score=0, confidence=0 자동 채워짐)
+    const out = aggregate([r('burst', 100), r('similarity', 100), r('vote', 100)], config);
+    // signalScores 모든 7개 키 존재 (누락은 0)
+    expect(out.signalScores['media-sync']).toBe(0);
+    expect(out.signalScores.temporal).toBe(0);
+    expect(out.signalScores['trend-shape']).toBe(0);
+    expect(out.signalScores['cross-platform']).toBe(0);
+    // confidenceFactor = (1+1+1+0+0+0+0)/7 ≈ 0.4286
+    expect(out.confidenceFactor).toBeCloseTo(3 / 7, 5);
+    // weighted = 100*(0.18+0.22+0.14) = 54, score = clamp(54 * 0.4286, 0, 100) ≈ 23.14
+    expect(out.manipulationScore).toBeCloseTo(54 * (3 / 7), 1);
+  });
+
   it('가중치 누락 신호 검출', () => {
     const badConfig = { ...config, weights: { ...config.weights, burst: undefined as any } };
     expect(() =>
