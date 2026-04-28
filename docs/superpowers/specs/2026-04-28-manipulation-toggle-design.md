@@ -257,7 +257,9 @@ it('options 부재 → meta.options에 runManipulation 키 부재', () => {
 
 ### Zod 스키마 통과 검증
 
-추가 테스트 불필요. `optionsSchema.parse({ enableManipulation: true })` 가 통과함은 zod 자체가 보장.
+별도 테스트 추가 불필요. zod 기본 모드(strict 아님)에서 스키마에 정의되지 않은 키는 silent strip되므로
+`optionsSchema`에 `enableManipulation` 필드를 반드시 추가해야 한다 (위 "데이터 모델" 섹션 참조).
+필드 추가 후에는 zod 자체가 통과를 보장.
 
 ### 회귀 테스트
 
