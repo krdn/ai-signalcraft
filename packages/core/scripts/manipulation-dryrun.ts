@@ -29,8 +29,8 @@ async function main() {
     process.exit(2);
   }
   const jobId = Number(jobIdArg);
-  if (!Number.isInteger(jobId)) {
-    console.error(`jobId는 정수여야 합니다: ${jobIdArg}`);
+  if (!Number.isInteger(jobId) || jobId <= 0) {
+    console.error(`jobId는 양의 정수여야 합니다: ${jobIdArg}`);
     process.exit(2);
   }
 
@@ -78,7 +78,7 @@ async function main() {
     jobId,
     subscriptionId: null,
     output: out,
-    weightsVersion: 'v1-political',
+    weightsVersion: `v1-${cfgRows[0].domain}`,
   });
 
   const elapsed = Date.now() - t0;
@@ -99,7 +99,6 @@ async function main() {
       2,
     ),
   );
-  process.exit(0);
 }
 
 main().catch((err) => {
