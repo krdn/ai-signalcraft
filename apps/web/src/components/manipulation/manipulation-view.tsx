@@ -2,6 +2,8 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
+import { ManipulationHero } from './manipulation-hero';
+import { SignalGrid } from './signal-grid';
 import { trpcClient } from '@/lib/trpc';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -75,8 +77,14 @@ export function ManipulationView({ jobId }: ManipulationViewProps) {
   // status === 'completed'
   return (
     <div data-testid="manipulation-completed" className="space-y-4 p-6">
-      {/* TODO Task 4-5: Hero + SignalGrid + EvidenceCards */}
-      <pre className="text-xs">{JSON.stringify(data, null, 2)}</pre>
+      <ManipulationHero
+        manipulationScore={data.manipulationScore}
+        confidenceFactor={data.confidenceFactor}
+        weightsVersion={data.weightsVersion}
+        narrativeMd={data.narrativeMd}
+      />
+      <SignalGrid signals={data.signals} />
+      {/* TODO Task 5: Evidence cards */}
     </div>
   );
 }
