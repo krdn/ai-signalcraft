@@ -103,7 +103,10 @@ export function computeVoteAnomaly(rows: VoteRow[]): SignalResult {
 
   const outlierRatio = totalCount === 0 ? 0 : outliers.length / totalCount;
   const score = clamp(outlierRatio * OUTLIER_SCORE_MULTIPLIER, 0, 100);
-  const confidence = Math.min(1, rows.length / MIN_SAMPLES_FOR_CONFIDENCE);
+  // confidence: 샘플 수 충분 × 분석 가능 비율 (parent별 MIN_PARENT_ROWS 통과한 행 비율)
+  const sampleConfidence = Math.min(1, rows.length / MIN_SAMPLES_FOR_CONFIDENCE);
+  const analyzedFraction = rows.length === 0 ? 0 : totalCount / rows.length;
+  const confidence = sampleConfidence * analyzedFraction;
 
   outliers.sort((a, b) => b.residual - a.residual);
   const evidence: EvidenceCard[] = [];
@@ -142,7 +145,13 @@ export function computeVoteAnomaly(rows: VoteRow[]): SignalResult {
     score,
     confidence,
     evidence,
-    metrics: { outlierRatio, sampleCount: rows.length, outlierCount: outliers.length },
+    metrics: {
+      outlierRatio,
+      sampleCount: rows.length,
+      analyzedCount: totalCount,
+      skippedRows: rows.length - totalCount,
+      outlierCount: outliers.length,
+    },
     computeMs: Date.now() - t0,
   };
 }

@@ -32,4 +32,13 @@ describe('vote anomaly signal', () => {
     const result = computeVoteAnomaly([]);
     expect(result.confidence).toBe(0);
   });
+
+  it('대부분 행이 작은 parent에 분산되면 confidence 하향', () => {
+    // 30개 행 → 30개 parent에 1개씩 (모두 < MIN_PARENT_ROWS)
+    const rows: VoteRow[] = Array.from({ length: 30 }, (_, i) => row(`p${i}`, 50 + i, i + 1));
+    const result = computeVoteAnomaly(rows);
+    expect(result.confidence).toBe(0);
+    expect(result.metrics.analyzedCount).toBe(0);
+    expect(result.metrics.skippedRows).toBe(30);
+  });
 });
