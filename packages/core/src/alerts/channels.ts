@@ -89,6 +89,7 @@ async function sendSlackNotification(
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(5000),
   });
 
   if (!response.ok) {
@@ -115,6 +116,7 @@ async function sendWebhookNotification(
       timestamp: new Date().toISOString(),
       source: 'ai-signalcraft',
     }),
+    signal: AbortSignal.timeout(5000),
   });
 
   if (!response.ok) {
