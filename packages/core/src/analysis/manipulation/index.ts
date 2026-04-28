@@ -1,0 +1,7 @@
+export { runManipulationDetection } from './runner';
+export type { RunInput, RunOutput } from './runner';
+export { aggregate } from './aggregator';
+export type { AggregateResult } from './aggregator';
+export { persistRun, markRunFailed } from './persist';
+export type { PersistInput } from './persist';
+export * from './types';
