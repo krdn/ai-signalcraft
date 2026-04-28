@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { ArrowLeft, Plus } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -13,6 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import { SubscriptionForm } from '@/components/subscriptions/subscription-form';
 import { RunActionsModal } from '@/components/subscriptions/run-actions-modal';
+import { OPEN_SUBSCRIPTION_FORM_EVENT } from '@/components/subscriptions/subscription-utils';
 import { cn } from '@/lib/utils';
 
 const NAV_ITEMS = [
@@ -30,6 +32,13 @@ export default function SubscriptionsLayout({ children }: { children: React.Reac
 
   const isDetailPage = /^\/subscriptions\/\d+/.test(pathname);
 
+  // SUBS-002: 빈 상태 테이블의 CTA에서 발행하는 글로벌 이벤트를 수신해 모달을 오픈.
+  useEffect(() => {
+    const handler = () => setIsFormOpen(true);
+    window.addEventListener(OPEN_SUBSCRIPTION_FORM_EVENT, handler);
+    return () => window.removeEventListener(OPEN_SUBSCRIPTION_FORM_EVENT, handler);
+  }, []);
+
   return (
     <div className="mx-auto max-w-6xl p-4 md:p-6 space-y-4">
       <div className="flex items-center justify-between">
@@ -45,23 +54,31 @@ export default function SubscriptionsLayout({ children }: { children: React.Reac
           </Button>
 
           {!isDetailPage && (
-            <nav className="hidden md:flex items-center gap-1 ml-4">
-              {NAV_ITEMS.map((item) => (
-                <Button
-                  key={item.href}
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => router.push(item.href)}
-                  className={cn(
-                    'text-sm',
-                    pathname === item.href
-                      ? 'bg-accent text-accent-foreground font-medium'
-                      : 'text-muted-foreground',
-                  )}
-                >
-                  {item.label}
-                </Button>
-              ))}
+            <nav
+              className="hidden md:flex items-center gap-1 ml-4"
+              aria-label="구독 영역 네비게이션"
+            >
+              {NAV_ITEMS.map((item) => {
+                const isActive = pathname === item.href;
+                // SUBS-003: <Button onClick={router.push}> → <Link>로 시멘틱 전환.
+                // base-ui Button은 asChild가 없으므로 buttonVariants로 동일 스타일 유지.
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    aria-current={isActive ? 'page' : undefined}
+                    className={cn(
+                      buttonVariants({ variant: 'ghost', size: 'sm' }),
+                      'text-sm',
+                      isActive
+                        ? 'bg-accent text-accent-foreground font-medium'
+                        : 'text-muted-foreground',
+                    )}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
             </nav>
           )}
         </div>
@@ -74,7 +91,12 @@ export default function SubscriptionsLayout({ children }: { children: React.Reac
       {children}
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="max-w-lg">
+        {/*
+          SUBS-005: max-h-[85vh] + overflow-y-auto로 긴 폼이 vh를 넘어도 다이얼로그 내부에서
+          스크롤되도록 처리. 1440x900 뷰포트 모달 캡처에서 상단 콘텐츠가 박스 밖으로 잘려
+          노출되던 클리핑을 방지.
+        */}
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>새 키워드 구독</DialogTitle>
             <DialogDescription>

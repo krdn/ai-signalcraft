@@ -2,14 +2,81 @@
 
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Loader2 } from 'lucide-react';
 import { trpcClient } from '@/lib/trpc';
+import { Skeleton } from '@/components/ui/skeleton';
 import { SubscriptionKpiCards } from '@/components/subscriptions/subscription-kpi-cards';
 import { SubscriptionStatusBar } from '@/components/subscriptions/subscription-status-bar';
 import { SubscriptionTrendChart } from '@/components/subscriptions/subscription-trend-chart';
 import { SubscriptionTable } from '@/components/subscriptions/subscription-table';
 import { SubscriptionAlerts } from '@/components/subscriptions/subscription-alerts';
 import { SubscriptionList } from '@/components/subscriptions/subscription-list';
+
+/**
+ * SUBS-004: 영역별 스켈레톤 — 단일 spinner 대신 KPI/차트/테이블 모양에 맞는 박스를 표시해
+ * CLS와 인지 응답성을 개선.
+ */
+function KpiSkeleton() {
+  return (
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4" aria-busy="true" aria-live="polite">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <div
+          key={i}
+          className="rounded-xl border border-slate-100 p-4 shadow-sm border-t-2 border-t-slate-200"
+        >
+          <Skeleton className="h-4 w-24 mb-3" />
+          <Skeleton className="h-7 w-32 mb-2" />
+          <Skeleton className="h-3 w-40" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function StatusBarSkeleton() {
+  return (
+    <div
+      className="flex items-center gap-4 rounded-lg border px-4 py-2.5"
+      aria-busy="true"
+      aria-live="polite"
+    >
+      <Skeleton className="h-4 w-16" />
+      <Skeleton className="h-4 w-16" />
+      <Skeleton className="h-4 w-16" />
+    </div>
+  );
+}
+
+function ChartSkeleton() {
+  return (
+    <div className="rounded-xl border bg-card p-4" aria-busy="true" aria-live="polite">
+      <Skeleton className="h-4 w-32 mb-4" />
+      <div className="h-[240px] flex items-end gap-2">
+        {Array.from({ length: 7 }).map((_, i) => (
+          <Skeleton key={i} className="flex-1" style={{ height: `${30 + ((i * 17) % 70)}%` }} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TableSkeleton() {
+  return (
+    <div className="rounded-md border" aria-busy="true" aria-live="polite">
+      <div className="p-3 border-b">
+        <Skeleton className="h-7 w-48" />
+      </div>
+      {Array.from({ length: 5 }).map((_, i) => (
+        <div key={i} className="flex items-center gap-3 p-3 border-b last:border-b-0">
+          <Skeleton className="h-4 w-4" />
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-4 w-12" />
+          <Skeleton className="h-4 w-20 ml-auto" />
+          <Skeleton className="h-4 w-16" />
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function SubscriptionsPage() {
   const [statusFilter, setStatusFilter] = useState('all');
@@ -47,15 +114,8 @@ export default function SubscriptionsPage() {
   });
   const breakdown = breakdownQuery.data ?? [];
 
-  if (subsQuery.isLoading) {
-    return (
-      <div className="flex items-center justify-center py-20 text-muted-foreground">
-        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        불러오는 중...
-      </div>
-    );
-  }
-
+  // SUBS-004: 단일 isLoading 분기로 본문 전체를 비우지 않고, 각 영역이 자체 스켈레톤을 노출.
+  // subsQuery 에러는 페이지 레벨에서 표시 (runs/breakdown 실패는 영역 단위로 흡수).
   if (subsQuery.isError) {
     return (
       <div className="rounded-md bg-destructive/10 p-4 text-sm text-destructive">
@@ -63,6 +123,9 @@ export default function SubscriptionsPage() {
       </div>
     );
   }
+
+  const isSubsLoading = subsQuery.isLoading;
+  const isRunsLoading = runsQuery.isLoading;
 
   return (
     <div className="space-y-4">
@@ -74,30 +137,40 @@ export default function SubscriptionsPage() {
         </p>
       </div>
 
-      <SubscriptionKpiCards subscriptions={subscriptions} runs={runs} />
+      {isSubsLoading || isRunsLoading ? (
+        <KpiSkeleton />
+      ) : (
+        <SubscriptionKpiCards subscriptions={subscriptions} runs={runs} />
+      )}
 
-      <SubscriptionStatusBar
-        subscriptions={subscriptions}
-        statusFilter={statusFilter}
-        onStatusFilterChange={setStatusFilter}
-      />
+      {isSubsLoading ? (
+        <StatusBarSkeleton />
+      ) : (
+        <SubscriptionStatusBar
+          subscriptions={subscriptions}
+          statusFilter={statusFilter}
+          onStatusFilterChange={setStatusFilter}
+        />
+      )}
 
-      <SubscriptionTrendChart runs={runs} />
+      {isRunsLoading ? <ChartSkeleton /> : <SubscriptionTrendChart runs={runs} />}
 
-      <SubscriptionAlerts subscriptions={subscriptions} />
+      {isSubsLoading ? null : <SubscriptionAlerts subscriptions={subscriptions} />}
 
       {/* 데스크톱: 테이블 / 모바일: 기존 카드 리스트 */}
       <div className="hidden md:block">
-        <SubscriptionTable
-          subscriptions={subscriptions}
-          runs={runs}
-          breakdown={breakdown}
-          statusFilter={statusFilter}
-        />
+        {isSubsLoading || isRunsLoading ? (
+          <TableSkeleton />
+        ) : (
+          <SubscriptionTable
+            subscriptions={subscriptions}
+            runs={runs}
+            breakdown={breakdown}
+            statusFilter={statusFilter}
+          />
+        )}
       </div>
-      <div className="md:hidden">
-        <SubscriptionList />
-      </div>
+      <div className="md:hidden">{isSubsLoading ? <TableSkeleton /> : <SubscriptionList />}</div>
     </div>
   );
 }

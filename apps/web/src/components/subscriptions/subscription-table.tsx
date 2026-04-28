@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
   Pause,
   Play,
@@ -12,12 +13,15 @@ import {
   ChevronDown,
   ChevronUp,
   ChevronRight,
+  Inbox,
+  Plus,
 } from 'lucide-react';
 import {
   formatRelative,
   SOURCE_LABEL_MAP,
   getStatusLabel,
   getStatusVariant,
+  dispatchOpenSubscriptionForm,
 } from './subscription-utils';
 import { CopyableClaudeRef } from './copyable-claude-ref';
 import { Button } from '@/components/ui/button';
@@ -255,8 +259,49 @@ export function SubscriptionTable({
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} className="text-center py-8 text-sm text-muted-foreground">
-                  {search ? '검색 결과가 없습니다' : '등록된 구독이 없습니다'}
+                {/*
+                  SUBS-002: 빈 상태 테이블에 CTA 추가.
+                  - 검색어가 있을 때 → "검색 결과 없음" 안내만
+                  - subscriptions 자체가 0개일 때 → EmptyState로 등록 CTA + 가이드 링크 노출
+                  - 그 외(필터로 인한 0건) → "이 상태의 구독이 없습니다" — 등록 CTA가 오인되지 않도록.
+                */}
+                <TableCell colSpan={10} className="py-10">
+                  {search ? (
+                    <p className="text-center text-sm text-muted-foreground">
+                      검색 결과가 없습니다
+                    </p>
+                  ) : subscriptions.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center text-center px-4">
+                      <Inbox
+                        className="h-12 w-12 text-muted-foreground/60 mb-4"
+                        aria-hidden="true"
+                      />
+                      <h3 className="text-base font-semibold">아직 구독 중인 키워드가 없습니다</h3>
+                      <p className="mt-2 text-sm text-muted-foreground max-w-md">
+                        키워드를 등록하면 6시간마다 자동 수집됩니다. 분석은 대시보드에서 축적된
+                        데이터로 실행합니다.
+                      </p>
+                      <div className="mt-4 flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          onClick={dispatchOpenSubscriptionForm}
+                          aria-label="첫 키워드 구독 등록 폼 열기"
+                        >
+                          <Plus className="h-4 w-4 mr-1" />첫 키워드 구독 등록
+                        </Button>
+                        <Link
+                          href="/docs"
+                          className="text-sm text-muted-foreground hover:text-foreground underline-offset-4 hover:underline"
+                        >
+                          가이드 보기
+                        </Link>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-center text-sm text-muted-foreground">
+                      이 상태의 구독이 없습니다
+                    </p>
+                  )}
                 </TableCell>
               </TableRow>
             ) : (

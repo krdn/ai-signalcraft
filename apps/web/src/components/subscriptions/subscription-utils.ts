@@ -57,3 +57,16 @@ export function getStatusVariant(status: string): 'default' | 'secondary' | 'des
       return 'secondary';
   }
 }
+
+/**
+ * 새 구독 등록 폼을 여는 글로벌 이벤트.
+ *
+ * SUBS-002: layout.tsx의 isFormOpen 상태를 children인 subscription-table에서 호출하기 위해
+ * window CustomEvent로 통신. 신규 파일·zustand 도입 없이 cross-component 트리거를 구현.
+ */
+export const OPEN_SUBSCRIPTION_FORM_EVENT = 'subscriptions:open-form';
+
+export function dispatchOpenSubscriptionForm(): void {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent(OPEN_SUBSCRIPTION_FORM_EVENT));
+}

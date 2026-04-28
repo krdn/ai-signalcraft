@@ -208,8 +208,12 @@ export function SubscriptionForm({ initial, onSaved, onCreated, onCancel }: Subs
         </p>
       </div>
 
-      <div className="space-y-2">
-        <Label>수집 소스</Label>
+      {/*
+        SUBS-010: 체크박스 그룹을 <fieldset>+<legend>로 묶어 보조 기술이 그룹 라벨을 인식하도록.
+        스타일은 기존 시각 위계 유지 (Label → legend로 교체).
+      */}
+      <fieldset className="space-y-2 border-0 p-0 m-0">
+        <legend className="text-sm font-medium leading-none">수집 소스</legend>
         <div className="grid grid-cols-2 gap-2">
           {SOURCE_CHOICES.map((s) => (
             <label
@@ -225,11 +229,17 @@ export function SubscriptionForm({ initial, onSaved, onCreated, onCancel }: Subs
             </label>
           ))}
         </div>
-      </div>
+      </fieldset>
 
-      <div className="space-y-2">
+      {/*
+        SUBS-010: 프리셋 카드 그룹은 단일 선택이므로 role="radiogroup" + role="radio"로 의미 부여.
+        legend 역할은 aria-labelledby로 시각 라벨을 참조.
+      */}
+      <div className="space-y-2" role="radiogroup" aria-labelledby="preset-group-label">
         <div className="flex items-center justify-between">
-          <Label>수집 강도 프리셋</Label>
+          <span id="preset-group-label" className="text-sm font-medium leading-none">
+            수집 강도 프리셋
+          </span>
           {selectedPreset === 'custom' && (
             <span className="text-xs text-muted-foreground">사용자 지정값</span>
           )}
@@ -241,6 +251,9 @@ export function SubscriptionForm({ initial, onSaved, onCreated, onCancel }: Subs
               <button
                 key={p.id}
                 type="button"
+                role="radio"
+                aria-checked={active}
+                aria-label={`${p.label}: ${p.description}`}
                 onClick={() => applyPreset(p)}
                 disabled={isPending}
                 className={cn(
