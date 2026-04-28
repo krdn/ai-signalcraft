@@ -20,10 +20,12 @@ import { ontologyRouter } from './routers/ontology';
 import { llmInsightsRouter } from './routers/llm-insights';
 import { seriesRouter } from './routers/series';
 import { subscriptionsRouter } from './routers/subscriptions';
+import { manipulationRouter } from './routers/manipulation';
 
 export const appRouter = router({
   analysis: analysisRouter,
   subscriptions: subscriptionsRouter,
+  manipulation: manipulationRouter,
   pipeline: pipelineRouter,
   history: historyRouter,
   team: teamRouter,

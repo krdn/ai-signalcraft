@@ -11,6 +11,7 @@ import { DashboardView } from '@/components/dashboard/dashboard-view';
 import { ReportView } from '@/components/report/report-view';
 import { AdvancedView } from '@/components/advanced/advanced-view';
 import { ExploreView } from '@/components/explore/explore-view';
+import { ManipulationView } from '@/components/manipulation/manipulation-view';
 import { PipelineMonitor } from '@/components/analysis/pipeline-monitor';
 import { useShowcasePipelineStatus } from '@/hooks/use-showcase-pipeline-status';
 import { Button } from '@/components/ui/button';
@@ -127,6 +128,9 @@ export default function ShowcaseDetailPage() {
 
       {/* 탭 6: 탐색 */}
       {activeTab === 6 && <ExploreView jobId={jobId} />}
+
+      {/* 탭 7: 조작 신호 */}
+      {activeTab === 7 && <ManipulationView jobId={jobId} />}
     </AppShell>
   );
 }
