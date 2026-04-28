@@ -353,6 +353,7 @@ export const analysisRouter = router({
           keyword: sub.keyword,
           sources: sub.sources,
           limits: sub.limits as Record<string, number> | null,
+          options: sub.options,
         },
         { subscriptionId: input.subscriptionId, optimizationPreset: input.optimizationPreset },
       );
