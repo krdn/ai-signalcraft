@@ -139,8 +139,9 @@ export function scoreClusters(clusters: SimilarityCluster[]): {
   }
   topScore = clamp(topScore, 0, 100);
 
-  clusters.sort((a, b) => b.members.length - a.members.length);
-  const evidence: EvidenceCard[] = clusters.slice(0, MAX_EVIDENCE_CARDS).map((c, idx) => ({
+  // 입력 배열을 mutate 하지 않도록 복사 후 정렬 (외부 caller 안전성)
+  const sortedClusters = [...clusters].sort((a, b) => b.members.length - a.members.length);
+  const evidence: EvidenceCard[] = sortedClusters.slice(0, MAX_EVIDENCE_CARDS).map((c, idx) => ({
     signal: 'similarity',
     severity:
       c.members.length >= HIGH_CLUSTER_SIZE
@@ -174,7 +175,7 @@ export function scoreClusters(clusters: SimilarityCluster[]): {
     evidence,
     metrics: {
       clusterCount: clusters.length,
-      maxClusterSize: clusters[0]?.members.length ?? 0,
+      maxClusterSize: sortedClusters[0]?.members.length ?? 0,
     },
   };
 }

@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { cosineSimilarity, buildSimilarityClusters, scoreClusters } from '../signals/similarity';
+import {
+  cosineSimilarity,
+  buildSimilarityClusters,
+  scoreClusters,
+  computeSimilarity,
+} from '../signals/similarity';
 import type { EmbeddedItem } from '../signals/similarity';
 
 function item(
@@ -40,6 +45,30 @@ describe('similarity signal', () => {
       expect(clusters.length).toBe(0);
     });
 
+    it('동일 embedding이지만 텍스트 다르면 jaccard 게이트로 클러스터 안 만듦', () => {
+      // cosine = 1.0 (passes 0.85), jaccard = 0 (fails 0.5)
+      const items = [
+        item(
+          'a',
+          'dcinside',
+          'u1',
+          '안녕하세요 좋은 아침입니다 오늘도 화이팅',
+          [0.9, 0.1],
+          '2026-04-27T10:00:00Z',
+        ),
+        item(
+          'b',
+          'clien',
+          'u2',
+          '저녁 메뉴 추천해주세요 김치찌개 어떨까요',
+          [0.9, 0.1],
+          '2026-04-27T10:01:00Z',
+        ),
+      ];
+      const clusters = buildSimilarityClusters(items, { cosineMin: 0.85, jaccardMin: 0.5 });
+      expect(clusters.length).toBe(0);
+    });
+
     it('동일 텍스트 + 다른 작성자 + 다른 source 는 클러스터 형성', () => {
       const text = '이번 정책은 정말 우려스러운 부분이 많습니다 신중히 생각해야 합니다';
       const emb = [0.9, 0.1];
@@ -77,7 +106,17 @@ describe('similarity signal', () => {
           timeSpanMs: 8 * 60 * 1000,
         },
       ]);
-      expect(result.score).toBeGreaterThanOrEqual(60);
+      // paper math: 60 (size clamp) + 30 (author) + 16 (source) + 20 (speed) = 126 → clamp 100
+      expect(result.score).toBe(100);
+    });
+  });
+
+  describe('computeSimilarity', () => {
+    it('빈 배열은 score=0, confidence=0', () => {
+      const result = computeSimilarity([]);
+      expect(result.score).toBe(0);
+      expect(result.confidence).toBe(0);
+      expect(result.evidence).toHaveLength(0);
     });
   });
 });
