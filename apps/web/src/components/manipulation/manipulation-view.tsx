@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { ManipulationHero } from './manipulation-hero';
 import { SignalGrid } from './signal-grid';
+import { EvidenceCard } from './evidence-card';
 import { trpcClient } from '@/lib/trpc';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -84,7 +85,15 @@ export function ManipulationView({ jobId }: ManipulationViewProps) {
         narrativeMd={data.narrativeMd}
       />
       <SignalGrid signals={data.signals} />
-      {/* TODO Task 5: Evidence cards */}
+      {data.evidence.length === 0 ? (
+        <p className="text-sm text-muted-foreground">증거 카드가 없습니다 (점수만 산출됨).</p>
+      ) : (
+        <div className="space-y-3">
+          {data.evidence.map((e) => (
+            <EvidenceCard key={e.id} evidence={e} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
