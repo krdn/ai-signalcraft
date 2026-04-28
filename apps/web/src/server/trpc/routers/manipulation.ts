@@ -21,7 +21,9 @@ export const manipulationRouter = router({
       // 1. 권한 — 헬퍼가 NOT_FOUND throw 또는 통과
       await verifyJobOwnership(ctx, input.jobId);
 
-      // 2. run 조회 (가장 최근 1건)
+      // run/signals/evidence 모두 전체 컬럼 반환 — UI가 narrativeMd, signalScores,
+      // metrics, visualization, rawRefs JSONB를 직접 사용. 페이로드 수백 KB 가능.
+      // 2. run 조회 (가장 최근 1건; retry로 여러 row 가능)
       const [run] = await getDb()
         .select()
         .from(manipulationRuns)
