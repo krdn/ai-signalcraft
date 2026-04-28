@@ -22,6 +22,7 @@ const optionsSchema = z
   .object({
     collectTranscript: z.boolean().optional(),
     includeComments: z.boolean().optional(),
+    enableManipulation: z.boolean().optional(),
   })
   .optional();
 

@@ -18,6 +18,7 @@ export type SubscriptionLimits = {
 export type SubscriptionOptions = {
   collectTranscript?: boolean;
   includeComments?: boolean;
+  enableManipulation?: boolean;
 };
 
 export const keywordSubscriptions = pgTable(
