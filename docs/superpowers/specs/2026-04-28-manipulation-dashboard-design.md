@@ -161,18 +161,8 @@ export const manipulationRouter = router({
   getRunByJobId: protectedProcedure
     .input(z.object({ jobId: z.number().int().positive() }))
     .query(async ({ ctx, input }) => {
-      // 1. jobId 소유권 검증
-      const [job] = await getDb().select({
-        userId: collectionJobs.userId,
-        teamId: collectionJobs.teamId,
-      }).from(collectionJobs).where(eq(collectionJobs.id, input.jobId)).limit(1);
-
-      if (!job) throw new TRPCError({ code: 'NOT_FOUND' });
-      const isOwner = job.userId === ctx.userId;
-      const isTeamMember = job.teamId !== null && ctx.teamId === job.teamId;
-      if (!isOwner && !isTeamMember) {
-        throw new TRPCError({ code: 'FORBIDDEN', message: '해당 분석에 접근할 수 없습니다' });
-      }
+      // 1. jobId 소유권 검증 — 기존 헬퍼 재사용 (NOT_FOUND throw 또는 통과)
+      await verifyJobOwnership(ctx, input.jobId);
 
       // 2. run 조회 (가장 최근 1건; 동일 jobId에 대해 retry로 여러 row 가능)
       const [run] = await getDb().select().from(manipulationRuns)
@@ -215,7 +205,7 @@ export const manipulationRouter = router({
 });
 ```
 
-**Router 등록**: `apps/web/src/server/trpc/routers/index.ts` (또는 root router)에 `manipulation: manipulationRouter` 추가.
+**Router 등록**: `apps/web/src/server/trpc/router.ts` (root router)에 `manipulation: manipulationRouter` 추가.
 
 ## 진입점 통합
 
@@ -264,15 +254,13 @@ const TABS = [
 
 ### tRPC router (`__tests__/manipulation.test.ts`)
 
-```typescript
-it('getRunByJobId — 권한 없음 (다른 팀의 jobId)', async () => { ... });
-it('getRunByJobId — 본인 잡, run+signals+evidence join 반환', async () => { ... });
-it('getRunByJobId — manipulation_runs 행 없으면 null', async () => { ... });
-it('listRunsBySubscription — 권한 없음', async () => { ... });
-it('listRunsBySubscription — limit 30 적용, startedAt DESC', async () => { ... });
-```
+5가지 케이스 (각 테스트는 `getDb()` mock + `verifyJobOwnership`/`verifySubscriptionOwnership` mock 후 router.createCaller로 호출):
 
-`getDb()`/`verifySubscriptionOwnership` 모킹 후 호출.
+1. **`getRunByJobId` 권한 없음** — `verifyJobOwnership`이 NOT_FOUND throw → router도 throw 전파
+2. **`getRunByJobId` 정상** — 본인 잡, run+signals(7건)+evidence(N건) join 반환, evidence는 rank ASC
+3. **`getRunByJobId` null** — 권한 통과, manipulation_runs 행 없음 → `null`
+4. **`listRunsBySubscription` 권한 없음** — `verifySubscriptionOwnership`이 throw → 결과 throw 전파
+5. **`listRunsBySubscription` 정상** — 30건 limit, startedAt DESC, run 요약 형태(score/confidence/startedAt/status/jobId)만 반환
 
 ### 컴포넌트 테스트
 
