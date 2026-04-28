@@ -70,6 +70,9 @@ export const collectionJobs = pgTable(
       useCollectorLoader?: boolean;
       // 구독 모드에서 수집 대상 소스 목록 스냅샷
       sources?: string[];
+      // Phase 2 — manipulation detection (default false; 구독 경로 한정)
+      runManipulation?: boolean;
+      manipulationDomainOverride?: string;
     }>(),
     keywordType: text('keyword_type'),
     domain: text('domain').notNull().default('political'),
