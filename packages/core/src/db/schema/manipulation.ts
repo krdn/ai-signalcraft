@@ -6,6 +6,7 @@ import {
   jsonb,
   real,
   uuid,
+  boolean,
   index,
   uniqueIndex,
 } from 'drizzle-orm/pg-core';
@@ -109,3 +110,37 @@ export type ManipulationEvidence = typeof manipulationEvidence.$inferSelect;
 export type NewManipulationEvidence = typeof manipulationEvidence.$inferInsert;
 export type ManipulationDomainConfig = typeof manipulationDomainConfigs.$inferSelect;
 export type NewManipulationDomainConfig = typeof manipulationDomainConfigs.$inferInsert;
+
+// manipulation 알림 규칙 — 구독 단위, score 임계값 + cooldown + Slack/webhook 채널
+// 주의: keyword_subscriptions(collector DB)는 별도 schema라 FK 불가.
+// manipulation_runs.subscription_id와 동일하게 단순 integer로 보관.
+export const manipulationAlertRules = pgTable(
+  'manipulation_alert_rules',
+  {
+    id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+    subscriptionId: integer('subscription_id').notNull(),
+    name: text('name').notNull(),
+    enabled: boolean('enabled').notNull().default(true),
+
+    scoreThreshold: real('score_threshold').notNull(),
+    cooldownMinutes: integer('cooldown_minutes').notNull().default(360),
+
+    channel: jsonb('channel')
+      .$type<
+        | { type: 'slack'; webhookUrl: string }
+        | { type: 'webhook'; url: string; headers?: Record<string, string> }
+      >()
+      .notNull(),
+
+    lastTriggeredAt: timestamp('last_triggered_at'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => [
+    index('manipulation_alert_rules_subscription_idx').on(table.subscriptionId),
+    index('manipulation_alert_rules_enabled_idx').on(table.enabled),
+  ],
+);
+
+export type ManipulationAlertRule = typeof manipulationAlertRules.$inferSelect;
+export type NewManipulationAlertRule = typeof manipulationAlertRules.$inferInsert;
