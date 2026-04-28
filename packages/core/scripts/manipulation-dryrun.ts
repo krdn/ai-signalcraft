@@ -1,7 +1,8 @@
 // packages/core/scripts/manipulation-dryrun.ts
 // 내부 검증용 dryrun CLI — 외부 노출 없음.
 // stub loader로 7개 신호를 모두 0점 처리해 manipulation_runs DB write path가
-// 깨지지 않는지만 확인. 실제 raw_items 로더는 Phase 2에서 추가.
+// 깨지지 않는지만 확인.
+// --useReal --subscriptionId=N: 실제 collector 호출로 end-to-end 검증.
 import { resolve } from 'path';
 import { config as loadDotenv } from 'dotenv';
 import { eq } from 'drizzle-orm';
@@ -22,16 +23,32 @@ loadDotenv({ path: resolve(root, 'apps/web/.env.local'), override: true });
 loadDotenv({ path: resolve(root, '.env') });
 
 async function main() {
-  const jobIdArg = process.argv[2];
-  const domainArg = process.argv[3] ?? 'political';
+  const useReal = process.argv.includes('--useReal');
+  const subscriptionIdArg = process.argv.find((a) => a.startsWith('--subscriptionId='));
+  const subscriptionId = subscriptionIdArg ? Number(subscriptionIdArg.split('=')[1]) : null;
+
+  const jobIdArg =
+    process.argv.find((a) => a.startsWith('--jobId='))?.split('=')[1] ?? process.argv[2];
+  const domainArg =
+    process.argv.find((a) => a.startsWith('--domain='))?.split('=')[1] ??
+    process.argv[3] ??
+    'political';
+
   if (!jobIdArg) {
-    console.error('사용법: tsx scripts/manipulation-dryrun.ts <jobId> [domain]');
+    console.error(
+      '사용법: tsx scripts/manipulation-dryrun.ts --jobId=N [--domain=political] [--useReal --subscriptionId=N]',
+    );
     process.exit(2);
   }
   const jobId = Number(jobIdArg);
   if (!Number.isInteger(jobId) || jobId <= 0) {
     console.error(`jobId는 양의 정수여야 합니다: ${jobIdArg}`);
     process.exit(2);
+  }
+
+  if (useReal && (!subscriptionId || subscriptionId <= 0)) {
+    console.error('--useReal 사용 시 --subscriptionId=N (양의 정수) 필수');
+    process.exit(1);
   }
 
   const db = getDb();
@@ -52,20 +69,39 @@ async function main() {
     narrativeContext: cfgRows[0].narrativeContext,
   };
 
-  // Phase 1: stub 로더 — 모든 데이터 빈 배열
-  const loader: ManipulationDataLoader = {
-    loadComments: async () => [],
-    loadVotes: async () => [],
-    loadEmbeddedComments: async () => [],
-    loadEmbeddedArticles: async () => [],
-    loadTrendSeries: async () => [],
-    loadTemporalBaselines: async () => ({}),
-  };
+  let loader: ManipulationDataLoader;
+  if (useReal) {
+    const { createCollectorManipulationLoader } =
+      await import('../src/analysis/manipulation/loaders/collector-loader');
+    const { getCollectorClient } = await import('../src/collector-client');
+    const dateRange = {
+      start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+      end: new Date(),
+    };
+    loader = createCollectorManipulationLoader({
+      client: getCollectorClient(),
+      subscriptionId: subscriptionId!,
+      sources: [],
+      dateRange,
+      baselineDays: config.baselineDays,
+    });
+    console.log(`[dryrun] real collector loader (subscriptionId=${subscriptionId})`);
+  } else {
+    loader = {
+      loadComments: async () => [],
+      loadVotes: async () => [],
+      loadEmbeddedComments: async () => [],
+      loadEmbeddedArticles: async () => [],
+      loadTrendSeries: async () => [],
+      loadTemporalBaselines: async () => ({}),
+    };
+    console.log('[dryrun] empty mock loader');
+  }
 
   const t0 = Date.now();
   const out = await runManipulationDetection({
     jobId,
-    subscriptionId: null,
+    subscriptionId,
     config,
     dateRange: {
       start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
@@ -76,7 +112,7 @@ async function main() {
 
   const runId = await persistRun(db, {
     jobId,
-    subscriptionId: null,
+    subscriptionId,
     output: out,
     weightsVersion: `v1-${cfgRows[0].domain}`,
   });
