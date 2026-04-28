@@ -42,7 +42,6 @@ describe('runManipulationDetection', () => {
     const result = await runManipulationDetection({
       jobId: 1,
       subscriptionId: null,
-      domain: 'political',
       config,
       dateRange: {
         start: new Date('2026-04-01'),
@@ -59,7 +58,6 @@ describe('runManipulationDetection', () => {
     const result = await runManipulationDetection({
       jobId: 1,
       subscriptionId: null,
-      domain: 'political',
       config,
       dateRange: {
         start: new Date('2026-04-01'),
@@ -110,7 +108,6 @@ describe('runManipulationDetection', () => {
     const result = await runManipulationDetection({
       jobId: 1,
       subscriptionId: null,
-      domain: 'political',
       config,
       dateRange: {
         start: new Date('2026-04-27T00:00:00Z'),

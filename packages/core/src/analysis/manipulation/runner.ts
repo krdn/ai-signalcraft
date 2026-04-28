@@ -11,8 +11,7 @@ import type { SignalResult, SignalContext, ManipulationDataLoader, DomainConfig 
 export type RunInput = {
   jobId: number;
   subscriptionId: number | null;
-  domain: string;
-  config: DomainConfig;
+  config: DomainConfig; // domain은 config.domain에서 파생
   dateRange: { start: Date; end: Date };
   loader: ManipulationDataLoader;
 };
@@ -39,7 +38,7 @@ export async function runManipulationDetection(input: RunInput): Promise<RunOutp
   const ctx: SignalContext = {
     jobId: input.jobId,
     subscriptionId: input.subscriptionId,
-    domain: input.domain,
+    domain: input.config.domain, // config에서 파생
     config: input.config,
     dateRange: input.dateRange,
   };
@@ -65,6 +64,7 @@ export async function runManipulationDetection(input: RunInput): Promise<RunOutp
   const clusters = extractClustersForCrossPlatform(embComments);
   const crossPlatform = computeCrossPlatform(clusters);
 
+  // 배열 순서는 의미 없음 — Aggregator/Persist 모두 s.signal 키로 lookup.
   const signals: SignalResult[] = [
     burst,
     simResult,
