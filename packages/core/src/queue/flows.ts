@@ -6,6 +6,7 @@ import type { CollectionTrigger, ReusePlanPayload } from '../types';
 import type { ResumeOptions } from '../analysis/pipeline-orchestrator';
 import { getDb } from '../db';
 import { dataSources } from '../db/schema/sources';
+import { collectionJobs } from '../db/schema/collections';
 import {
   planArticleReuse,
   planVideoReuse,
@@ -525,6 +526,18 @@ export async function triggerSubscriptionAnalysis(dbJobId: number, keyword: stri
       },
     );
     return job;
+  } catch (err) {
+    // 보상 트랜잭션: queue.add가 동기 throw할 때 DB를 failed로 되돌림.
+    // 단, 프로세스 crash나 네트워크 파티션 후 응답 유실 시에는 여전히 stuck 가능.
+    // 실질적 보호는 worker 시작 시 recoverOrphanedCollectionJobs()가 담당.
+    await getDb()
+      .update(collectionJobs)
+      .set({
+        status: 'failed',
+        errorDetails: { message: 'BullMQ analysis 큐 enqueue 실패', cause: String(err) },
+      })
+      .where(and(eq(collectionJobs.id, dbJobId), eq(collectionJobs.status, 'running')));
+    throw err;
   } finally {
     await queue.close();
   }

@@ -23,7 +23,11 @@ async function main() {
   await import('./startup-cleanup')
     .then(({ cleanupOrphanedRedisJobs }) => cleanupOrphanedRedisJobs())
     .catch((err) => console.error('[startup-cleanup] 정리 실패 (무시하고 계속):', err));
-  // b) 좀비 running 상태 복구
+  // b) DB running이지만 BullMQ에 없는 collection_jobs orphan 복구
+  await import('./startup-cleanup')
+    .then(({ recoverOrphanedCollectionJobs }) => recoverOrphanedCollectionJobs(10))
+    .catch((err) => console.error('[startup-cleanup] orphan 복구 실패 (무시하고 계속):', err));
+  // c) 좀비 running 상태 복구
   await import('../analysis/stale-recovery')
     .then(({ recoverStaleJobs }) => recoverStaleJobs(30))
     .catch((err) => console.error('[stale-recovery] 복구 실패 (무시하고 계속):', err));

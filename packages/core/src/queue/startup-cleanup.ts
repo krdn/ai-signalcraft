@@ -4,9 +4,10 @@
 // 핵심 원칙: BullMQ Queue API만 사용하여 안전하게 작업 제거
 // Redis 직접 조작(lrem, del 등)은 BullMQ 내부 상태를 오염시키므로 금지
 import { Queue } from 'bullmq';
-import { eq } from 'drizzle-orm';
+import { eq, and, lt, sql, inArray } from 'drizzle-orm';
 import { getDb } from '../db';
 import { collectionJobs } from '../db/schema/collections';
+import { analysisResults } from '../db/schema/analysis';
 import { getBullMQOptions } from './connection';
 
 export async function cleanupOrphanedRedisJobs(): Promise<number> {
@@ -115,4 +116,79 @@ export async function cleanupOrphanedRedisJobs(): Promise<number> {
   }
 
   return cleaned;
+}
+
+/**
+ * DB에 'running'으로 남아있지만 BullMQ 큐에 존재하지 않는 고아 collection_jobs를 'failed'로 전환.
+ *
+ * 발생 원인: DB INSERT(status='running') 성공 후 Redis enqueue 실패 또는 Worker 비정상 종료 시
+ * BullMQ에 job이 없으므로 processing이 영원히 시작되지 않아 stuck 상태가 됨.
+ *
+ * 판별 기준 (AND 조건):
+ *   1. status = 'running'
+ *   2. updated_at < now() - staleMinutes  (최소 N분간 heartbeat 없음)
+ *   3. analysis 큐에 해당 dbJobId를 가진 waiting/active/delayed job 없음
+ *   4. analysis_results 행 없음  (분석이 실제로 시작된 job은 건드리지 않음)
+ *
+ * 조건 3+4 없이 "N분 이상 running" 단순 판별 시 장시간 정상 실행 중인 job을 오살할 수 있음.
+ */
+export async function recoverOrphanedCollectionJobs(staleMinutes = 10): Promise<number> {
+  const db = getDb();
+  const bullOpts = getBullMQOptions();
+  const threshold = sql`now() - interval '${sql.raw(String(staleMinutes))} minutes'`;
+
+  // 1. N분 이상 running인 collection_jobs 조회
+  const staleJobs = await db
+    .select({ id: collectionJobs.id })
+    .from(collectionJobs)
+    .where(and(eq(collectionJobs.status, 'running'), lt(collectionJobs.updatedAt, threshold)));
+
+  if (staleJobs.length === 0) return 0;
+
+  const staleIds = staleJobs.map((j) => j.id);
+
+  // 2. BullMQ analysis 큐에 살아있는 job dbJobId 목록 수집
+  const analysisQueue = new Queue('analysis', bullOpts);
+  let liveDbJobIds: Set<number>;
+  try {
+    const liveJobs = await analysisQueue.getJobs([
+      'waiting',
+      'active',
+      'delayed',
+      'waiting-children',
+    ]);
+    liveDbJobIds = new Set(
+      liveJobs.filter((j) => j?.data?.dbJobId != null).map((j) => j.data.dbJobId as number),
+    );
+  } finally {
+    await analysisQueue.close();
+  }
+
+  // 3. analysis_results 행이 있는 jobId 수집 (분석 진행 중인 job 보호)
+  const analysedRows = await db
+    .selectDistinct({ jobId: analysisResults.jobId })
+    .from(analysisResults)
+    .where(inArray(analysisResults.jobId, staleIds));
+  const analysedJobIds = new Set(analysedRows.map((r) => r.jobId));
+
+  // 4. 두 조건을 모두 만족하지 않는 job만 orphan으로 확정
+  const orphanIds = staleIds.filter((id) => !liveDbJobIds.has(id) && !analysedJobIds.has(id));
+
+  if (orphanIds.length === 0) return 0;
+
+  await db
+    .update(collectionJobs)
+    .set({
+      status: 'failed',
+      errorDetails: {
+        message: `Worker 시작 시 orphan 복구: BullMQ 큐에 없고 분석 결과 없음 (${staleMinutes}분 초과)`,
+      },
+    })
+    .where(inArray(collectionJobs.id, orphanIds));
+
+  console.log(
+    `[startup-cleanup] collection_jobs orphan 복구: ${orphanIds.length}개 → failed (ids: ${orphanIds.join(', ')})`,
+  );
+
+  return orphanIds.length;
 }
