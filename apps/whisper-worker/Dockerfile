@@ -36,10 +36,8 @@ RUN pip install --break-system-packages --no-cache-dir \
     "yt-dlp[default]>=2026.3" \
     "curl-cffi>=0.10,<0.15"
 
-# 모델은 첫 호출 시 HuggingFace에서 자동 다운로드됨 (/root/.cache/huggingface).
-# 빌드 시 미리 받아 이미지 안에 포함 — cold start 제거, 오프라인 실행 가능.
-# 모델 크기: small ~500MB int8
-RUN python3 -c "from faster_whisper import WhisperModel; WhisperModel('small', device='cpu', compute_type='int8')"
+# 모델은 첫 실행 시 HuggingFace에서 자동 다운로드됨.
+# 캐시는 docker-compose의 ais-whisper-hf-cache 볼륨에 영속화 → 재시작 시 재다운로드 없음.
 
 RUN corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app
