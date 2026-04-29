@@ -63,8 +63,8 @@ export const fetchAnalysisPayloadInput = z.object({
     .object({
       // 각 필드를 독립 optional로 — rag-light처럼 기사는 전체 유지(articleVideoTopK 미지정),
       // 댓글만 RAG 필터(commentTopK 지정)하는 케이스를 지원한다.
-      articleVideoTopK: z.number().int().min(1).max(500).optional(),
-      commentTopK: z.number().int().min(1).max(500).optional(),
+      articleVideoTopK: z.number().int().min(1).max(1500).optional(),
+      commentTopK: z.number().int().min(1).max(1500).optional(),
     })
     .optional(),
   maxContentLength: z.number().int().positive().optional(),
