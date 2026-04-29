@@ -23,9 +23,9 @@ export const RAG_CONFIGS: Record<string, RAGConfig> = {
     minSimilarity: 0.3,
   },
   'rag-standard': {
-    articleTopK: 100,
-    clusterRepresentatives: 30,
-    commentTopK: 200,
+    articleTopK: 300,
+    clusterRepresentatives: 50,
+    commentTopK: 400,
     minSimilarity: 0.35,
   },
   'rag-aggressive': {

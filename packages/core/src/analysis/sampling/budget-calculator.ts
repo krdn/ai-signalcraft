@@ -26,8 +26,8 @@ const PERIOD_CONFIGS: Array<{ maxDays: number; config: PeriodConfig }> = [
     maxDays: 1,
     config: {
       intervalMs: 4 * 3600_000,
-      articlesPerBin: { min: 5, max: 30 },
-      commentsPerBin: { min: 30, max: 150 },
+      articlesPerBin: { min: 10, max: 60 },
+      commentsPerBin: { min: 50, max: 300 },
       videosPerBin: { min: 2, max: 10 },
     },
   },
@@ -35,8 +35,8 @@ const PERIOD_CONFIGS: Array<{ maxDays: number; config: PeriodConfig }> = [
     maxDays: 3,
     config: {
       intervalMs: 8 * 3600_000,
-      articlesPerBin: { min: 5, max: 40 },
-      commentsPerBin: { min: 30, max: 200 },
+      articlesPerBin: { min: 10, max: 80 },
+      commentsPerBin: { min: 50, max: 400 },
       videosPerBin: { min: 2, max: 10 },
     },
   },
@@ -44,8 +44,8 @@ const PERIOD_CONFIGS: Array<{ maxDays: number; config: PeriodConfig }> = [
     maxDays: 14,
     config: {
       intervalMs: 24 * 3600_000,
-      articlesPerBin: { min: 5, max: 50 },
-      commentsPerBin: { min: 20, max: 250 },
+      articlesPerBin: { min: 10, max: 100 },
+      commentsPerBin: { min: 30, max: 400 },
       videosPerBin: { min: 2, max: 10 },
     },
   },
@@ -53,8 +53,8 @@ const PERIOD_CONFIGS: Array<{ maxDays: number; config: PeriodConfig }> = [
     maxDays: 60,
     config: {
       intervalMs: 2 * 24 * 3600_000,
-      articlesPerBin: { min: 5, max: 60 },
-      commentsPerBin: { min: 20, max: 300 },
+      articlesPerBin: { min: 10, max: 120 },
+      commentsPerBin: { min: 30, max: 500 },
       videosPerBin: { min: 2, max: 10 },
     },
   },
