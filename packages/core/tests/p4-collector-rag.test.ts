@@ -96,11 +96,11 @@ describe('fetchAnalysisPayload 단일 RPC 기반 data-loader', () => {
     expect(fetchAnalysisPayloadMock).toHaveBeenCalledTimes(1);
 
     // ragOptions가 rag-standard 프리셋 기준으로 설정되었는지 확인
-    // rag-standard: articleTopK=100, clusterReps=30 → (100+30)*3=390 (cap 미적용)
-    // commentTopK=200 → 200*3=600 → cap 500
+    // rag-standard: articleTopK=300, clusterReps=50 → (300+50)*3=1050 → cap 500
+    // commentTopK=400 → 400*3=1200 → cap 500
     const call = fetchAnalysisPayloadMock.mock.calls[0][0];
     expect(call.ragOptions).toBeDefined();
-    expect(call.ragOptions.articleVideoTopK).toBe(390);
+    expect(call.ragOptions.articleVideoTopK).toBe(500);
     expect(call.ragOptions.commentTopK).toBe(500);
 
     // input은 ragSample(3개 article, 2개 comment)에서 구성
