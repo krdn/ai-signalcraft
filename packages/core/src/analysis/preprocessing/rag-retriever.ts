@@ -19,19 +19,20 @@ export const RAG_CONFIGS: Record<string, RAGConfig> = {
   'rag-light': {
     articleTopK: 0,
     clusterRepresentatives: 0,
-    commentTopK: 200,
+    commentTopK: 250,
     minSimilarity: 0.3,
   },
   'rag-standard': {
-    articleTopK: 300,
-    clusterRepresentatives: 50,
-    commentTopK: 400,
+    // 실측 풀: 기사 23k > 댓글 18k → 기사 상한을 댓글보다 높게 설정
+    articleTopK: 500,
+    clusterRepresentatives: 100,
+    commentTopK: 450,
     minSimilarity: 0.35,
   },
   'rag-aggressive': {
-    articleTopK: 50,
-    clusterRepresentatives: 15,
-    commentTopK: 100,
+    articleTopK: 120,
+    clusterRepresentatives: 30,
+    commentTopK: 150,
     minSimilarity: 0.4,
   },
 };

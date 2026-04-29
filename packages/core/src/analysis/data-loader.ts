@@ -235,7 +235,8 @@ export async function loadAnalysisInputFromCollector(
     ? ragConfig.articleTopK + ragConfig.clusterRepresentatives
     : 0;
   const commentTarget = ragConfig?.commentTopK ?? 0;
-  const RAG_TOPK_CAP = 500;
+  // 소형 소스(clien/fmkorea) 슬롯 소진 방지: 상한을 크게 올려 대형 소스도 더 뽑음
+  const RAG_TOPK_CAP = 1500;
   // 0이면 RAG 안 함(전체 유지 의미). 그 외에는 ×3 + cap.
   const articleVideoTopK =
     articleVideoTarget > 0 ? Math.min(articleVideoTarget * 3, RAG_TOPK_CAP) : 0;

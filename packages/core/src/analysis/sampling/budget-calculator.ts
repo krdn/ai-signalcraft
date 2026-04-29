@@ -91,13 +91,13 @@ export function calculateBudget(params: {
   let targetComments = Math.min(params.totalComments, config.commentsPerBin.max * binCount);
   const targetVideos = Math.min(params.totalVideos, config.videosPerBin.max * binCount);
 
-  // 토큰 예산 체크: 댓글 평균 40자 ≈ 10토큰, 기사 평균 200자 ≈ 50토큰, 영상 100자 ≈ 25토큰
+  // 토큰 예산 체크 — 실측 기준: 기사 평균 5,411자 ≈ 180토큰(500자 컷 후), 댓글 97자 ≈ 25토큰, 영상 250자 ≈ 70토큰
   // 목표: 분석 입력 총 토큰 ≤ 200K (대형 컨텍스트 윈도우 모델 기준)
-  const estimatedTokens = targetArticles * 50 + targetComments * 10 + targetVideos * 25;
+  const estimatedTokens = targetArticles * 180 + targetComments * 25 + targetVideos * 70;
   if (estimatedTokens > 200_000) {
     // 댓글 비율 축소로 조정 (댓글이 대량이므로 가장 효과적)
     const excess = estimatedTokens - 80_000;
-    const commentsToReduce = Math.ceil(excess / 10);
+    const commentsToReduce = Math.ceil(excess / 25);
     targetComments = Math.max(
       config.commentsPerBin.min * binCount,
       targetComments - commentsToReduce,
