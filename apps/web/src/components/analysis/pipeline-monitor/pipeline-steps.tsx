@@ -13,7 +13,7 @@ import {
   Info,
 } from 'lucide-react';
 import { STAGE_HELP, PIPELINE_STEPS } from './constants';
-import type { StageStatus } from './types';
+import type { StageStatus, PipelineStageDetails } from './types';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 // 스텝 아이콘 매핑
@@ -53,11 +53,50 @@ function statusLabel(status: StageStatus): string {
   }
 }
 
-interface PipelineStepsProps {
-  stages: Record<string, { status: string }>;
+function stageDetailLabel(stepKey: string, details: PipelineStageDetails): string | null {
+  if (stepKey === 'normalization') {
+    const s = details.sampling;
+    if (!s) return null;
+    const arts = s.articles.totalInput;
+    const cmts = s.comments.totalInput;
+    if (arts === 0 && cmts === 0) return null;
+    const parts: string[] = [];
+    if (arts > 0) parts.push(`기사 ${arts.toLocaleString()}`);
+    if (cmts > 0) parts.push(`댓글 ${cmts.toLocaleString()}`);
+    return parts.join(' · ');
+  }
+  if (stepKey === 'token-optimization') {
+    const norm = details.normalization;
+    if (!norm || norm.status === 'pending') return null;
+    const arts = norm.articlesProcessed;
+    const cmts = norm.commentsProcessed;
+    if (arts === 0 && cmts === 0) return null;
+    const parts: string[] = [];
+    if (arts > 0) parts.push(`기사 ${arts.toLocaleString()}`);
+    if (cmts > 0) parts.push(`댓글 ${cmts.toLocaleString()}`);
+    return parts.join(' · ');
+  }
+  if (stepKey === 'analysis') {
+    const t = details.tokenOptimization;
+    if (!t || t.status === 'pending') return null;
+    const arts = t.optimizedArticles;
+    const cmts = t.optimizedComments;
+    if (arts === 0 && cmts === 0) return null;
+    const parts: string[] = [];
+    if (arts > 0) parts.push(`기사 ${arts.toLocaleString()}`);
+    if (cmts > 0) parts.push(`댓글 ${cmts.toLocaleString()}`);
+    const pct = t.reductionPercent;
+    return parts.join(' · ') + (pct ? ` (${pct}%↓)` : '');
+  }
+  return null;
 }
 
-export function PipelineSteps({ stages }: PipelineStepsProps) {
+interface PipelineStepsProps {
+  stages: Record<string, { status: string }>;
+  stageDetails?: PipelineStageDetails;
+}
+
+export function PipelineSteps({ stages, stageDetails }: PipelineStepsProps) {
   return (
     <div className="flex items-center justify-between gap-1">
       {PIPELINE_STEPS.map((step, idx) => {
@@ -131,6 +170,15 @@ export function PipelineSteps({ stages }: PipelineStepsProps) {
                 {step.label}
               </span>
               <span className="text-[10px] text-muted-foreground">{statusLabel(status)}</span>
+              {stageDetails &&
+                (() => {
+                  const detail = stageDetailLabel(step.key, stageDetails);
+                  return detail ? (
+                    <span className="text-[9px] text-muted-foreground/70 font-mono leading-tight text-center max-w-[80px] break-words">
+                      {detail}
+                    </span>
+                  ) : null;
+                })()}
             </div>
 
             {/* 화살표 연결선 */}

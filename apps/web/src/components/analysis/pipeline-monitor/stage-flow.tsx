@@ -19,7 +19,7 @@ import { PulseRing } from './pulse-ring';
 import { STAGE_HELP, PIPELINE_STEPS } from './constants';
 import { computeSegments } from './timeline-bar';
 import { formatElapsedCompact } from './utils';
-import type { PipelineTimeline, StageStatus } from './types';
+import type { PipelineTimeline, StageStatus, PipelineStageDetails } from './types';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface StageFlowProps {
@@ -30,6 +30,48 @@ interface StageFlowProps {
   pausedAtStage?: string | null;
   isPaused?: boolean;
   onToggleBreakpoint?: (stageKey: string) => void;
+  stageDetails?: PipelineStageDetails;
+}
+
+function buildStageCountLabel(stepKey: string, details: PipelineStageDetails): string | null {
+  // 정규화 카드: sampling 결과(입력 건수) 표시
+  if (stepKey === 'normalization') {
+    const s = details.sampling;
+    if (!s) return null;
+    const arts = s.articles.totalInput;
+    const cmts = s.comments.totalInput;
+    if (arts === 0 && cmts === 0) return null;
+    const parts: string[] = [];
+    if (arts > 0) parts.push(`기사 ${arts.toLocaleString()}`);
+    if (cmts > 0) parts.push(`댓글 ${cmts.toLocaleString()}`);
+    return parts.join(' · ');
+  }
+  // 토큰 최적화 카드: normalization 처리 건수 표시
+  if (stepKey === 'token-optimization') {
+    const norm = details.normalization;
+    if (!norm || norm.status === 'pending') return null;
+    const arts = norm.articlesProcessed;
+    const cmts = norm.commentsProcessed;
+    if (arts === 0 && cmts === 0) return null;
+    const parts: string[] = [];
+    if (arts > 0) parts.push(`기사 ${arts.toLocaleString()}`);
+    if (cmts > 0) parts.push(`댓글 ${cmts.toLocaleString()}`);
+    return parts.join(' · ');
+  }
+  // AI 분석 카드: token-optimization 결과(최적화 후) 표시
+  if (stepKey === 'analysis') {
+    const t = details.tokenOptimization;
+    if (!t || t.status === 'pending') return null;
+    const arts = t.optimizedArticles;
+    const cmts = t.optimizedComments;
+    if (arts === 0 && cmts === 0) return null;
+    const parts: string[] = [];
+    if (arts > 0) parts.push(`기사 ${arts.toLocaleString()}`);
+    if (cmts > 0) parts.push(`댓글 ${cmts.toLocaleString()}`);
+    const pct = t.reductionPercent;
+    return parts.join(' · ') + (pct ? ` (${pct}%↓)` : '');
+  }
+  return null;
 }
 
 const STAGE_ICONS: Record<string, typeof Download> = {
@@ -85,6 +127,7 @@ export const StageFlow = memo(function StageFlow({
   pausedAtStage,
   isPaused,
   onToggleBreakpoint,
+  stageDetails,
 }: StageFlowProps) {
   const segments = computeSegments(timeline, stages, elapsedSeconds);
 
@@ -142,6 +185,18 @@ export const StageFlow = memo(function StageFlow({
                             </span>
                           )}
                         </div>
+                        {stageDetails &&
+                          (() => {
+                            const label = buildStageCountLabel(step.key, stageDetails);
+                            return label ? (
+                              <span
+                                className="text-[9px] text-muted-foreground/70 font-mono leading-tight text-center w-full truncate px-0.5"
+                                title={label}
+                              >
+                                {label}
+                              </span>
+                            ) : null;
+                          })()}
                       </div>
                     </PulseRing>
                   </div>

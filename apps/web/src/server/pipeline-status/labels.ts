@@ -18,12 +18,22 @@ export const SOURCE_LABELS: Record<string, string> = {
   'naver-news': '네이버 뉴스',
   'youtube-videos': '유튜브',
   'youtube-comments': '유튜브 댓글',
+  'naver-comments': '네이버 댓글',
   dcinside: 'DC갤러리',
   fmkorea: '에펨코리아',
   clien: '클리앙',
   naver: '네이버 뉴스',
   youtube: '유튜브',
 };
+
+/** progress 객체에서 소스 레인이 아닌 파이프라인 단계 키 목록 */
+export const PIPELINE_STAGE_KEYS = new Set([
+  'sampling',
+  'normalization',
+  'token-optimization',
+  'item-analysis',
+  'report',
+]);
 
 export const MODULE_STAGE: Record<string, number> = {
   'macro-view': 1,

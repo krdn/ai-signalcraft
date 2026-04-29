@@ -88,19 +88,19 @@ export const OPTIMIZATION_PRESETS: Record<
   },
   'rag-light': {
     label: 'RAG 경량',
-    description: 'DB 임베딩으로 의미 관련 댓글 상위 50건 선별. 기사는 전체 유지.',
+    description: 'DB 임베딩으로 의미 관련 댓글 상위 250건 선별. 기사는 전체 유지.',
     estimatedReduction: '~40%',
     group: 'rag',
   },
   'rag-standard': {
     label: 'RAG 표준',
-    description: 'DB 임베딩으로 의미 관련 기사 30+클러스터 대표 10, 댓글 30건 선별.',
+    description: 'DB 임베딩으로 의미 관련 기사 500+클러스터 대표 100건, 댓글 450건 선별. (권장)',
     estimatedReduction: '~65%',
     group: 'rag',
   },
   'rag-aggressive': {
     label: 'RAG 강력',
-    description: 'DB 임베딩으로 의미 관련 기사 15+클러스터 대표 5, 댓글 15건 선별.',
+    description: 'DB 임베딩으로 의미 관련 기사 120+클러스터 대표 30건, 댓글 150건 선별.',
     estimatedReduction: '~80%',
     group: 'rag',
   },

@@ -9,7 +9,7 @@ import {
   getQueueStatus,
 } from '@ai-signalcraft/core';
 import { eq } from 'drizzle-orm';
-import { MODULE_LABELS, SOURCE_LABELS, MODULE_STAGE } from './labels';
+import { MODULE_LABELS, SOURCE_LABELS, MODULE_STAGE, PIPELINE_STAGE_KEYS } from './labels';
 import { buildEventLog } from './events';
 import { estimateCostUsd } from '@/components/analysis/pipeline-monitor/constants';
 
@@ -321,6 +321,11 @@ export async function getPipelineStatus(jobId: number) {
     collectionFailed,
   });
 
+  // 파이프라인 단계별 처리 건수 (sampling / normalization / token-optimization)
+  const pipelineStageDetails = buildPipelineStageDetails(
+    job.progress as Record<string, any> | null,
+  );
+
   // 진행률
   const overallProgress = calculateProgress(
     sourceDetails,
@@ -345,6 +350,7 @@ export async function getPipelineStatus(jobId: number) {
     domain: (job as any).domain ?? null,
     keywordType: (job as any).keywordType ?? null,
     pipelineStages,
+    pipelineStageDetails,
     analysisModuleCount: { total: analysisRows.length, completed: completedModulesCount },
     hasReport: reportDone,
     sourceDetails,
@@ -492,7 +498,7 @@ function buildSourceDetails(
   const sourceDetails: Record<string, SourceDetailResult> = {};
   if (progress) {
     for (const [key, val] of Object.entries(progress)) {
-      if (key.startsWith('_') || key === 'report') continue;
+      if (key.startsWith('_') || PIPELINE_STAGE_KEYS.has(key)) continue;
       const label = SOURCE_LABELS[key] ?? key;
       const articles = val.articles ?? 0;
       const videos = val.videos ?? 0;
@@ -578,4 +584,81 @@ function calculateProgress(
     100,
     Math.round(collectionProgressValue + analysisProgressValue + reportProgress),
   );
+}
+
+export interface PipelineStageDetail {
+  sampling: {
+    status: string;
+    articles: { totalInput: number; totalSampled: number };
+    comments: { totalInput: number; totalSampled: number };
+    videos: { totalInput: number; totalSampled: number };
+  } | null;
+  normalization: {
+    status: string;
+    articlesProcessed: number;
+    commentsProcessed: number;
+    totalMatches: number;
+    elapsedMs: number;
+  } | null;
+  tokenOptimization: {
+    status: string;
+    preset: string;
+    originalArticles: number;
+    optimizedArticles: number;
+    originalComments: number;
+    optimizedComments: number;
+    reductionPercent?: number;
+  } | null;
+}
+
+function buildPipelineStageDetails(progress: Record<string, any> | null): PipelineStageDetail {
+  if (!progress) {
+    return { sampling: null, normalization: null, tokenOptimization: null };
+  }
+
+  const s = progress['sampling'];
+  const sampling = s
+    ? {
+        status: s.status ?? 'completed',
+        articles: {
+          totalInput: s.articles?.totalInput ?? 0,
+          totalSampled: s.articles?.totalSampled ?? 0,
+        },
+        comments: {
+          totalInput: s.comments?.totalInput ?? 0,
+          totalSampled: s.comments?.totalSampled ?? 0,
+        },
+        videos: {
+          totalInput: s.videos?.totalInput ?? 0,
+          totalSampled: s.videos?.totalSampled ?? 0,
+        },
+      }
+    : null;
+
+  const n = progress['normalization'];
+  const normalization = n
+    ? {
+        status: n.status ?? 'pending',
+        articlesProcessed: n.articlesProcessed ?? 0,
+        commentsProcessed: n.commentsProcessed ?? 0,
+        totalMatches: n.totalMatches ?? 0,
+        elapsedMs: n.elapsedMs ?? 0,
+      }
+    : null;
+
+  const t = progress['token-optimization'];
+  const tokenOptimization =
+    t && t.status !== 'skipped'
+      ? {
+          status: t.status ?? 'pending',
+          preset: t.preset ?? '',
+          originalArticles: t.originalArticles ?? 0,
+          optimizedArticles: t.optimizedArticles ?? 0,
+          originalComments: t.originalComments ?? 0,
+          optimizedComments: t.optimizedComments ?? 0,
+          reductionPercent: t.reductionPercent,
+        }
+      : null;
+
+  return { sampling, normalization, tokenOptimization };
 }

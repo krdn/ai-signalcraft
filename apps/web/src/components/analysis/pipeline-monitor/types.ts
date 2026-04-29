@@ -128,6 +128,31 @@ export interface WorkerQueueStatus {
   isPaused: boolean;
 }
 
+export interface PipelineStageDetails {
+  sampling: {
+    status: string;
+    articles: { totalInput: number; totalSampled: number };
+    comments: { totalInput: number; totalSampled: number };
+    videos: { totalInput: number; totalSampled: number };
+  } | null;
+  normalization: {
+    status: string;
+    articlesProcessed: number;
+    commentsProcessed: number;
+    totalMatches: number;
+    elapsedMs: number;
+  } | null;
+  tokenOptimization: {
+    status: string;
+    preset: string;
+    originalArticles: number;
+    optimizedArticles: number;
+    originalComments: number;
+    optimizedComments: number;
+    reductionPercent?: number;
+  } | null;
+}
+
 export interface PipelineStatusData {
   status: string;
   keyword: string;
@@ -136,6 +161,7 @@ export interface PipelineStatusData {
   progress: unknown;
   errorDetails: unknown;
   pipelineStages: Record<string, { status: string }>;
+  pipelineStageDetails?: PipelineStageDetails;
   analysisModuleCount: { total: number; completed: number };
   hasReport: boolean;
   sourceDetails: Record<string, SourceDetail>;

@@ -22,6 +22,18 @@ export const STAGE_HELP: Record<string, { title: string; description: string; de
         '각 플랫폼별 다른 데이터 구조를 공통 스키마로 변환',
         'sourceId 기반 중복 제거 (같은 기사/댓글 재수집 방지)',
         '기사→댓글, 영상→댓글 간 FK(외래키) 관계 매핑',
+        '처리 건수는 "토큰 최적화" 카드 하단에 기사 N · 댓글 N 형태로 표시',
+      ],
+    },
+    'token-optimization': {
+      title: '토큰 최적화',
+      description: 'AI 분석 전 데이터를 의미 중심으로 압축하여 비용과 처리 속도를 줄입니다.',
+      details: [
+        'RAG 표준: pgvector 코사인 유사도로 기사 최대 600건(500+대표 100), 댓글 450건 선별 (minSimilarity ≥ 0.35)',
+        'RAG 경량: 댓글 250건만 선별, 기사는 전체 유지',
+        'RAG 강력: 기사 150건(120+대표 30), 댓글 150건으로 강하게 압축 (minSimilarity ≥ 0.40)',
+        '유사도 미달 시 시계열 균등 샘플링으로 자동 폴백 (시간 편향 방지)',
+        '카드 하단에 최적화 후 투입 건수와 감소율(↓%)이 표시됩니다',
       ],
     },
     'item-analysis': {

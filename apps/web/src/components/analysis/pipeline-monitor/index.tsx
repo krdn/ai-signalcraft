@@ -199,6 +199,7 @@ export function PipelineMonitor({
           breakpoints={(data.breakpoints as string[]) ?? []}
           pausedAtStage={data.pausedAtStage ?? null}
           isPaused={isPaused}
+          stageDetails={statusData.pipelineStageDetails}
           onToggleBreakpoint={(stageKey) => {
             if (!jobId || readOnly) return;
             const current = (data.breakpoints as string[]) ?? [];
