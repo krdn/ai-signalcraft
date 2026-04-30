@@ -67,6 +67,7 @@ describe('createPipelineHandler dispatcher', () => {
     const handler = createPipelineHandler();
     const result = await handler(makeJob('classify'));
     expect(handleClassify).toHaveBeenCalledOnce();
+    expect(handleClassify.mock.calls[0]).toHaveLength(1); // classify는 jobStartTime 미전달
     expect(result).toEqual({ classified: true });
   });
 
@@ -81,9 +82,21 @@ describe('createPipelineHandler dispatcher', () => {
 
   it('jobStartTime을 normalize/persist에 전달한다', async () => {
     const handler = createPipelineHandler();
+
+    const beforePersist = Date.now();
     await handler(makeJob('persist'));
-    const [_job, jobStartTime] = handlePersist.mock.calls[0];
-    expect(typeof jobStartTime).toBe('number');
-    expect(jobStartTime).toBeLessThanOrEqual(Date.now());
+    const afterPersist = Date.now();
+    const [, persistTime] = handlePersist.mock.calls[0];
+    expect(typeof persistTime).toBe('number');
+    expect(persistTime).toBeGreaterThanOrEqual(beforePersist);
+    expect(persistTime).toBeLessThanOrEqual(afterPersist);
+
+    const beforeNormalize = Date.now();
+    await handler(makeJob('normalize-naver'));
+    const afterNormalize = Date.now();
+    const [, normalizeTime] = handleNormalize.mock.calls[0];
+    expect(typeof normalizeTime).toBe('number');
+    expect(normalizeTime).toBeGreaterThanOrEqual(beforeNormalize);
+    expect(normalizeTime).toBeLessThanOrEqual(afterNormalize);
   });
 });
