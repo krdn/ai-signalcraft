@@ -10,6 +10,7 @@ import { SOURCE_LABELS } from './collected-data-shared';
 import { PdfExportButton } from '@/components/ui/pdf-export-button';
 import { trpcClient } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
+import { type CollectorSourceKey, narrowCollectorSource } from '@/lib/collector-sources';
 
 interface CollectedDataViewProps {
   jobId: number | null;
@@ -31,13 +32,14 @@ export function CollectedDataView({
   const [videoPage, setVideoPage] = useState(1);
   const [commentPage, setCommentPage] = useState(1);
   const [selectedArticleId, setSelectedArticleId] = useState<number | null>(null);
-  const [sourceFilter, setSourceFilter] = useState<string | null>(null);
+  const [sourceFilter, setSourceFilter] = useState<CollectorSourceKey | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
   // initialSourceFilter가 있으면 마운트 시 해당 소스 필터 적용 및 기사 뷰로 전환
   useEffect(() => {
-    if (initialSourceFilter) {
-      setSourceFilter(initialSourceFilter);
+    const narrowed = narrowCollectorSource(initialSourceFilter);
+    if (narrowed) {
+      setSourceFilter(narrowed);
       setView('articles');
       setArticlePage(1);
     }
@@ -174,7 +176,7 @@ export function CollectedDataView({
               size="sm"
               className="h-7 text-xs"
               onClick={() => {
-                setSourceFilter(s.source);
+                setSourceFilter(narrowCollectorSource(s.source));
                 resetPages();
               }}
             >

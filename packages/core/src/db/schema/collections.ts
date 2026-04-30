@@ -114,6 +114,11 @@ export const collectionJobs = pgTable(
   ],
 );
 
+// collection_jobs 행의 정확한 타입 — Drizzle $inferSelect로 모든 필드 추론.
+// `as any` 캐스팅 없이 jsonb $type까지 정확히 살아있는 단일 진실 소스.
+export type CollectionJob = typeof collectionJobs.$inferSelect;
+export type CollectionJobInsert = typeof collectionJobs.$inferInsert;
+
 // 뉴스 기사 (D-07: URL 기반 중복 제거)
 export const articles = pgTable(
   'articles',

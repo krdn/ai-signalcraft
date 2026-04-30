@@ -118,7 +118,7 @@ export async function getPipelineStatus(jobId: number) {
     'analysis-stage2',
     'analysis-stage4',
   ];
-  const pausedStageIdx = isPaused ? BP_STAGE_ORDER.indexOf((job as any).pausedAtStage ?? '') : -1;
+  const pausedStageIdx = isPaused ? BP_STAGE_ORDER.indexOf(job.pausedAtStage ?? '') : -1;
   const isStageCompletedByBP = (bpStage: string): boolean => {
     if (pausedStageIdx < 0) return false;
     const idx = BP_STAGE_ORDER.indexOf(bpStage);
@@ -170,7 +170,7 @@ export async function getPipelineStatus(jobId: number) {
         ambiguousCount?: number;
       }
     | undefined;
-  const itemAnalysisEnabled = !!(job as any).options?.enableItemAnalysis;
+  const itemAnalysisEnabled = !!job.options?.enableItemAnalysis;
   const itemAnalysisDone = itemAnalysisProgress?.status === 'completed';
   const itemAnalysisRunning = itemAnalysisProgress?.status === 'running';
   const itemAnalysisSkipped = itemAnalysisProgress?.status === 'skipped' || !itemAnalysisEnabled;
@@ -342,13 +342,13 @@ export async function getPipelineStatus(jobId: number) {
     progress: job.progress,
     errorDetails: job.errorDetails,
     keyword: job.keyword,
-    costLimitUsd: (job as any).costLimitUsd ?? null,
-    skippedModules: (job as any).skippedModules ?? [],
+    costLimitUsd: job.costLimitUsd ?? null,
+    skippedModules: job.skippedModules ?? [],
     pausedAt: job.pausedAt ? new Date(job.pausedAt).toISOString() : null,
     pausedAtStage: job.pausedAtStage ?? null,
-    breakpoints: (job.breakpoints as string[]) ?? [],
-    domain: (job as any).domain ?? null,
-    keywordType: (job as any).keywordType ?? null,
+    breakpoints: job.breakpoints ?? [],
+    domain: job.domain ?? null,
+    keywordType: job.keywordType ?? null,
     pipelineStages,
     pipelineStageDetails,
     analysisModuleCount: { total: analysisRows.length, completed: completedModulesCount },

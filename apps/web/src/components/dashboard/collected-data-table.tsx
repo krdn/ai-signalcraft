@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { MessageSquare, ThumbsUp, ThumbsDown, ExternalLink, ArrowLeft, Eye } from 'lucide-react';
 import { SentimentBadge, SOURCE_LABELS, Pagination } from './collected-data-shared';
 import { trpcClient } from '@/lib/trpc';
+import type { CollectorSourceKey } from '@/lib/collector-sources';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -16,7 +17,7 @@ export interface ArticlesViewProps {
   jobId: number;
   page: number;
   onPageChange: (page: number) => void;
-  source?: string | null;
+  source?: CollectorSourceKey | null;
   initialExpandedId?: number | null;
 }
 
@@ -24,7 +25,7 @@ export interface VideosViewProps {
   jobId: number;
   page: number;
   onPageChange: (page: number) => void;
-  source?: string | null;
+  source?: CollectorSourceKey | null;
 }
 
 export interface CommentsViewProps {
@@ -33,7 +34,7 @@ export interface CommentsViewProps {
   page: number;
   onPageChange: (page: number) => void;
   onBack: () => void;
-  source?: string | null;
+  source?: CollectorSourceKey | null;
 }
 
 // --- 기사 내 인라인 댓글 뷰 ---

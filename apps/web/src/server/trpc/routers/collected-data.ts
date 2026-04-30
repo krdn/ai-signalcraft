@@ -16,6 +16,7 @@ import { eq, and, desc, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { protectedProcedure, router } from '../init';
 import { buildJobCondition } from '../shared/query-helpers';
+import { COLLECTOR_SOURCE_ENUM } from '@/lib/collector-sources';
 
 type JobWithOptions = {
   id: number;
@@ -48,7 +49,7 @@ export const collectedDataRouter = router({
         jobId: z.number(),
         page: z.number().min(1).default(1),
         perPage: z.number().min(1).max(50).default(20),
-        source: z.string().optional(),
+        source: z.enum(COLLECTOR_SOURCE_ENUM).optional(),
       }),
     )
     .query(async ({ input, ctx }) => {
@@ -81,7 +82,7 @@ export const collectedDataRouter = router({
             },
             scope: 'feed',
             itemTypes: ['article'],
-            ...(input.source ? { sources: [input.source as any] } : {}),
+            ...(input.source ? { sources: [input.source] } : {}),
             limit: input.perPage,
           });
 
@@ -188,7 +189,7 @@ export const collectedDataRouter = router({
         jobId: z.number(),
         page: z.number().min(1).default(1),
         perPage: z.number().min(1).max(50).default(20),
-        source: z.string().optional(),
+        source: z.enum(COLLECTOR_SOURCE_ENUM).optional(),
       }),
     )
     .query(async ({ input, ctx }) => {
@@ -220,7 +221,7 @@ export const collectedDataRouter = router({
             },
             scope: 'feed',
             itemTypes: ['video'],
-            ...(input.source ? { sources: [input.source as any] } : {}),
+            ...(input.source ? { sources: [input.source] } : {}),
             limit: input.perPage,
           });
 
@@ -325,7 +326,7 @@ export const collectedDataRouter = router({
         videoId: z.number().optional(),
         page: z.number().min(1).default(1),
         perPage: z.number().min(1).max(50).default(20),
-        source: z.string().optional(),
+        source: z.enum(COLLECTOR_SOURCE_ENUM).optional(),
       }),
     )
     .query(async ({ input, ctx }) => {
@@ -356,7 +357,7 @@ export const collectedDataRouter = router({
               end: job.endDate.toISOString(),
             },
             itemTypes: ['comment'],
-            ...(input.source ? { sources: [input.source as any] } : {}),
+            ...(input.source ? { sources: [input.source] } : {}),
             limit: input.perPage,
           });
 
