@@ -68,6 +68,7 @@ export async function collectNaverCommentsForArticles(
   };
 
   const collectArticleComments = async (item: { index: number; url: string }) => {
+    // BUG(deferred): articleDetails indexed by filter-position, naverArticles by original index — pre-existing drift, preserved verbatim
     const detail = articleDetails[item.index];
     detail.status = 'running';
     const collector = new NaverCommentsCollector();

@@ -99,12 +99,16 @@ export async function collectYoutubeCommentsLegacy(
   };
 
   const collectVideoComments = async (item: { index: number; sourceId: string }) => {
+    // BUG(deferred): videoDetails indexed by filter-position, validVideos by original index — pre-existing drift, preserved verbatim
     const detail = videoDetails[item.index];
     detail.status = 'running';
     const collector = new YoutubeCommentsCollector();
     const videoComments: YoutubeComment[] = [];
 
     try {
+      // NOTE: 이 경로는 "신규 영상 수집 → 댓글 후처리" 전용이며, TTL 재사용된 영상은
+      //       신규 YoutubeCollector(통합형)의 refetchCommentsOnly 경로에서 처리된다.
+      //       따라서 여기서는 since 주입이 불필요 — 모든 영상이 신규 수집 대상이다.
       for await (const chunk of collector.collect({
         keyword: item.sourceId,
         startDate: job.data.startDate ?? '',
