@@ -1,5 +1,5 @@
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
+import { readFileSync, readdirSync } from 'fs';
+import { resolve, join } from 'path';
 import { describe, it, expect } from 'vitest';
 
 describe('worker', () => {
@@ -37,13 +37,14 @@ describe('naver comments pipeline integration', () => {
     expect(flowsContent).toContain("name: 'collect-naver-articles'");
   });
 
-  it('pipeline-worker.ts에서 normalize-naver 시 collectForArticle을 호출한다', () => {
-    const workerContent = readFileSync(
-      resolve(__dirname, '../src/queue/pipeline-worker.ts'),
-      'utf-8',
-    );
-    expect(workerContent).toContain('collectForArticle');
-    expect(workerContent).toContain("job.name === 'normalize-naver'");
+  it('pipeline-worker 모듈군에서 normalize-naver 시 collectForArticle을 호출한다', () => {
+    const queueDir = resolve(__dirname, '../src/queue');
+    const workerFiles = readdirSync(queueDir)
+      .filter((f) => f.startsWith('pipeline-worker') && f.endsWith('.ts'))
+      .map((f) => readFileSync(join(queueDir, f), 'utf-8'))
+      .join('\n');
+    expect(workerFiles).toContain('collectForArticle');
+    expect(workerFiles).toContain("job.name === 'normalize-naver'");
   });
 
   it('normalize-naver data에 maxComments가 포함된다', () => {
