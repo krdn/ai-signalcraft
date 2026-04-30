@@ -66,6 +66,10 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # day-window-collector.test.ts 등이 chromium 실행 — runner 캐시에 브라우저 + system lib 필요
+      - name: Install Playwright browsers
+        run: pnpm --filter @ai-signalcraft/collectors exec playwright install chromium --with-deps
+
       # 모든 워크스페이스 테스트 — web/core/collector/collectors 전체 회귀 차단
       - name: Run All Tests
         run: pnpm -r test
