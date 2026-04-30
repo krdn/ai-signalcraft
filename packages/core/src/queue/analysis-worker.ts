@@ -1,7 +1,7 @@
 // 분석 Worker -- analysis 큐
 import { Worker, Job } from 'bullmq';
 import { eq } from 'drizzle-orm';
-import { runAnalysisPipeline } from '../analysis/runner';
+import { runAnalysisPipeline } from '../analysis/pipeline-orchestrator';
 import { createLogger, logError } from '../utils/logger';
 import { getDb } from '../db';
 import { collectionJobs } from '../db/schema/collections';

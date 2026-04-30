@@ -160,10 +160,12 @@ vi.mock('../src/db', () => ({
 }));
 
 describe('analysis/runner', () => {
-  it('runAnalysisPipeline 함수가 export된다', async () => {
-    const runner = await import('../src/analysis/runner');
-    expect(runner.runAnalysisPipeline).toBeDefined();
-    expect(typeof runner.runAnalysisPipeline).toBe('function');
+  it('runAnalysisPipeline은 pipeline-orchestrator에서 export된다', async () => {
+    // 이전엔 runner.ts에서 re-export했으나 순환 의존(runner ↔ pipeline-orchestrator)
+    // 해소를 위해 제거. 사용처는 pipeline-orchestrator에서 직접 import.
+    const orchestrator = await import('../src/analysis/pipeline-orchestrator');
+    expect(orchestrator.runAnalysisPipeline).toBeDefined();
+    expect(typeof orchestrator.runAnalysisPipeline).toBe('function');
   });
 
   it('runModule 함수가 export된다', async () => {

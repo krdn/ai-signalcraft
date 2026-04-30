@@ -288,5 +288,5 @@ export async function runModule<T>(
   return result as unknown as AnalysisModuleResult<T>;
 }
 
-// 오케스트레이션 함수 re-export — 기존 import 경로 호환성 유지
-export { runAnalysisPipeline } from './pipeline-orchestrator';
+// runAnalysisPipeline은 pipeline-orchestrator에서 직접 import한다.
+// (이전엔 여기서 re-export했으나 runner ↔ pipeline-orchestrator 사이클 유발 → 제거)
