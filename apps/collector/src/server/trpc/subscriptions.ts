@@ -12,13 +12,14 @@ import { router, protectedProcedure } from './init';
 
 const SOURCE_ENUM = ['naver-news', 'youtube', 'dcinside', 'fmkorea', 'clien'] as const;
 
-const limitsSchema = z.object({
+// __tests__/subscriptions-input.test.ts에서 Zod 입력 회귀 테스트를 위해 export.
+export const limitsSchema = z.object({
   maxPerRun: z.number().int().positive(),
   maxPerDay: z.number().int().positive().optional(),
   commentsPerItem: z.number().int().nonnegative().optional(),
 });
 
-const optionsSchema = z
+export const optionsSchema = z
   .object({
     collectTranscript: z.boolean().optional(),
     includeComments: z.boolean().optional(),
@@ -26,7 +27,7 @@ const optionsSchema = z
   })
   .optional();
 
-const createInput = z.object({
+export const createInput = z.object({
   keyword: z.string().trim().min(1).max(200),
   sources: z.array(z.enum(SOURCE_ENUM)).min(1),
   intervalHours: z
@@ -41,7 +42,7 @@ const createInput = z.object({
   ownerId: z.string().optional(),
 });
 
-const updateInput = createInput.partial().extend({ id: z.number().int().positive() });
+export const updateInput = createInput.partial().extend({ id: z.number().int().positive() });
 
 const idInput = z.object({ id: z.number().int().positive() });
 
