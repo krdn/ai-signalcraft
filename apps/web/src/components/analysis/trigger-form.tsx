@@ -16,13 +16,13 @@ import {
   OPTIMIZATION_PRESETS,
   PRESET_STYLES,
   DATE_PRESETS,
-  SOURCE_OPTIONS,
   ALL_SOURCES,
 } from './trigger-form-data';
 import { type SubscriptionSummary } from './subscription-picker';
 import { KeywordInput } from './trigger-form/keyword-input';
 import { OrphanJobsDialog } from './trigger-form/orphan-jobs-dialog';
 import { DemoQuotaBadge } from './trigger-form/demo-quota-badge';
+import { SourceSelector } from './trigger-form/source-selector';
 import { trpcClient } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -214,8 +214,6 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
     setSources((prev) => (checked ? [...prev, source] : prev.filter((s) => s !== source)));
   };
 
-  const isAllSelected = ALL_SOURCES.every((s) => sources.includes(s));
-
   const handleCustomSourceToggle = (id: string, checked: boolean) => {
     setCustomSourceIds((prev) => (checked ? [...prev, id] : prev.filter((v) => v !== id)));
   };
@@ -376,68 +374,17 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
           />
 
           {/* 소스 선택 */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Label>소스</Label>
-              {isSubMode && (
-                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
-                  구독 설정
-                </span>
-              )}
-            </div>
-            <div className="space-y-3">
-              {/* 전체 선택 */}
-              <label className="flex items-center gap-2 cursor-pointer">
-                <Checkbox
-                  checked={isAllSelected}
-                  onCheckedChange={(checked) => handleAllToggle(!!checked)}
-                  disabled={triggerMutation.isPending || isSubMode}
-                />
-                <span className="text-sm font-medium">전체 선택</span>
-              </label>
-              {/* 그룹별 소스 */}
-              {SOURCE_OPTIONS.map((group) => (
-                <div key={group.group} className="space-y-1">
-                  <p className="text-xs font-medium text-muted-foreground">{group.group}</p>
-                  <div className="flex items-center gap-4 pl-2">
-                    {group.items.map((item) => (
-                      <label key={item.id} className="flex items-center gap-2 cursor-pointer">
-                        <Checkbox
-                          checked={sources.includes(item.id)}
-                          onCheckedChange={(checked) => handleSourceToggle(item.id, !!checked)}
-                          disabled={triggerMutation.isPending || isSubMode}
-                        />
-                        <span className="text-sm">{item.label}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              ))}
-              {/* 사용자 정의 소스 (관리자가 /admin/sources에서 등록한 RSS/HTML) */}
-              {customSources && customSources.length > 0 && !isDemo && (
-                <div className="space-y-1">
-                  <p className="text-xs font-medium text-muted-foreground">사용자 정의 소스</p>
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pl-2">
-                    {customSources.map((cs) => (
-                      <label key={cs.id} className="flex items-center gap-2 cursor-pointer">
-                        <Checkbox
-                          checked={customSourceIds.includes(cs.id)}
-                          onCheckedChange={(checked) => handleCustomSourceToggle(cs.id, !!checked)}
-                          disabled={triggerMutation.isPending || isSubMode}
-                        />
-                        <span className="text-sm">
-                          {cs.name}
-                          <span className="ml-1 text-[10px] text-muted-foreground uppercase">
-                            {cs.adapterType}
-                          </span>
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+          <SourceSelector
+            sources={sources}
+            customSourceIds={customSourceIds}
+            customSources={customSources}
+            isSubMode={isSubMode}
+            isDemo={isDemo}
+            disabled={triggerMutation.isPending}
+            onAllToggle={handleAllToggle}
+            onSourceToggle={handleSourceToggle}
+            onCustomSourceToggle={handleCustomSourceToggle}
+          />
 
           {/* 기간 선택 */}
           {isDemo && (
