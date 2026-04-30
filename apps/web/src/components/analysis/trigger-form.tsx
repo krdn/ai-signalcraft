@@ -20,6 +20,7 @@ import {
   ALL_SOURCES,
 } from './trigger-form-data';
 import { SubscriptionPicker, type SubscriptionSummary } from './subscription-picker';
+import { OrphanJobsDialog } from './trigger-form/orphan-jobs-dialog';
 import { trpcClient } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,16 +30,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogAction,
-  AlertDialogCancel,
-} from '@/components/ui/alert-dialog';
 
 interface TriggerFormProps {
   onJobStarted: (jobId: number) => void;
@@ -1014,43 +1005,22 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
         </form>
 
         {/* 고아 작업 확인 다이얼로그 */}
-        <AlertDialog
+        <OrphanJobsDialog
           open={orphanDialog.open}
+          count={orphanDialog.count}
           onOpenChange={(open) => {
             if (!open) setOrphanDialog({ open: false, count: 0, pendingSubmit: null });
           }}
-        >
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>이전 작업이 남아있습니다</AlertDialogTitle>
-              <AlertDialogDescription>
-                이전 실행의 잔여 작업 {orphanDialog.count}개가 큐에 남아있습니다. 정리 후 실행하면
-                충돌을 방지할 수 있습니다.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>취소</AlertDialogCancel>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  orphanDialog.pendingSubmit?.();
-                  setOrphanDialog({ open: false, count: 0, pendingSubmit: null });
-                }}
-              >
-                그냥 실행
-              </Button>
-              <AlertDialogAction
-                onClick={async () => {
-                  await cleanupMutation.mutateAsync();
-                  orphanDialog.pendingSubmit?.();
-                  setOrphanDialog({ open: false, count: 0, pendingSubmit: null });
-                }}
-              >
-                정리 후 실행
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+          onJustRun={() => {
+            orphanDialog.pendingSubmit?.();
+            setOrphanDialog({ open: false, count: 0, pendingSubmit: null });
+          }}
+          onCleanupAndRun={async () => {
+            await cleanupMutation.mutateAsync();
+            orphanDialog.pendingSubmit?.();
+            setOrphanDialog({ open: false, count: 0, pendingSubmit: null });
+          }}
+        />
       </CardContent>
     </Card>
   );
