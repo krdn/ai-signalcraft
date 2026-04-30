@@ -4,41 +4,25 @@ import { useState, useEffect, useCallback } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
-import { Loader2, ChevronDown, Lock, HelpCircle, RefreshCw } from 'lucide-react';
-import { format, subDays, addDays } from 'date-fns';
+import { Loader2, RefreshCw } from 'lucide-react';
+import { subDays, addDays } from 'date-fns';
 import { TriggerFormHelp } from './trigger-form-help';
 import { DomainBadge } from './domain-badge';
 import { BreakpointSection, type BreakpointValue } from './trigger-form/breakpoint-section';
 import { SeriesSelector } from './trigger-form/series-selector';
-import {
-  type OptimizationPreset,
-  type SourceId,
-  OPTIMIZATION_PRESETS,
-  PRESET_STYLES,
-  DATE_PRESETS,
-  SOURCE_OPTIONS,
-  ALL_SOURCES,
-} from './trigger-form-data';
-import { SubscriptionPicker, type SubscriptionSummary } from './subscription-picker';
+import { type OptimizationPreset, type SourceId, ALL_SOURCES } from './trigger-form-data';
+import { type SubscriptionSummary } from './subscription-picker';
+import { KeywordInput } from './trigger-form/keyword-input';
+import { OrphanJobsDialog } from './trigger-form/orphan-jobs-dialog';
+import { DemoQuotaBadge } from './trigger-form/demo-quota-badge';
+import { SourceSelector } from './trigger-form/source-selector';
+import { DateRangeSelector } from './trigger-form/date-range-selector';
+import { AnalysisOptions } from './trigger-form/analysis-options';
+import { CollectionLimitsPanel } from './trigger-form/collection-limits-panel';
 import { trpcClient } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogAction,
-  AlertDialogCancel,
-} from '@/components/ui/alert-dialog';
 
 interface TriggerFormProps {
   onJobStarted: (jobId: number) => void;
@@ -221,8 +205,6 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
     setSources((prev) => (checked ? [...prev, source] : prev.filter((s) => s !== source)));
   };
 
-  const isAllSelected = ALL_SOURCES.every((s) => sources.includes(s));
-
   const handleCustomSourceToggle = (id: string, checked: boolean) => {
     setCustomSourceIds((prev) => (checked ? [...prev, id] : prev.filter((v) => v !== id)));
   };
@@ -319,18 +301,6 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
     doTrigger();
   };
 
-  // 기간 모드에서는 수집 한도를 '날짜별'로 해석하므로 도움말 문구를 모드별로 전환한다.
-  const isPerDay = dateMode === 'period';
-  const perDaySuffix = isPerDay
-    ? ' 기간 모드에서는 이 값이 날짜별 한도이며, 실제 수집 총량 = 값 × 일수입니다.'
-    : '';
-  const sectionHeaderTooltip = isPerDay
-    ? '수집할 데이터의 날짜별 수량과 AI 처리 전략을 설정합니다. 값을 줄이면 분석 비용과 시간이 절감됩니다.'
-    : '수집할 데이터 양과 AI 처리 전략을 설정합니다. 값을 줄이면 분석 비용과 시간이 절감됩니다.';
-  const limitsDescription = isPerDay
-    ? '소스별 날짜당 수집 건수를 조절합니다. 줄이면 비용과 시간이 절약됩니다.'
-    : '소스별 최대 수집 건수를 조절합니다. 줄이면 비용과 시간이 절약됩니다.';
-
   return (
     <Card className="mx-auto max-w-xl">
       <CardHeader>
@@ -338,43 +308,7 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
       </CardHeader>
       <CardContent>
         {/* 데모 사용자 쿼터 정보 */}
-        {isDemo && demoQuota && (
-          <div className="mb-4 rounded-lg bg-primary/5 border border-primary/20 p-3 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-primary">무료 체험 중</span>
-              <span className="text-xs text-muted-foreground">
-                {demoQuota.isExpired ? '만료됨' : `${demoQuota.daysLeft}일 남음`}
-              </span>
-            </div>
-            <div className="grid grid-cols-3 gap-2 text-center">
-              <div className="rounded-md bg-background p-2">
-                <div className="text-lg font-bold text-primary">{demoQuota.todayRemaining}</div>
-                <div className="text-[10px] text-muted-foreground">오늘 남은 횟수</div>
-              </div>
-              <div className="rounded-md bg-background p-2">
-                <div className="text-lg font-bold">{demoQuota.dailyLimit}</div>
-                <div className="text-[10px] text-muted-foreground">일일 한도</div>
-              </div>
-              <div className="rounded-md bg-background p-2">
-                <div className="text-lg font-bold">
-                  {demoQuota.daysLeft}
-                  <span className="text-xs font-normal">일</span>
-                </div>
-                <div className="text-[10px] text-muted-foreground">잔여 기간</div>
-              </div>
-            </div>
-            {(demoQuota.todayRemaining <= 0 || demoQuota.isExpired) && (
-              <p className="text-xs text-destructive">
-                {demoQuota.isExpired
-                  ? '체험 기간이 만료되었습니다.'
-                  : '오늘 분석 횟수를 모두 사용했습니다. 내일 다시 이용 가능합니다.'}
-              </p>
-            )}
-            <p className="text-[10px] text-muted-foreground">
-              누적 {demoQuota.totalUsed}회 사용 · 핵심 분석 모듈 3개 · 수집 한도 축소 적용
-            </p>
-          </div>
-        )}
+        {isDemo && demoQuota && <DemoQuotaBadge quota={demoQuota} />}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* 선택된 프리셋 표시 */}
@@ -400,44 +334,15 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
           )}
 
           {/* 키워드 입력 */}
-          <div className="space-y-2">
-            <Label htmlFor="keyword">키워드</Label>
-            <div className="flex gap-2">
-              <div className="flex flex-1 gap-2">
-                <Input
-                  id="keyword"
-                  placeholder="인물 또는 키워드 입력"
-                  value={keyword}
-                  onChange={(e) => setKeyword(e.target.value)}
-                  required
-                  maxLength={50}
-                  disabled={triggerMutation.isPending || isSubMode}
-                  className="flex-1"
-                />
-                {isSubMode && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="shrink-0 text-xs gap-1"
-                    onClick={handleSubscriptionClear}
-                    title="구독 모드 해제"
-                  >
-                    <span className="max-w-[120px] truncate">
-                      {subscriptionMode.subscription?.keyword}
-                    </span>
-                    ✕
-                  </Button>
-                )}
-              </div>
-              {!isSubMode && (
-                <SubscriptionPicker
-                  onSelect={handleSubscriptionSelect}
-                  disabled={triggerMutation.isPending}
-                />
-              )}
-            </div>
-          </div>
+          <KeywordInput
+            keyword={keyword}
+            onKeywordChange={setKeyword}
+            isSubMode={isSubMode}
+            subscription={subscriptionMode.subscription}
+            onSubscriptionSelect={handleSubscriptionSelect}
+            onSubscriptionClear={handleSubscriptionClear}
+            disabled={triggerMutation.isPending}
+          />
 
           {/* 시리즈 연결 */}
           <SeriesSelector
@@ -448,516 +353,67 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
           />
 
           {/* 소스 선택 */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Label>소스</Label>
-              {isSubMode && (
-                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
-                  구독 설정
-                </span>
-              )}
-            </div>
-            <div className="space-y-3">
-              {/* 전체 선택 */}
-              <label className="flex items-center gap-2 cursor-pointer">
-                <Checkbox
-                  checked={isAllSelected}
-                  onCheckedChange={(checked) => handleAllToggle(!!checked)}
-                  disabled={triggerMutation.isPending || isSubMode}
-                />
-                <span className="text-sm font-medium">전체 선택</span>
-              </label>
-              {/* 그룹별 소스 */}
-              {SOURCE_OPTIONS.map((group) => (
-                <div key={group.group} className="space-y-1">
-                  <p className="text-xs font-medium text-muted-foreground">{group.group}</p>
-                  <div className="flex items-center gap-4 pl-2">
-                    {group.items.map((item) => (
-                      <label key={item.id} className="flex items-center gap-2 cursor-pointer">
-                        <Checkbox
-                          checked={sources.includes(item.id)}
-                          onCheckedChange={(checked) => handleSourceToggle(item.id, !!checked)}
-                          disabled={triggerMutation.isPending || isSubMode}
-                        />
-                        <span className="text-sm">{item.label}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              ))}
-              {/* 사용자 정의 소스 (관리자가 /admin/sources에서 등록한 RSS/HTML) */}
-              {customSources && customSources.length > 0 && !isDemo && (
-                <div className="space-y-1">
-                  <p className="text-xs font-medium text-muted-foreground">사용자 정의 소스</p>
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pl-2">
-                    {customSources.map((cs) => (
-                      <label key={cs.id} className="flex items-center gap-2 cursor-pointer">
-                        <Checkbox
-                          checked={customSourceIds.includes(cs.id)}
-                          onCheckedChange={(checked) => handleCustomSourceToggle(cs.id, !!checked)}
-                          disabled={triggerMutation.isPending || isSubMode}
-                        />
-                        <span className="text-sm">
-                          {cs.name}
-                          <span className="ml-1 text-[10px] text-muted-foreground uppercase">
-                            {cs.adapterType}
-                          </span>
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+          <SourceSelector
+            sources={sources}
+            customSourceIds={customSourceIds}
+            customSources={customSources}
+            isSubMode={isSubMode}
+            isDemo={isDemo}
+            disabled={triggerMutation.isPending}
+            onAllToggle={handleAllToggle}
+            onSourceToggle={handleSourceToggle}
+            onCustomSourceToggle={handleCustomSourceToggle}
+          />
 
           {/* 기간 선택 */}
-          {isDemo && (
-            <div className="rounded-lg border border-dashed border-muted-foreground/30 p-3 text-sm text-muted-foreground flex items-center gap-2">
-              <Lock className="h-4 w-4 shrink-0" />
-              기간: 최근 7일 고정 (데모 체험)
-            </div>
-          )}
-          <Tabs
-            value={dateMode}
-            onValueChange={(v) => !isDemo && setDateMode(v as 'period' | 'event')}
-            className={isDemo ? 'hidden' : ''}
-          >
-            <TabsList className="w-full">
-              <TabsTrigger value="period" className="flex-1">
-                기간 선택
-              </TabsTrigger>
-              <TabsTrigger value="event" className="flex-1">
-                이벤트 중심
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="period" className="space-y-3 mt-3">
-              <div className="space-y-2">
-                <Label>빠른 선택</Label>
-                <div className="flex flex-wrap gap-2">
-                  {DATE_PRESETS.map((preset) => (
-                    <Button
-                      key={preset.label}
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={triggerMutation.isPending}
-                      onClick={() => {
-                        const { start, end } = preset.getDates();
-                        setStartDate(start);
-                        setEndDate(end);
-                      }}
-                    >
-                      {preset.label}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>시작일</Label>
-                  <input
-                    type="date"
-                    className="flex h-9 w-full rounded-lg border bg-card px-3 text-sm"
-                    value={isMounted ? format(startDate, 'yyyy-MM-dd') : ''}
-                    onChange={(e) => e.target.value && setStartDate(new Date(e.target.value))}
-                    disabled={triggerMutation.isPending}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>종료일</Label>
-                  <input
-                    type="date"
-                    className="flex h-9 w-full rounded-lg border bg-card px-3 text-sm"
-                    value={isMounted ? format(endDate, 'yyyy-MM-dd') : ''}
-                    onChange={(e) => e.target.value && setEndDate(new Date(e.target.value))}
-                    disabled={triggerMutation.isPending}
-                  />
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="event" className="space-y-3 mt-3">
-              <div className="space-y-2">
-                <Label htmlFor="eventName">이벤트명</Label>
-                <Input
-                  id="eventName"
-                  placeholder="예: 기자회견, 발언 논란, 정책 발표"
-                  value={eventName}
-                  onChange={(e) => setEventName(e.target.value)}
-                  disabled={triggerMutation.isPending}
-                  maxLength={100}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>이벤트 날짜</Label>
-                  <input
-                    type="date"
-                    className="flex h-9 w-full rounded-lg border bg-card px-3 text-sm"
-                    value={isMounted ? format(eventDate, 'yyyy-MM-dd') : ''}
-                    onChange={(e) => e.target.value && setEventDate(new Date(e.target.value))}
-                    disabled={triggerMutation.isPending}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="eventRadius">전후 분석 범위</Label>
-                  <div className="flex items-center gap-2">
-                    <select
-                      id="eventRadius"
-                      value={eventRadius}
-                      onChange={(e) => setEventRadius(Number(e.target.value))}
-                      disabled={triggerMutation.isPending}
-                      className="flex h-9 w-full rounded-lg border bg-card px-3 text-sm"
-                    >
-                      <option value={1}>전후 1일</option>
-                      <option value={3}>전후 3일</option>
-                      <option value={5}>전후 5일</option>
-                      <option value={7}>전후 7일</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-              <p suppressHydrationWarning className="text-xs text-muted-foreground">
-                {isMounted
-                  ? `분석 범위: ${format(subDays(eventDate, eventRadius), 'MM/dd')} ~ ${format(addDays(eventDate, eventRadius), 'MM/dd')} (${eventRadius * 2 + 1}일간)`
-                  : '분석 범위: --/-- ~ --/-- (7일간)'}
-              </p>
-            </TabsContent>
-          </Tabs>
+          <DateRangeSelector
+            isDemo={isDemo}
+            isMounted={isMounted}
+            disabled={triggerMutation.isPending}
+            dateMode={dateMode}
+            onDateModeChange={setDateMode}
+            startDate={startDate}
+            endDate={endDate}
+            onStartDateChange={setStartDate}
+            onEndDateChange={setEndDate}
+            eventName={eventName}
+            onEventNameChange={setEventName}
+            eventDate={eventDate}
+            onEventDateChange={setEventDate}
+            eventRadius={eventRadius}
+            onEventRadiusChange={setEventRadius}
+          />
 
           {/* 분석 옵션 */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Label>분석 옵션</Label>
-              {isSubMode && (
-                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
-                  구독 설정
-                </span>
-              )}
-            </div>
-            <label
-              suppressHydrationWarning
-              className={`flex items-start gap-2 rounded-lg border p-3 transition-colors ${isDemo ? 'opacity-70' : 'cursor-pointer hover:bg-accent/50'}`}
-            >
-              <Checkbox
-                checked={enableItemAnalysis}
-                onCheckedChange={(checked) => setEnableItemAnalysis(!!checked)}
-                disabled={isDemo || triggerMutation.isPending || isSubMode}
-                className="mt-0.5"
-              />
-              <div className="space-y-1" suppressHydrationWarning>
-                <span className="text-sm font-medium" suppressHydrationWarning>
-                  개별 기사/댓글 감정 분석
-                  {isDemo && (
-                    <span className="ml-2 text-xs text-primary font-normal">(데모 기본 포함)</span>
-                  )}
-                </span>
-                <p className="text-xs text-muted-foreground" suppressHydrationWarning>
-                  각 기사와 댓글에 대해 긍정/부정/중립 감정을 개별 판정합니다.
-                  {!isDemo && ' 추가 API 비용이 발생합니다.'}
-                </p>
-              </div>
-            </label>
-            {sources.includes('youtube') && (
-              <label
-                className={`flex items-start gap-2 rounded-lg border p-3 transition-colors ${isDemo ? 'opacity-70' : 'cursor-pointer hover:bg-accent/50'}`}
-              >
-                <Checkbox
-                  checked={collectTranscript}
-                  onCheckedChange={(checked) => setCollectTranscript(!!checked)}
-                  disabled={isDemo || triggerMutation.isPending || isSubMode}
-                  className="mt-0.5"
-                />
-                <div className="space-y-1">
-                  <span className="text-sm font-medium">유튜브 자막 수집</span>
-                  <p className="text-xs text-muted-foreground">
-                    영상 자막을 수집합니다. YouTube 자막이 없는 영상은 조회수 상위 20건에 한해
-                    오디오를 자동 전사(Whisper)해 채웁니다. 다음 분석 실행부터 반영됩니다.
-                  </p>
-                </div>
-              </label>
-            )}
-          </div>
+          <AnalysisOptions
+            isDemo={isDemo}
+            isSubMode={isSubMode}
+            disabled={triggerMutation.isPending}
+            enableItemAnalysis={enableItemAnalysis}
+            onEnableItemAnalysisChange={setEnableItemAnalysis}
+            collectTranscript={collectTranscript}
+            onCollectTranscriptChange={setCollectTranscript}
+            sources={sources}
+          />
 
-          {/* 수집 한도 설정 — 데모 사용자는 변경 불가 */}
-          {isDemo && (
-            <div className="rounded-lg border border-dashed border-muted-foreground/30 p-3 text-sm text-muted-foreground flex items-center gap-2">
-              <Lock className="h-4 w-4 shrink-0" />
-              수집 한도 & 토큰 최적화: 데모 기본값 적용 (변경 불가)
-            </div>
-          )}
-          <Collapsible
-            open={isLimitsOpen}
+          {/* 수집 한도 & 토큰 최적화 */}
+          <CollectionLimitsPanel
+            isDemo={isDemo}
+            isOpen={isLimitsOpen}
             onOpenChange={setIsLimitsOpen}
-            className={isDemo ? 'hidden' : ''}
-          >
-            <CollapsibleTrigger className="w-full flex items-center justify-between rounded-lg border px-3 py-2 text-sm hover:bg-accent transition-colors cursor-pointer">
-              <div className="flex items-center gap-2">
-                <span className="font-medium">수집 한도 & 토큰 최적화</span>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger onClick={(e) => e.stopPropagation()} className="cursor-help">
-                      <HelpCircle className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
-                    </TooltipTrigger>
-                    <TooltipContent side="right" className="max-w-[220px] text-center">
-                      {sectionHeaderTooltip}
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                {optimizationPreset !== 'none' && (
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${PRESET_STYLES[optimizationPreset]?.indicator ?? 'bg-zinc-500/15 text-zinc-500'}`}
-                  >
-                    {OPTIMIZATION_PRESETS[optimizationPreset].label}{' '}
-                    {OPTIMIZATION_PRESETS[optimizationPreset].estimatedReduction}↓
-                  </span>
-                )}
-              </div>
-              <ChevronDown
-                className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isLimitsOpen ? 'rotate-180' : ''}`}
-              />
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <TooltipProvider>
-                <div className="mt-2 space-y-3 rounded-lg border p-3">
-                  <p className="text-xs text-muted-foreground">{limitsDescription}</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <Label htmlFor="maxNaver" className="text-xs flex items-center gap-1">
-                        네이버 뉴스
-                        <Tooltip>
-                          <TooltipTrigger className="cursor-help">
-                            <HelpCircle className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                          </TooltipTrigger>
-                          <TooltipContent side="top" className="max-w-[200px]">
-                            수집할 네이버 뉴스 기사의 최대 건수입니다. 키워드와 기간에 따라 실제
-                            수집량은 이보다 적을 수 있습니다.{perDaySuffix} (범위: 10 ~ 5,000건)
-                          </TooltipContent>
-                        </Tooltip>
-                      </Label>
-                      <Input
-                        id="maxNaver"
-                        type="number"
-                        min={10}
-                        max={5000}
-                        step={10}
-                        value={maxNaverArticles}
-                        onChange={(e) => setMaxNaverArticles(Number(e.target.value))}
-                        disabled={triggerMutation.isPending}
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="maxYoutube" className="text-xs flex items-center gap-1">
-                        유튜브 영상
-                        <Tooltip>
-                          <TooltipTrigger className="cursor-help">
-                            <HelpCircle className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                          </TooltipTrigger>
-                          <TooltipContent side="top" className="max-w-[200px]">
-                            수집할 유튜브 영상의 최대 건수입니다. 영상 제목·설명·댓글을 분석합니다.
-                            {perDaySuffix} (범위: 5 ~ 500건)
-                          </TooltipContent>
-                        </Tooltip>
-                      </Label>
-                      <Input
-                        id="maxYoutube"
-                        type="number"
-                        min={5}
-                        max={500}
-                        step={5}
-                        value={maxYoutubeVideos}
-                        onChange={(e) => setMaxYoutubeVideos(Number(e.target.value))}
-                        disabled={triggerMutation.isPending}
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="maxCommunity" className="text-xs flex items-center gap-1">
-                        커뮤니티 게시글
-                        <Tooltip>
-                          <TooltipTrigger className="cursor-help">
-                            <HelpCircle className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                          </TooltipTrigger>
-                          <TooltipContent side="top" className="max-w-[200px]">
-                            DC갤러리·에펨코리아·클리앙 등 선택한 커뮤니티에서 수집할 게시글
-                            수입니다.{perDaySuffix} (범위: 5 ~ 500건)
-                          </TooltipContent>
-                        </Tooltip>
-                      </Label>
-                      <Input
-                        id="maxCommunity"
-                        type="number"
-                        min={5}
-                        max={500}
-                        step={5}
-                        value={maxCommunityPosts}
-                        onChange={(e) => setMaxCommunityPosts(Number(e.target.value))}
-                        disabled={triggerMutation.isPending}
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="maxComments" className="text-xs flex items-center gap-1">
-                        항목당 댓글
-                        <Tooltip>
-                          <TooltipTrigger className="cursor-help">
-                            <HelpCircle className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                          </TooltipTrigger>
-                          <TooltipContent side="top" className="max-w-[200px]">
-                            각 기사/게시글/영상에서 수집할 댓글의 최대 건수입니다. 댓글은 AI 분석의
-                            주요 여론 신호입니다. (범위: 10 ~ 2,000건)
-                          </TooltipContent>
-                        </Tooltip>
-                      </Label>
-                      <Input
-                        id="maxComments"
-                        type="number"
-                        min={10}
-                        max={2000}
-                        step={10}
-                        value={maxCommentsPerItem}
-                        onChange={(e) => setMaxCommentsPerItem(Number(e.target.value))}
-                        disabled={triggerMutation.isPending}
-                      />
-                    </div>
-                  </div>
-
-                  {/* 구분선 */}
-                  <div className="border-t my-1" />
-
-                  {/* 토큰 최적화 프리셋 */}
-                  <div className="space-y-2">
-                    <Label className="text-xs flex items-center gap-1">
-                      토큰 최적화
-                      <Tooltip>
-                        <TooltipTrigger className="cursor-help">
-                          <HelpCircle className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                        </TooltipTrigger>
-                        <TooltipContent side="top" className="max-w-[220px]">
-                          수집된 데이터를 AI에 전달하기 전에 전처리하여 토큰(비용·속도)을 줄이는
-                          설정입니다. 높을수록 비용이 절감되지만 일부 데이터가 제외됩니다.
-                        </TooltipContent>
-                      </Tooltip>
-                    </Label>
-                    {/* 기존 모드 */}
-                    <div className="grid grid-cols-4 gap-1.5">
-                      {(
-                        Object.entries(OPTIMIZATION_PRESETS).filter(
-                          ([, p]) => p.group === 'classic',
-                        ) as [
-                          OptimizationPreset,
-                          (typeof OPTIMIZATION_PRESETS)[OptimizationPreset],
-                        ][]
-                      ).map(([key, preset]) => {
-                        const style = PRESET_STYLES[key];
-                        return (
-                          <Tooltip key={key}>
-                            <TooltipTrigger
-                              render={
-                                <button
-                                  type="button"
-                                  onClick={() => setOptimizationPreset(key)}
-                                  disabled={triggerMutation.isPending}
-                                  className={`rounded-md border p-2 text-center transition-colors w-full ${
-                                    optimizationPreset === key
-                                      ? `${style?.border ?? 'border-zinc-500'} ${style?.bg ?? 'bg-zinc-500/10'}`
-                                      : 'border-border hover:bg-accent'
-                                  }`}
-                                >
-                                  <div
-                                    className={`text-xs font-medium ${
-                                      optimizationPreset === key
-                                        ? (style?.text ?? 'text-zinc-400')
-                                        : 'text-muted-foreground'
-                                    }`}
-                                  >
-                                    {preset.label}
-                                  </div>
-                                  {key !== 'none' && (
-                                    <div className="text-[10px] text-muted-foreground mt-0.5">
-                                      {preset.estimatedReduction}↓
-                                    </div>
-                                  )}
-                                </button>
-                              }
-                            />
-                            <TooltipContent side="bottom" className="max-w-[180px]">
-                              {preset.description}
-                            </TooltipContent>
-                          </Tooltip>
-                        );
-                      })}
-                    </div>
-                    {/* RAG 모드 */}
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {(
-                        Object.entries(OPTIMIZATION_PRESETS).filter(
-                          ([, p]) => p.group === 'rag',
-                        ) as [
-                          OptimizationPreset,
-                          (typeof OPTIMIZATION_PRESETS)[OptimizationPreset],
-                        ][]
-                      ).map(([key, preset]) => {
-                        const style = PRESET_STYLES[key];
-                        return (
-                          <Tooltip key={key}>
-                            <TooltipTrigger
-                              render={
-                                <button
-                                  type="button"
-                                  onClick={() => setOptimizationPreset(key)}
-                                  disabled={triggerMutation.isPending}
-                                  className={`rounded-md border p-2 text-center transition-colors w-full ${
-                                    optimizationPreset === key
-                                      ? `${style?.border} ${style?.bg}`
-                                      : 'border-border hover:bg-accent'
-                                  }`}
-                                >
-                                  <div
-                                    className={`text-xs font-medium ${
-                                      optimizationPreset === key
-                                        ? style?.text
-                                        : 'text-muted-foreground'
-                                    }`}
-                                  >
-                                    {preset.label}
-                                  </div>
-                                  <div className="text-[10px] text-muted-foreground mt-0.5">
-                                    {preset.estimatedReduction}↓
-                                  </div>
-                                </button>
-                              }
-                            />
-                            <TooltipContent side="bottom" className="max-w-[180px]">
-                              {preset.description}
-                            </TooltipContent>
-                          </Tooltip>
-                        );
-                      })}
-                    </div>
-                    <p className="text-[10px] text-muted-foreground">
-                      RAG 모드는 DB에 저장된 임베딩을 활용하여 의미 관련 문서만 선별합니다.
-                    </p>
-                    {optimizationPreset !== 'none' && (
-                      <div
-                        className={`rounded-md p-2 text-xs border-l-2 ${
-                          PRESET_STYLES[optimizationPreset]?.border?.replace(
-                            'border-',
-                            'border-l-',
-                          ) ?? 'border-l-zinc-500'
-                        } ${
-                          PRESET_STYLES[optimizationPreset]?.bg?.replace('/10', '/5') ??
-                          'bg-zinc-500/5'
-                        }`}
-                      >
-                        {OPTIMIZATION_PRESETS[optimizationPreset].description}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </TooltipProvider>
-            </CollapsibleContent>
-          </Collapsible>
+            disabled={triggerMutation.isPending}
+            isPerDay={dateMode === 'period'}
+            maxNaverArticles={maxNaverArticles}
+            onMaxNaverArticlesChange={setMaxNaverArticles}
+            maxYoutubeVideos={maxYoutubeVideos}
+            onMaxYoutubeVideosChange={setMaxYoutubeVideos}
+            maxCommunityPosts={maxCommunityPosts}
+            onMaxCommunityPostsChange={setMaxCommunityPosts}
+            maxCommentsPerItem={maxCommentsPerItem}
+            onMaxCommentsPerItemChange={setMaxCommentsPerItem}
+            optimizationPreset={optimizationPreset}
+            onOptimizationPresetChange={setOptimizationPreset}
+          />
 
           {/* 전량 재수집 옵션 — 데모 사용자에게는 표시하지 않음 */}
           {!isDemo && !isSubMode && (
@@ -1014,43 +470,22 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
         </form>
 
         {/* 고아 작업 확인 다이얼로그 */}
-        <AlertDialog
+        <OrphanJobsDialog
           open={orphanDialog.open}
+          count={orphanDialog.count}
           onOpenChange={(open) => {
             if (!open) setOrphanDialog({ open: false, count: 0, pendingSubmit: null });
           }}
-        >
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>이전 작업이 남아있습니다</AlertDialogTitle>
-              <AlertDialogDescription>
-                이전 실행의 잔여 작업 {orphanDialog.count}개가 큐에 남아있습니다. 정리 후 실행하면
-                충돌을 방지할 수 있습니다.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>취소</AlertDialogCancel>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  orphanDialog.pendingSubmit?.();
-                  setOrphanDialog({ open: false, count: 0, pendingSubmit: null });
-                }}
-              >
-                그냥 실행
-              </Button>
-              <AlertDialogAction
-                onClick={async () => {
-                  await cleanupMutation.mutateAsync();
-                  orphanDialog.pendingSubmit?.();
-                  setOrphanDialog({ open: false, count: 0, pendingSubmit: null });
-                }}
-              >
-                정리 후 실행
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+          onJustRun={() => {
+            orphanDialog.pendingSubmit?.();
+            setOrphanDialog({ open: false, count: 0, pendingSubmit: null });
+          }}
+          onCleanupAndRun={async () => {
+            await cleanupMutation.mutateAsync();
+            orphanDialog.pendingSubmit?.();
+            setOrphanDialog({ open: false, count: 0, pendingSubmit: null });
+          }}
+        />
       </CardContent>
     </Card>
   );
