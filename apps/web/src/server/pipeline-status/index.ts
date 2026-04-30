@@ -379,7 +379,8 @@ export async function getPipelineStatus(jobId: number) {
 
 // --- 헬퍼 함수 ---
 
-function derivePipelineStages(params: {
+// 단위 테스트(__tests__/derive.test.ts)에서 fixture 기반 회귀 검증을 위해 export.
+export function derivePipelineStages(params: {
   collectionFailed: boolean;
   collectionDone: boolean;
   isCancelled: boolean;
@@ -490,7 +491,7 @@ function derivePipelineStages(params: {
   };
 }
 
-function buildSourceDetails(
+export function buildSourceDetails(
   progress: Record<string, any> | null,
   errorDetails: Record<string, string> | null,
   isCancelled: boolean,
@@ -547,7 +548,7 @@ function buildSourceDetails(
   return sourceDetails;
 }
 
-function calculateProgress(
+export function calculateProgress(
   sourceDetails: Record<string, SourceDetailResult>,
   analysisRows: any[],
   collectionDone: boolean,
