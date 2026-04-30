@@ -39,7 +39,7 @@ export function KeywordInput({
             disabled={disabled || isSubMode}
             className="flex-1"
           />
-          {isSubMode && (
+          {isSubMode && subscription && (
             <Button
               type="button"
               variant="outline"
@@ -48,7 +48,7 @@ export function KeywordInput({
               onClick={onSubscriptionClear}
               title="구독 모드 해제"
             >
-              <span className="max-w-[120px] truncate">{subscription?.keyword}</span>✕
+              <span className="max-w-[120px] truncate">{subscription.keyword}</span>✕
             </Button>
           )}
         </div>
