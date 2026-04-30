@@ -23,7 +23,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version-file: .nvmrc
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
@@ -46,7 +46,7 @@ jobs:
         run: pnpm typecheck
 
   test:
-    name: Tests
+    name: Tests (all workspaces)
     runs-on: ubuntu-latest
 
     steps:
@@ -61,10 +61,11 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version-file: .nvmrc
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
 
-      - name: Run Core Tests
-        run: pnpm --filter @ai-signalcraft/core test
+      # 모든 워크스페이스 테스트 — web/core/collector/collectors 전체 회귀 차단
+      - name: Run All Tests
+        run: pnpm -r test
