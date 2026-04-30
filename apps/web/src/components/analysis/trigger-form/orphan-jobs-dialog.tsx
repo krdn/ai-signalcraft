@@ -17,7 +17,7 @@ export interface OrphanJobsDialogProps {
   count: number;
   onOpenChange: (open: boolean) => void;
   onJustRun: () => void;
-  onCleanupAndRun: () => void;
+  onCleanupAndRun: () => void | Promise<void>;
 }
 
 export function OrphanJobsDialog({
