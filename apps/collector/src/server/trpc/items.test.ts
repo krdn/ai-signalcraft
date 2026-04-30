@@ -113,11 +113,11 @@ describe('fetchAnalysisPayloadInput zod schema', () => {
     if (r.success) expect(r.data.keyword).toBe('테스트');
   });
 
-  it('ragOptions topK는 max 500', () => {
+  it('ragOptions topK는 max 1500 (rag-standard 1500 cap 정합)', () => {
     const r = fetchAnalysisPayloadInput.safeParse({
       keyword: '테스트',
       dateRange: { start: '2026-04-19T00:00:00Z', end: '2026-04-26T00:00:00Z' },
-      ragOptions: { articleVideoTopK: 501, commentTopK: 500 },
+      ragOptions: { articleVideoTopK: 1501, commentTopK: 1500 },
     });
     expect(r.success).toBe(false);
   });
