@@ -11,6 +11,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 export interface DateRangeSelectorProps {
   isDemo: boolean;
   isMounted: boolean;
+  /** triggerMutation.isPending only — isDemo는 부모가 Tabs를 hidden으로 처리 */
   disabled: boolean;
   dateMode: 'period' | 'event';
   onDateModeChange: (mode: 'period' | 'event') => void;
