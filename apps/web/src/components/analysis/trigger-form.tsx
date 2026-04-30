@@ -19,7 +19,8 @@ import {
   SOURCE_OPTIONS,
   ALL_SOURCES,
 } from './trigger-form-data';
-import { SubscriptionPicker, type SubscriptionSummary } from './subscription-picker';
+import { type SubscriptionSummary } from './subscription-picker';
+import { KeywordInput } from './trigger-form/keyword-input';
 import { OrphanJobsDialog } from './trigger-form/orphan-jobs-dialog';
 import { DemoQuotaBadge } from './trigger-form/demo-quota-badge';
 import { trpcClient } from '@/lib/trpc';
@@ -356,44 +357,15 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
           )}
 
           {/* 키워드 입력 */}
-          <div className="space-y-2">
-            <Label htmlFor="keyword">키워드</Label>
-            <div className="flex gap-2">
-              <div className="flex flex-1 gap-2">
-                <Input
-                  id="keyword"
-                  placeholder="인물 또는 키워드 입력"
-                  value={keyword}
-                  onChange={(e) => setKeyword(e.target.value)}
-                  required
-                  maxLength={50}
-                  disabled={triggerMutation.isPending || isSubMode}
-                  className="flex-1"
-                />
-                {isSubMode && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="shrink-0 text-xs gap-1"
-                    onClick={handleSubscriptionClear}
-                    title="구독 모드 해제"
-                  >
-                    <span className="max-w-[120px] truncate">
-                      {subscriptionMode.subscription?.keyword}
-                    </span>
-                    ✕
-                  </Button>
-                )}
-              </div>
-              {!isSubMode && (
-                <SubscriptionPicker
-                  onSelect={handleSubscriptionSelect}
-                  disabled={triggerMutation.isPending}
-                />
-              )}
-            </div>
-          </div>
+          <KeywordInput
+            keyword={keyword}
+            onKeywordChange={setKeyword}
+            isSubMode={isSubMode}
+            subscription={subscriptionMode.subscription}
+            onSubscriptionSelect={handleSubscriptionSelect}
+            onSubscriptionClear={handleSubscriptionClear}
+            disabled={triggerMutation.isPending}
+          />
 
           {/* 시리즈 연결 */}
           <SeriesSelector
