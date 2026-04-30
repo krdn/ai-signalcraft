@@ -111,6 +111,7 @@
 **OUT**:
 
 - `whitepaper/report-data.ts` (2,651줄) — **분해 안 함**. 단일 사용처(whitepaper-report.tsx)에 14개 모듈 상수, 분해 비용 > 이득. 빌드 7초로 인덱싱 이슈 없음.
+- `subscriptions/workflow/page.tsx` (2,093줄) — **2026-04-30 추가 OUT 결정**. 내부 개발팀 워크플로우 시각화 페이지(파이프라인 7단계 도큐멘테이션). 파일의 ~80%가 정적 메타데이터(`STAGES[]`, `Principle[]`, `AI_INTENTS` 등). 메인 컴포넌트는 5 useState로 단순. 전체 이력 1 commit (도입 후 변경 0건) → 유지보수성 부담 0. `report-data.ts`와 동일 카테고리(데이터 콘텐츠 페이지). 마스터플랜 작성 시 trigger-form 같은 form 컴포넌트로 오인.
 - `subscriptions.ts` (793줄), `analysis.ts` (617줄) 라우터 — Phase 2 범위에서 제외(우선순위 낮음)
 - 신규 기능, API shape 변경, DB 마이그레이션
 - 100% 타입 안정성
@@ -142,16 +143,19 @@
 **검증**: `trpc.collectedData.*.useQuery` 호출 표면 변화 없음. 응답 shape 동일.
 **다운타임**: 0분 (web 5분 재시작).
 
-#### PR 2-C: subscriptions/workflow/page.tsx 분해 (2,093줄)
+#### PR 2-C: subscriptions/workflow/page.tsx 분해 — **OUT 재분류 (2026-04-30)**
 
-**전략**: `apps/web/src/app/subscriptions/workflow/` 콜로케이션
+**원래 계획**: `_components/` (workflow-stepper, source-selector, keyword-input, limits-panel, preset-selector, cost-estimator, review-and-submit) + `_hooks/` (use-workflow-state, use-trigger-mutation)으로 분해. **이는 trigger-form.tsx와 같은 form 컴포넌트로 오인한 결과**.
 
-- `_components/`: workflow-stepper, source-selector, keyword-input, limits-panel, preset-selector, cost-estimator, review-and-submit
-- `_hooks/`: use-workflow-state, use-trigger-mutation
-- `page.tsx`: 200줄 미만 컴포지션
+**실제 파일 구조 점검 후 OUT 재분류 사유**:
 
-**검증**: 모든 단계 클릭 → mutation payload 네트워크 탭 diff 없음. 'use client' 디렉티브 정확히 위치.
-**다운타임**: 0분 (web 5분 재시작).
+- 이 파일은 **내부 개발팀 워크플로우 시각화 페이지** (파이프라인 7단계: UI/API/DB/Queue/Collect/Analyze/Status 도큐멘테이션). 사용자가 보는 form이 아님.
+- 파일의 ~80%가 정적 메타데이터 (`STAGES: StageDef[]`, `Principle[]`, `Record<AiIntent, ...>` 등 약 1,500줄+).
+- 메인 컴포넌트(`WorkflowPage`)는 5 useState + 1 useMemo + 1 useEffect로 단순. mutation 없음.
+- **변경 빈도 0** — 전체 git 이력에서 commit 1건 (`f37be99 feat: subscriptions 워크플로우 시각화 페이지 추가`). 30일 변경 0건.
+- `whitepaper/report-data.ts` OUT 결정과 동일 카테고리 (정적 콘텐츠 페이지, 단일 사용처, 분해 비용 > 이득).
+
+**결론**: 분해 안 함. 변경 빈도 0이라 유지보수성 부담 자체가 없으며, 분해 시 콜로케이션 디렉토리만 늘리고 코드 가독성 이득은 미미. Phase 2 IN scope에서 제외.
 
 #### PR 2-D: trigger-form.tsx 분해 (1,057줄)
 
