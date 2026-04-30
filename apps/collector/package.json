@@ -11,6 +11,8 @@
   "scripts": {
     "build": "tsc",
     "test": "vitest run",
+    "test:integration": "TEST_MODE=integration vitest run",
+    "test:all": "TEST_MODE=all vitest run",
     "dev": "tsx watch src/server/index.ts",
     "start": "node dist/server/index.js",
     "worker": "tsx watch src/queue/worker-process.ts",
