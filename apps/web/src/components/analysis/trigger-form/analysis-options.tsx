@@ -7,6 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 export interface AnalysisOptionsProps {
   isDemo: boolean;
   isSubMode: boolean;
+  /** triggerMutation.isPending only — isDemo/isSubMode은 컴포넌트 내부에서 OR로 합쳐짐 */
   disabled: boolean;
   enableItemAnalysis: boolean;
   onEnableItemAnalysisChange: (v: boolean) => void;

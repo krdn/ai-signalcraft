@@ -11,6 +11,8 @@ export interface CollectionLimitsPanelProps {
   isDemo: boolean;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
+  /** triggerMutation.isPending only — intentionally excludes isSubMode to allow
+   *  re-tuning collection limits after a subscription auto-fills them. */
   disabled: boolean;
   isPerDay: boolean;
   maxNaverArticles: number;

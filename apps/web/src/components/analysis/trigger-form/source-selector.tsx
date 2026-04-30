@@ -16,6 +16,7 @@ export interface SourceSelectorProps {
   customSources: CustomSource[] | undefined;
   isSubMode: boolean;
   isDemo: boolean;
+  /** triggerMutation.isPending only — isSubMode는 컴포넌트 내부에서 OR로 합쳐짐 */
   disabled: boolean;
   onAllToggle: (checked: boolean) => void;
   onSourceToggle: (source: SourceId, checked: boolean) => void;

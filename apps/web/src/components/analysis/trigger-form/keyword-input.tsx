@@ -12,6 +12,7 @@ export interface KeywordInputProps {
   subscription: SubscriptionSummary | null;
   onSubscriptionSelect: (sub: SubscriptionSummary) => void;
   onSubscriptionClear: () => void;
+  /** triggerMutation.isPending only — isSubMode는 컴포넌트 내부에서 OR로 합쳐짐 */
   disabled: boolean;
 }
 
