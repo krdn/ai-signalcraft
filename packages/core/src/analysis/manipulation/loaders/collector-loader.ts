@@ -1,13 +1,11 @@
 import type { CollectorClient } from '../../../collector-client';
-import type {
-  ManipulationDataLoader,
-  SignalContext,
-  CommentRow,
-  EmbeddedItem,
-  ArticleEmbedded,
-  TrendPoint,
-} from '../types';
+import type { SignalContext, CommentRow } from '../types';
+import type { ManipulationDataLoader } from '../loader-types';
+// signals/* 내부 타입은 직접 import — manipulation/types ↔ signals/* 순환 의존 해소.
 import type { VoteRow } from '../signals/vote';
+import type { EmbeddedItem } from '../signals/similarity';
+import type { ArticleEmbedded } from '../signals/media-sync';
+import type { TrendPoint } from '../signals/trend-shape';
 
 const COMMENT_QUERY_LIMIT = 10000;
 const ARTICLE_QUERY_LIMIT = 10000;

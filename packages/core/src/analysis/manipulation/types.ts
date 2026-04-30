@@ -1,11 +1,9 @@
 import type { SignalType, Severity } from '../../db/schema/manipulation';
-import type { VoteRow } from './signals/vote';
-import type { EmbeddedItem } from './signals/similarity';
-import type { ArticleEmbedded } from './signals/media-sync';
-import type { TrendPoint } from './signals/trend-shape';
 
 export type { SignalType, Severity };
-export type { VoteRow, EmbeddedItem, ArticleEmbedded, TrendPoint };
+// signals/* 내부 타입(VoteRow/EmbeddedItem/ArticleEmbedded/TrendPoint)은
+// 순환 의존 방지를 위해 manipulation/types에서 re-export하지 않는다.
+// 사용처는 signals/{vote,similarity,media-sync,trend-shape}에서 직접 import.
 
 export type RawRef = {
   itemId: string;
@@ -90,11 +88,5 @@ export type CommentRow = {
   excerpt: string;
 };
 
-export type ManipulationDataLoader = {
-  loadComments(ctx: SignalContext): Promise<CommentRow[]>;
-  loadVotes(ctx: SignalContext): Promise<VoteRow[]>;
-  loadEmbeddedComments(ctx: SignalContext): Promise<EmbeddedItem[]>;
-  loadEmbeddedArticles(ctx: SignalContext): Promise<ArticleEmbedded[]>;
-  loadTrendSeries(ctx: SignalContext): Promise<TrendPoint[]>;
-  loadTemporalBaselines(ctx: SignalContext): Promise<Record<string, number[]>>;
-};
+// ManipulationDataLoader는 signals/* 내부 타입에 의존하므로 ./loader-types.ts로 분리.
+// 사용처는 './loader-types'에서 직접 import (manipulation/types ↔ signals/* 사이클 회피).

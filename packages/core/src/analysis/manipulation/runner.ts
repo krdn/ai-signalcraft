@@ -6,7 +6,8 @@ import { computeTrendShape } from './signals/trend-shape';
 import { computeTemporalAnomaly } from './signals/temporal';
 import { computeCrossPlatform } from './signals/cross-platform';
 import { aggregate, type AggregateResult } from './aggregator';
-import type { SignalResult, SignalContext, ManipulationDataLoader, DomainConfig } from './types';
+import type { SignalResult, SignalContext, DomainConfig } from './types';
+import type { ManipulationDataLoader } from './loader-types';
 
 export type RunInput = {
   jobId: number;

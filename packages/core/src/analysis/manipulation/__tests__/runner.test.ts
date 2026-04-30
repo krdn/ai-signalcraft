@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { runManipulationDetection } from '../runner';
-import type { ManipulationDataLoader, DomainConfig, CommentRow } from '../types';
+import type { DomainConfig, CommentRow } from '../types';
+import type { ManipulationDataLoader } from '../loader-types';
 
 const config: DomainConfig = {
   domain: 'political',
