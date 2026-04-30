@@ -5,14 +5,16 @@
 ## Architecture
 
 ```
-apps/web (Next.js 15 App Router + tRPC + shadcn/ui)
+apps/web       (Next.js 15 App Router + tRPC + shadcn/ui)
+apps/collector (독립 tRPC API 서비스 — raw_items 쿼리·RAG·임베딩 제공)
   → packages/core (BullMQ 파이프라인 + Drizzle ORM + AI 분석)
-    → packages/collectors (Playwright + Cheerio 수집기)
+    → packages/collectors (Playwright + Cheerio 수집기 어댑터)
     → packages/ai-gateway (Vercel AI SDK v6 — Claude/GPT/Gemini)
 ```
 
-**파이프라인**: 수집(5개 소스) → 정규화 → AI 분석(14개 모듈, Stage 1-4) → 리포트 생성
-**인프라**: PostgreSQL + Redis @ 192.168.0.5 | Docker Compose 배포
+**파이프라인 (키워드 단발)**: 수집(5개 소스) → 정규화 → AI 분석(Stage 0→1→2→3→4) → 리포트 생성
+**파이프라인 (구독 경로)**: collector RAG → Stage 0→1→2→3→4 → Stage 5(Manipulation, 옵션) → 리포트 생성
+**인프라**: PostgreSQL + Redis @ 192.168.0.5 | TimescaleDB(5435) = raw_items | Docker Compose 배포
 
 ## Stack
 
@@ -58,16 +60,26 @@ Playwright · Cheerio · Recharts · TanStack Query 5 · NextAuth.js 5 · Vitest
 ## Commands
 
 ```bash
-pnpm dev          # 웹 개발 서버
-pnpm dev:all      # 웹 + 워커 동시
-pnpm worker       # BullMQ 워커만
-pnpm test         # 전체 테스트
-pnpm lint         # ESLint
-pnpm format       # Prettier
-pnpm db:push      # Drizzle 스키마 동기화
-pnpm db:studio    # Drizzle Studio
-pnpm build        # 프로덕션 빌드
+pnpm dev               # 웹 개발 서버
+pnpm dev:all           # 웹 + 워커 동시
+pnpm worker            # BullMQ 워커만
+pnpm test              # 전체 테스트
+pnpm lint              # ESLint
+pnpm format            # Prettier
+pnpm db:push           # Drizzle 스키마 동기화
+pnpm db:migrate-timescale  # 하이퍼테이블 UNIQUE 제약 적용 (db:push 후 반드시 실행)
+pnpm db:studio         # Drizzle Studio
+pnpm build             # 프로덕션 빌드
 ```
+
+## Gotchas
+
+- **`ENCRYPTION_KEY` 설정 금지** — 개발/운영 모두 폴백 키 사용 중. 설정하면 분석 전체 실패
+- **`db:push` 후 `db:migrate-timescale` 필수** — hypertable에 UNIQUE 제약은 Drizzle이 관리 못 함. 누락 시 ON CONFLICT 에러로 수집 전체 실패
+- **`raw_items` 피드 쿼리는 `scope='feed'` 강제** — item_type 필터 없이 ORDER BY time DESC 하면 댓글이 기사를 10:1로 밀어냄
+- **collector tRPC schema 먼저 확인** — `items.query.ragOptions.topK` 등 Zod 제약은 분석 측 변경 전 `apps/collector/src/server/trpc/items.ts` 읽기 필수
+- **kit(ai-analysis-kit) 수정 금지** — `buildSystemPrompt`를 인자 없이 호출함. domain 등 컨텍스트 주입은 wrapper closure로 바인딩
+- **수집 실패 역추적** — `@ais:sub/.../run/<uuid>` 에러 수신 시 timescaledb(5435 `ais_collection`) `collection_runs` 먼저 조회
 
 ## Debugging
 
