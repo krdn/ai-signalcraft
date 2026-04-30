@@ -9,6 +9,8 @@ const logger = createLogger('pipeline-worker');
 
 export function createPipelineHandler(): (job: Job) => Promise<unknown> {
   return async (job: Job) => {
+    // dbJobId는 collection_jobs 테이블의 정수 PK — flows.ts에서 모든 job data에 포함
+    // IMPORTANT: parseInt(jobId) 패턴 사용 금지 — flowId는 "collection-1711234567890" 형태
     const { dbJobId } = job.data;
     const jobStartTime = Date.now();
     logger.info(`[${job.name}] 시작 (dbJobId=${dbJobId})`);
