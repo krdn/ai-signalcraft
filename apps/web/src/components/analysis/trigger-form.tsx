@@ -5,7 +5,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import { Loader2, ChevronDown, Lock, HelpCircle, RefreshCw } from 'lucide-react';
-import { format, subDays, addDays } from 'date-fns';
+import { subDays, addDays } from 'date-fns';
 import { TriggerFormHelp } from './trigger-form-help';
 import { DomainBadge } from './domain-badge';
 import { BreakpointSection, type BreakpointValue } from './trigger-form/breakpoint-section';
@@ -15,7 +15,6 @@ import {
   type SourceId,
   OPTIMIZATION_PRESETS,
   PRESET_STYLES,
-  DATE_PRESETS,
   ALL_SOURCES,
 } from './trigger-form-data';
 import { type SubscriptionSummary } from './subscription-picker';
@@ -23,6 +22,7 @@ import { KeywordInput } from './trigger-form/keyword-input';
 import { OrphanJobsDialog } from './trigger-form/orphan-jobs-dialog';
 import { DemoQuotaBadge } from './trigger-form/demo-quota-badge';
 import { SourceSelector } from './trigger-form/source-selector';
+import { DateRangeSelector } from './trigger-form/date-range-selector';
 import { trpcClient } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,7 +30,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 
 interface TriggerFormProps {
@@ -387,120 +386,23 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
           />
 
           {/* 기간 선택 */}
-          {isDemo && (
-            <div className="rounded-lg border border-dashed border-muted-foreground/30 p-3 text-sm text-muted-foreground flex items-center gap-2">
-              <Lock className="h-4 w-4 shrink-0" />
-              기간: 최근 7일 고정 (데모 체험)
-            </div>
-          )}
-          <Tabs
-            value={dateMode}
-            onValueChange={(v) => !isDemo && setDateMode(v as 'period' | 'event')}
-            className={isDemo ? 'hidden' : ''}
-          >
-            <TabsList className="w-full">
-              <TabsTrigger value="period" className="flex-1">
-                기간 선택
-              </TabsTrigger>
-              <TabsTrigger value="event" className="flex-1">
-                이벤트 중심
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="period" className="space-y-3 mt-3">
-              <div className="space-y-2">
-                <Label>빠른 선택</Label>
-                <div className="flex flex-wrap gap-2">
-                  {DATE_PRESETS.map((preset) => (
-                    <Button
-                      key={preset.label}
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={triggerMutation.isPending}
-                      onClick={() => {
-                        const { start, end } = preset.getDates();
-                        setStartDate(start);
-                        setEndDate(end);
-                      }}
-                    >
-                      {preset.label}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>시작일</Label>
-                  <input
-                    type="date"
-                    className="flex h-9 w-full rounded-lg border bg-card px-3 text-sm"
-                    value={isMounted ? format(startDate, 'yyyy-MM-dd') : ''}
-                    onChange={(e) => e.target.value && setStartDate(new Date(e.target.value))}
-                    disabled={triggerMutation.isPending}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>종료일</Label>
-                  <input
-                    type="date"
-                    className="flex h-9 w-full rounded-lg border bg-card px-3 text-sm"
-                    value={isMounted ? format(endDate, 'yyyy-MM-dd') : ''}
-                    onChange={(e) => e.target.value && setEndDate(new Date(e.target.value))}
-                    disabled={triggerMutation.isPending}
-                  />
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="event" className="space-y-3 mt-3">
-              <div className="space-y-2">
-                <Label htmlFor="eventName">이벤트명</Label>
-                <Input
-                  id="eventName"
-                  placeholder="예: 기자회견, 발언 논란, 정책 발표"
-                  value={eventName}
-                  onChange={(e) => setEventName(e.target.value)}
-                  disabled={triggerMutation.isPending}
-                  maxLength={100}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>이벤트 날짜</Label>
-                  <input
-                    type="date"
-                    className="flex h-9 w-full rounded-lg border bg-card px-3 text-sm"
-                    value={isMounted ? format(eventDate, 'yyyy-MM-dd') : ''}
-                    onChange={(e) => e.target.value && setEventDate(new Date(e.target.value))}
-                    disabled={triggerMutation.isPending}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="eventRadius">전후 분석 범위</Label>
-                  <div className="flex items-center gap-2">
-                    <select
-                      id="eventRadius"
-                      value={eventRadius}
-                      onChange={(e) => setEventRadius(Number(e.target.value))}
-                      disabled={triggerMutation.isPending}
-                      className="flex h-9 w-full rounded-lg border bg-card px-3 text-sm"
-                    >
-                      <option value={1}>전후 1일</option>
-                      <option value={3}>전후 3일</option>
-                      <option value={5}>전후 5일</option>
-                      <option value={7}>전후 7일</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-              <p suppressHydrationWarning className="text-xs text-muted-foreground">
-                {isMounted
-                  ? `분석 범위: ${format(subDays(eventDate, eventRadius), 'MM/dd')} ~ ${format(addDays(eventDate, eventRadius), 'MM/dd')} (${eventRadius * 2 + 1}일간)`
-                  : '분석 범위: --/-- ~ --/-- (7일간)'}
-              </p>
-            </TabsContent>
-          </Tabs>
+          <DateRangeSelector
+            isDemo={isDemo}
+            isMounted={isMounted}
+            disabled={triggerMutation.isPending}
+            dateMode={dateMode}
+            onDateModeChange={setDateMode}
+            startDate={startDate}
+            endDate={endDate}
+            onStartDateChange={setStartDate}
+            onEndDateChange={setEndDate}
+            eventName={eventName}
+            onEventNameChange={setEventName}
+            eventDate={eventDate}
+            onEventDateChange={setEventDate}
+            eventRadius={eventRadius}
+            onEventRadiusChange={setEventRadius}
+          />
 
           {/* 분석 옵션 */}
           <div className="space-y-2">
