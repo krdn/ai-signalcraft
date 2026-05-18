@@ -141,6 +141,8 @@ services:
     command: ["tsx", "apps/collector/src/queue/worker-process.ts"]
     restart: unless-stopped
     stop_grace_period: 60s
+    mem_limit: 6g
+    memswap_limit: 6g
     env_file:
       - ../.env.production
     environment:
