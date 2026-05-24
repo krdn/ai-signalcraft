@@ -249,7 +249,7 @@ export async function runModuleMapReduce<T>(
     const totalUsage = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
 
     // === MAP 단계 (프로바이더별 동시성 제한 병렬 처리) ===
-    const mapResults: { result: T; chunkIndex: number }[] = [];
+    const mapResults: { result: unknown; chunkIndex: number }[] = [];
     const chunkErrors: string[] = [];
 
     const cc = await getConcurrencyConfig();
@@ -296,8 +296,9 @@ export async function runModuleMapReduce<T>(
             abortSignal: batchAbort.signal,
           };
 
+          const mapSchema = module.mapSchema ?? module.schema;
           const mapResult = await callWithRetry(
-            () => analyzeStructured(mapPrompt, module.schema, gatewayOptions),
+            () => analyzeStructured(mapPrompt, mapSchema, gatewayOptions),
             chunkLabel,
             input.jobId,
           );
@@ -360,7 +361,7 @@ export async function runModuleMapReduce<T>(
       const moduleResult: AnalysisModuleResult<T> = {
         module: module.name,
         status: 'completed',
-        result: mapResults[0].result,
+        result: mapResults[0].result as T,
         usage: { ...totalUsage, provider: config.provider, model: config.model },
       };
       await persistAnalysisResult({

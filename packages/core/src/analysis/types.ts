@@ -16,6 +16,7 @@ export interface AnalysisModule<T = unknown> {
   readonly provider: AIProvider; // D-03: 모듈별 AI 모델 지정
   readonly model: string; // 'gemini-2.5-flash', 'claude-sonnet-4-6' 등
   readonly schema: z.ZodType<T, z.ZodTypeDef, unknown>;
+  readonly mapSchema?: z.ZodType<unknown, z.ZodTypeDef, unknown>;
 
   buildPrompt(data: AnalysisInput): string;
   buildSystemPrompt(domain?: AnalysisDomain): string;

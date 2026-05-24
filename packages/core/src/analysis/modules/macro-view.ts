@@ -1,7 +1,11 @@
 import type { AnalysisModule, AnalysisInput } from '../types';
 import type { AnalysisDomain } from '../domain';
 import { MODULE_MODEL_MAP } from '../types';
-import { MacroViewSchema, type MacroViewResult } from '../schemas/macro-view.schema';
+import {
+  MacroViewSchema,
+  MacroViewMapSchema,
+  type MacroViewResult,
+} from '../schemas/macro-view.schema';
 import {
   formatInputData,
   ANALYSIS_CONSTRAINTS,
@@ -16,6 +20,7 @@ export const macroViewModule: AnalysisModule<MacroViewResult> = {
   provider: MODULE_MODEL_MAP['macro-view'].provider,
   model: MODULE_MODEL_MAP['macro-view'].model,
   schema: MacroViewSchema,
+  mapSchema: MacroViewMapSchema,
 
   buildSystemPrompt(domain?: AnalysisDomain): string {
     const override = buildModuleSystemPrompt('macro-view', domain);

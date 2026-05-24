@@ -65,3 +65,23 @@ export const MacroViewSchema = z.union([
 ]);
 
 export type MacroViewResult = z.infer<typeof MacroViewSchema>;
+
+// Map 단계 전용 스키마 — overallDirection/summary 없이 데이터 수집만
+const MacroViewMapObject = z.object({
+  timeline: MacroViewObject.shape.timeline,
+  inflectionPoints: MacroViewObject.shape.inflectionPoints,
+  dailyMentionTrend: MacroViewObject.shape.dailyMentionTrend,
+  overallDirection: z.enum(['positive', 'negative', 'mixed']).catch('mixed').optional(),
+  summary: z.string().catch('').optional(),
+});
+
+export const MacroViewMapSchema = z.union([
+  MacroViewMapObject,
+  z.array(z.any()).transform((arr) => {
+    const first = arr[0];
+    if (first && typeof first === 'object' && !Array.isArray(first)) {
+      return MacroViewMapObject.parse(first);
+    }
+    return { timeline: [], inflectionPoints: [], dailyMentionTrend: [] };
+  }),
+]);
