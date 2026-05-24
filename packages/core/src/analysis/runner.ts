@@ -259,10 +259,11 @@ export async function runModule<T>(
   const boundModule: AnalysisModule<T> = {
     ...module,
     buildSystemPrompt: () => module.buildSystemPrompt(input.domain) + JSON_REMINDER,
+    buildPrompt: (data) => module.buildPrompt(data) + JSON_REMINDER,
     ...(module.buildPromptWithContext
       ? {
           buildPromptWithContext: (data, prior) =>
-            module.buildPromptWithContext!(data, prior, input.domain),
+            module.buildPromptWithContext!(data, prior, input.domain) + JSON_REMINDER,
         }
       : {}),
   };

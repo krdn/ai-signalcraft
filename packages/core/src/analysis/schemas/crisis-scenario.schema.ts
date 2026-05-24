@@ -22,7 +22,10 @@ export const CrisisScenarioSchema = z.object({
     .array(scenarioSchema)
     .default([])
     .describe('정확히 3개 시나리오: spread, control, reverse'),
-  currentRiskLevel: z.enum(['critical', 'high', 'medium', 'low']).describe('현재 위기 수준'),
+  currentRiskLevel: z
+    .enum(['critical', 'high', 'medium', 'low'])
+    .catch('medium')
+    .describe('현재 위기 수준'),
   recommendedAction: z.string().catch(''),
 });
 
