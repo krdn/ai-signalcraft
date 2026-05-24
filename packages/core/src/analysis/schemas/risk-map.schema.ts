@@ -16,8 +16,11 @@ export const RiskMapSchema = z.object({
     )
     .default([])
     .describe('Top 3~5 리스크 (최대 5개)'),
-  overallRiskLevel: z.enum(['critical', 'high', 'medium', 'low']).describe('전체 리스크 수준'),
-  riskTrend: z.enum(['increasing', 'stable', 'decreasing']).describe('리스크 추세'),
+  overallRiskLevel: z
+    .enum(['critical', 'high', 'medium', 'low'])
+    .catch('medium')
+    .describe('전체 리스크 수준'),
+  riskTrend: z.enum(['increasing', 'stable', 'decreasing']).catch('stable').describe('리스크 추세'),
 });
 
 export type RiskMapResult = z.infer<typeof RiskMapSchema>;
