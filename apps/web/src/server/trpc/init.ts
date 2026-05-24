@@ -8,7 +8,14 @@ export const createTRPCContext = async () => {
   return { session, db };
 };
 
-const t = initTRPC.context<Awaited<ReturnType<typeof createTRPCContext>>>().create();
+const t = initTRPC.context<Awaited<ReturnType<typeof createTRPCContext>>>().create({
+  errorFormatter({ shape, error }) {
+    if (error.code !== 'UNAUTHORIZED') {
+      console.error('[tRPC]', shape.data.path, error.code, error.message);
+    }
+    return shape;
+  },
+});
 
 export const router = t.router;
 export const publicProcedure = t.procedure;
