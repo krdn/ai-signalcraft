@@ -5,16 +5,13 @@ import { getDb } from '../db';
 import { providerKeys } from '../db/schema/settings';
 import { decrypt } from '../utils/crypto';
 
-// Gemini CLI에서 사용 가능한 모델 목록 폴백 — 2026-04 기준
+// Gemini CLI에서 사용 가능한 모델 목록 폴백 — 2026-05 최신
 // @google/gemini-cli-core의 VALID_GEMINI_MODELS + 최신 3.x 시리즈
 const GEMINI_CLI_MODELS_FALLBACK = [
   // Gemini 3.1 시리즈 (2026-02~03 출시)
   'gemini-3.1-pro-preview',
   'gemini-3.1-flash-lite-preview',
   'gemini-3.1-flash-live-preview',
-  // Gemini 3.0 시리즈
-  'gemini-3-pro-preview',
-  'gemini-3-flash-preview',
   // Gemini 2.5 시리즈 (stable)
   'gemini-2.5-pro',
   'gemini-2.5-flash',
@@ -24,11 +21,13 @@ const GEMINI_CLI_MODELS_FALLBACK = [
   'gemini-2.0-flash-lite',
 ];
 
-// Anthropic 모델 목록 (주요 모델 하드코딩 + API 조회 병행) — 2026-04 최신
+// Anthropic 모델 목록 (주요 모델 하드코딩 + API 조회 병행) — 2026-05 최신
 const ANTHROPIC_MODELS_FALLBACK = [
+  'claude-opus-4-7',
   'claude-opus-4-6',
   'claude-sonnet-4-6',
   'claude-haiku-4-5-20251001',
+  'claude-opus-4-5-20251101',
   'claude-sonnet-4-5-20250929',
   'claude-sonnet-4-20250514',
   'claude-opus-4-20250514',

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
@@ -130,6 +130,19 @@ export function ModelSettings() {
     queryFn: () => trpcClient.settings.providerKeys.list.query(),
   });
 
+  // 페이지 진입 시 모든 프로바이더의 모델 목록을 프록시에서 최신으로 갱신
+  const refreshedRef = useRef(false);
+  useEffect(() => {
+    if (refreshedRef.current || !providerKeysList?.length) return;
+    refreshedRef.current = true;
+    trpcClient.settings.providerKeys.refreshModels
+      .mutate()
+      .then(() =>
+        queryClient.invalidateQueries({ queryKey: [['settings', 'providerKeys', 'list']] }),
+      )
+      .catch(() => {});
+  }, [providerKeysList, queryClient]);
+
   // 등록된 프로바이더/모델 목록
   const { availableProviders, providerModels } = useMemo(() => {
     if (!providerKeysList || providerKeysList.length === 0) {
@@ -139,9 +152,11 @@ export function ModelSettings() {
       /^gpt-4/,
       /^gpt-5/,
       /^gpt-3\.5/,
+      /^gpt-image/,
       /^o[1-9]/,
       /^claude/,
       /^gemini/,
+      /^codex/,
       /^qwen/,
       /^llama/,
       /^mistral/,

@@ -259,6 +259,29 @@ export const settingsRouter = router({
       return result;
     }),
 
+    // 모든 활성 프로바이더의 모델 목록 일괄 갱신
+    refreshModels: protectedProcedure.mutation(async () => {
+      const keys = await getAllProviderKeys();
+      const active = keys.filter((k) => k.isActive);
+      const results = await Promise.allSettled(
+        active.map(async (key) => {
+          const result = await testProviderConnection(key.id);
+          if (result.success && result.models.length > 0) {
+            await updateProviderKey(key.id, { availableModels: result.models });
+          }
+          return { id: key.id, providerType: key.providerType, success: result.success };
+        }),
+      );
+      return results
+        .filter(
+          (
+            r,
+          ): r is PromiseFulfilledResult<{ id: number; providerType: string; success: boolean }> =>
+            r.status === 'fulfilled',
+        )
+        .map((r) => r.value);
+    }),
+
     // LLM 채팅 테스트 (시스템 관리자 전용)
     chat: systemAdminProcedure
       .input(z.object({ id: z.number(), prompt: z.string().min(1).max(4000) }))
