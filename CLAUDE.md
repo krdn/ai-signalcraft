@@ -74,7 +74,7 @@ pnpm build             # 프로덕션 빌드
 
 ## Gotchas
 
-- **`ENCRYPTION_KEY` 설정 금지** — 개발/운영 모두 폴백 키 사용 중. 설정하면 분석 전체 실패
+- **`ENCRYPTION_KEY` 운영 필수** — `.env.production`에 설정됨. provider_keys 복호화에 사용. 개발은 폴백 키 자동 사용. 키 변경 시 `scripts/migrate-encryption-key.mjs`로 기존 데이터 재암호화 필수
 - **`db:push` 후 `db:migrate-timescale` 필수** — hypertable에 UNIQUE 제약은 Drizzle이 관리 못 함. 누락 시 ON CONFLICT 에러로 수집 전체 실패
 - **`raw_items` 피드 쿼리는 `scope='feed'` 강제** — item_type 필터 없이 ORDER BY time DESC 하면 댓글이 기사를 10:1로 밀어냄
 - **collector tRPC schema 먼저 확인** — `items.query.ragOptions.topK` 등 Zod 제약은 분석 측 변경 전 `apps/collector/src/server/trpc/items.ts` 읽기 필수
