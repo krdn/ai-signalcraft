@@ -2,8 +2,12 @@
 
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { HelpCircle, ChevronDown } from 'lucide-react';
 import { trpcClient } from '@/lib/trpc';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 import { SubscriptionKpiCards } from '@/components/subscriptions/subscription-kpi-cards';
 import { SubscriptionStatusBar } from '@/components/subscriptions/subscription-status-bar';
 import { SubscriptionTrendChart } from '@/components/subscriptions/subscription-trend-chart';
@@ -135,6 +139,76 @@ export default function SubscriptionsPage() {
           키워드를 구독하면 수집 서비스가 지정 주기로 자동 수집합니다. 분석은 대시보드에서 축적된
           데이터로 실행합니다.
         </p>
+        <Collapsible className="mt-3">
+          <CollapsibleTrigger className="group inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer">
+            <HelpCircle className="h-3.5 w-3.5" />
+            사용 가이드
+            <ChevronDown className="h-3.5 w-3.5 transition-transform group-data-[state=open]:rotate-180" />
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="mt-3 rounded-lg border bg-card p-4 text-sm space-y-3">
+              <div>
+                <p className="font-semibold text-foreground mb-1.5">구독이란?</p>
+                <p className="text-muted-foreground text-xs leading-relaxed">
+                  키워드 + 소스 + 수집 주기를 등록해 두면{' '}
+                  <span className="text-foreground">자동으로 데이터를 누적 수집</span>해 주는
+                  단위입니다. 수집만 하며 분석은 별도로 실행합니다. 구독을 등록한 뒤
+                  <span className="text-foreground"> 구독 분석 실행</span> 메뉴에서 원하는 기간을
+                  지정해 AI 분석을 시작하세요.
+                </p>
+              </div>
+              <Separator />
+              <div>
+                <p className="font-semibold text-foreground mb-1.5">빠른 시작</p>
+                <ol className="space-y-1.5 text-xs text-muted-foreground">
+                  <li className="flex gap-2">
+                    <Badge
+                      variant="outline"
+                      className="shrink-0 h-4 w-4 justify-center p-0 text-[10px]"
+                    >
+                      1
+                    </Badge>
+                    <span>
+                      <span className="text-foreground">구독 등록</span> — 우측 상단 "새 구독"
+                      버튼을 클릭해 키워드·소스·주기를 설정합니다.
+                    </span>
+                  </li>
+                  <li className="flex gap-2">
+                    <Badge
+                      variant="outline"
+                      className="shrink-0 h-4 w-4 justify-center p-0 text-[10px]"
+                    >
+                      2
+                    </Badge>
+                    <span>
+                      <span className="text-foreground">자동 수집 확인</span> — 등록 후 첫 주기가
+                      지나면 KPI 카드의 수집량이 올라갑니다. 수집 모니터링 페이지에서 진행 상황을
+                      확인하세요.
+                    </span>
+                  </li>
+                  <li className="flex gap-2">
+                    <Badge
+                      variant="outline"
+                      className="shrink-0 h-4 w-4 justify-center p-0 text-[10px]"
+                    >
+                      3
+                    </Badge>
+                    <span>
+                      <span className="text-foreground">AI 분석 실행</span> — 데이터가 쌓이면
+                      <span className="text-foreground"> 구독 분석 실행</span> 메뉴에서
+                      기간·도메인을 설정하고 분석을 시작합니다.
+                    </span>
+                  </li>
+                </ol>
+              </div>
+              <div className="rounded-md bg-muted/50 p-2.5 text-xs text-muted-foreground">
+                <span className="text-foreground font-medium">프리셋 선택 팁</span> 처음 등록하는
+                키워드라면 <span className="text-foreground">일반 키워드</span>{' '}
+                프리셋(6시간·500건)이 가장 균형 잡힌 시작점입니다.
+              </div>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
       </div>
 
       {isSubsLoading || isRunsLoading ? (

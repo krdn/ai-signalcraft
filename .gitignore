@@ -445,3 +445,15 @@ claude-proxy.sh
 
 # UX 테스트 에이전트 출력
 .ux-test/
+
+# Runtime DB
+ruvector.db
+
+# Playwright MCP temp
+.playwright-mcp/
+
+# memsearch runtime
+.memsearch/.index.pid
+
+# Production env
+.env.production

@@ -12,6 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
 import type { SubscriptionRecord } from '@/server/trpc/routers/subscriptions';
+import { HelpPopover } from '@/components/settings/help-popover';
 
 const SOURCE_CHOICES: { id: string; label: string }[] = [
   { id: 'naver-news', label: '네이버 뉴스' },
@@ -243,8 +244,34 @@ export function SubscriptionForm({ initial, onSaved, onCreated, onCancel }: Subs
       */}
       <div className="space-y-2" role="radiogroup" aria-labelledby="preset-group-label">
         <div className="flex items-center justify-between">
-          <span id="preset-group-label" className="text-sm font-medium leading-none">
+          <span
+            id="preset-group-label"
+            className="flex items-center gap-1.5 text-sm font-medium leading-none"
+          >
             수집 강도 프리셋
+            <HelpPopover side="right">
+              <p className="font-medium text-foreground mb-1.5">프리셋별 수집 강도 비교</p>
+              <ul className="space-y-2 text-muted-foreground">
+                <li>
+                  <span className="font-medium text-foreground">조용한 키워드</span>
+                  <br />
+                  24시간 주기·최대 200건. 언급이 드문 키워드, 비용을 최소화할 때.
+                </li>
+                <li>
+                  <span className="font-medium text-foreground">일반 키워드</span>
+                  <br />
+                  6시간 주기·최대 500건. 일반 뉴스/커뮤니티 키워드에 권장.
+                </li>
+                <li>
+                  <span className="font-medium text-foreground">급변 키워드</span>
+                  <br />
+                  2시간 주기·최대 300건. 이슈가 급등락하는 키워드에 적합.
+                </li>
+              </ul>
+              <p className="mt-2 text-muted-foreground">
+                빈도가 높을수록 수집 비용이 증가하니 키워드 활성도에 맞게 선택하세요.
+              </p>
+            </HelpPopover>
           </span>
           {selectedPreset === 'custom' && (
             <span className="text-xs text-muted-foreground">사용자 지정값</span>
@@ -277,7 +304,21 @@ export function SubscriptionForm({ initial, onSaved, onCreated, onCancel }: Subs
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="sub-interval">검사 빈도 (시간)</Label>
+          <Label htmlFor="sub-interval" className="flex items-center gap-1.5">
+            검사 빈도 (시간)
+            <HelpPopover side="top">
+              <p className="font-medium text-foreground mb-1">새 글을 얼마나 자주 확인할지</p>
+              <p className="text-muted-foreground">
+                1시간 = 1시간마다 새 글 검색. 빈도가 높을수록 최신 데이터를 빨리 확보하지만 수집
+                횟수가 늘어 비용이 증가합니다.
+              </p>
+              <ul className="mt-1.5 space-y-0.5 text-muted-foreground">
+                <li>• 1–2시간: 급변 이슈, 실시간 모니터링</li>
+                <li>• 6시간: 일반 키워드 (권장)</li>
+                <li>• 24시간 이상: 조용한 키워드, 비용 절감</li>
+              </ul>
+            </HelpPopover>
+          </Label>
           <Input
             id="sub-interval"
             type="number"
@@ -290,7 +331,20 @@ export function SubscriptionForm({ initial, onSaved, onCreated, onCancel }: Subs
           <p className="text-xs text-muted-foreground">얼마나 자주 새 글을 확인할지 (1~168시간)</p>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="sub-max-per-run">한 번에 수집할 최대 개수</Label>
+          <Label htmlFor="sub-max-per-run" className="flex items-center gap-1.5">
+            한 번에 수집할 최대 개수
+            <HelpPopover side="top">
+              <p className="font-medium text-foreground mb-1">실행당 소스별 수집 상한선</p>
+              <p className="text-muted-foreground">
+                한 번의 수집 실행에서 소스당 가져올 기사·게시물 최대 개수입니다. 이 값이 너무 낮으면
+                활발한 키워드에서 글이 누락됩니다.
+              </p>
+              <p className="mt-1.5 text-muted-foreground">
+                <span className="text-foreground">권장</span>: 일반 키워드 500건, 급변 키워드 300–
+                1000건. 너무 높게 설정하면 수집 시간이 늘어납니다.
+              </p>
+            </HelpPopover>
+          </Label>
           <Input
             id="sub-max-per-run"
             type="number"
@@ -304,7 +358,21 @@ export function SubscriptionForm({ initial, onSaved, onCreated, onCancel }: Subs
           <p className="text-xs text-muted-foreground">한 실행에서 소스당 가져올 상한선</p>
         </div>
         <div className="space-y-2 col-span-2 sm:col-span-1">
-          <Label htmlFor="sub-comments">항목당 댓글 수</Label>
+          <Label htmlFor="sub-comments" className="flex items-center gap-1.5">
+            항목당 댓글 수
+            <HelpPopover side="top">
+              <p className="font-medium text-foreground mb-1">기사·영상 1건당 댓글 상한</p>
+              <p className="text-muted-foreground">
+                각 기사나 유튜브 영상에서 수집할 댓글 최대 개수입니다. 댓글이 많을수록 여론 분석
+                품질이 높아지지만 수집 시간과 저장 공간이 증가합니다.
+              </p>
+              <ul className="mt-1.5 space-y-0.5 text-muted-foreground">
+                <li>• 0: 댓글 수집 안 함</li>
+                <li>• 50–200: 일반적인 여론 파악</li>
+                <li>• 200 이상: 세밀한 감정 분석 (권장)</li>
+              </ul>
+            </HelpPopover>
+          </Label>
           <Input
             id="sub-comments"
             type="number"

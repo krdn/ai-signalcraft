@@ -2,8 +2,10 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Loader2, MoreVertical } from 'lucide-react';
+import { Loader2, MoreVertical, HelpCircle, ChevronDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Separator } from '@/components/ui/separator';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -123,6 +125,63 @@ export default function MonitorPage() {
           </div>
         </div>
         <p className="text-sm text-muted-foreground">실시간 수집 작업 상태를 확인합니다.</p>
+        <Collapsible className="mt-3">
+          <CollapsibleTrigger className="group inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer">
+            <HelpCircle className="h-3.5 w-3.5" />
+            화면 안내
+            <ChevronDown className="h-3.5 w-3.5 transition-transform group-data-[state=open]:rotate-180" />
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="mt-3 rounded-lg border bg-card p-4 text-sm space-y-3">
+              <div>
+                <p className="font-semibold text-foreground mb-1.5">모니터링 화면 구성</p>
+                <ul className="space-y-1.5 text-xs text-muted-foreground">
+                  <li>
+                    <span className="text-foreground font-medium">실시간 피드</span> — 진행 중인
+                    수집 run(작업 단위)을 5초마다 갱신합니다. run은 구독 1건의 소스 1개당 1개
+                    생성됩니다.
+                  </li>
+                  <li>
+                    <span className="text-foreground font-medium">예정 run</span> — 다음 실행이
+                    예정된 구독 목록입니다. 수동 트리거가 필요하면 구독 상세 페이지에서 실행하세요.
+                  </li>
+                  <li>
+                    <span className="text-foreground font-medium">최근 실행 로그</span> — 24시간 내
+                    완료·실패 기록. 실패 run의 오류 코드를 복사해 AI에게 진단을 요청할 수 있습니다.
+                  </li>
+                  <li>
+                    <span className="text-foreground font-medium">소스별 통계</span> — 소스(네이버
+                    뉴스, 유튜브 등)별 성공/실패율과 평균 소요 시간을 확인합니다.
+                  </li>
+                  <li>
+                    <span className="text-foreground font-medium">소스 일시 정지</span> — 특정
+                    소스에 오류가 반복되면 해당 소스만 정지해 다른 수집에 영향을 주지 않을 수
+                    있습니다.
+                  </li>
+                </ul>
+              </div>
+              <Separator />
+              <div>
+                <p className="font-semibold text-foreground mb-1.5">문제 상황별 대응</p>
+                <ul className="space-y-1.5 text-xs text-muted-foreground">
+                  <li>
+                    <span className="text-foreground">run이 장시간 running 상태</span> — 황색
+                    "stalled" 배너가 뜨면 해당 run 행에서 [중지] 버튼을 눌러 정리하세요.
+                  </li>
+                  <li>
+                    <span className="text-foreground">특정 소스 연속 실패</span> — 소스 일시 정지
+                    패널에서 해당 소스를 비활성화한 뒤 원인을 파악하세요.
+                  </li>
+                  <li>
+                    <span className="text-foreground">전체 수집 중단 필요</span> — 우측 상단 ⋮
+                    메뉴의 <span className="text-red-600 font-medium">전체 긴급 정지</span>를
+                    사용하세요. 모든 진행 중 작업이 즉시 취소됩니다.
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
       </div>
 
       <StalledRunsBanner />

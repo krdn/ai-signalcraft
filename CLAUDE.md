@@ -5,8 +5,9 @@
 ## Architecture
 
 ```
-apps/web       (Next.js 15 App Router + tRPC + shadcn/ui)
-apps/collector (독립 tRPC API 서비스 — raw_items 쿼리·RAG·임베딩 제공)
+apps/web            (Next.js 15 App Router + tRPC + shadcn/ui)
+apps/collector      (독립 tRPC API 서비스 — raw_items 쿼리·RAG·임베딩 제공)
+apps/whisper-worker (YouTube 음성 전사 워커 — Whisper 기반)
   → packages/core (BullMQ 파이프라인 + Drizzle ORM + AI 분석)
     → packages/collectors (Playwright + Cheerio 수집기 어댑터)
     → packages/ai-gateway (Vercel AI SDK v6 — Claude/GPT/Gemini)
@@ -62,20 +63,30 @@ Playwright · Cheerio · Recharts · TanStack Query 5 · NextAuth.js 5 · Vitest
 ```bash
 pnpm dev               # 웹 개발 서버
 pnpm dev:all           # 웹 + 워커 동시
+pnpm dev:collector     # collector API + 워커 동시
+pnpm dev:full          # collector + web 전체 동시
 pnpm worker            # BullMQ 워커만
 pnpm test              # 전체 테스트
 pnpm lint              # ESLint
 pnpm format            # Prettier
-pnpm db:push           # Drizzle 스키마 동기화
-pnpm db:migrate-timescale  # 하이퍼테이블 UNIQUE 제약 적용 (db:push 후 반드시 실행)
-pnpm db:studio         # Drizzle Studio
 pnpm build             # 프로덕션 빌드
+pnpm db:push           # Drizzle 스키마 동기화
+pnpm --filter @ai-signalcraft/collector db:migrate-timescale  # 하이퍼테이블 UNIQUE 제약 적용 (db:push 후 반드시 실행)
+pnpm db:studio         # Drizzle Studio
+```
+
+### Docker (운영 배포)
+
+```bash
+docker compose -f docker/docker-compose.prod.yml up -d --build   # 전체 빌드·배포
+docker compose -f docker/docker-compose.prod.yml restart web      # web만 재시작
+docker compose -f docker/docker-compose.prod.yml logs -f worker   # 워커 로그
 ```
 
 ## Gotchas
 
-- **`ENCRYPTION_KEY` 설정 금지** — 개발/운영 모두 폴백 키 사용 중. 설정하면 분석 전체 실패
-- **`db:push` 후 `db:migrate-timescale` 필수** — hypertable에 UNIQUE 제약은 Drizzle이 관리 못 함. 누락 시 ON CONFLICT 에러로 수집 전체 실패
+- **`ENCRYPTION_KEY` 운영 필수** — `.env.production`에 설정됨. provider_keys 복호화에 사용. 개발은 폴백 키 자동 사용. 키 변경 시 `scripts/migrate-encryption-key.mjs`로 기존 데이터 재암호화 필수
+- **`db:push` 후 `db:migrate-timescale` 필수** — `pnpm --filter @ai-signalcraft/collector db:migrate-timescale`. hypertable에 UNIQUE 제약은 Drizzle이 관리 못 함. 누락 시 ON CONFLICT 에러로 수집 전체 실패
 - **`raw_items` 피드 쿼리는 `scope='feed'` 강제** — item_type 필터 없이 ORDER BY time DESC 하면 댓글이 기사를 10:1로 밀어냄
 - **collector tRPC schema 먼저 확인** — `items.query.ragOptions.topK` 등 Zod 제약은 분석 측 변경 전 `apps/collector/src/server/trpc/items.ts` 읽기 필수
 - **kit(ai-analysis-kit) 수정 금지** — `buildSystemPrompt`를 인자 없이 호출함. domain 등 컨텍스트 주입은 wrapper closure로 바인딩
