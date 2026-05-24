@@ -285,12 +285,14 @@ export async function runModuleMapReduce<T>(
           const prompt = module.buildPrompt(chunk);
           const mapPrompt = `[데이터 청크 ${chunkIdx + 1}/${chunks.length}] 전체 수집 데이터 중 일부입니다. 이 부분의 데이터만 분석하세요.\n\n${prompt}`;
 
+          const JSON_REMINDER =
+            '\n\n[CRITICAL] 반드시 순수 JSON 객체로만 응답하세요. 마크다운, 제목(#), 설명 텍스트, 코드블록(```) 없이 { 로 시작하는 유효한 JSON만 출력하세요.';
           const gatewayOptions: AIGatewayOptions = {
             provider: config.provider,
             model: config.model,
             baseUrl: config.baseUrl,
             apiKey: config.apiKey,
-            systemPrompt: module.buildSystemPrompt(input.domain),
+            systemPrompt: module.buildSystemPrompt(input.domain) + JSON_REMINDER,
             maxOutputTokens: 8192,
             timeoutMs: cfg.mapTimeoutMs,
             abortSignal: batchAbort.signal,
@@ -401,12 +403,14 @@ export async function runModuleMapReduce<T>(
       }
     }, 3000);
 
+    const REDUCE_JSON_REMINDER =
+      '\n\n[CRITICAL] 반드시 순수 JSON 객체로만 응답하세요. 마크다운, 제목(#), 설명 텍스트, 코드블록(```) 없이 { 로 시작하는 유효한 JSON만 출력하세요.';
     const reduceOptions: AIGatewayOptions = {
       provider: config.provider,
       model: config.model,
       baseUrl: config.baseUrl,
       apiKey: config.apiKey,
-      systemPrompt: module.buildSystemPrompt(input.domain),
+      systemPrompt: module.buildSystemPrompt(input.domain) + REDUCE_JSON_REMINDER,
       maxOutputTokens: 8192,
       timeoutMs: cfg.reduceTimeoutMs,
       abortSignal: reduceAbort.signal,

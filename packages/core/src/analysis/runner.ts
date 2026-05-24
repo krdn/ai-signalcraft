@@ -254,9 +254,11 @@ export async function runModule<T>(
 
   // kit는 도메인 무지(v2.0.0) — buildSystemPrompt를 인자 없이 호출한다.
   // input.domain을 closure에 박은 모듈 인스턴스로 감싸 도메인이 시스템 프롬프트에 반영되게 한다.
+  const JSON_REMINDER =
+    '\n\n[CRITICAL] 반드시 순수 JSON 객체로만 응답하세요. 마크다운, 제목(#), 설명 텍스트, 코드블록(```) 없이 { 로 시작하는 유효한 JSON만 출력하세요.';
   const boundModule: AnalysisModule<T> = {
     ...module,
-    buildSystemPrompt: () => module.buildSystemPrompt(input.domain),
+    buildSystemPrompt: () => module.buildSystemPrompt(input.domain) + JSON_REMINDER,
     ...(module.buildPromptWithContext
       ? {
           buildPromptWithContext: (data, prior) =>
