@@ -3,8 +3,16 @@ import { z } from 'zod';
 // ADVN-04: 승리 확률 시뮬레이션 스키마
 // 승리/패배 조건과 핵심 전략을 도출
 export const WinSimulationSchema = z.object({
-  winProbability: z.number().describe('승리 확률 0~100'),
-  confidenceLevel: z.enum(['high', 'medium', 'low']).describe('신뢰도'),
+  winProbability: z
+    .preprocess(
+      (v) =>
+        typeof v === 'object' && v !== null && 'min' in v
+          ? ((v as any).min + (v as any).max) / 2
+          : v,
+      z.number().catch(0),
+    )
+    .describe('승리 확률 0~100'),
+  confidenceLevel: z.enum(['high', 'medium', 'low']).catch('medium').describe('신뢰도'),
   winConditions: z
     .array(
       z.object({
@@ -35,7 +43,7 @@ export const WinSimulationSchema = z.object({
     )
     .default([])
     .describe('핵심 전략 3~5개'),
-  simulationSummary: z.string().min(1).describe('시뮬레이션 종합 요약'),
+  simulationSummary: z.string().catch('').describe('시뮬레이션 종합 요약'),
 });
 
 export type WinSimulationResult = z.infer<typeof WinSimulationSchema>;
