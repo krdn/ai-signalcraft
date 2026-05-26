@@ -1,5 +1,5 @@
 // ai-signalcraft 분석 러너 — 12개 모듈의 Stage 상수를 로컬 정의하고,
-// 단일 모듈 실행 엔진만 @krdn/ai-analysis-kit의 runModule을 사용한다.
+// 단일 모듈 실행 엔진만 @krdn/llm-gateway의 runModule을 사용한다.
 //
 // 분리 정책:
 //   - 범용 엔진 (runModule, 어댑터, 재시도, 프로바이더 레지스트리) → kit
@@ -10,7 +10,7 @@ import {
   type PipelineControlAdapter,
   type RunModuleOptions,
   type AnalysisModule as KitAnalysisModule,
-} from '@krdn/ai-analysis-kit';
+} from '@krdn/llm-gateway';
 import { isPipelineCancelled, waitIfPaused } from '../pipeline/control';
 import { appendJobEvent } from '../pipeline/persist';
 import { getModuleModelConfig, getModuleModelConfigForPreset } from './model-config';
@@ -211,7 +211,7 @@ const persistCallback: NonNullable<RunModuleOptions['onPersist']> = async (event
  * 단일 분석 모듈 실행 (DB persist + 파이프라인 제어 포함)
  * 부분 실패 허용 — 실패 시에도 에러를 throw하지 않고 failed 상태 반환.
  *
- * 내부는 @krdn/ai-analysis-kit의 runModule을 호출한다. 로컬 AnalysisModule/AnalysisInput
+ * 내부는 @krdn/llm-gateway의 runModule을 호출한다. 로컬 AnalysisModule/AnalysisInput
  * 타입은 kit 타입과 구조적으로 동일(field/method 시그니처 일치)하므로 호환된다.
  */
 /** ai-signalcraft 도메인의 AnalysisInput에서 jobId/itemCount 추출 */

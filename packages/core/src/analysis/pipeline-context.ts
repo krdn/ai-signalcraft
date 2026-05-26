@@ -1,5 +1,5 @@
 // 파이프라인 실행 컨텍스트 — 헬퍼 함수들이 공유하는 상태 객체
-import type { ModelConfigAdapter } from '@krdn/ai-analysis-kit';
+import type { ModelConfigAdapter } from '@krdn/llm-gateway';
 import type { AnalysisInput, AnalysisModuleResult } from './types';
 
 export interface PipelineContext {

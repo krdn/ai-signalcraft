@@ -17,7 +17,7 @@ vi.mock('playwright', () => ({
   chromium: { launch: vi.fn() },
 }));
 
-vi.mock('@krdn/ai-analysis-kit/gateway', () => ({
+vi.mock('@krdn/llm-gateway/gateway', () => ({
   analyzeText: vi.fn(),
   analyzeStructured: vi.fn(),
 }));

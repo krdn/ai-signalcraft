@@ -16,8 +16,8 @@ vi.mock('../model-config', () => ({
 }));
 
 // runner.ts가 import하는 외부/내부 의존성들이 side-effect 없이 로드되도록 모킹
-// @krdn/ai-analysis-kit: DB/프로바이더 초기화 없이 타입/함수만 노출
-vi.mock('@krdn/ai-analysis-kit', () => ({
+// @krdn/llm-gateway: DB/프로바이더 초기화 없이 타입/함수만 노출
+vi.mock('@krdn/llm-gateway', () => ({
   runModule: vi.fn(),
 }));
 

@@ -3,7 +3,7 @@ import { generateIntegratedReport } from '../src/report/generator';
 import { persistAnalysisReport } from '../src/analysis/persist-analysis';
 
 // AI Gateway mock
-vi.mock('@krdn/ai-analysis-kit/gateway', () => ({
+vi.mock('@krdn/llm-gateway/gateway', () => ({
   analyzeText: vi.fn().mockResolvedValue({
     text: '# 분석 보고서\n\n본문 내용',
     usage: { totalTokens: 1000 },

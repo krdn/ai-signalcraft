@@ -5,7 +5,7 @@ import {
   analyzeStructured,
   normalizeUsage,
   type AIGatewayOptions,
-} from '@krdn/ai-analysis-kit/gateway';
+} from '@krdn/llm-gateway/gateway';
 import { logError } from '../utils/logger';
 import { appendJobEvent } from '../pipeline/persist';
 import { isPipelineCancelled } from '../pipeline/control';

@@ -1,8 +1,8 @@
 // ai-signalcraft 분석 도메인 타입 정의
-// AIProvider는 범용이므로 @krdn/ai-analysis-kit/gateway에서 가져온다.
+// AIProvider는 범용이므로 @krdn/llm-gateway/gateway에서 가져온다.
 // AnalysisModule/AnalysisInput/MODULE_MODEL_MAP/MODULE_NAMES는 본 프로젝트 도메인이므로 로컬 정의.
 import { z } from 'zod';
-import type { AIProvider } from '@krdn/ai-analysis-kit/gateway';
+import type { AIProvider } from '@krdn/llm-gateway/gateway';
 import type { AnalysisDomain } from './domain';
 
 export type { AIProvider };

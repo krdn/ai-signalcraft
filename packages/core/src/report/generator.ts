@@ -1,5 +1,5 @@
 // 통합 리포트 마크다운 생성기 (D-04 2단계)
-import { analyzeText } from '@krdn/ai-analysis-kit/gateway';
+import { analyzeText } from '@krdn/llm-gateway/gateway';
 import { eq } from 'drizzle-orm';
 import { persistAnalysisReport } from '../analysis/persist-analysis';
 import { getModuleModelConfig } from '../analysis/model-config';

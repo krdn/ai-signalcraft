@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
   transpilePackages: [
     '@ai-signalcraft/core',
     '@ai-signalcraft/collectors',
-    '@krdn/ai-analysis-kit/gateway',
+    '@krdn/llm-gateway/gateway',
   ],
   serverExternalPackages: [
     'playwright-core',

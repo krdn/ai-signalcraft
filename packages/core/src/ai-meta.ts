@@ -1,9 +1,9 @@
 // 프로바이더 메타 정보 — 클라이언트 번들 안전 (순수 데이터)
 //
-// 주의: `@krdn/ai-analysis-kit/gateway`를 re-export하면 barrel을 통해
+// 주의: `@krdn/llm-gateway/gateway`를 re-export하면 barrel을 통해
 // OpenTelemetry/gemini-cli-core 등 Node 전용 의존성이 브라우저 번들에 포함됨.
 // 따라서 메타 데이터를 여기에 인라인으로 정의. 업스트림 변경 시 동기화 필요.
-// 원본: @krdn/ai-analysis-kit/src/gateway/provider-meta.ts
+// 원본: @krdn/llm-gateway/src/gateway/provider-meta.ts
 
 export type AIProvider =
   | 'anthropic'

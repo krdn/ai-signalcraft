@@ -59,7 +59,7 @@ vi.mock('../../config/concurrency', () => ({
 }));
 
 // kit의 analyzeStructured는 실제 LLM 호출 — 테스트에서는 가짜 응답
-vi.mock('@krdn/ai-analysis-kit/gateway', () => ({
+vi.mock('@krdn/llm-gateway/gateway', () => ({
   analyzeStructured: vi.fn().mockResolvedValue({
     object: { stub: 'result' },
     usage: { inputTokens: 1, outputTokens: 1, totalTokens: 2 },
@@ -67,8 +67,8 @@ vi.mock('@krdn/ai-analysis-kit/gateway', () => ({
 }));
 
 // AIGatewayOptions 타입 import 위해 별도 mock — 게이트웨이 모듈 전체
-vi.mock('@krdn/ai-analysis-kit', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@krdn/ai-analysis-kit')>();
+vi.mock('@krdn/llm-gateway', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@krdn/llm-gateway')>();
   return {
     ...actual,
     runModule: vi.fn(async (mod: any, input: any) => {

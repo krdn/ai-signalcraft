@@ -3,7 +3,7 @@ import {
   analyzeStructured,
   normalizeUsage,
   type AIGatewayOptions,
-} from '@krdn/ai-analysis-kit/gateway';
+} from '@krdn/llm-gateway/gateway';
 import {
   QualitativeInterpretationSchema,
   type QualitativeInterpretation,

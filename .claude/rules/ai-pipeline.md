@@ -58,7 +58,7 @@ export const exampleModule: AnalysisModule<ExampleResult> = {
 
 ## 외부 패키지 규칙
 
-### ai-analysis-kit (kit)
+### llm-gateway (kit)
 
 - kit는 `buildSystemPrompt()`를 **인자 없이** 호출 — kit 자체를 수정하지 말 것
 - domain 등 컨텍스트가 필요하면 반드시 **wrapper closure**로 바인딩:
