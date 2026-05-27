@@ -115,7 +115,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: "3400"
-      DATABASE_URL: ${COLLECTOR_DATABASE_URL}
+      DATABASE_URL: ${COLLECTOR_DATABASE_URL:-postgres://postgres:krdn_fx_2026@host.docker.internal:5435/ais_collection}
       REDIS_URL: ${COLLECTOR_REDIS_URL:-redis://redis:6379}
       COLLECTOR_API_KEY: ${COLLECTOR_API_KEY}
       BULL_PREFIX: collector
@@ -147,7 +147,7 @@ services:
       - ../.env.production
     environment:
       NODE_ENV: production
-      DATABASE_URL: ${COLLECTOR_DATABASE_URL}
+      DATABASE_URL: ${COLLECTOR_DATABASE_URL:-postgres://postgres:krdn_fx_2026@host.docker.internal:5435/ais_collection}
       REDIS_URL: ${COLLECTOR_REDIS_URL:-redis://redis:6379}
       BULL_PREFIX: collector
     volumes:
@@ -183,7 +183,7 @@ services:
       - ../.env.production
     environment:
       NODE_ENV: production
-      DATABASE_URL: ${COLLECTOR_DATABASE_URL}
+      DATABASE_URL: ${COLLECTOR_DATABASE_URL:-postgres://postgres:krdn_fx_2026@host.docker.internal:5435/ais_collection}
       REDIS_URL: ${COLLECTOR_REDIS_URL:-redis://redis:6379}
       BULL_PREFIX: collector
     depends_on:
