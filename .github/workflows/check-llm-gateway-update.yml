@@ -1,8 +1,11 @@
-name: Check @krdn/llm-gateway updates
+name: Update @krdn/llm-gateway
 
 on:
+  # llm-gateway publish 워크플로우에서 자동 트리거
+  repository_dispatch:
+    types: [llm-gateway-updated]
+  # 백업: 매일 오전 9시(KST) = UTC 0시
   schedule:
-    # 매일 오전 9시(KST) = UTC 0시
     - cron: '0 0 * * *'
   workflow_dispatch:
 
@@ -16,39 +19,46 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Get current version from package.json
-        id: current
+      - name: Determine versions
+        id: versions
         run: |
-          VERSION=$(grep -oP '@krdn/llm-gateway.*?#v\K[0-9]+\.[0-9]+\.[0-9]+' apps/web/package.json | head -1)
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "Current version: v$VERSION"
+          # dispatch 이벤트에서 버전을 받았으면 사용
+          if [ -n "${{ github.event.client_payload.version }}" ]; then
+            LATEST="${{ github.event.client_payload.version }}"
+            LATEST="${LATEST#v}"
+            echo "source=dispatch" >> "$GITHUB_OUTPUT"
+          else
+            # cron: 최신 git tag에서 버전 추출
+            LATEST=$(git ls-remote --tags https://github.com/krdn/llm-gateway.git \
+              | grep -oP 'refs/tags/v\K[0-9]+\.[0-9]+\.[0-9]+$' \
+              | sort -V \
+              | tail -1)
+            echo "source=cron" >> "$GITHUB_OUTPUT"
+          fi
+          echo "latest=$LATEST" >> "$GITHUB_OUTPUT"
 
-      - name: Get latest tag from remote
-        id: latest
-        run: |
-          LATEST=$(git ls-remote --tags https://github.com/krdn/llm-gateway.git \
-            | grep -oP 'refs/tags/v\K[0-9]+\.[0-9]+\.[0-9]+$' \
-            | sort -V \
-            | tail -1)
-          echo "version=$LATEST" >> "$GITHUB_OUTPUT"
-          echo "Latest version: v$LATEST"
+          # 현재 버전 추출
+          CURRENT=$(grep -oP '@krdn/llm-gateway.*?#v\K[0-9]+\.[0-9]+\.[0-9]+' apps/web/package.json | head -1)
+          echo "current=$CURRENT" >> "$GITHUB_OUTPUT"
 
-      - name: Compare versions
+          echo "Current: v$CURRENT → Latest: v$LATEST (via ${{ github.event_name }})"
+
+      - name: Check if update needed
         id: compare
         run: |
-          if [ "${{ steps.current.outputs.version }}" = "${{ steps.latest.outputs.version }}" ]; then
+          if [ "${{ steps.versions.outputs.current }}" = "${{ steps.versions.outputs.latest }}" ]; then
             echo "needs_update=false" >> "$GITHUB_OUTPUT"
-            echo "Already up to date (v${{ steps.current.outputs.version }})"
+            echo "Already up to date"
           else
             echo "needs_update=true" >> "$GITHUB_OUTPUT"
-            echo "Update available: v${{ steps.current.outputs.version }} → v${{ steps.latest.outputs.version }}"
+            echo "Update available"
           fi
 
       - name: Update package.json files
         if: steps.compare.outputs.needs_update == 'true'
         run: |
-          OLD="v${{ steps.current.outputs.version }}"
-          NEW="v${{ steps.latest.outputs.version }}"
+          OLD="v${{ steps.versions.outputs.current }}"
+          NEW="v${{ steps.versions.outputs.latest }}"
 
           # apps/web/package.json (git+https 형식)
           sed -i "s|llm-gateway\.git#${OLD}|llm-gateway.git#${NEW}|g" apps/web/package.json
@@ -64,13 +74,14 @@ jobs:
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "chore: @krdn/llm-gateway v${{ steps.current.outputs.version }} → v${{ steps.latest.outputs.version }}"
-          branch: chore/update-llm-gateway-v${{ steps.latest.outputs.version }}
+          commit-message: "chore(deps): @krdn/llm-gateway v${{ steps.versions.outputs.current }} → v${{ steps.versions.outputs.latest }}"
+          branch: chore/update-llm-gateway-v${{ steps.versions.outputs.latest }}
           delete-branch: true
-          title: "chore: @krdn/llm-gateway v${{ steps.current.outputs.version }} → v${{ steps.latest.outputs.version }}"
+          title: "chore(deps): @krdn/llm-gateway v${{ steps.versions.outputs.current }} → v${{ steps.versions.outputs.latest }}"
           body: |
             ## Summary
-            - `@krdn/llm-gateway` 새 버전 감지: **v${{ steps.current.outputs.version }}** → **v${{ steps.latest.outputs.version }}**
+            - `@krdn/llm-gateway` 새 버전 감지: **v${{ steps.versions.outputs.current }}** → **v${{ steps.versions.outputs.latest }}**
+            - 감지 방식: `${{ steps.versions.outputs.source }}`
             - `apps/web/package.json` 및 `packages/core/package.json` 업데이트
 
             ## Test plan
@@ -78,5 +89,5 @@ jobs:
             - [ ] `pnpm build` 성공 확인
             - [ ] AI 분석 파이프라인 정상 동작 확인
 
-            🤖 자동 생성 by GitHub Actions
+            > 이 PR은 [llm-gateway](https://github.com/krdn/llm-gateway) 업데이트에 의해 자동 생성되었습니다.
           labels: dependencies
