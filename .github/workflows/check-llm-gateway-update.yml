@@ -1,0 +1,82 @@
+name: Check @krdn/llm-gateway updates
+
+on:
+  schedule:
+    # 매일 오전 9시(KST) = UTC 0시
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  check-update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get current version from package.json
+        id: current
+        run: |
+          VERSION=$(grep -oP '@krdn/llm-gateway.*?#v\K[0-9]+\.[0-9]+\.[0-9]+' apps/web/package.json | head -1)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Current version: v$VERSION"
+
+      - name: Get latest tag from remote
+        id: latest
+        run: |
+          LATEST=$(git ls-remote --tags https://github.com/krdn/llm-gateway.git \
+            | grep -oP 'refs/tags/v\K[0-9]+\.[0-9]+\.[0-9]+$' \
+            | sort -V \
+            | tail -1)
+          echo "version=$LATEST" >> "$GITHUB_OUTPUT"
+          echo "Latest version: v$LATEST"
+
+      - name: Compare versions
+        id: compare
+        run: |
+          if [ "${{ steps.current.outputs.version }}" = "${{ steps.latest.outputs.version }}" ]; then
+            echo "needs_update=false" >> "$GITHUB_OUTPUT"
+            echo "Already up to date (v${{ steps.current.outputs.version }})"
+          else
+            echo "needs_update=true" >> "$GITHUB_OUTPUT"
+            echo "Update available: v${{ steps.current.outputs.version }} → v${{ steps.latest.outputs.version }}"
+          fi
+
+      - name: Update package.json files
+        if: steps.compare.outputs.needs_update == 'true'
+        run: |
+          OLD="v${{ steps.current.outputs.version }}"
+          NEW="v${{ steps.latest.outputs.version }}"
+
+          # apps/web/package.json (git+https 형식)
+          sed -i "s|llm-gateway\.git#${OLD}|llm-gateway.git#${NEW}|g" apps/web/package.json
+
+          # packages/core/package.json (github: 형식)
+          sed -i "s|llm-gateway#${OLD}|llm-gateway#${NEW}|g" packages/core/package.json
+
+          echo "Updated $OLD → $NEW"
+          git diff
+
+      - name: Create Pull Request
+        if: steps.compare.outputs.needs_update == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: @krdn/llm-gateway v${{ steps.current.outputs.version }} → v${{ steps.latest.outputs.version }}"
+          branch: chore/update-llm-gateway-v${{ steps.latest.outputs.version }}
+          delete-branch: true
+          title: "chore: @krdn/llm-gateway v${{ steps.current.outputs.version }} → v${{ steps.latest.outputs.version }}"
+          body: |
+            ## Summary
+            - `@krdn/llm-gateway` 새 버전 감지: **v${{ steps.current.outputs.version }}** → **v${{ steps.latest.outputs.version }}**
+            - `apps/web/package.json` 및 `packages/core/package.json` 업데이트
+
+            ## Test plan
+            - [ ] `pnpm install` 성공 확인
+            - [ ] `pnpm build` 성공 확인
+            - [ ] AI 분석 파이프라인 정상 동작 확인
+
+            🤖 자동 생성 by GitHub Actions
+          labels: dependencies
