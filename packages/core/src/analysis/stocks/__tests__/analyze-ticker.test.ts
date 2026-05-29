@@ -19,6 +19,11 @@ describe('analyzeTicker', () => {
   });
 
   it('depth 미지정 시 lite를 기본값으로 composeTickerAnalysis에 전달', async () => {
+    getProviderKeyInfoMock.mockResolvedValue({
+      selectedModel: null,
+      baseUrl: null,
+      apiKey: 'sk-decrypted',
+    });
     composeMock.mockResolvedValue({ ticker: 'AAPL' });
     await analyzeTicker('AAPL');
     expect(composeMock).toHaveBeenCalledWith('AAPL', expect.objectContaining({ depth: 'lite' }));
@@ -43,12 +48,27 @@ describe('analyzeTicker', () => {
     expect(composeMock).toHaveBeenCalledWith('AAPL', expect.objectContaining({ depth: 'full' }));
   });
 
-  it('apiKey 미설정 시 어댑터 resolve가 한국어 에러 throw', async () => {
-    getProviderKeyInfoMock.mockResolvedValue({ selectedModel: null, baseUrl: null, apiKey: null });
+  it('baseUrl이 설정된 경우 resolve 결과에 baseUrl이 포함', async () => {
+    getProviderKeyInfoMock.mockResolvedValue({
+      selectedModel: null,
+      baseUrl: 'https://example.com',
+      apiKey: 'sk-x',
+    });
     composeMock.mockImplementation(async (_ticker, opts) => {
-      await opts.configAdapter.resolve('tickerlens.value.long');
+      const resolved = await opts.configAdapter.resolve('tickerlens.value.long');
+      expect(resolved).toEqual({
+        provider: 'anthropic',
+        model: 'claude-sonnet-4-6',
+        apiKey: 'sk-x',
+        baseUrl: 'https://example.com',
+      });
       return { ticker: 'AAPL' };
     });
+    await analyzeTicker('AAPL');
+  });
+
+  it('apiKey 미설정 시 한국어 에러 throw', async () => {
+    getProviderKeyInfoMock.mockResolvedValue({ selectedModel: null, baseUrl: null, apiKey: null });
     await expect(analyzeTicker('AAPL')).rejects.toThrow(/프로바이더 키가 설정되지 않/);
   });
 });
