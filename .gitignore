@@ -434,6 +434,7 @@ FodyWeavers.xsd
 .superpowers/
 docs/superpowers/*
 !docs/superpowers/specs/
+!docs/superpowers/plans/
 
 # Local scripts
 claude-proxy.sh
