@@ -12,7 +12,9 @@ interface PerspectiveResult {
   risks: string[];
   catalysts: string[];
 }
-type Slot = { ok: true; value: PerspectiveResult } | { ok: false; error: { message: string } };
+export type Slot =
+  | { ok: true; value: PerspectiveResult }
+  | { ok: false; error: { message: string } };
 
 export function PerspectiveCell({ slot, timeframe }: { slot: Slot; timeframe: string }) {
   const [open, setOpen] = useState(false);
