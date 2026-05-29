@@ -12,3 +12,4 @@ export * from './ontology';
 export * from './series';
 export * from './alerts';
 export * from './manipulation';
+export * from './stocks';
