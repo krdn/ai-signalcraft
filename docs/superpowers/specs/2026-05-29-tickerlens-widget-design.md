@@ -89,7 +89,7 @@ interface PerspectiveResult {
 [/stocks 페이지]  ──tRPC mutation──>  [stocks 라우터]  ──>  analyzeTicker() (core 래퍼)
  (use client)                          (server, protected)        │
    │                                       │                       ├─ composeTickerAnalysis()
-   │  로딩 스피너                          │                       ├─ createModelConfigAdapter() (기존 재사용)
+   │  로딩 스피너                          │                       ├─ createStockConfigAdapter() (전용, getProviderKeyInfo 재사용)
    │                                       │                       └─ Yahoo Finance (yahoo-finance2)
    │                                       │
    └── perspective-grid  <──AnalysisResult──┘  + DB 저장 (stock_analyses)
