@@ -24,7 +24,7 @@ export const stocksRouter = router({
       if (result.meta.completed === 0) {
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
-          message: `${ticker} 분석에 실패했습니다 (모든 관점 실패). 프로바이더 키 설정을 확인하세요.`,
+          message: `${ticker} 분석에 실패했습니다 (모든 관점 실패). 잠시 후 다시 시도하세요.`,
         });
       }
 
