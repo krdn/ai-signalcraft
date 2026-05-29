@@ -1,18 +1,17 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import type { inferRouterOutputs } from '@trpc/server';
 import { TickerInput } from './ticker-input';
 import { SnapshotCard } from './snapshot-card';
 import { PerspectiveGrid } from './perspective-grid';
 import { HistoryPanel } from './history-panel';
 import { trpcClient } from '@/lib/trpc';
+import type { AppRouter } from '@/server/trpc/router';
 
-type AnalysisResult = {
-  ticker: string;
-  asOf: string;
-  snapshot: Parameters<typeof SnapshotCard>[0]['snapshot'];
-  perspectives: Parameters<typeof PerspectiveGrid>[0]['perspectives'];
-};
+type RouterOutputs = inferRouterOutputs<AppRouter>;
+// analyze는 { id, ...AnalysisResult }를 반환 — id를 제외해 getById(jsonb result)와 동일 형태로 통일
+type AnalysisResult = Omit<RouterOutputs['stocks']['analyze'], 'id'>;
 
 export function StocksView() {
   const [result, setResult] = useState<AnalysisResult | null>(null);
@@ -26,7 +25,7 @@ export function StocksView() {
     trpcClient.stocks.analyze
       .mutate({ ticker, depth })
       .then((res) => {
-        setResult(res as unknown as AnalysisResult);
+        setResult(res);
         setRefreshKey((k) => k + 1);
       })
       .catch((e: unknown) => setError(e instanceof Error ? e.message : '분석 실패'))
@@ -38,7 +37,8 @@ export function StocksView() {
     setError(null);
     trpcClient.stocks.getById
       .query({ id })
-      .then((row) => setResult((row as { result: AnalysisResult }).result))
+      // result는 jsonb(unknown) — tickerlens AnalysisResult가 저장된 단일 경계 캐스트
+      .then((row) => setResult(row.result as AnalysisResult))
       .catch((e: unknown) => setError(e instanceof Error ? e.message : '조회 실패'))
       .finally(() => setIsLoading(false));
   }, []);

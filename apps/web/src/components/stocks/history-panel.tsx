@@ -19,13 +19,19 @@ export function HistoryPanel({
   refreshKey: number;
 }) {
   const [rows, setRows] = useState<HistoryRow[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    setError(null);
     trpcClient.stocks.list
       .query({ limit: 20 })
       .then((r) => setRows(r as HistoryRow[]))
-      .catch(() => setRows([]));
+      .catch(() => setError('이력을 불러오지 못했습니다.'));
   }, [refreshKey]);
+
+  if (error) {
+    return <p className="text-xs text-red-600">{error}</p>;
+  }
 
   if (rows.length === 0) {
     return <p className="text-xs text-slate-400">분석 이력이 없습니다.</p>;
