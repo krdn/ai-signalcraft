@@ -24,7 +24,7 @@
   "dependencies": {
     "@ai-signalcraft/collector": "workspace:*",
     "@ai-signalcraft/collectors": "workspace:*",
-    "@krdn/llm-gateway": "github:krdn/llm-gateway#v3.2.0",
+    "@krdn/llm-gateway": "^3.3.0",
     "@trpc/client": "^11.0.0",
     "@xenova/transformers": "^2.17.0",
     "bullmq": "^5.0.0",
