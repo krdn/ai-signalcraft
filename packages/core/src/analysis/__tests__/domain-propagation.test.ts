@@ -72,11 +72,10 @@ vi.mock('@krdn/llm-gateway', async (importOriginal) => {
   return {
     ...actual,
     runModule: vi.fn(async (mod: any, input: any) => {
-      // kit 동작 모사: buildSystemPrompt를 인자 없이 호출 (v2.0.0 의도된 시그니처)
+      // kit 동작 모사 (v3.3.0): buildSystemPrompt를 인자 없이, 프롬프트는 buildPrompt만 호출
+      // (buildPromptWithContext/priorResults는 kit에서 제거됨 — 소비자가 closure로 바인딩)
       const systemPrompt = mod.buildSystemPrompt();
-      const prompt = mod.buildPromptWithContext
-        ? mod.buildPromptWithContext(input, {})
-        : mod.buildPrompt(input);
+      const prompt = mod.buildPrompt(input);
       return {
         module: mod.name,
         status: 'completed',
