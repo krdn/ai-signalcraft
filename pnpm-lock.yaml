@@ -127,8 +127,8 @@ importers:
         specifier: ^1.3.0
         version: 1.3.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@krdn/llm-gateway':
-        specifier: git+https://github.com/krdn/llm-gateway.git#v3.2.0
-        version: https://codeload.github.com/krdn/llm-gateway/tar.gz/41911cd015aca1d7b9735f33902632ec078ada64(@modelcontextprotocol/sdk@1.29.0(zod@3.25.76))(@opentelemetry/core@2.6.1(@opentelemetry/api@1.9.1))(@opentelemetry/resources@2.6.1(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-metrics@2.0.1(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.0.1(@opentelemetry/api@1.9.1))(zod@3.25.76)
+        specifier: ^3.3.0
+        version: 3.3.0(@modelcontextprotocol/sdk@1.29.0(zod@3.25.76))(@opentelemetry/core@2.6.1(@opentelemetry/api@1.9.1))(@opentelemetry/resources@2.6.1(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-metrics@2.0.1(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.0.1(@opentelemetry/api@1.9.1))(zod@3.25.76)
       '@radix-ui/react-slider':
         specifier: ^1.3.6
         version: 1.3.6(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -337,11 +337,11 @@ importers:
         specifier: workspace:*
         version: link:../collectors
       '@krdn/llm-gateway':
-        specifier: github:krdn/llm-gateway#v3.2.0
-        version: https://codeload.github.com/krdn/llm-gateway/tar.gz/41911cd015aca1d7b9735f33902632ec078ada64(@modelcontextprotocol/sdk@1.29.0(zod@3.25.76))(@opentelemetry/core@2.6.1(@opentelemetry/api@1.9.1))(@opentelemetry/resources@2.6.1(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-metrics@2.0.1(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.0.1(@opentelemetry/api@1.9.1))(zod@3.25.76)
+        specifier: ^3.3.0
+        version: 3.3.0(@modelcontextprotocol/sdk@1.29.0(zod@3.25.76))(@opentelemetry/core@2.6.1(@opentelemetry/api@1.9.1))(@opentelemetry/resources@2.6.1(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-metrics@2.0.1(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.0.1(@opentelemetry/api@1.9.1))(zod@3.25.76)
       '@krdn/tickerlens':
         specifier: ^0.1.0
-        version: 0.1.0(@krdn/llm-gateway@https://codeload.github.com/krdn/llm-gateway/tar.gz/41911cd015aca1d7b9735f33902632ec078ada64(@modelcontextprotocol/sdk@1.29.0(zod@3.25.76))(@opentelemetry/core@2.6.1(@opentelemetry/api@1.9.1))(@opentelemetry/resources@2.6.1(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-metrics@2.0.1(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.0.1(@opentelemetry/api@1.9.1))(zod@3.25.76))(zod@3.25.76)
+        version: 0.1.0(@krdn/llm-gateway@3.3.0(@modelcontextprotocol/sdk@1.29.0(zod@3.25.76))(@opentelemetry/core@2.6.1(@opentelemetry/api@1.9.1))(@opentelemetry/resources@2.6.1(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-metrics@2.0.1(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.0.1(@opentelemetry/api@1.9.1))(zod@3.25.76))(zod@3.25.76)
       '@trpc/client':
         specifier: ^11.0.0
         version: 11.16.0(@trpc/server@11.16.0(typescript@5.9.3))(typescript@5.9.3)
@@ -1586,16 +1586,14 @@ packages:
   '@keyv/serialize@1.1.1':
     resolution: {integrity: sha512-dXn3FZhPv0US+7dtJsIi2R+c7qWYiReoEh5zUntWCf4oSpMNib8FDhSoed6m3QyZdx5hK7iLFkYk3rNxwt8vTA==}
 
-  '@krdn/llm-gateway@https://codeload.github.com/krdn/llm-gateway/tar.gz/41911cd015aca1d7b9735f33902632ec078ada64':
-    resolution: {tarball: https://codeload.github.com/krdn/llm-gateway/tar.gz/41911cd015aca1d7b9735f33902632ec078ada64}
-    version: 3.0.0
+  '@krdn/llm-gateway@3.3.0':
+    resolution: {integrity: sha512-PG7Vbgi2GuBopRH6F2C8fyb9YSoY8UgMOqaZrfbHQdG7eiCjVs8+zItrMqX0NcthD6aeQN4Ta1DuKjk7yoAdaQ==}
     engines: {node: '>=20'}
     peerDependencies:
       zod: ^3.24.0
 
   '@krdn/tickerlens@0.1.0':
     resolution: {integrity: sha512-T97bIokgOvFjTR7hXbMbsy5b8757ovlAZXe746XbPNiarQsF4kcmR2X7SobeMdfYl2EIZMJpCVP2ftraX7Yxgg==}
-    version: 0.1.0
     engines: {node: '>=20'}
     peerDependencies:
       '@krdn/llm-gateway': ^3.0.0
@@ -8026,7 +8024,7 @@ snapshots:
 
   '@keyv/serialize@1.1.1': {}
 
-  '@krdn/llm-gateway@https://codeload.github.com/krdn/llm-gateway/tar.gz/41911cd015aca1d7b9735f33902632ec078ada64(@modelcontextprotocol/sdk@1.29.0(zod@3.25.76))(@opentelemetry/core@2.6.1(@opentelemetry/api@1.9.1))(@opentelemetry/resources@2.6.1(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-metrics@2.0.1(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.0.1(@opentelemetry/api@1.9.1))(zod@3.25.76)':
+  '@krdn/llm-gateway@3.3.0(@modelcontextprotocol/sdk@1.29.0(zod@3.25.76))(@opentelemetry/core@2.6.1(@opentelemetry/api@1.9.1))(@opentelemetry/resources@2.6.1(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-metrics@2.0.1(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.0.1(@opentelemetry/api@1.9.1))(zod@3.25.76)':
     dependencies:
       '@ai-sdk/anthropic': 3.0.67(zod@3.25.76)
       '@ai-sdk/google': 3.0.59(zod@3.25.76)
@@ -8049,9 +8047,9 @@ snapshots:
       - tree-sitter
       - utf-8-validate
 
-  '@krdn/tickerlens@0.1.0(@krdn/llm-gateway@https://codeload.github.com/krdn/llm-gateway/tar.gz/41911cd015aca1d7b9735f33902632ec078ada64(@modelcontextprotocol/sdk@1.29.0(zod@3.25.76))(@opentelemetry/core@2.6.1(@opentelemetry/api@1.9.1))(@opentelemetry/resources@2.6.1(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-metrics@2.0.1(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.0.1(@opentelemetry/api@1.9.1))(zod@3.25.76))(zod@3.25.76)':
+  '@krdn/tickerlens@0.1.0(@krdn/llm-gateway@3.3.0(@modelcontextprotocol/sdk@1.29.0(zod@3.25.76))(@opentelemetry/core@2.6.1(@opentelemetry/api@1.9.1))(@opentelemetry/resources@2.6.1(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-metrics@2.0.1(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.0.1(@opentelemetry/api@1.9.1))(zod@3.25.76))(zod@3.25.76)':
     dependencies:
-      '@krdn/llm-gateway': https://codeload.github.com/krdn/llm-gateway/tar.gz/41911cd015aca1d7b9735f33902632ec078ada64(@modelcontextprotocol/sdk@1.29.0(zod@3.25.76))(@opentelemetry/core@2.6.1(@opentelemetry/api@1.9.1))(@opentelemetry/resources@2.6.1(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-metrics@2.0.1(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.0.1(@opentelemetry/api@1.9.1))(zod@3.25.76)
+      '@krdn/llm-gateway': 3.3.0(@modelcontextprotocol/sdk@1.29.0(zod@3.25.76))(@opentelemetry/core@2.6.1(@opentelemetry/api@1.9.1))(@opentelemetry/resources@2.6.1(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-metrics@2.0.1(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.0.1(@opentelemetry/api@1.9.1))(zod@3.25.76)
       yahoo-finance2: 2.14.0
       zod: 3.25.76
     transitivePeerDependencies:
@@ -12338,7 +12336,7 @@ snapshots:
 
   parse-json@8.3.0:
     dependencies:
-      '@babel/code-frame': 7.29.0
+      '@babel/code-frame': 7.29.7
       index-to-position: 1.2.0
       type-fest: 4.41.0
 
