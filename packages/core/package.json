@@ -33,7 +33,7 @@
     "drizzle-orm": "^0.40.0",
     "ioredis": "^5.4.0",
     "pg": "^8.13.0",
-    "playwright": "^1.58.2",
+    "playwright": "^1.60.0",
     "zod": "^3.24.0"
   },
   "devDependencies": {
