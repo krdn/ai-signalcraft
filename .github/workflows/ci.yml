@@ -94,9 +94,14 @@ jobs:
         timeout-minutes: 5
         run: pnpm --filter @ai-signalcraft/collectors exec playwright install-deps chromium
 
+      # pnpm exec 경유 실행이 다운로드 완료 직후 추출 단계에서 hang (2회 재현)
+      # → 공식 문서 패턴인 npx 직접 실행 + DEBUG 로그로 전환
       - name: Install Playwright browsers
         timeout-minutes: 10
-        run: pnpm --filter @ai-signalcraft/collectors exec playwright install chromium
+        working-directory: packages/collectors
+        env:
+          DEBUG: pw:install
+        run: npx playwright install chromium
 
       # 모든 워크스페이스 테스트 — web/core/collector/collectors 전체 회귀 차단
       - name: Run All Tests
