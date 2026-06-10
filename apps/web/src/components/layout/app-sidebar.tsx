@@ -8,6 +8,7 @@ import {
   Activity,
   Brain,
   BrainCircuit,
+  CandlestickChart,
   ChevronDown,
   Database,
   FileText,
@@ -273,6 +274,13 @@ export function AppSidebar({
               건강
             </Link>
           </div>
+          <Link
+            href="/stocks"
+            className="flex w-full items-center gap-2 rounded-md border px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700/50"
+          >
+            <CandlestickChart className="h-3.5 w-3.5" />
+            주식 분석
+          </Link>
         </div>
       </div>
 

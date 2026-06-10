@@ -15,3 +15,4 @@ export * from './collection-limits';
 export * from './preprocessing';
 export * from './cost-calculator';
 export * from './graph-builder';
+export { analyzeTicker } from './stocks/analyze-ticker';

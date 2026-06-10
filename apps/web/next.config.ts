@@ -15,6 +15,8 @@ const nextConfig: NextConfig = {
     'resend',
     'ai-sdk-provider-gemini-cli',
     '@google/gemini-cli-core',
+    '@krdn/tickerlens',
+    'yahoo-finance2',
   ],
   turbopack: {
     rules: {

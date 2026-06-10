@@ -22,6 +22,7 @@ import { seriesRouter } from './routers/series';
 import { subscriptionsRouter } from './routers/subscriptions';
 import { manipulationRouter } from './routers/manipulation';
 import { manipulationAlertsRouter } from './routers/manipulation-alerts';
+import { stocksRouter } from './routers/stocks';
 
 export const appRouter = router({
   analysis: analysisRouter,
@@ -47,5 +48,6 @@ export const appRouter = router({
   ontology: ontologyRouter,
   llmInsights: llmInsightsRouter,
   series: seriesRouter,
+  stocks: stocksRouter,
 });
 export type AppRouter = typeof appRouter;

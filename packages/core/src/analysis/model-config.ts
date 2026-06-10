@@ -237,7 +237,7 @@ export async function applyModelScenario(
 /**
  * 프로바이더 타입에 해당하는 활성 프로바이더 키에서 연결 정보를 가져옴
  */
-async function getProviderKeyInfo(
+export async function getProviderKeyInfo(
   providerType: string,
   targetModel?: string,
 ): Promise<{ selectedModel: string | null; baseUrl: string | null; apiKey: string | null } | null> {
