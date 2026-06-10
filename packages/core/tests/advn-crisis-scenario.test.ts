@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest';
-import { ZodError } from 'zod';
 
 describe('ADVN-03: CrisisScenarioSchema', () => {
   it('유효한 데이터를 파싱할 수 있다 (3개 시나리오: spread/control/reverse)', async () => {
@@ -46,25 +45,25 @@ describe('ADVN-03: CrisisScenarioSchema', () => {
     expect(result.scenarios[2].type).toBe('reverse');
   });
 
-  it('currentRiskLevel이 유효하지 않은 enum이면 실패한다', async () => {
+  // 방어적 스키마(.catch) — LLM의 불완전한 출력을 throw 대신 폴백 값으로 보정한다 (25c9d34)
+  it('currentRiskLevel이 유효하지 않은 enum이면 medium으로 보정한다', async () => {
     const { CrisisScenarioSchema } = await import('../src/analysis/schemas');
 
-    expect(() =>
-      CrisisScenarioSchema.parse({
-        scenarios: [
-          {
-            type: 'spread',
-            name: 'test',
-            probability: 30,
-            triggerConditions: [],
-            expectedOutcome: 'test',
-            responseStrategy: [],
-            timeframe: '1주',
-          },
-        ],
-        currentRiskLevel: 'invalid',
-        recommendedAction: 'test',
-      }),
-    ).toThrow(ZodError);
+    const result = CrisisScenarioSchema.parse({
+      scenarios: [
+        {
+          type: 'spread',
+          name: 'test',
+          probability: 30,
+          triggerConditions: [],
+          expectedOutcome: 'test',
+          responseStrategy: [],
+          timeframe: '1주',
+        },
+      ],
+      currentRiskLevel: 'invalid',
+      recommendedAction: 'test',
+    });
+    expect(result.currentRiskLevel).toBe('medium');
   });
 });

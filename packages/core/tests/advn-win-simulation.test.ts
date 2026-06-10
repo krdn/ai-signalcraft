@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest';
-import { ZodError } from 'zod';
 
 describe('ADVN-04: WinSimulationSchema', () => {
   it('유효한 데이터를 파싱할 수 있다', async () => {
@@ -47,33 +46,32 @@ describe('ADVN-04: WinSimulationSchema', () => {
     expect(result.loseConditions.length).toBeGreaterThanOrEqual(2);
   });
 
-  it('winProbability가 number가 아니면 실패한다', async () => {
+  // 방어적 스키마(.catch) — LLM의 불완전한 출력을 throw 대신 폴백 값으로 보정한다 (25c9d34)
+  it('winProbability가 number가 아니면 폴백(0)으로 보정한다', async () => {
     const { WinSimulationSchema } = await import('../src/analysis/schemas');
 
-    expect(() =>
-      WinSimulationSchema.parse({
-        winProbability: 'invalid',
-        confidenceLevel: 'medium',
-        winConditions: [],
-        loseConditions: [],
-        keyStrategies: [],
-        simulationSummary: 'test',
-      }),
-    ).toThrow(ZodError);
+    const result = WinSimulationSchema.parse({
+      winProbability: 'invalid',
+      confidenceLevel: 'medium',
+      winConditions: [],
+      loseConditions: [],
+      keyStrategies: [],
+      simulationSummary: 'test',
+    });
+    expect(result.winProbability).toBe(0);
   });
 
-  it('confidenceLevel이 유효하지 않은 enum이면 실패한다', async () => {
+  it('confidenceLevel이 유효하지 않은 enum이면 medium으로 보정한다', async () => {
     const { WinSimulationSchema } = await import('../src/analysis/schemas');
 
-    expect(() =>
-      WinSimulationSchema.parse({
-        winProbability: 50,
-        confidenceLevel: 'invalid',
-        winConditions: [],
-        loseConditions: [],
-        keyStrategies: [],
-        simulationSummary: 'test',
-      }),
-    ).toThrow(ZodError);
+    const result = WinSimulationSchema.parse({
+      winProbability: 50,
+      confidenceLevel: 'invalid',
+      winConditions: [],
+      loseConditions: [],
+      keyStrategies: [],
+      simulationSummary: 'test',
+    });
+    expect(result.confidenceLevel).toBe('medium');
   });
 });
