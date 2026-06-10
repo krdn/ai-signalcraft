@@ -7,6 +7,7 @@ import { getCollectQueue } from '../../queue/queues';
 import { COLLECTOR_SOURCES } from '../../queue/types';
 import type { CollectorSource } from '../../queue/types';
 import { protectedProcedure, router } from './init';
+import { dedupeLatestRunRows } from './stalled-dedupe';
 
 const SOURCE_ENUM = [
   'naver-news',
@@ -329,7 +330,8 @@ export const runsRouter = router({
         )
         .orderBy(desc(collectionRuns.time))
         .limit(50);
-      return rows;
+      // 비정상 종료 잔재로 같은 (runId, source) running 행이 중복될 수 있음 — 최신 행만 노출
+      return dedupeLatestRunRows(rows);
     }),
 
   forceComplete: protectedProcedure

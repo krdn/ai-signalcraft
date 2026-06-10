@@ -42,6 +42,43 @@ const INLINE_COMMENT_SOURCES: ReadonlySet<CollectorSource> = new Set<CollectorSo
 ]);
 
 /**
+ * (runId, source)의 running 행을 보장 — 있으면 재사용, 없으면 생성.
+ *
+ * 워커가 finalize 없이 죽은 뒤(배포 재시작, OOM kill) startup-recovery가
+ * 같은 run을 재실행할 때 무조건 INSERT하면 running 행이 중복으로 쌓여
+ * 모니터 stalled 목록에 같은 (runId, source)가 두 번 노출된다.
+ */
+export async function ensureRunningRun(params: {
+  runId: string;
+  subscriptionId: number;
+  source: string;
+  triggerType: CollectionJobData['triggerType'];
+}): Promise<void> {
+  const db = getDb();
+  const reused = await db
+    .update(collectionRuns)
+    .set({ lastProgressAt: new Date() })
+    .where(
+      and(
+        eq(collectionRuns.runId, params.runId),
+        eq(collectionRuns.source, params.source),
+        eq(collectionRuns.status, 'running'),
+      ),
+    )
+    .returning({ runId: collectionRuns.runId });
+  if (reused.length > 0) return;
+
+  await db.insert(collectionRuns).values({
+    time: new Date(),
+    runId: params.runId,
+    subscriptionId: params.subscriptionId,
+    source: params.source,
+    status: 'running',
+    triggerType: params.triggerType,
+  });
+}
+
+/**
  * texts 전체를 EMBED_BATCH_SIZE로 쪼개 embedPassages를 여러 번 호출한다.
  * 실패하는 배치가 있으면 그 배치 구간만 빈 배열로 채워 전체 길이를 유지한다.
  */
@@ -109,14 +146,7 @@ export async function executeCollectionJob(
   const db = getDb();
   const startedAt = Date.now();
 
-  await db.insert(collectionRuns).values({
-    time: new Date(),
-    runId,
-    subscriptionId,
-    source,
-    status: 'running',
-    triggerType,
-  });
+  await ensureRunningRun({ runId, subscriptionId, source, triggerType });
 
   let itemsCollected = 0;
   let itemsNew = 0;
@@ -466,14 +496,7 @@ async function executeCommentsJob(job: Job<CollectionJobData>): Promise<Collecti
     return { runId, itemsCollected: 0, itemsNew: 0, blocked: false, durationMs: 0 };
   }
 
-  await db.insert(collectionRuns).values({
-    time: new Date(),
-    runId,
-    subscriptionId,
-    source,
-    status: 'running',
-    triggerType,
-  });
+  await ensureRunningRun({ runId, subscriptionId, source, triggerType });
 
   let itemsCollected = 0;
   let itemsNew = 0;
