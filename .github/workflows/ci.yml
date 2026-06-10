@@ -10,6 +10,7 @@ jobs:
   quality:
     name: Lint & Type Check & Build
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - uses: actions/checkout@v4
@@ -48,6 +49,19 @@ jobs:
   test:
     name: Tests (all workspaces)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    # 일부 테스트가 Redis에 연결 — 미기동 시 ioredis 무한 재시도로 잡이 6시간 hang
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
 
     steps:
       - uses: actions/checkout@v4
