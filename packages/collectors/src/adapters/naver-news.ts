@@ -210,6 +210,32 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
     const pw: { browser: Browser | null; page: Page | null } = { browser: null, page: null };
     let fetchFailCount = 0;
 
+    // 폴백 브라우저 단일 비행(single-flight) 초기화.
+    // 동시 태스크가 각자 launchBrowser()를 호출하면 마지막 할당 외의 브라우저 핸들이
+    // 유실되어 close 불가 → chromium 고아 프로세스 누수. init promise 공유로 1회만 launch.
+    let pwInit: Promise<void> | null = null;
+    const ensurePlaywrightFallback = (): Promise<void> => {
+      pwInit ??= (async () => {
+        const browser = await launchBrowser();
+        // launch 직후 즉시 할당 — 이후 단계가 실패해도 finally에서 close 보장
+        pw.browser = browser;
+        try {
+          const context = await createBrowserContext(browser);
+          pw.page = await context.newPage();
+        } catch (err) {
+          pw.browser = null;
+          pw.page = null;
+          await browser.close().catch(() => {});
+          throw err;
+        }
+        console.warn(`naver-news fetch ${fetchFailCount}회 실패 → Playwright 폴백 활성화`);
+      })().catch((err: unknown) => {
+        pwInit = null; // 실패 시 다음 기사에서 재시도 가능
+        throw err;
+      });
+      return pwInit;
+    };
+
     // 세마포어: 외부 의존성 없이 동시성 제어
     let running = 0;
     const waitQueue: (() => void)[] = [];
@@ -239,12 +265,9 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
             if (totalCollected >= maxItems) return null;
             await acquire();
             try {
-              // fetch 연속 실패 시 Playwright 폴백 준비 (lazy init)
-              if (fetchFailCount >= FETCH_FAIL_THRESHOLD && !pw.browser) {
-                pw.browser = await launchBrowser();
-                const context = await createBrowserContext(pw.browser);
-                pw.page = await context.newPage();
-                console.warn(`naver-news fetch ${fetchFailCount}회 실패 → Playwright 폴백 활성화`);
+              // fetch 연속 실패 시 Playwright 폴백 준비 (lazy init, 단일 비행)
+              if (fetchFailCount >= FETCH_FAIL_THRESHOLD) {
+                await ensurePlaywrightFallback();
               }
 
               const _commentsOnly = refetchCommentsOnlySet.has(article.url);
@@ -274,7 +297,8 @@ export class NaverNewsCollector implements Collector<NaverArticle> {
         }
       }
     } finally {
-      if (pw.browser) await pw.browser.close();
+      // close 실패가 수집 결과나 진행 중 에러를 덮어쓰지 않도록 무시
+      if (pw.browser) await pw.browser.close().catch(() => {});
     }
   }
 

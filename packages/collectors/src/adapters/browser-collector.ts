@@ -24,7 +24,8 @@ export abstract class BrowserCollector<T> implements Collector<T> {
       const page = await context.newPage();
       yield* this.doCollect(page, options);
     } finally {
-      if (browser) await browser.close();
+      // close 실패가 doCollect의 원래 에러를 덮어쓰지 않도록 무시
+      if (browser) await browser.close().catch(() => {});
     }
   }
 
