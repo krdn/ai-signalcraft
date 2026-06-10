@@ -33,6 +33,8 @@ services:
       target: worker
     container_name: ais-prod-worker
     restart: unless-stopped
+    # PID 1 init이 고아 프로세스를 reap — 워커 비정상 종료(OOM kill 등) 시 chromium 잔존 방지
+    init: true
     stop_grace_period: 60s
     env_file:
       - ../.env.production
@@ -140,6 +142,8 @@ services:
     container_name: ais-collector-worker
     command: ["tsx", "apps/collector/src/queue/worker-process.ts"]
     restart: unless-stopped
+    # PID 1 init이 고아 프로세스를 reap — 워커 비정상 종료(OOM kill 등) 시 chromium 잔존 방지
+    init: true
     stop_grace_period: 60s
     mem_limit: 6g
     memswap_limit: 6g
@@ -210,6 +214,8 @@ services:
       dockerfile: apps/whisper-worker/Dockerfile
     container_name: ais-whisper-worker
     restart: unless-stopped
+    # PID 1 init이 고아 프로세스를 reap — yt-dlp/python3 자식 프로세스 잔존 방지
+    init: true
     stop_grace_period: 60s
     env_file:
       - ../.env.production

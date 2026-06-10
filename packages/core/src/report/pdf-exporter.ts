@@ -15,15 +15,19 @@ export async function exportToPdf(
   const html = buildHtmlFromMarkdown(markdownContent, options.title ?? '분석 리포트');
 
   const browser = await chromium.launch();
-  const page = await browser.newPage();
-  await page.setContent(html, { waitUntil: 'networkidle' });
-  await page.pdf({
-    path: outputPath,
-    format: options.format ?? 'A4',
-    margin: options.margin ?? { top: '20mm', bottom: '20mm', left: '15mm', right: '15mm' },
-    printBackground: true,
-  });
-  await browser.close();
+  try {
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: 'networkidle' });
+    await page.pdf({
+      path: outputPath,
+      format: options.format ?? 'A4',
+      margin: options.margin ?? { top: '20mm', bottom: '20mm', left: '15mm', right: '15mm' },
+      printBackground: true,
+    });
+  } finally {
+    // 렌더링/PDF 단계 예외 시에도 chromium 프로세스 누수 방지. close 실패는 원래 에러를 덮지 않도록 무시.
+    await browser.close().catch(() => {});
+  }
 }
 
 /**
