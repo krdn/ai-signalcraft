@@ -87,6 +87,7 @@ const HTML_OK =
   '</div></body></html>';
 
 describe('CommunityBaseCollector.loadSearchPage — page.content() race 방어', () => {
+  // 1회 실패 후 재시도 전 sleep(3000~5000ms) 백오프 — 기본 타임아웃 5s로는 경계 플레이크
   it('첫 attempt에서 page.content()가 throw되면 다음 attempt로 재시도해 성공한다', async () => {
     const fake = makeFakePage([
       {
@@ -102,7 +103,7 @@ describe('CommunityBaseCollector.loadSearchPage — page.content() race 방어',
     expect(result).toHaveLength(2);
     expect(result?.map((r) => r.title)).toEqual(['t1', 't2']);
     expect(fake.calls.content).toBe(2);
-  });
+  }, 15000);
 
   // 실패 시 sleep(3000*attempt, 5000*attempt) 백오프가 있어 최악 15s 가량 — 테스트 타임아웃 30s.
   it('3회 모두 실패하면 null 반환', async () => {

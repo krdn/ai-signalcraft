@@ -10,6 +10,7 @@ jobs:
   quality:
     name: Lint & Type Check & Build
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - uses: actions/checkout@v4
@@ -31,16 +32,23 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      # PR 이벤트는 detached HEAD(머지 커밋) checkout이라 push 불가(exit 128)
+      # → PR에서는 검사 실패로 안내, push(main)에서만 auto-fix 커밋
       - name: Format Check & Auto Fix
         run: |
           pnpm format
-          git diff --exit-code || (
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add -A
-            git commit -m "style: CI auto-format fix"
-            git push
-          )
+          if ! git diff --exit-code; then
+            if [ "${{ github.event_name }}" = "push" ]; then
+              git config user.name "github-actions[bot]"
+              git config user.email "github-actions[bot]@users.noreply.github.com"
+              git add -A
+              git commit -m "style: CI auto-format fix"
+              git push
+            else
+              echo "::error::Prettier 미적용 파일이 있습니다. 로컬에서 'pnpm format' 실행 후 커밋하세요."
+              exit 1
+            fi
+          fi
 
       - name: Type Check & Build
         run: pnpm typecheck
@@ -48,6 +56,19 @@ jobs:
   test:
     name: Tests (all workspaces)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    # 일부 테스트가 Redis에 연결 — 미기동 시 ioredis 무한 재시도로 잡이 6시간 hang
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
 
     steps:
       - uses: actions/checkout@v4
@@ -67,8 +88,18 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       # day-window-collector.test.ts 등이 chromium 실행 — runner 캐시에 브라우저 + system lib 필요
+      # --with-deps 결합 실행이 다운로드 완료 직후 무한 hang (2026-06-10 관측, 30분 timeout 소진)
+      # → deps/브라우저 설치를 분리하고 step timeout으로 멈춤을 빠르게 노출
+      - name: Install Playwright system deps
+        timeout-minutes: 5
+        run: pnpm --filter @ai-signalcraft/collectors exec playwright install-deps chromium
+
+      # playwright <1.60 + Node 24.16+ 조합은 추출 단계에서 무한 hang (yauzl 회귀)
+      # → playwright 1.60.0+ 필수. step timeout은 회귀 재발 시 빠른 노출용
       - name: Install Playwright browsers
-        run: pnpm --filter @ai-signalcraft/collectors exec playwright install chromium --with-deps
+        timeout-minutes: 10
+        working-directory: packages/collectors
+        run: npx playwright install chromium
 
       # 모든 워크스페이스 테스트 — web/core/collector/collectors 전체 회귀 차단
       - name: Run All Tests

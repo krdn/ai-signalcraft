@@ -1,4 +1,6 @@
+/* global process, console, Buffer, URL */
 import { createCipheriv, createDecipheriv, randomBytes, createHash } from 'node:crypto';
+// eslint-disable-next-line import-x/order -- eslint.config의 scripts/**/*.ts 완화와 동일 취지 (.mjs 미포함)
 import { createRequire } from 'node:module';
 
 const require = createRequire(

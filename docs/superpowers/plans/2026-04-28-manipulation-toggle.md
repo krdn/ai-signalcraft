@@ -16,15 +16,15 @@
 
 ## File Inventory
 
-| 파일 | 변경 유형 | 책임 |
-|------|----------|------|
-| `apps/collector/src/db/schema/subscriptions.ts` | Modify | `SubscriptionOptions` 타입에 `enableManipulation?: boolean` 추가 |
-| `apps/collector/src/server/trpc/subscriptions.ts` | Modify | `optionsSchema`에 zod 필드 추가 (silent strip 방지) |
-| `apps/web/src/server/trpc/routers/subscriptions.ts` | Modify | `SubscriptionRecord.options` 인터페이스 1줄 추가 |
-| `apps/web/src/server/trpc/routers/subscription-analysis-meta.ts` | Modify | 함수 시그니처 + 반환 타입 + `runManipulation` 합성 로직 |
-| `apps/web/src/server/trpc/routers/analysis.ts` | Modify | `buildSubscriptionAnalysisMeta` 호출에 `options: sub.options` 전달 |
-| `apps/web/src/components/subscriptions/subscription-form.tsx` | Modify | `enableManipulation` state + Checkbox 카드 UI + payload |
-| `apps/web/src/server/trpc/routers/__tests__/analysis-trigger-subscription.test.ts` | Modify | `enableManipulation` 케이스 3건 추가 |
+| 파일                                                                               | 변경 유형 | 책임                                                               |
+| ---------------------------------------------------------------------------------- | --------- | ------------------------------------------------------------------ |
+| `apps/collector/src/db/schema/subscriptions.ts`                                    | Modify    | `SubscriptionOptions` 타입에 `enableManipulation?: boolean` 추가   |
+| `apps/collector/src/server/trpc/subscriptions.ts`                                  | Modify    | `optionsSchema`에 zod 필드 추가 (silent strip 방지)                |
+| `apps/web/src/server/trpc/routers/subscriptions.ts`                                | Modify    | `SubscriptionRecord.options` 인터페이스 1줄 추가                   |
+| `apps/web/src/server/trpc/routers/subscription-analysis-meta.ts`                   | Modify    | 함수 시그니처 + 반환 타입 + `runManipulation` 합성 로직            |
+| `apps/web/src/server/trpc/routers/analysis.ts`                                     | Modify    | `buildSubscriptionAnalysisMeta` 호출에 `options: sub.options` 전달 |
+| `apps/web/src/components/subscriptions/subscription-form.tsx`                      | Modify    | `enableManipulation` state + Checkbox 카드 UI + payload            |
+| `apps/web/src/server/trpc/routers/__tests__/analysis-trigger-subscription.test.ts` | Modify    | `enableManipulation` 케이스 3건 추가                               |
 
 ---
 
@@ -33,6 +33,7 @@
 **Why first:** 백엔드 입력 검증 게이트가 통과해야 그 위 레이어가 의미를 갖는다. zod 기본 모드가 정의되지 않은 키를 silent strip하므로, 이 작업 전에는 UI에서 보낸 `enableManipulation`이 collector에 도달하지 못한다.
 
 **Files:**
+
 - Modify: `apps/collector/src/db/schema/subscriptions.ts:18-21`
 - Modify: `apps/collector/src/server/trpc/subscriptions.ts:21-26`
 - Test: 기존 collector 테스트 회귀로 충분 (단위 테스트 추가 안 함 — zod parse는 zod 자체가 보장)
@@ -72,6 +73,7 @@ pnpm --filter @ai-signalcraft/collector test 2>&1 | tail -5
 ```
 
 Expected:
+
 - tsc: `No errors found`
 - 기존 84 PASS 유지 (33 SASL DB 실패는 pre-existing — 새 실패만 없으면 OK)
 
@@ -94,6 +96,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 **Why:** Web 측이 collector 응답을 자체 타입으로 재정의해 트랜지티브 추론 누출을 막고 있다(`SubscriptionRecord`). 토글 필드도 이 경계에서 명시해야 UI가 `initial?.options?.enableManipulation`을 안전하게 읽을 수 있다.
 
 **Files:**
+
 - Modify: `apps/web/src/server/trpc/routers/subscriptions.ts:14-24`
 - Test: 타입 체크만으로 검증 (vitest 회귀)
 
@@ -136,6 +139,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 **TDD 첫 단계.** `enableManipulation: true` → `runManipulation: true`, `false`/부재 → 키 자체 부재. 3개 테스트.
 
 **Files:**
+
 - Modify: `apps/web/src/server/trpc/routers/__tests__/analysis-trigger-subscription.test.ts`
 
 - [ ] **Step 1: 테스트 3건 추가**
@@ -143,46 +147,46 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 `apps/web/src/server/trpc/routers/__tests__/analysis-trigger-subscription.test.ts`의 마지막 `});` 직전 (describe 블록 닫기 전)에 다음을 추가:
 
 ```typescript
-  it('options.enableManipulation:true → meta.options.runManipulation:true', () => {
-    const result = buildSubscriptionAnalysisMeta(
-      {
-        keyword: 'test',
-        sources: ['naver-news'],
-        limits: { maxPerRun: 100 },
-        options: { enableManipulation: true },
-      },
-      { subscriptionId: 1 },
-    );
+it('options.enableManipulation:true → meta.options.runManipulation:true', () => {
+  const result = buildSubscriptionAnalysisMeta(
+    {
+      keyword: 'test',
+      sources: ['naver-news'],
+      limits: { maxPerRun: 100 },
+      options: { enableManipulation: true },
+    },
+    { subscriptionId: 1 },
+  );
 
-    expect(result.options.runManipulation).toBe(true);
-  });
+  expect(result.options.runManipulation).toBe(true);
+});
 
-  it('options.enableManipulation:false → meta.options에 runManipulation 키 부재', () => {
-    const result = buildSubscriptionAnalysisMeta(
-      {
-        keyword: 'test',
-        sources: ['naver-news'],
-        limits: { maxPerRun: 100 },
-        options: { enableManipulation: false },
-      },
-      { subscriptionId: 1 },
-    );
+it('options.enableManipulation:false → meta.options에 runManipulation 키 부재', () => {
+  const result = buildSubscriptionAnalysisMeta(
+    {
+      keyword: 'test',
+      sources: ['naver-news'],
+      limits: { maxPerRun: 100 },
+      options: { enableManipulation: false },
+    },
+    { subscriptionId: 1 },
+  );
 
-    expect(result.options).not.toHaveProperty('runManipulation');
-  });
+  expect(result.options).not.toHaveProperty('runManipulation');
+});
 
-  it('options 부재 → meta.options에 runManipulation 키 부재 (회귀 보호)', () => {
-    const result = buildSubscriptionAnalysisMeta(
-      {
-        keyword: 'test',
-        sources: ['naver-news'],
-        limits: { maxPerRun: 100 },
-      },
-      { subscriptionId: 1 },
-    );
+it('options 부재 → meta.options에 runManipulation 키 부재 (회귀 보호)', () => {
+  const result = buildSubscriptionAnalysisMeta(
+    {
+      keyword: 'test',
+      sources: ['naver-news'],
+      limits: { maxPerRun: 100 },
+    },
+    { subscriptionId: 1 },
+  );
 
-    expect(result.options).not.toHaveProperty('runManipulation');
-  });
+  expect(result.options).not.toHaveProperty('runManipulation');
+});
 ```
 
 - [ ] **Step 2: 테스트 실행 — 3건 모두 실패해야 함**
@@ -193,6 +197,7 @@ pnpm --filter @ai-signalcraft/web test analysis-trigger-subscription 2>&1 | tail
 ```
 
 Expected:
+
 - 첫 번째 테스트: FAIL — `result.options.runManipulation`이 `undefined` 또는 `result.options.runManipulation` 키가 존재하지 않음 (TS 타입 에러 가능)
 - 두 번째/세 번째: PASS (현재 코드는 `runManipulation` 키를 추가하지 않으므로 `not.toHaveProperty`는 통과)
 
@@ -205,6 +210,7 @@ Expected:
 ## Task 4: buildSubscriptionAnalysisMeta 시그니처 + 합성 로직 구현
 
 **Files:**
+
 - Modify: `apps/web/src/server/trpc/routers/subscription-analysis-meta.ts`
 
 - [ ] **Step 1: 입력 타입에 options 추가**
@@ -246,18 +252,18 @@ export function buildSubscriptionAnalysisMeta(
 같은 파일의 return 블록 (line 84-94)을 다음으로 교체:
 
 ```typescript
-  return {
-    appliedPreset,
-    limits,
-    options: {
-      subscriptionId: args.subscriptionId,
-      skipItemAnalysis: true,
-      useCollectorLoader: true,
-      tokenOptimization,
-      sources: subscriptionSources,
-      ...(sub.options?.enableManipulation === true && { runManipulation: true }),
-    },
-  };
+return {
+  appliedPreset,
+  limits,
+  options: {
+    subscriptionId: args.subscriptionId,
+    skipItemAnalysis: true,
+    useCollectorLoader: true,
+    tokenOptimization,
+    sources: subscriptionSources,
+    ...(sub.options?.enableManipulation === true && { runManipulation: true }),
+  },
+};
 ```
 
 - [ ] **Step 4: 테스트 통과 확인**
@@ -295,6 +301,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ## Task 5: triggerSubscription mutation에서 sub.options 전달
 
 **Files:**
+
 - Modify: `apps/web/src/server/trpc/routers/analysis.ts:351-358`
 
 - [ ] **Step 1: 호출부에 options 전달**
@@ -302,15 +309,15 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 `apps/web/src/server/trpc/routers/analysis.ts`의 351-358줄을 다음으로 교체:
 
 ```typescript
-      const meta = buildSubscriptionAnalysisMeta(
-        {
-          keyword: sub.keyword,
-          sources: sub.sources,
-          limits: sub.limits as Record<string, number> | null,
-          options: sub.options,
-        },
-        { subscriptionId: input.subscriptionId, optimizationPreset: input.optimizationPreset },
-      );
+const meta = buildSubscriptionAnalysisMeta(
+  {
+    keyword: sub.keyword,
+    sources: sub.sources,
+    limits: sub.limits as Record<string, number> | null,
+    options: sub.options,
+  },
+  { subscriptionId: input.subscriptionId, optimizationPreset: input.optimizationPreset },
+);
 ```
 
 - [ ] **Step 2: 전체 tsc + 테스트**
@@ -322,6 +329,7 @@ pnpm --filter @ai-signalcraft/web test analysis-trigger-subscription 2>&1 | tail
 ```
 
 Expected:
+
 - tsc: `No errors found`
 - 7 PASS
 
@@ -341,6 +349,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ## Task 6: SubscriptionForm UI — state + Checkbox 카드
 
 **Files:**
+
 - Modify: `apps/web/src/components/subscriptions/subscription-form.tsx`
 
 - [ ] **Step 1: state 추가 (line 81 직후)**
@@ -348,20 +357,22 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 `apps/web/src/components/subscriptions/subscription-form.tsx`의 81-83줄 (`const [collectTranscript, ...]` 다음)에 한 줄 추가:
 
 기존:
+
 ```typescript
-  const [collectTranscript, setCollectTranscript] = useState(
-    initial?.options?.collectTranscript ?? false,
-  );
+const [collectTranscript, setCollectTranscript] = useState(
+  initial?.options?.collectTranscript ?? false,
+);
 ```
 
 추가 후:
+
 ```typescript
-  const [collectTranscript, setCollectTranscript] = useState(
-    initial?.options?.collectTranscript ?? false,
-  );
-  const [enableManipulation, setEnableManipulation] = useState(
-    initial?.options?.enableManipulation ?? false,
-  );
+const [collectTranscript, setCollectTranscript] = useState(
+  initial?.options?.collectTranscript ?? false,
+);
+const [enableManipulation, setEnableManipulation] = useState(
+  initial?.options?.enableManipulation ?? false,
+);
 ```
 
 - [ ] **Step 2: createMut/updateMut input 타입에 enableManipulation 추가**
@@ -369,59 +380,59 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 같은 파일의 92-106줄을 다음으로 교체:
 
 ```typescript
-  const createMut = useMutation({
-    mutationFn: (input: {
-      keyword: string;
-      sources: string[];
-      intervalHours: number;
-      limits: { maxPerRun: number; commentsPerItem: number };
-      options?: { collectTranscript?: boolean; enableManipulation?: boolean };
-    }) =>
-      trpcClient.subscriptions.create.mutate({
-        keyword: input.keyword,
-        sources: input.sources as SourceId[],
-        intervalHours: input.intervalHours,
-        limits: input.limits,
-        options: input.options,
-      }),
-    onSuccess: (row) => {
-      toast.success('구독이 생성되었습니다');
-      qc.invalidateQueries({ queryKey: ['subscriptions'] });
-      if (row) notifySaved(row.id);
-    },
-    onError: (err) => {
-      toast.error(`생성 실패: ${err instanceof Error ? err.message : '알 수 없는 오류'}`);
-    },
-  });
+const createMut = useMutation({
+  mutationFn: (input: {
+    keyword: string;
+    sources: string[];
+    intervalHours: number;
+    limits: { maxPerRun: number; commentsPerItem: number };
+    options?: { collectTranscript?: boolean; enableManipulation?: boolean };
+  }) =>
+    trpcClient.subscriptions.create.mutate({
+      keyword: input.keyword,
+      sources: input.sources as SourceId[],
+      intervalHours: input.intervalHours,
+      limits: input.limits,
+      options: input.options,
+    }),
+  onSuccess: (row) => {
+    toast.success('구독이 생성되었습니다');
+    qc.invalidateQueries({ queryKey: ['subscriptions'] });
+    if (row) notifySaved(row.id);
+  },
+  onError: (err) => {
+    toast.error(`생성 실패: ${err instanceof Error ? err.message : '알 수 없는 오류'}`);
+  },
+});
 ```
 
 같은 파일의 117-131줄 `updateMut` 도 동일 패턴으로 교체:
 
 ```typescript
-  const updateMut = useMutation({
-    mutationFn: (input: {
-      id: number;
-      sources: string[];
-      intervalHours: number;
-      limits: { maxPerRun: number; commentsPerItem: number };
-      options?: { collectTranscript?: boolean; enableManipulation?: boolean };
-    }) =>
-      trpcClient.subscriptions.update.mutate({
-        id: input.id,
-        sources: input.sources as SourceId[],
-        intervalHours: input.intervalHours,
-        limits: input.limits,
-        options: input.options,
-      }),
-    onSuccess: (row) => {
-      toast.success('구독이 수정되었습니다');
-      qc.invalidateQueries({ queryKey: ['subscriptions'] });
-      if (row) notifySaved(row.id);
-    },
-    onError: (err) => {
-      toast.error(`수정 실패: ${err instanceof Error ? err.message : '알 수 없는 오류'}`);
-    },
-  });
+const updateMut = useMutation({
+  mutationFn: (input: {
+    id: number;
+    sources: string[];
+    intervalHours: number;
+    limits: { maxPerRun: number; commentsPerItem: number };
+    options?: { collectTranscript?: boolean; enableManipulation?: boolean };
+  }) =>
+    trpcClient.subscriptions.update.mutate({
+      id: input.id,
+      sources: input.sources as SourceId[],
+      intervalHours: input.intervalHours,
+      limits: input.limits,
+      options: input.options,
+    }),
+  onSuccess: (row) => {
+    toast.success('구독이 수정되었습니다');
+    qc.invalidateQueries({ queryKey: ['subscriptions'] });
+    if (row) notifySaved(row.id);
+  },
+  onError: (err) => {
+    toast.error(`수정 실패: ${err instanceof Error ? err.message : '알 수 없는 오류'}`);
+  },
+});
 ```
 
 - [ ] **Step 3: payload 단순화 + enableManipulation 추가**
@@ -429,16 +440,16 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 같은 파일의 174-180줄을 다음으로 교체:
 
 ```typescript
-    const payload = {
-      keyword: keyword.trim(),
-      sources,
-      intervalHours,
-      limits: { maxPerRun, commentsPerItem },
-      options: {
-        collectTranscript,
-        enableManipulation,
-      },
-    };
+const payload = {
+  keyword: keyword.trim(),
+  sources,
+  intervalHours,
+  limits: { maxPerRun, commentsPerItem },
+  options: {
+    collectTranscript,
+    enableManipulation,
+  },
+};
 ```
 
 - [ ] **Step 4: Checkbox 카드 추가**
@@ -446,21 +457,21 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 같은 파일의 332줄(`)}`로 끝나는 `collectTranscript` 카드 닫기) 직후에 다음 블록 추가:
 
 ```tsx
-      <label className="flex items-start gap-2 rounded-lg border p-3 cursor-pointer hover:bg-accent/50">
-        <Checkbox
-          checked={enableManipulation}
-          onCheckedChange={(checked) => setEnableManipulation(!!checked)}
-          disabled={isPending}
-          className="mt-0.5"
-        />
-        <div className="space-y-1">
-          <span className="text-sm font-medium">여론 조작 신호 분석</span>
-          <p className="text-xs text-muted-foreground">
-            분석 실행 시 댓글·기사의 7개 조작 신호(트래픽 폭주, 유사도 클러스터, 매체 동조 등)를
-            추가로 검출합니다. 분석 시간이 약 30~60초 늘어납니다.
-          </p>
-        </div>
-      </label>
+<label className="flex items-start gap-2 rounded-lg border p-3 cursor-pointer hover:bg-accent/50">
+  <Checkbox
+    checked={enableManipulation}
+    onCheckedChange={(checked) => setEnableManipulation(!!checked)}
+    disabled={isPending}
+    className="mt-0.5"
+  />
+  <div className="space-y-1">
+    <span className="text-sm font-medium">여론 조작 신호 분석</span>
+    <p className="text-xs text-muted-foreground">
+      분석 실행 시 댓글·기사의 7개 조작 신호(트래픽 폭주, 유사도 클러스터, 매체 동조 등)를 추가로
+      검출합니다. 분석 시간이 약 30~60초 늘어납니다.
+    </p>
+  </div>
+</label>
 ```
 
 - [ ] **Step 5: 전체 tsc + lint**
@@ -472,6 +483,7 @@ pnpm --filter @ai-signalcraft/web lint 2>&1 | tail -5
 ```
 
 Expected:
+
 - tsc: `No errors found`
 - lint: 0 errors / 0 warnings (또는 기존 warning 수 유지)
 
@@ -537,6 +549,7 @@ Expected: 신규 lint 에러 0건 (기존 warning은 무관)
 ## Self-Review Checklist (작성자 확인용)
 
 **1. Spec coverage:**
+
 - 데이터 모델 (`SubscriptionOptions`, zod, `SubscriptionRecord`) → Task 1, 2
 - 데이터 흐름 (`buildSubscriptionAnalysisMeta`) → Task 3, 4
 - `triggerSubscription` 호출부 → Task 5
@@ -548,6 +561,7 @@ Expected: 신규 lint 에러 0건 (기존 warning은 무관)
 **2. Placeholder scan:** 없음. 모든 step이 실제 코드 또는 명령 포함.
 
 **3. Type consistency:**
+
 - `enableManipulation`: 모든 task에서 같은 키
 - `runManipulation`: Task 4와 Phase 2 코드 (`stage5.ts`, `pipeline-orchestrator.ts`)에서 같은 키 — Phase 2 jobOptions 게이트와 정확히 일치
 - `SubscriptionOptions` (collector) ↔ `SubscriptionRecord.options` (web): 동일 3 필드 (`collectTranscript`, `includeComments`, `enableManipulation`)

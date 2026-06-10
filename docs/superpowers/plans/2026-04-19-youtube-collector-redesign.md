@@ -15,6 +15,7 @@
 ### Task 1: 의존성 설치 + DB 스키마 확장
 
 **Files:**
+
 - Modify: `packages/collectors/package.json`
 - Modify: `packages/core/src/db/schema/collections.ts:140-170` (videos 테이블)
 
@@ -76,6 +77,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ### Task 2: CollectionOptions + CollectionStats 타입 확장
 
 **Files:**
+
 - Modify: `packages/collectors/src/adapters/base.ts`
 
 - [ ] **Step 1: CollectionOptionsSchema에 신규 필드 추가**
@@ -135,6 +137,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ### Task 3: YoutubeVideo 타입 확장
 
 **Files:**
+
 - Modify: `packages/collectors/src/adapters/youtube-videos.ts`
 
 - [ ] **Step 1: YoutubeVideo 인터페이스에 comments, transcript 필드 추가**
@@ -201,6 +204,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ### Task 4: QuotaTracker 구현
 
 **Files:**
+
 - Create: `packages/collectors/src/utils/youtube-quota.ts`
 
 - [ ] **Step 1: QuotaTracker 클래스 작성**
@@ -267,6 +271,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ### Task 5: InnerTube Fallback 클라이언트
 
 **Files:**
+
 - Create: `packages/collectors/src/utils/youtube-innertube.ts`
 
 - [ ] **Step 1: InnerTube 클라이언트 래퍼 작성**
@@ -315,6 +320,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ### Task 6: 자막 수집 유틸리티
 
 **Files:**
+
 - Create: `packages/collectors/src/utils/youtube-transcript.ts`
 
 - [ ] **Step 1: fetchTranscript 함수 작성**
@@ -376,6 +382,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ### Task 7: YoutubeCollector 통합 수집기 — 핵심 구현
 
 **Files:**
+
 - Create: `packages/collectors/src/adapters/youtube-collector.ts`
 
 이 파일이 전체 재설계의 핵심. 기존 `YoutubeVideosCollector`와 `YoutubeCommentsCollector`의 기능을 통합하고, QuotaTracker + InnerTube fallback + 자막 수집 + CollectionStats를 모두 포함.
@@ -445,7 +452,11 @@ export class YoutubeCollector implements Collector<YoutubeVideo> {
       let collectedThisDay = 0;
 
       const searchResults = await this.searchVideos(
-        options.keyword, day, perDayLimit, skipUrlSet, globalSeenIds,
+        options.keyword,
+        day,
+        perDayLimit,
+        skipUrlSet,
+        globalSeenIds,
       );
 
       for (const video of searchResults) {
@@ -553,7 +564,13 @@ export class YoutubeCollector implements Collector<YoutubeVideo> {
           this.usingFallback = true;
           return [
             ...allVideos,
-            ...(await this.searchViaInnertube(keyword, day, perDayLimit - allVideos.length, skipUrlSet, globalSeenIds)),
+            ...(await this.searchViaInnertube(
+              keyword,
+              day,
+              perDayLimit - allVideos.length,
+              skipUrlSet,
+              globalSeenIds,
+            )),
           ];
         }
         throw err;
@@ -652,7 +669,8 @@ export class YoutubeCollector implements Collector<YoutubeVideo> {
           description: (item as any).description_snippet?.text ?? null,
           channelId: '',
           channelTitle: (item as any).author?.name ?? '',
-          viewCount: parseInt((item as any).view_count?.text?.replace(/[^0-9]/g, '') ?? '0', 10) || 0,
+          viewCount:
+            parseInt((item as any).view_count?.text?.replace(/[^0-9]/g, '') ?? '0', 10) || 0,
           likeCount: 0,
           commentCount: 0,
           publishedAt,
@@ -732,7 +750,10 @@ export class YoutubeCollector implements Collector<YoutubeVideo> {
         if (error.code === 403) {
           if (this.quotaTracker.isExhausted()) {
             this.usingFallback = true;
-            const remaining = await this.collectCommentsViaInnertube(videoId, maxComments - comments.length);
+            const remaining = await this.collectCommentsViaInnertube(
+              videoId,
+              maxComments - comments.length,
+            );
             comments.push(...remaining);
           }
           break;
@@ -847,22 +868,24 @@ export class YoutubeCollector implements Collector<YoutubeVideo> {
 
       const comments = await this.collectComments(videoId, maxComments, commentOrder);
 
-      yield [{
-        sourceId: videoId,
-        url,
-        title: '',
-        description: null,
-        channelId: '',
-        channelTitle: '',
-        viewCount: 0,
-        likeCount: 0,
-        commentCount: 0,
-        publishedAt: null,
-        rawData: {},
-        comments,
-        transcript: null,
-        transcriptLang: null,
-      }];
+      yield [
+        {
+          sourceId: videoId,
+          url,
+          title: '',
+          description: null,
+          channelId: '',
+          channelTitle: '',
+          viewCount: 0,
+          likeCount: 0,
+          commentCount: 0,
+          publishedAt: null,
+          rawData: {},
+          comments,
+          transcript: null,
+          transcriptLang: null,
+        },
+      ];
     }
   }
 
@@ -930,6 +953,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ### Task 8: 수집기 레지스트리 + export 등록
 
 **Files:**
+
 - Modify: `packages/collectors/src/adapters/index.ts`
 - Modify: `packages/core/src/queue/worker-config.ts`
 
@@ -1001,7 +1025,8 @@ export function countBySourceType(source: string, items: unknown[]): Record<stri
 export function progressKey(source: string, dataSourceId?: string): string {
   if (dataSourceId) return `ds_${dataSourceId.slice(0, 8)}`;
   if (source === 'naver-news') return 'naver';
-  if (source === 'youtube' || source === 'youtube-videos' || source === 'youtube-comments') return 'youtube';
+  if (source === 'youtube' || source === 'youtube-videos' || source === 'youtube-comments')
+    return 'youtube';
   return source;
 }
 ```
@@ -1028,6 +1053,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ### Task 9: flows.ts 변경 — 소스명 전환 + 옵션 전달
 
 **Files:**
+
 - Modify: `packages/core/src/queue/flows.ts:280-311`
 
 - [ ] **Step 1: YouTube flow 변경**
@@ -1035,77 +1061,79 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 `packages/core/src/queue/flows.ts`의 YouTube flow 부분(라인 280-311)을 교체:
 
 **변경 전:**
+
 ```typescript
-  if (enabledSources.includes('youtube')) {
-    const reusePlan = videoReusePlans['youtube']
-      ? toReusePlanPayload(videoReusePlans['youtube'])
-      : undefined;
-    children.push({
-      name: 'normalize-youtube',
-      queueName: 'pipeline',
-      data: {
-        source: 'youtube',
-        flowId,
-        dbJobId,
-        maxComments: limits.commentsPerItem,
-        startDate: params.startDate,
-        endDate: params.endDate,
-      },
-      children: [
-        {
-          name: 'collect-youtube-videos',
-          queueName: 'collectors',
-          data: {
-            ...params,
-            source: 'youtube-videos',
-            maxItems: effective.youtubeVideos,
-            maxItemsPerDay: perDayLimits?.youtubeVideos,
-            flowId,
-            dbJobId,
-            reusePlan,
-          },
+if (enabledSources.includes('youtube')) {
+  const reusePlan = videoReusePlans['youtube']
+    ? toReusePlanPayload(videoReusePlans['youtube'])
+    : undefined;
+  children.push({
+    name: 'normalize-youtube',
+    queueName: 'pipeline',
+    data: {
+      source: 'youtube',
+      flowId,
+      dbJobId,
+      maxComments: limits.commentsPerItem,
+      startDate: params.startDate,
+      endDate: params.endDate,
+    },
+    children: [
+      {
+        name: 'collect-youtube-videos',
+        queueName: 'collectors',
+        data: {
+          ...params,
+          source: 'youtube-videos',
+          maxItems: effective.youtubeVideos,
+          maxItemsPerDay: perDayLimits?.youtubeVideos,
+          flowId,
+          dbJobId,
+          reusePlan,
         },
-      ],
-    });
-  }
+      },
+    ],
+  });
+}
 ```
 
 **변경 후:**
+
 ```typescript
-  if (enabledSources.includes('youtube')) {
-    const reusePlan = videoReusePlans['youtube']
-      ? toReusePlanPayload(videoReusePlans['youtube'])
-      : undefined;
-    children.push({
-      name: 'normalize-youtube',
-      queueName: 'pipeline',
-      data: {
-        source: 'youtube',
-        flowId,
-        dbJobId,
-        startDate: params.startDate,
-        endDate: params.endDate,
-      },
-      children: [
-        {
-          name: 'collect-youtube',
-          queueName: 'collectors',
-          data: {
-            ...params,
-            source: 'youtube',
-            maxItems: effective.youtubeVideos,
-            maxItemsPerDay: perDayLimits?.youtubeVideos,
-            maxComments: limits.commentsPerItem,
-            commentOrder: 'relevance',
-            collectTranscript: true,
-            flowId,
-            dbJobId,
-            reusePlan,
-          },
+if (enabledSources.includes('youtube')) {
+  const reusePlan = videoReusePlans['youtube']
+    ? toReusePlanPayload(videoReusePlans['youtube'])
+    : undefined;
+  children.push({
+    name: 'normalize-youtube',
+    queueName: 'pipeline',
+    data: {
+      source: 'youtube',
+      flowId,
+      dbJobId,
+      startDate: params.startDate,
+      endDate: params.endDate,
+    },
+    children: [
+      {
+        name: 'collect-youtube',
+        queueName: 'collectors',
+        data: {
+          ...params,
+          source: 'youtube',
+          maxItems: effective.youtubeVideos,
+          maxItemsPerDay: perDayLimits?.youtubeVideos,
+          maxComments: limits.commentsPerItem,
+          commentOrder: 'relevance',
+          collectTranscript: true,
+          flowId,
+          dbJobId,
+          reusePlan,
         },
-      ],
-    });
-  }
+      },
+    ],
+  });
+}
 ```
 
 - [ ] **Step 2: 타입 체크**
@@ -1130,6 +1158,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ### Task 10: pipeline-worker.ts 변경 — normalize 단계 댓글 수집 제거
 
 **Files:**
+
 - Modify: `packages/core/src/queue/pipeline-worker.ts:178-289`
 
 - [ ] **Step 1: normalize-youtube 블록 교체**
@@ -1137,49 +1166,49 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 `packages/core/src/queue/pipeline-worker.ts`의 라인 178-289 (기존 댓글 병렬 수집 로직)을 다음으로 교체:
 
 ```typescript
-      // normalize-youtube: 일체형 수집기가 영상+댓글을 함께 반환
-      if (job.name === 'normalize-youtube' && results['youtube']) {
-        const videos = (results['youtube'] as { items: YoutubeVideo[] }).items;
-        const allComments: YoutubeComment[] = [];
+// normalize-youtube: 일체형 수집기가 영상+댓글을 함께 반환
+if (job.name === 'normalize-youtube' && results['youtube']) {
+  const videos = (results['youtube'] as { items: YoutubeVideo[] }).items;
+  const allComments: YoutubeComment[] = [];
 
-        for (const video of videos) {
-          allComments.push(...(video.comments ?? []));
-          video.comments = [];
-        }
+  for (const video of videos) {
+    allComments.push(...(video.comments ?? []));
+    video.comments = [];
+  }
 
-        results['youtube-videos'] = {
-          source: 'youtube-videos',
-          items: videos,
-          count: videos.length,
-        };
+  results['youtube-videos'] = {
+    source: 'youtube-videos',
+    items: videos,
+    count: videos.length,
+  };
 
-        if (allComments.length > 0) {
-          results['youtube-comments'] = {
-            source: 'youtube-comments',
-            items: allComments,
-            count: allComments.length,
-          };
-        }
+  if (allComments.length > 0) {
+    results['youtube-comments'] = {
+      source: 'youtube-comments',
+      items: allComments,
+      count: allComments.length,
+    };
+  }
 
-        if (dbJobId) {
-          await updateJobProgress(dbJobId, {
-            youtube: {
-              status: 'completed',
-              videos: videos.length,
-              comments: allComments.length,
-            },
-          });
-        }
-      }
+  if (dbJobId) {
+    await updateJobProgress(dbJobId, {
+      youtube: {
+        status: 'completed',
+        videos: videos.length,
+        comments: allComments.length,
+      },
+    });
+  }
+}
 
-      // 하위 호환: 기존 youtube-videos 소스로 수집된 결과도 처리
-      if (job.name === 'normalize-youtube' && results['youtube-videos'] && !results['youtube']) {
-        // 기존 YoutubeVideosCollector에서 수집한 결과 — 댓글 별도 수집
-        const videos = (
-          results['youtube-videos'] as { items: Array<{ sourceId: string; title?: string }> }
-        ).items;
-        // ... 기존 댓글 병렬 수집 로직 유지 (하위 호환)
-      }
+// 하위 호환: 기존 youtube-videos 소스로 수집된 결과도 처리
+if (job.name === 'normalize-youtube' && results['youtube-videos'] && !results['youtube']) {
+  // 기존 YoutubeVideosCollector에서 수집한 결과 — 댓글 별도 수집
+  const videos = (
+    results['youtube-videos'] as { items: Array<{ sourceId: string; title?: string }> }
+  ).items;
+  // ... 기존 댓글 병렬 수집 로직 유지 (하위 호환)
+}
 ```
 
 주의: 하위 호환 블록은 기존 `results['youtube-videos']` 키로 수집된 결과가 들어올 때를 위해 기존 로직을 그대로 유지. 실제로는 flows.ts 변경으로 더 이상 이 경로로 진입하지 않지만, 진행 중인 작업이 있을 수 있으므로 안전하게 유지.
@@ -1216,6 +1245,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ### Task 11: normalize.ts + persist.ts — transcript 매핑
 
 **Files:**
+
 - Modify: `packages/core/src/pipeline/normalize.ts:84-99`
 - Modify: `packages/core/src/pipeline/persist.ts` (persistVideos upsert set)
 
@@ -1283,6 +1313,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ### Task 12: collector-worker.ts — stats 쿼터 로깅
 
 **Files:**
+
 - Modify: `packages/core/src/queue/collector-worker.ts`
 
 - [ ] **Step 1: stats 로깅에 쿼터 정보 추가**
@@ -1292,18 +1323,19 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 기존 stats 로깅 코드 뒤에 쿼터 정보 보강:
 
 ```typescript
-    const stats = collector.getLastRunStats?.();
-    if (stats && dbJobId) {
-      const quotaInfo = stats.quotaUsed != null
-        ? ` quota=${stats.quotaUsed}/${stats.quotaUsed + (stats.quotaRemaining ?? 0)}`
-        : '';
-      const fallbackInfo = stats.usedFallback ? ' [innertube-fallback]' : '';
-      await appendJobEvent(
-        dbJobId,
-        'info',
-        `[${source}] 종료: reason=${stats.endReason}${quotaInfo}${fallbackInfo} 분포=${JSON.stringify(stats.perDayCount)}`,
-      );
-    }
+const stats = collector.getLastRunStats?.();
+if (stats && dbJobId) {
+  const quotaInfo =
+    stats.quotaUsed != null
+      ? ` quota=${stats.quotaUsed}/${stats.quotaUsed + (stats.quotaRemaining ?? 0)}`
+      : '';
+  const fallbackInfo = stats.usedFallback ? ' [innertube-fallback]' : '';
+  await appendJobEvent(
+    dbJobId,
+    'info',
+    `[${source}] 종료: reason=${stats.endReason}${quotaInfo}${fallbackInfo} 분포=${JSON.stringify(stats.perDayCount)}`,
+  );
+}
 ```
 
 주의: 기존에 이 패턴이 이미 있다면 확장만 하고, 없다면 collect 종료 후 추가.
@@ -1378,29 +1410,32 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ## 파일 변경 요약
 
 ### 신규 파일 (4개)
-| 파일 | Task | 설명 |
-|------|------|------|
-| `packages/collectors/src/adapters/youtube-collector.ts` | 7 | 통합 수집기 (핵심) |
-| `packages/collectors/src/utils/youtube-quota.ts` | 4 | QuotaTracker |
-| `packages/collectors/src/utils/youtube-innertube.ts` | 5 | youtubei.js 래퍼 |
-| `packages/collectors/src/utils/youtube-transcript.ts` | 6 | 자막 수집 유틸 |
+
+| 파일                                                    | Task | 설명               |
+| ------------------------------------------------------- | ---- | ------------------ |
+| `packages/collectors/src/adapters/youtube-collector.ts` | 7    | 통합 수집기 (핵심) |
+| `packages/collectors/src/utils/youtube-quota.ts`        | 4    | QuotaTracker       |
+| `packages/collectors/src/utils/youtube-innertube.ts`    | 5    | youtubei.js 래퍼   |
+| `packages/collectors/src/utils/youtube-transcript.ts`   | 6    | 자막 수집 유틸     |
 
 ### 수정 파일 (10개)
-| 파일 | Task | 변경 |
-|------|------|------|
-| `packages/collectors/package.json` | 1 | 의존성 추가 |
-| `packages/collectors/src/adapters/base.ts` | 2 | Options/Stats 타입 확장 |
-| `packages/collectors/src/adapters/youtube-videos.ts` | 3 | YoutubeVideo 타입 확장 |
-| `packages/collectors/src/adapters/index.ts` | 8 | YoutubeCollector export |
-| `packages/core/src/db/schema/collections.ts` | 1 | videos 테이블 스키마 |
-| `packages/core/src/queue/worker-config.ts` | 8 | 수집기 등록 + progress 매핑 |
-| `packages/core/src/queue/flows.ts` | 9 | YouTube flow 소스명 전환 |
-| `packages/core/src/queue/pipeline-worker.ts` | 10 | normalize 단계 교체 |
-| `packages/core/src/pipeline/normalize.ts` | 11 | transcript 매핑 |
-| `packages/core/src/pipeline/persist.ts` | 11 | transcript upsert |
-| `packages/core/src/queue/collector-worker.ts` | 12 | stats 쿼터 로깅 |
+
+| 파일                                                 | Task | 변경                        |
+| ---------------------------------------------------- | ---- | --------------------------- |
+| `packages/collectors/package.json`                   | 1    | 의존성 추가                 |
+| `packages/collectors/src/adapters/base.ts`           | 2    | Options/Stats 타입 확장     |
+| `packages/collectors/src/adapters/youtube-videos.ts` | 3    | YoutubeVideo 타입 확장      |
+| `packages/collectors/src/adapters/index.ts`          | 8    | YoutubeCollector export     |
+| `packages/core/src/db/schema/collections.ts`         | 1    | videos 테이블 스키마        |
+| `packages/core/src/queue/worker-config.ts`           | 8    | 수집기 등록 + progress 매핑 |
+| `packages/core/src/queue/flows.ts`                   | 9    | YouTube flow 소스명 전환    |
+| `packages/core/src/queue/pipeline-worker.ts`         | 10   | normalize 단계 교체         |
+| `packages/core/src/pipeline/normalize.ts`            | 11   | transcript 매핑             |
+| `packages/core/src/pipeline/persist.ts`              | 11   | transcript upsert           |
+| `packages/core/src/queue/collector-worker.ts`        | 12   | stats 쿼터 로깅             |
 
 ### 의존성 순서 (Task 간)
+
 ```
 Task 1 (의존성+스키마)
   → Task 2 (타입 확장)
