@@ -12,14 +12,14 @@
 
 YouTube 수집기는 Data API v3 기반으로 기본 동작하지만, 다른 소스(네이버뉴스, 커뮤니티)와 비교해 여러 갭이 존재한다:
 
-| 갭 | 설명 |
-|----|------|
-| 댓글 분리 구조 | 다른 소스는 본문+댓글 일체형, YouTube만 별도 수집기 |
-| 대댓글 잘림 | `commentThreads.list`는 대댓글 5개까지만 반환, 추가 호출 없음 |
-| CollectionStats 미구현 | 종료 사유, 일자별 분포 등 통계 없음 |
-| 쿼터 관리 없음 | 10,000유닛 초과 시 무조건 실패 |
-| 자막 미수집 | 영상 내용 텍스트 분석 불가 |
-| 댓글 정렬 고정 | `relevance`만 지원, 시간순 불가 |
+| 갭                     | 설명                                                          |
+| ---------------------- | ------------------------------------------------------------- |
+| 댓글 분리 구조         | 다른 소스는 본문+댓글 일체형, YouTube만 별도 수집기           |
+| 대댓글 잘림            | `commentThreads.list`는 대댓글 5개까지만 반환, 추가 호출 없음 |
+| CollectionStats 미구현 | 종료 사유, 일자별 분포 등 통계 없음                           |
+| 쿼터 관리 없음         | 10,000유닛 초과 시 무조건 실패                                |
+| 자막 미수집            | 영상 내용 텍스트 분석 불가                                    |
+| 댓글 정렬 고정         | `relevance`만 지원, 시간순 불가                               |
 
 ### 목표
 
@@ -92,8 +92,8 @@ export interface YoutubeVideo {
   rawData: Record<string, unknown>;
 
   // 신규 필드
-  comments: YoutubeComment[];       // 일체형 댓글
-  transcript: string | null;         // 자막 텍스트 (없으면 null)
+  comments: YoutubeComment[]; // 일체형 댓글
+  transcript: string | null; // 자막 텍스트 (없으면 null)
 }
 ```
 
@@ -115,8 +115,8 @@ export interface CollectionOptions {
   };
 
   // 신규 필드
-  commentOrder?: 'relevance' | 'time';   // 댓글 정렬 (기본: 'relevance')
-  collectTranscript?: boolean;            // 자막 수집 여부 (기본: true)
+  commentOrder?: 'relevance' | 'time'; // 댓글 정렬 (기본: 'relevance')
+  collectTranscript?: boolean; // 자막 수집 여부 (기본: true)
 }
 ```
 
@@ -138,13 +138,13 @@ transcriptLang: text('transcript_lang'),           // 자막 언어 ('ko', 'en',
 파일: packages/collectors/src/utils/youtube-quota.ts
 ```
 
-| 메서드 | 설명 |
-|--------|------|
-| `track(operation, cost)` | API 호출 후 유닛 소모 기록 |
-| `getUsed()` | 현재 세션 누적 사용량 |
-| `getRemaining()` | 추정 잔여 쿼터 (일일 한도 - 사용량) |
+| 메서드                    | 설명                                |
+| ------------------------- | ----------------------------------- |
+| `track(operation, cost)`  | API 호출 후 유닛 소모 기록          |
+| `getUsed()`               | 현재 세션 누적 사용량               |
+| `getRemaining()`          | 추정 잔여 쿼터 (일일 한도 - 사용량) |
 | `isExhausted(threshold?)` | 잔여가 threshold(기본 500) 이하인지 |
-| `reset()` | 일일 리셋 (PT 자정 기준) |
+| `reset()`                 | 일일 리셋 (PT 자정 기준)            |
 
 ```typescript
 const QUOTA_COSTS = {
@@ -602,17 +602,21 @@ export async function fetchTranscript(videoId: string): Promise<{
 // 기존 CollectionStats에 YouTube 전용 필드 추가
 export interface CollectionStats {
   // 기존 공통 필드
-  endReason: 'maxItemsReached' | 'consecutiveOldThreshold' | 'noMoreResults'
-    | 'quotaExhausted' | 'pageEmptyOrBlocked';
+  endReason:
+    | 'maxItemsReached'
+    | 'consecutiveOldThreshold'
+    | 'noMoreResults'
+    | 'quotaExhausted'
+    | 'pageEmptyOrBlocked';
   lastPage: number;
   perDayCount: Record<string, number>;
   perDayCapSkip?: number;
   outOfRange?: number;
 
   // YouTube 전용 (optional)
-  quotaUsed?: number;           // API 쿼터 사용량
-  quotaRemaining?: number;      // 추정 잔여 쿼터
-  usedFallback?: boolean;       // youtubei.js fallback 사용 여부
+  quotaUsed?: number; // API 쿼터 사용량
+  quotaRemaining?: number; // 추정 잔여 쿼터
+  usedFallback?: boolean; // youtubei.js fallback 사용 여부
 }
 ```
 
@@ -625,6 +629,7 @@ export interface CollectionStats {
 기존 `collect-youtube-videos` + `normalize-youtube`(내부 댓글 수집) 2단계를 `collect-youtube` 1단계로 단순화.
 
 **변경 전**:
+
 ```
 normalize-youtube (pipeline 큐)
   └─ collect-youtube-videos (collectors 큐)
@@ -633,6 +638,7 @@ normalize-youtube (pipeline 큐)
 ```
 
 **변경 후**:
+
 ```
 normalize-youtube (pipeline 큐)
   └─ collect-youtube (collectors 큐)
@@ -648,7 +654,8 @@ if (enabledSources.includes('youtube')) {
     queueName: 'pipeline',
     data: {
       source: 'youtube',
-      flowId, dbJobId,
+      flowId,
+      dbJobId,
       startDate: params.startDate,
       endDate: params.endDate,
     },
@@ -658,13 +665,15 @@ if (enabledSources.includes('youtube')) {
         queueName: 'collectors',
         data: {
           ...params,
-          source: 'youtube',                    // 'youtube-videos' → 'youtube'
+          source: 'youtube', // 'youtube-videos' → 'youtube'
           maxItems: effective.youtubeVideos,
           maxItemsPerDay: perDayLimits?.youtubeVideos,
-          maxComments: limits.commentsPerItem,   // 영상당 댓글 한도
-          commentOrder: 'relevance',             // 기본값
-          collectTranscript: true,               // 자막 수집
-          flowId, dbJobId, reusePlan,
+          maxComments: limits.commentsPerItem, // 영상당 댓글 한도
+          commentOrder: 'relevance', // 기본값
+          collectTranscript: true, // 자막 수집
+          flowId,
+          dbJobId,
+          reusePlan,
         },
       },
     ],
@@ -750,12 +759,15 @@ function countBySourceType(source: string, items: unknown[]): Record<string, num
 
 // stats 로깅
 if (stats) {
-  const quotaInfo = stats.quotaUsed != null
-    ? ` quota=${stats.quotaUsed}/${stats.quotaUsed + (stats.quotaRemaining ?? 0)}`
-    : '';
+  const quotaInfo =
+    stats.quotaUsed != null
+      ? ` quota=${stats.quotaUsed}/${stats.quotaUsed + (stats.quotaRemaining ?? 0)}`
+      : '';
   const fallbackInfo = stats.usedFallback ? ' [innertube-fallback]' : '';
-  appendJobEvent(dbJobId, 'info',
-    `[${source}] 종료: reason=${stats.endReason}${quotaInfo}${fallbackInfo} 분포=${JSON.stringify(stats.perDayCount)}`
+  appendJobEvent(
+    dbJobId,
+    'info',
+    `[${source}] 종료: reason=${stats.endReason}${quotaInfo}${fallbackInfo} 분포=${JSON.stringify(stats.perDayCount)}`,
   );
 }
 ```
@@ -783,10 +795,10 @@ export function registerAllCollectors(): void {
 
 ## 7. 새 의존성
 
-| 패키지 | 버전 | 용도 | 크기 |
-|--------|------|------|------|
-| `youtubei.js` | ^17.x | InnerTube API fallback | ~2.5MB |
-| `youtube-transcript` | ^1.3.x | 자막 추출 | ~50KB |
+| 패키지               | 버전   | 용도                   | 크기   |
+| -------------------- | ------ | ---------------------- | ------ |
+| `youtubei.js`        | ^17.x  | InnerTube API fallback | ~2.5MB |
+| `youtube-transcript` | ^1.3.x | 자막 추출              | ~50KB  |
 
 설치: `pnpm add youtubei.js youtube-transcript -F @ai-signalcraft/collectors`
 
@@ -795,28 +807,31 @@ export function registerAllCollectors(): void {
 ## 8. 파일 변경 목록
 
 ### 신규 파일
-| 파일 | 설명 |
-|------|------|
+
+| 파일                                                    | 설명               |
+| ------------------------------------------------------- | ------------------ |
 | `packages/collectors/src/adapters/youtube-collector.ts` | 통합 수집기 (핵심) |
-| `packages/collectors/src/utils/youtube-quota.ts` | QuotaTracker |
-| `packages/collectors/src/utils/youtube-innertube.ts` | youtubei.js 래퍼 |
-| `packages/collectors/src/utils/youtube-transcript.ts` | 자막 수집 유틸 |
+| `packages/collectors/src/utils/youtube-quota.ts`        | QuotaTracker       |
+| `packages/collectors/src/utils/youtube-innertube.ts`    | youtubei.js 래퍼   |
+| `packages/collectors/src/utils/youtube-transcript.ts`   | 자막 수집 유틸     |
 
 ### 수정 파일
-| 파일 | 변경 내용 |
-|------|-----------|
-| `packages/collectors/src/adapters/youtube-videos.ts` | `YoutubeVideo` 타입에 `comments`, `transcript` 필드 추가 |
-| `packages/collectors/src/adapters/youtube-comments.ts` | 대댓글 완전 수집 로직 추가 (refetchCommentsFor 전용) |
-| `packages/collectors/src/adapters/base.ts` | `CollectionOptions`에 `commentOrder`, `collectTranscript` 추가; `CollectionStats`에 쿼터 필드 추가 |
-| `packages/core/src/queue/flows.ts` | YouTube flow 소스명 변경 + 옵션 전달 |
-| `packages/core/src/queue/pipeline-worker.ts` | normalize-youtube 댓글 수집 로직 제거, 댓글 분리 로직으로 대체 |
-| `packages/core/src/queue/collector-worker.ts` | youtube 소스 카운트 + stats 쿼터 로깅 |
-| `packages/core/src/queue/worker-config.ts` | YoutubeCollector 등록 |
-| `packages/core/src/db/schema/collections.ts` | videos 테이블에 transcript, transcriptLang 컬럼 추가 |
-| `packages/core/src/pipeline/normalize.ts` | normalizeYoutubeVideo에 transcript 매핑 |
-| `packages/core/src/pipeline/persist.ts` | transcript upsert 처리 |
+
+| 파일                                                   | 변경 내용                                                                                          |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| `packages/collectors/src/adapters/youtube-videos.ts`   | `YoutubeVideo` 타입에 `comments`, `transcript` 필드 추가                                           |
+| `packages/collectors/src/adapters/youtube-comments.ts` | 대댓글 완전 수집 로직 추가 (refetchCommentsFor 전용)                                               |
+| `packages/collectors/src/adapters/base.ts`             | `CollectionOptions`에 `commentOrder`, `collectTranscript` 추가; `CollectionStats`에 쿼터 필드 추가 |
+| `packages/core/src/queue/flows.ts`                     | YouTube flow 소스명 변경 + 옵션 전달                                                               |
+| `packages/core/src/queue/pipeline-worker.ts`           | normalize-youtube 댓글 수집 로직 제거, 댓글 분리 로직으로 대체                                     |
+| `packages/core/src/queue/collector-worker.ts`          | youtube 소스 카운트 + stats 쿼터 로깅                                                              |
+| `packages/core/src/queue/worker-config.ts`             | YoutubeCollector 등록                                                                              |
+| `packages/core/src/db/schema/collections.ts`           | videos 테이블에 transcript, transcriptLang 컬럼 추가                                               |
+| `packages/core/src/pipeline/normalize.ts`              | normalizeYoutubeVideo에 transcript 매핑                                                            |
+| `packages/core/src/pipeline/persist.ts`                | transcript upsert 처리                                                                             |
 
 ### 삭제 없음
+
 - `YoutubeVideosCollector`, `YoutubeCommentsCollector`는 삭제하지 않음
 - `YoutubeCommentsCollector`는 `refetchCommentsFor` 전용으로 유지
 - `YoutubeVideosCollector`는 deprecated 마킹 후 향후 제거
@@ -850,30 +865,30 @@ export function registerAllCollectors(): void {
 
 ## 10. 에러 처리
 
-| 에러 | 처리 |
-|------|------|
-| API 키 미설정 (`YOUTUBE_API_KEY` 없음) | 경고 로그 + youtubei.js로 즉시 전환 |
-| 403 (댓글 비활성화) | 해당 영상 댓글 건너뛰기, 영상 메타데이터는 유지 |
-| 403 (쿼터 초과) | QuotaTracker가 감지 → youtubei.js 전환 |
-| 자막 없음 | `transcript: null`로 설정, 에러 아님 |
-| youtubei.js 실패 | 경고 로그 + 해당 영상 건너뛰기 (부분 실패 허용) |
-| 네트워크 타임아웃 | 3회 재시도 후 건너뛰기 |
+| 에러                                   | 처리                                            |
+| -------------------------------------- | ----------------------------------------------- |
+| API 키 미설정 (`YOUTUBE_API_KEY` 없음) | 경고 로그 + youtubei.js로 즉시 전환             |
+| 403 (댓글 비활성화)                    | 해당 영상 댓글 건너뛰기, 영상 메타데이터는 유지 |
+| 403 (쿼터 초과)                        | QuotaTracker가 감지 → youtubei.js 전환          |
+| 자막 없음                              | `transcript: null`로 설정, 에러 아님            |
+| youtubei.js 실패                       | 경고 로그 + 해당 영상 건너뛰기 (부분 실패 허용) |
+| 네트워크 타임아웃                      | 3회 재시도 후 건너뛰기                          |
 
 ---
 
 ## 11. 테스트 계획
 
-| 테스트 | 검증 사항 |
-|--------|-----------|
-| 일자별 분할 수집 | 10일 기간, perDay 모드 → 각 일자 cap 미초과 확인 |
-| 대댓글 완전 수집 | totalReplyCount > 5인 스레드 → comments.list로 전량 수집 |
-| 쿼터 추적 | 100회 search.list 후 isExhausted() === true |
-| youtubei.js fallback | 쿼터 소진 후 자동 전환 → 수집 계속 |
-| 자막 수집 | 한국어 자막 우선 → 없으면 기본 언어 → 없으면 null |
-| 댓글 비활성화 영상 | 403 → graceful skip, 영상 데이터는 유지 |
-| CollectionStats | endReason, perDayCount, quotaUsed 정확성 |
-| reusePlan | skipUrls → 스킵, refetchCommentsFor → 댓글만 재수집 |
-| 정규화 → persist | transcript 컬럼 upsert 확인 |
+| 테스트               | 검증 사항                                                |
+| -------------------- | -------------------------------------------------------- |
+| 일자별 분할 수집     | 10일 기간, perDay 모드 → 각 일자 cap 미초과 확인         |
+| 대댓글 완전 수집     | totalReplyCount > 5인 스레드 → comments.list로 전량 수집 |
+| 쿼터 추적            | 100회 search.list 후 isExhausted() === true              |
+| youtubei.js fallback | 쿼터 소진 후 자동 전환 → 수집 계속                       |
+| 자막 수집            | 한국어 자막 우선 → 없으면 기본 언어 → 없으면 null        |
+| 댓글 비활성화 영상   | 403 → graceful skip, 영상 데이터는 유지                  |
+| CollectionStats      | endReason, perDayCount, quotaUsed 정확성                 |
+| reusePlan            | skipUrls → 스킵, refetchCommentsFor → 댓글만 재수집      |
+| 정규화 → persist     | transcript 컬럼 upsert 확인                              |
 
 ---
 

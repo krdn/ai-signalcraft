@@ -30,13 +30,13 @@ sentimentScore: real('sentiment_score'), // 0~1 확신도, NULL
 
 `apps/collector/src/services/sentiment.ts` — 신규 파일:
 
-| 컴포넌트 | 출처 |
-|---|---|
-| `initSentiment()` | core `sentiment-classifier.ts` 재사용 |
-| `classifySentiment()` | 동일 (배치 50, 타임아웃 30초) |
-| `normalizeSentiment()` | 동일 (5 star → 3 label) |
-| 한국어 보정 | core `korean-sentiment-rules.ts` 복사 |
-| 반어/조롱 보정 | core `sarcasm-postprocess.ts` 복사 |
+| 컴포넌트               | 출처                                  |
+| ---------------------- | ------------------------------------- |
+| `initSentiment()`      | core `sentiment-classifier.ts` 재사용 |
+| `classifySentiment()`  | 동일 (배치 50, 타임아웃 30초)         |
+| `normalizeSentiment()` | 동일 (5 star → 3 label)               |
+| 한국어 보정            | core `korean-sentiment-rules.ts` 복사 |
+| 반어/조롱 보정         | core `sarcasm-postprocess.ts` 복사    |
 
 초기화: executor 첫 호출 시 lazy init (embedding.ts와 동일 패턴).
 메모리: 워커당 ~120MB 증가 (BERT 모델).
@@ -56,6 +56,7 @@ chunk 수신 → mapToRawItem → embedPassages → classifySentiment → INSERT
 ### 4. UI 표시
 
 **LiveRunFeed**: 진행 요약에 감정 분포 추가
+
 ```
 신규 기사 42 / 댓글 186 · 긍정 58% 부정 22% 중립 20%
 ```
@@ -68,12 +69,12 @@ Redis progress에 감정 카운트 누적하여 실시간 폴링에 활용.
 
 ### 5. 에러 처리
 
-| 상황 | 처리 |
-|---|---|
+| 상황             | 처리                              |
+| ---------------- | --------------------------------- |
 | 모델 초기화 실패 | warn 로그 후 스킵, sentiment=NULL |
-| 배치 타임아웃 | 해당 배치 neutral/score 0 |
-| 전체 실패 | warn 로그, 수집 정상 완료 |
-| cancellation | 배치 경계에서 즉시 중단 |
+| 배치 타임아웃    | 해당 배치 neutral/score 0         |
+| 전체 실패        | warn 로그, 수집 정상 완료         |
+| cancellation     | 배치 경계에서 즉시 중단           |
 
 ### 6. 마이그레이션
 

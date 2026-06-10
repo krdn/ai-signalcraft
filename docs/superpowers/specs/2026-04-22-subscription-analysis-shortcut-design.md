@@ -38,6 +38,7 @@
 **파일:** `packages/core/src/analysis/data-loader.ts`
 
 `loadAnalysisInputViaCollector()` 수정:
+
 - `collection_jobs.options`에서 `subscriptionId` 읽기
 - `loadAnalysisInputFromCollector()`에 `subscriptionId` 전달
 - collector API가 해당 구독 데이터만 필터링해서 반환
@@ -108,16 +109,16 @@ apps/web/src/components/subscriptions/analyze/
 
 ## 3. 변경 파일 요약
 
-| 파일 | 변경 내용 |
-|------|----------|
-| `apps/web/src/server/trpc/routers/analysis.ts` | `triggerSubscription` mutation 추가, 기존 trigger에서 subscriptionId 분기 제거 |
-| `packages/core/src/queue/flows.ts` | `triggerSubscriptionAnalysis()` 신규 함수 |
-| `packages/core/src/analysis/data-loader.ts` | `loadAnalysisInputViaCollector()`에 subscriptionId 전달 |
-| `packages/core/src/analysis/pipeline-orchestrator.ts` | collector loader 조건부 사용, Stage 0 스킵 로직 |
-| `packages/core/src/queue/analysis-worker.ts` | 잡 데이터에서 useCollectorLoader 읽기 |
-| `apps/web/src/app/subscriptions/analyze/page.tsx` | 신규: 마법사 페이지 |
-| `apps/web/src/components/subscriptions/analyze/*` | 신규: 5개 마법사 컴포넌트 |
-| `apps/web/src/app/subscriptions/layout.tsx` | 내비게이션에 "분석 실행" 링크 추가 |
+| 파일                                                  | 변경 내용                                                                      |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `apps/web/src/server/trpc/routers/analysis.ts`        | `triggerSubscription` mutation 추가, 기존 trigger에서 subscriptionId 분기 제거 |
+| `packages/core/src/queue/flows.ts`                    | `triggerSubscriptionAnalysis()` 신규 함수                                      |
+| `packages/core/src/analysis/data-loader.ts`           | `loadAnalysisInputViaCollector()`에 subscriptionId 전달                        |
+| `packages/core/src/analysis/pipeline-orchestrator.ts` | collector loader 조건부 사용, Stage 0 스킵 로직                                |
+| `packages/core/src/queue/analysis-worker.ts`          | 잡 데이터에서 useCollectorLoader 읽기                                          |
+| `apps/web/src/app/subscriptions/analyze/page.tsx`     | 신규: 마법사 페이지                                                            |
+| `apps/web/src/components/subscriptions/analyze/*`     | 신규: 5개 마법사 컴포넌트                                                      |
+| `apps/web/src/app/subscriptions/layout.tsx`           | 내비게이션에 "분석 실행" 링크 추가                                             |
 
 ---
 

@@ -188,8 +188,7 @@ export async function evaluateManipulationAlerts(input: EvaluateInput): Promise<
     // 3. 구독 정보 (collector tRPC) — 메시지의 keyword 표시용
     let keyword: string | null = null;
     try {
-      const sub = await getCollectorClient()
-        .subscriptions.get.query({ id: input.subscriptionId });
+      const sub = await getCollectorClient().subscriptions.get.query({ id: input.subscriptionId });
       keyword = (sub as { keyword?: string } | null)?.keyword ?? null;
     } catch (err) {
       log.warn(`collector 구독 조회 실패 (subId=${input.subscriptionId}):`, err);
@@ -255,7 +254,9 @@ export async function evaluateManipulationAlerts(input: EvaluateInput): Promise<
         .set({ lastTriggeredAt: new Date(), updatedAt: new Date() })
         .where(eq(manipulationAlertRules.id, rule.id));
 
-      log.info(`rule ${rule.id} 발화 완료: score=${run.manipulationScore} threshold=${rule.scoreThreshold}`);
+      log.info(
+        `rule ${rule.id} 발화 완료: score=${run.manipulationScore} threshold=${rule.scoreThreshold}`,
+      );
     }
   } catch (err) {
     log.error('manipulation 알림 평가 실패:', err);
@@ -406,16 +407,16 @@ export const manipulationAlertsRouter = router({
 
 ### `<RuleEditorDialog>` 폼 필드
 
-| 필드 | 타입 | 검증 |
-|------|------|------|
-| 이름 | text input | 1-100자 |
-| 활성화 | switch | bool |
-| 점수 임계값 | number input | 0-100, step 0.1 |
-| 쿨다운(분) | number input | 1-10080, default 360 |
-| 채널 타입 | radio (Slack \| webhook) | discriminated union |
-| **Slack 선택 시** Slack webhook URL | text input | `https://hooks.slack.com/` 시작 |
-| **Webhook 선택 시** URL | text input | URL 형식 |
-| **Webhook 선택 시** Headers | key/value 목록 (선택) | 옵션 |
+| 필드                                | 타입                     | 검증                            |
+| ----------------------------------- | ------------------------ | ------------------------------- |
+| 이름                                | text input               | 1-100자                         |
+| 활성화                              | switch                   | bool                            |
+| 점수 임계값                         | number input             | 0-100, step 0.1                 |
+| 쿨다운(분)                          | number input             | 1-10080, default 360            |
+| 채널 타입                           | radio (Slack \| webhook) | discriminated union             |
+| **Slack 선택 시** Slack webhook URL | text input               | `https://hooks.slack.com/` 시작 |
+| **Webhook 선택 시** URL             | text input               | URL 형식                        |
+| **Webhook 선택 시** Headers         | key/value 목록 (선택)    | 옵션                            |
 
 폼 제출 → `manipulationAlerts.create` 또는 `update` mutate → useQuery invalidate → 카드 갱신.
 
@@ -444,29 +445,29 @@ APP_BASE_URL=https://signalcraft.example.com
 
 ## 권한·격리 모델
 
-| 영역 | 검증 |
-|------|------|
-| `listBySubscription` | `verifySubscriptionOwnership(ctx, subscriptionId)` |
-| `create` | `verifySubscriptionOwnership(ctx, input.subscriptionId)` |
-| `update` | rule 조회 → 그 rule의 subscriptionId로 검증 |
-| `delete` | 동일 |
-| Slack URL whitelist | Zod에서 `https://hooks.slack.com/`로 시작 강제 (SSRF 1차 방어) |
-| Webhook URL 검증 | Zod URL 검증만 (사용자 책임) |
-| Webhook headers XSS | JSON으로 그대로 전송, render 없음 |
+| 영역                 | 검증                                                           |
+| -------------------- | -------------------------------------------------------------- |
+| `listBySubscription` | `verifySubscriptionOwnership(ctx, subscriptionId)`             |
+| `create`             | `verifySubscriptionOwnership(ctx, input.subscriptionId)`       |
+| `update`             | rule 조회 → 그 rule의 subscriptionId로 검증                    |
+| `delete`             | 동일                                                           |
+| Slack URL whitelist  | Zod에서 `https://hooks.slack.com/`로 시작 강제 (SSRF 1차 방어) |
+| Webhook URL 검증     | Zod URL 검증만 (사용자 책임)                                   |
+| Webhook headers XSS  | JSON으로 그대로 전송, render 없음                              |
 
 > **참고**: webhook URL은 사용자가 임의 도메인을 입력 가능. SSRF 위협이 있으나 (a) 인증된 사용자만 접근, (b) 5초 timeout으로 영향 제한, (c) 응답 내용을 화면에 노출하지 않음으로 mitigate. 운영 추가 정책(allowlist 등)은 다음 spec.
 
 ## 에러 처리
 
-| 시나리오 | 처리 |
-|----------|------|
-| `manipulation_alert_rules` 행 없음 | EmptyState ("이 구독에 알림 규칙이 없습니다.") |
-| Slack webhook 4xx/5xx | `sendNotification` 내부 try/catch → log only. lastTriggeredAt은 UPDATE됨 |
-| Slack/webhook timeout (5초 초과) | `AbortError` → log only |
-| `APP_BASE_URL` 미설정 | localhost 폴백 + warn |
-| evaluator 자체 throw | 외부 try/catch로 수집 → log. stage5 흐름 영향 없음 |
-| run 조회 결과 없음 (race) | warn log + return |
-| Form 제출 권한 거부 | `verifySubscriptionOwnership`이 NOT_FOUND throw → toast |
+| 시나리오                           | 처리                                                                     |
+| ---------------------------------- | ------------------------------------------------------------------------ |
+| `manipulation_alert_rules` 행 없음 | EmptyState ("이 구독에 알림 규칙이 없습니다.")                           |
+| Slack webhook 4xx/5xx              | `sendNotification` 내부 try/catch → log only. lastTriggeredAt은 UPDATE됨 |
+| Slack/webhook timeout (5초 초과)   | `AbortError` → log only                                                  |
+| `APP_BASE_URL` 미설정              | localhost 폴백 + warn                                                    |
+| evaluator 자체 throw               | 외부 try/catch로 수집 → log. stage5 흐름 영향 없음                       |
+| run 조회 결과 없음 (race)          | warn log + return                                                        |
+| Form 제출 권한 거부                | `verifySubscriptionOwnership`이 NOT_FOUND throw → toast                  |
 
 ## 테스트
 
@@ -504,34 +505,34 @@ APP_BASE_URL=https://signalcraft.example.com
 
 ## 파일 영향 요약
 
-| 카테고리 | 파일 수 | 라인 (추정) |
-|----------|---------|-------------|
-| **DB schema 추가** (`manipulation.ts`에 테이블 + types) | 1 (수정) | +60 |
-| **신규 evaluator** | 1 | ~130 |
-| **`channels.ts` timeout 적용** | 1 (수정) | +6 |
-| **stage5.ts evaluator 호출** | 1 (수정) | +6 |
-| **신규 router + Zod 스키마** | 1 | ~120 |
-| **router 등록** | 1 (수정) | +2 |
-| **신규 UI 컴포넌트** (card + editor dialog) | 2 | ~300 |
-| **구독 페이지 마운트** | 1 (수정) | +5 |
-| **테스트** (evaluator 5 + router 5 + channels 1) | 2~3 | ~360 |
-| **`.env.example`** | 1 (수정) | +3 |
-| **합계** | ~12 | ~970 |
+| 카테고리                                                | 파일 수  | 라인 (추정) |
+| ------------------------------------------------------- | -------- | ----------- |
+| **DB schema 추가** (`manipulation.ts`에 테이블 + types) | 1 (수정) | +60         |
+| **신규 evaluator**                                      | 1        | ~130        |
+| **`channels.ts` timeout 적용**                          | 1 (수정) | +6          |
+| **stage5.ts evaluator 호출**                            | 1 (수정) | +6          |
+| **신규 router + Zod 스키마**                            | 1        | ~120        |
+| **router 등록**                                         | 1 (수정) | +2          |
+| **신규 UI 컴포넌트** (card + editor dialog)             | 2        | ~300        |
+| **구독 페이지 마운트**                                  | 1 (수정) | +5          |
+| **테스트** (evaluator 5 + router 5 + channels 1)        | 2~3      | ~360        |
+| **`.env.example`**                                      | 1 (수정) | +3          |
+| **합계**                                                | ~12      | ~970        |
 
 ## 위험 요소
 
-| 위험 | 영향 | 완화 |
-|------|------|------|
-| webhook 호출이 worker를 멈춤 | 높음 | 5초 timeout 강제 (`AbortSignal.timeout(5000)`) |
-| `APP_BASE_URL` 미설정으로 잘못된 링크 | 중 | warn 로그 + localhost 폴백, `.env.example` 명시 |
-| Slack URL 이외 도메인 입력 (오타) | 낮음 | Zod의 `startsWith('https://hooks.slack.com/')` |
-| evaluator 자체 예외로 stage5 흐름 멈춤 | 중 | 함수 전체 try/catch + `void` 호출 |
-| 동시 worker가 같은 rule 평가 → 중복 발송 | 낮음 | manipulation은 잡 단위 큐라 동일 subscription 동시 실행 가능성 매우 낮음. cooldown UPDATE가 대략적 가드 역할 |
-| webhook URL SSRF | 중 | 인증된 사용자만 접근, 5초 timeout, 응답 미노출. 운영 allowlist는 다음 spec |
-| sendNotification이 발송 실패를 throw하지 않음 → 실패해도 cooldown 잠김 | 낮음 | 다음 run에서 임계 초과면 cooldown 경과 후 자동 재시도. 운영 영향 6시간 |
-| email 토글 노출 안 됨 | 낮음 | UI에서 email 옵션 미렌더링. 사용자가 기대하지 않게 됨 |
-| 구독이 collector DB에서 삭제되어도 manipulation_alert_rules는 남음 | 낮음 | FK 불가 (DB 분리). 발화 시 collector 조회 실패 → keyword=null로 graceful 진행. 운영 cleanup은 향후 작업 |
-| collector tRPC 호출 실패가 evaluator를 죽임 | 낮음 | try/catch로 감싸 keyword=null fallback |
+| 위험                                                                   | 영향 | 완화                                                                                                         |
+| ---------------------------------------------------------------------- | ---- | ------------------------------------------------------------------------------------------------------------ |
+| webhook 호출이 worker를 멈춤                                           | 높음 | 5초 timeout 강제 (`AbortSignal.timeout(5000)`)                                                               |
+| `APP_BASE_URL` 미설정으로 잘못된 링크                                  | 중   | warn 로그 + localhost 폴백, `.env.example` 명시                                                              |
+| Slack URL 이외 도메인 입력 (오타)                                      | 낮음 | Zod의 `startsWith('https://hooks.slack.com/')`                                                               |
+| evaluator 자체 예외로 stage5 흐름 멈춤                                 | 중   | 함수 전체 try/catch + `void` 호출                                                                            |
+| 동시 worker가 같은 rule 평가 → 중복 발송                               | 낮음 | manipulation은 잡 단위 큐라 동일 subscription 동시 실행 가능성 매우 낮음. cooldown UPDATE가 대략적 가드 역할 |
+| webhook URL SSRF                                                       | 중   | 인증된 사용자만 접근, 5초 timeout, 응답 미노출. 운영 allowlist는 다음 spec                                   |
+| sendNotification이 발송 실패를 throw하지 않음 → 실패해도 cooldown 잠김 | 낮음 | 다음 run에서 임계 초과면 cooldown 경과 후 자동 재시도. 운영 영향 6시간                                       |
+| email 토글 노출 안 됨                                                  | 낮음 | UI에서 email 옵션 미렌더링. 사용자가 기대하지 않게 됨                                                        |
+| 구독이 collector DB에서 삭제되어도 manipulation_alert_rules는 남음     | 낮음 | FK 불가 (DB 분리). 발화 시 collector 조회 실패 → keyword=null로 graceful 진행. 운영 cleanup은 향후 작업      |
+| collector tRPC 호출 실패가 evaluator를 죽임                            | 낮음 | try/catch로 감싸 keyword=null fallback                                                                       |
 
 ## 마이그레이션
 

@@ -12,24 +12,25 @@
 
 ## File Structure
 
-| Action | File | Responsibility |
-|---|---|---|
-| Modify | `apps/collector/src/db/schema/items.ts` | sentiment, sentimentScore 컬럼 추가 |
-| Create | `apps/collector/src/services/sentiment.ts` | BERT 감정 분류기 + 한국어 보정 (core에서 복사) |
-| Modify | `apps/collector/src/queue/executor.ts` | 청크 루프에 감정 분석 삽입 |
-| Create | `apps/collector/src/services/sentiment.test.ts` | 감정 서비스 단위 테스트 |
-| Modify | `apps/collector/src/server/trpc/runs.ts` | runSentimentBreakdown 프로시저 추가 |
-| Create | `apps/collector/src/scripts/backfill-sentiment.ts` | 과거 데이터 감정 backfill 스크립트 |
-| Modify | `apps/collector/src/server/trpc/runs.ts` | backfill-sentiment tRPC 프로시저 추가 |
-| Modify | `apps/web/src/server/trpc/routers/subscriptions.ts` | runSentimentBreakdown 프록시 추가 |
-| Modify | `apps/web/src/components/subscriptions/run-progress-inline.tsx` | 진행 요약에 감정 표시 |
-| Modify | `apps/web/src/components/subscriptions/recent-runs-log.tsx` | 완료된 run 행에 감정 아이콘 |
+| Action | File                                                            | Responsibility                                 |
+| ------ | --------------------------------------------------------------- | ---------------------------------------------- |
+| Modify | `apps/collector/src/db/schema/items.ts`                         | sentiment, sentimentScore 컬럼 추가            |
+| Create | `apps/collector/src/services/sentiment.ts`                      | BERT 감정 분류기 + 한국어 보정 (core에서 복사) |
+| Modify | `apps/collector/src/queue/executor.ts`                          | 청크 루프에 감정 분석 삽입                     |
+| Create | `apps/collector/src/services/sentiment.test.ts`                 | 감정 서비스 단위 테스트                        |
+| Modify | `apps/collector/src/server/trpc/runs.ts`                        | runSentimentBreakdown 프로시저 추가            |
+| Create | `apps/collector/src/scripts/backfill-sentiment.ts`              | 과거 데이터 감정 backfill 스크립트             |
+| Modify | `apps/collector/src/server/trpc/runs.ts`                        | backfill-sentiment tRPC 프로시저 추가          |
+| Modify | `apps/web/src/server/trpc/routers/subscriptions.ts`             | runSentimentBreakdown 프록시 추가              |
+| Modify | `apps/web/src/components/subscriptions/run-progress-inline.tsx` | 진행 요약에 감정 표시                          |
+| Modify | `apps/web/src/components/subscriptions/recent-runs-log.tsx`     | 완료된 run 행에 감정 아이콘                    |
 
 ---
 
 ### Task 1: raw_items 스키마에 sentiment 컬럼 추가
 
 **Files:**
+
 - Modify: `apps/collector/src/db/schema/items.ts`
 
 - [ ] **Step 1: 컬럼 추가**
@@ -67,6 +68,7 @@ git commit -m "feat(db): raw_items에 sentiment, sentiment_score 컬럼 추가"
 ### Task 2: 감정 분석 서비스 구현
 
 **Files:**
+
 - Create: `apps/collector/src/services/sentiment.ts`
 - Create: `apps/collector/src/services/sentiment.test.ts`
 
@@ -76,11 +78,7 @@ git commit -m "feat(db): raw_items에 sentiment, sentiment_score 컬럼 추가"
 
 ```typescript
 import { describe, it, expect } from 'vitest';
-import {
-  normalizeSentiment,
-  classifySentimentFromTexts,
-  type SentimentResult,
-} from './sentiment';
+import { normalizeSentiment, classifySentimentFromTexts, type SentimentResult } from './sentiment';
 
 describe('normalizeSentiment', () => {
   it('1 star → negative', () => {
@@ -272,14 +270,14 @@ async function classifyRaw(texts: string[], batchSize = 50): Promise<SentimentRe
         ? (rawResults as Array<Array<{ label: string; score: number }>>).map((r) =>
             normalizeSentiment(r[0]),
           )
-        : (rawResults as Array<{ label: string; score: number }>).map((r) =>
-            normalizeSentiment(r),
-          );
+        : (rawResults as Array<{ label: string; score: number }>).map((r) => normalizeSentiment(r));
 
       results.push(...normalized);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.warn(`[sentiment] 배치 ${Math.floor(i / batchSize) + 1} 실패 (${batch.length}건): ${msg}`);
+      console.warn(
+        `[sentiment] 배치 ${Math.floor(i / batchSize) + 1} 실패 (${batch.length}건): ${msg}`,
+      );
       results.push(...batch.map(() => ({ label: 'neutral' as const, score: 0 })));
     }
   }
@@ -290,13 +288,41 @@ async function classifyRaw(texts: string[], batchSize = 50): Promise<SentimentRe
 // ─── 한국어 보정 규칙 ────────────────────────────────────────────
 
 const STRONG_POSITIVE = [
-  '최고', '훌륭', '대단', '감동', '고맙', '감사합', '응원', '사랑', '멋지',
-  '잘했', '성공', '좋아', '훌륭한', '기쁘', '행복',
+  '최고',
+  '훌륭',
+  '대단',
+  '감동',
+  '고맙',
+  '감사합',
+  '응원',
+  '사랑',
+  '멋지',
+  '잘했',
+  '성공',
+  '좋아',
+  '훌륭한',
+  '기쁘',
+  '행복',
 ];
 
 const STRONG_NEGATIVE = [
-  '최악', '쓰레기', '개같', '망함', '실패', '싫어', '혐오', '분노', '짜증',
-  '역겹', '한심', '어이없', '빡친', '극혐', '화나', '불쾌', '망했',
+  '최악',
+  '쓰레기',
+  '개같',
+  '망함',
+  '실패',
+  '싫어',
+  '혐오',
+  '분노',
+  '짜증',
+  '역겹',
+  '한심',
+  '어이없',
+  '빡친',
+  '극혐',
+  '화나',
+  '불쾌',
+  '망했',
 ];
 
 const NEGATION_WORDS = ['안', '못', '없', '아니', '불', '비'];
@@ -323,9 +349,11 @@ export function applyKoreanSentimentRules(text: string, result: SentimentResult)
   const isQuestion = QUESTIONING_PATTERNS.test(text);
 
   if (hasNeg && !hasPos) return { label: 'negative', score: Math.max(result.score, 0.75) };
-  if (hasPos && !hasNeg && !negatedPos) return { label: 'positive', score: Math.max(result.score, 0.7) };
+  if (hasPos && !hasNeg && !negatedPos)
+    return { label: 'positive', score: Math.max(result.score, 0.7) };
   if (negatedPos) return { label: 'negative', score: Math.max(result.score, 0.65) };
-  if (isQuestion && result.score < 0.75) return { label: 'neutral', score: Math.max(0.5, result.score * 0.8) };
+  if (isQuestion && result.score < 0.75)
+    return { label: 'neutral', score: Math.max(0.5, result.score * 0.8) };
 
   return result;
 }
@@ -333,7 +361,13 @@ export function applyKoreanSentimentRules(text: string, result: SentimentResult)
 // ─── 반어/조롱 보정 ──────────────────────────────────────────────
 
 const FLIP_MARKERS = ['[SARCASM]'];
-const STRENGTHEN_NEGATIVE_MARKERS = ['[NEGATIVE]', '[CRITICAL]', '[WEAK_APOLOGY]', '[DEFLECTION]', '[DISTRUST]'];
+const STRENGTHEN_NEGATIVE_MARKERS = [
+  '[NEGATIVE]',
+  '[CRITICAL]',
+  '[WEAK_APOLOGY]',
+  '[DEFLECTION]',
+  '[DISTRUST]',
+];
 const REDUCE_CONFIDENCE_MARKERS = ['[SARCASM?]'];
 
 export function applySarcasmAdjustment(text: string, result: SentimentResult): SentimentResult {
@@ -393,6 +427,7 @@ git commit -m "feat(collector): 감정 분석 서비스 추가 (BERT + 한국어
 ### Task 3: executor에 감정 분석 통합
 
 **Files:**
+
 - Modify: `apps/collector/src/queue/executor.ts`
 
 - [ ] **Step 1: import 추가**
@@ -408,25 +443,25 @@ import { classifySentimentFromTexts } from '../services/sentiment';
 기존 임베딩 try/catch 블록(`// 임베딩 생성 — 실패해도 수집은 계속`)의 닫힌 괄호 `}` 바로 뒤에, `const result = await db.insert(rawItems)` 이전에 삽입:
 
 ```typescript
-      // 감정 분석 — 임베딩용 텍스트 재사용, 실패해도 수집은 계속
-      try {
-        if (texts.some((t) => t.length > 0)) {
-          const sentiments = await classifySentimentFromTexts(texts);
-          rows.forEach((r, i) => {
-            if (texts[i].length > 0 && sentiments[i]) {
-              r.sentiment = sentiments[i].label;
-              r.sentimentScore = sentiments[i].score;
-            }
-          });
-        }
-      } catch (sentimentErr) {
-        if (sentimentErr instanceof CancelledError) throw sentimentErr;
-        console.warn(
-          `[executor:${source}] sentiment analysis failed (continuing without): ${
-            sentimentErr instanceof Error ? sentimentErr.message : String(sentimentErr)
-          }`,
-        );
+// 감정 분석 — 임베딩용 텍스트 재사용, 실패해도 수집은 계속
+try {
+  if (texts.some((t) => t.length > 0)) {
+    const sentiments = await classifySentimentFromTexts(texts);
+    rows.forEach((r, i) => {
+      if (texts[i].length > 0 && sentiments[i]) {
+        r.sentiment = sentiments[i].label;
+        r.sentimentScore = sentiments[i].score;
       }
+    });
+  }
+} catch (sentimentErr) {
+  if (sentimentErr instanceof CancelledError) throw sentimentErr;
+  console.warn(
+    `[executor:${source}] sentiment analysis failed (continuing without): ${
+      sentimentErr instanceof Error ? sentimentErr.message : String(sentimentErr)
+    }`,
+  );
+}
 ```
 
 **주의:** 이 블록은 임베딩 블록 내부가 아닌 **그 다음**에 위치해야 함. `texts` 변수는 임베딩 블록에서 `const texts = rows.map(...)`으로 이미 선언되어 있으므로 재사용 가능.
@@ -436,25 +471,25 @@ import { classifySentimentFromTexts } from '../services/sentiment';
 `executeCommentsJob` 함수 내 `// 댓글 임베딩` try/catch 블록 이후, `const result = await db.insert(rawItems)` 이전에 삽입. 구조는 동일하나 `texts` 변수가 임베딩 블록에서 이미 선언됨:
 
 ```typescript
-      // 댓글 감정 분석 — 실패해도 수집은 계속
-      try {
-        if (texts.some((t) => t.length > 0)) {
-          const sentiments = await classifySentimentFromTexts(texts);
-          rows.forEach((r, i) => {
-            if (texts[i].length > 0 && sentiments[i]) {
-              r.sentiment = sentiments[i].label;
-              r.sentimentScore = sentiments[i].score;
-            }
-          });
-        }
-      } catch (sentimentErr) {
-        if (sentimentErr instanceof CancelledError) throw sentimentErr;
-        console.warn(
-          `[executor:${source}] sentiment analysis failed (continuing without): ${
-            sentimentErr instanceof Error ? sentimentErr.message : String(sentimentErr)
-          }`,
-        );
+// 댓글 감정 분석 — 실패해도 수집은 계속
+try {
+  if (texts.some((t) => t.length > 0)) {
+    const sentiments = await classifySentimentFromTexts(texts);
+    rows.forEach((r, i) => {
+      if (texts[i].length > 0 && sentiments[i]) {
+        r.sentiment = sentiments[i].label;
+        r.sentimentScore = sentiments[i].score;
       }
+    });
+  }
+} catch (sentimentErr) {
+  if (sentimentErr instanceof CancelledError) throw sentimentErr;
+  console.warn(
+    `[executor:${source}] sentiment analysis failed (continuing without): ${
+      sentimentErr instanceof Error ? sentimentErr.message : String(sentimentErr)
+    }`,
+  );
+}
 ```
 
 - [ ] **Step 4: TypeScript 컴파일 확인**
@@ -477,6 +512,7 @@ git commit -m "feat(collector): executor에 감정 분석 통합"
 ### Task 4: 과거 데이터 감정 Backfill 스크립트
 
 **Files:**
+
 - Create: `apps/collector/src/scripts/backfill-sentiment.ts`
 
 - [ ] **Step 1: backfill 스크립트 작성**
@@ -574,7 +610,7 @@ async function main() {
       const valuesSql = rows
         .map((r, i) => {
           const s = sentiments[i];
-          if (!s || s.label === 'neutral' && s.score === 0) return null;
+          if (!s || (s.label === 'neutral' && s.score === 0)) return null;
           const label = s.label;
           const score = s.score;
           return `('${r.time.toISOString()}', '${r.sourceId.replace(/'/g, "''")}', '${label}', ${score})`;
@@ -583,14 +619,16 @@ async function main() {
         .join(',');
 
       if (valuesSql.length > 0) {
-        await db.execute(sql.raw(`
+        await db.execute(
+          sql.raw(`
           UPDATE raw_items AS t
           SET sentiment = v.sentiment,
               sentiment_score = v.score
           FROM (VALUES ${valuesSql}) AS v(time, source_id, sentiment, score)
           WHERE t.source_id = v.source_id::text
             AND t.sentiment IS NULL
-        `));
+        `),
+        );
       }
     }
 
@@ -605,7 +643,9 @@ async function main() {
     }
   }
 
-  console.log(`[backfill-sentiment] 완료: ${processed}건 처리, ${updated}건 업데이트${dryRun ? ' (dry-run)' : ''}`);
+  console.log(
+    `[backfill-sentiment] 완료: ${processed}건 처리, ${updated}건 업데이트${dryRun ? ' (dry-run)' : ''}`,
+  );
 }
 
 function parseArg(args: string[], flag: string): string | undefined {
@@ -639,6 +679,7 @@ git commit -m "feat(collector): 과거 데이터 감정 backfill 스크립트"
 ### Task 5: 감정 분석 Backfill tRPC 프로시저
 
 **Files:**
+
 - Modify: `apps/collector/src/server/trpc/runs.ts`
 
 - [ ] **Step 1: backfillSentiment 프로시저 추가**
@@ -737,6 +778,7 @@ git commit -m "feat(collector): 감정 backfill tRPC 프로시저 추가"
 ### Task 6: 감정 집계 tRPC 프로시저 + Web 프록시
 
 **Files:**
+
 - Modify: `apps/collector/src/server/trpc/runs.ts`
 - Modify: `apps/web/src/server/trpc/routers/subscriptions.ts`
 
@@ -807,6 +849,7 @@ git commit -m "feat: 감정 집계 tRPC 프로시저 추가 (collector + web 프
 ### Task 7: UI — LiveRunFeed 감정 표시
 
 **Files:**
+
 - Modify: `apps/web/src/components/subscriptions/run-progress-inline.tsx`
 
 - [ ] **Step 1: 현재 파일 구조 파악**
@@ -848,6 +891,7 @@ git commit -m "feat(monitor): LiveRunFeed에 감정 분포 표시"
 ### Task 8: UI — RecentRunsLog 감정 아이콘
 
 **Files:**
+
 - Modify: `apps/web/src/components/subscriptions/recent-runs-log.tsx`
 
 - [ ] **Step 1: 현재 파일 구조 파악**

@@ -24,7 +24,7 @@
 export type SubscriptionOptions = {
   collectTranscript?: boolean;
   includeComments?: boolean;
-  enableManipulation?: boolean;  // 추가
+  enableManipulation?: boolean; // 추가
 };
 ```
 
@@ -41,7 +41,7 @@ export interface SubscriptionRecord {
   options?: {
     collectTranscript?: boolean;
     includeComments?: boolean;
-    enableManipulation?: boolean;  // 추가
+    enableManipulation?: boolean; // 추가
   } | null;
   // ...
 }
@@ -50,11 +50,13 @@ export interface SubscriptionRecord {
 ### `apps/collector/src/server/trpc/subscriptions.ts` (zod 스키마)
 
 ```typescript
-const optionsSchema = z.object({
-  collectTranscript: z.boolean().optional(),
-  includeComments: z.boolean().optional(),
-  enableManipulation: z.boolean().optional(),  // 추가
-}).optional();
+const optionsSchema = z
+  .object({
+    collectTranscript: z.boolean().optional(),
+    includeComments: z.boolean().optional(),
+    enableManipulation: z.boolean().optional(), // 추가
+  })
+  .optional();
 ```
 
 `createInput`과 `updateInput`은 `optionsSchema` 재사용 — 변경 불필요.
@@ -150,7 +152,7 @@ const meta = buildSubscriptionAnalysisMeta(
     keyword: sub.keyword,
     sources: sub.sources,
     limits: sub.limits as Record<string, number> | null,
-    options: sub.options,  // 추가
+    options: sub.options, // 추가
   },
   { subscriptionId: input.subscriptionId, optimizationPreset: input.optimizationPreset },
 );
@@ -215,13 +217,13 @@ const payload = {
 
 신규 에러 처리 코드 없음. Phase 2가 이미 다음 안전망을 갖추고 있다:
 
-| 시나리오 | 처리 |
-|----------|------|
-| `runManipulation !== true` | `stage5.ts` 무음 SKIP (appendJobEvent 호출조차 안 함) |
-| Stage 5 도중 예외 | `stage5.ts` inner try/catch → `appendJobEvent('warn', ...)` |
-| Stage 5 진입 자체에서 예외 (DB 등) | `pipeline-orchestrator.ts` outer try/catch → `logError` |
-| 도메인 시드 없음 | `resolveDomainConfig`가 political 폴백 |
-| 취소된 잡 | Stage 5 진입 전 `cancelledByUser` / `costLimitExceeded` 가드 |
+| 시나리오                           | 처리                                                         |
+| ---------------------------------- | ------------------------------------------------------------ |
+| `runManipulation !== true`         | `stage5.ts` 무음 SKIP (appendJobEvent 호출조차 안 함)        |
+| Stage 5 도중 예외                  | `stage5.ts` inner try/catch → `appendJobEvent('warn', ...)`  |
+| Stage 5 진입 자체에서 예외 (DB 등) | `pipeline-orchestrator.ts` outer try/catch → `logError`      |
+| 도메인 시드 없음                   | `resolveDomainConfig`가 political 폴백                       |
+| 취소된 잡                          | Stage 5 진입 전 `cancelledByUser` / `costLimitExceeded` 가드 |
 
 ## 테스트
 
@@ -280,26 +282,26 @@ it('options 부재 → meta.options에 runManipulation 키 부재', () => {
 
 ## 파일 영향 요약
 
-| 파일 | 변경 종류 | 변경 라인 (추정) |
-|------|-----------|------------------|
-| `apps/collector/src/db/schema/subscriptions.ts` | type 1줄 | +1 |
-| `apps/collector/src/server/trpc/subscriptions.ts` | zod 1줄 | +1 |
-| `apps/web/src/server/trpc/routers/subscriptions.ts` | interface 1줄 | +1 |
-| `apps/web/src/server/trpc/routers/subscription-analysis-meta.ts` | 시그니처 + 합성 로직 | ~5 |
-| `apps/web/src/server/trpc/routers/analysis.ts` | meta 호출에 options 전달 | +1 |
-| `apps/web/src/components/subscriptions/subscription-form.tsx` | state + UI + payload | ~25 |
-| `apps/web/src/server/trpc/routers/__tests__/analysis-trigger-subscription.test.ts` | 테스트 3건 | ~30 |
+| 파일                                                                               | 변경 종류                | 변경 라인 (추정) |
+| ---------------------------------------------------------------------------------- | ------------------------ | ---------------- |
+| `apps/collector/src/db/schema/subscriptions.ts`                                    | type 1줄                 | +1               |
+| `apps/collector/src/server/trpc/subscriptions.ts`                                  | zod 1줄                  | +1               |
+| `apps/web/src/server/trpc/routers/subscriptions.ts`                                | interface 1줄            | +1               |
+| `apps/web/src/server/trpc/routers/subscription-analysis-meta.ts`                   | 시그니처 + 합성 로직     | ~5               |
+| `apps/web/src/server/trpc/routers/analysis.ts`                                     | meta 호출에 options 전달 | +1               |
+| `apps/web/src/components/subscriptions/subscription-form.tsx`                      | state + UI + payload     | ~25              |
+| `apps/web/src/server/trpc/routers/__tests__/analysis-trigger-subscription.test.ts` | 테스트 3건               | ~30              |
 
 **총 변경 규모**: 약 60~70줄, 7개 파일.
 
 ## 위험 요소
 
-| 위험 | 완화 |
-|------|------|
-| `sub.options`가 null인 신규 코드 경로에서 NPE | `sub.options?.enableManipulation === true` 체크로 옵셔널 처리 |
-| collector tRPC `subscriptions.get` 응답에 `options`가 누락된 옛 캐시 | tRPC 클라이언트 캐싱 안 함 (mutation 직후 fresh fetch) — 무관 |
-| 사용자가 토글을 알아채지 못함 | 카드 설명문에 비용 명시 ("30~60초 늘어남") — 의도적 무리한 강조는 안 함 |
-| 토글 ON이지만 도메인이 manipulation_domain_configs에 없음 | Phase 2 `resolveDomainConfig`가 political 폴백 — 사용자 결정 |
+| 위험                                                                 | 완화                                                                    |
+| -------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `sub.options`가 null인 신규 코드 경로에서 NPE                        | `sub.options?.enableManipulation === true` 체크로 옵셔널 처리           |
+| collector tRPC `subscriptions.get` 응답에 `options`가 누락된 옛 캐시 | tRPC 클라이언트 캐싱 안 함 (mutation 직후 fresh fetch) — 무관           |
+| 사용자가 토글을 알아채지 못함                                        | 카드 설명문에 비용 명시 ("30~60초 늘어남") — 의도적 무리한 강조는 안 함 |
+| 토글 ON이지만 도메인이 manipulation_domain_configs에 없음            | Phase 2 `resolveDomainConfig`가 political 폴백 — 사용자 결정            |
 
 ## 향후 확장 (이 스펙 범위 외)
 

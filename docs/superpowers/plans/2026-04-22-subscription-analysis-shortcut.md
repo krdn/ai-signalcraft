@@ -36,6 +36,7 @@
 ### Task 1: DB 스키마 options 타입 확장
 
 **Files:**
+
 - Modify: `packages/core/src/db/schema/collections.ts:53-65`
 
 - [ ] **Step 1: options 타입에 subscriptionId, skipItemAnalysis, useCollectorLoader 추가**
@@ -67,6 +68,7 @@ git commit -m "feat: collection_jobs options 타입에 subscriptionId, skipItemA
 ### Task 2: `triggerSubscriptionAnalysis()` 신규 함수
 
 **Files:**
+
 - Modify: `packages/core/src/queue/flows.ts`
 
 - [ ] **Step 1: `triggerSubscriptionAnalysis` 함수 추가**
@@ -78,20 +80,21 @@ git commit -m "feat: collection_jobs options 타입에 subscriptionId, skipItemA
  * 구독 분석 단축 경로 — 수집/정규화/persist/classify를 건너뛰고
  * analysis 큐에 바로 run-analysis 잡을 등록.
  */
-export async function triggerSubscriptionAnalysis(
-  dbJobId: number,
-  keyword: string,
-) {
+export async function triggerSubscriptionAnalysis(dbJobId: number, keyword: string) {
   const queue = new Queue('analysis', getBullMQOptions());
   try {
-    const job = await queue.add('run-analysis', {
-      dbJobId,
-      keyword,
-      useCollectorLoader: true,
-    }, {
-      removeOnComplete: { age: 3600 },
-      removeOnFail: { age: 86400 },
-    });
+    const job = await queue.add(
+      'run-analysis',
+      {
+        dbJobId,
+        keyword,
+        useCollectorLoader: true,
+      },
+      {
+        removeOnComplete: { age: 3600 },
+        removeOnFail: { age: 86400 },
+      },
+    );
     return job;
   } finally {
     await queue.close();
@@ -111,6 +114,7 @@ git commit -m "feat: triggerSubscriptionAnalysis() 신규 함수 — 구독 분�
 ### Task 3: Data Loader — subscriptionId 전달 복원
 
 **Files:**
+
 - Modify: `packages/core/src/analysis/data-loader.ts:137-159`
 
 - [ ] **Step 1: `loadAnalysisInputViaCollector()`에서 subscriptionId 전달**
@@ -155,6 +159,7 @@ git commit -m "fix: loadAnalysisInputViaCollector에서 subscriptionId를 collec
 ### Task 4: Pipeline Orchestrator — collector loader 분기 + Stage 0 스킵
 
 **Files:**
+
 - Modify: `packages/core/src/analysis/pipeline-orchestrator.ts`
 - Modify: `packages/core/src/queue/analysis-worker.ts`
 
@@ -187,12 +192,13 @@ const job = await getDb()
   .from(collectionJobs)
   .where(eq(collectionJobs.id, jobId))
   .limit(1)
-  .then(r => r[0]);
+  .then((r) => r[0]);
 const jobOptions = (job?.options as Record<string, unknown>) || {};
 
-let input = (options?.useCollectorLoader || jobOptions.useCollectorLoader || shouldUseCollectorLoader())
-  ? await loadAnalysisInputViaCollector(jobId)
-  : await loadAnalysisInput(jobId);
+let input =
+  options?.useCollectorLoader || jobOptions.useCollectorLoader || shouldUseCollectorLoader()
+    ? await loadAnalysisInputViaCollector(jobId)
+    : await loadAnalysisInput(jobId);
 ```
 
 - [ ] **Step 3: Stage 0 스킵 로직 추가**
@@ -201,8 +207,7 @@ let input = (options?.useCollectorLoader || jobOptions.useCollectorLoader || sho
 
 ```typescript
 // Stage 0: 개별 항목 분석 — 구독 단축 경로에서는 스킵
-const shouldSkipItemAnalysis =
-  options?.skipItemAnalysis || jobOptions.skipItemAnalysis;
+const shouldSkipItemAnalysis = options?.skipItemAnalysis || jobOptions.skipItemAnalysis;
 
 if (!shouldSkipItemAnalysis) {
   try {
@@ -215,7 +220,11 @@ if (!shouldSkipItemAnalysis) {
   }
 } else {
   console.log(`[pipeline] 구독 단축 경로: Stage 0(개별 감정 분석) 스킵`);
-  await appendJobEvent(jobId, 'info', '구독 단축 경로: 개별 감정 분석 스킵 (collector에서 이미 완료)').catch(() => {});
+  await appendJobEvent(
+    jobId,
+    'info',
+    '구독 단축 경로: 개별 감정 분석 스킵 (collector에서 이미 완료)',
+  ).catch(() => {});
 }
 ```
 
@@ -242,6 +251,7 @@ git commit -m "feat: 구독 단축 경로 — collector loader 잡 데이터 분
 ### Task 5: tRPC — `triggerSubscription` mutation
 
 **Files:**
+
 - Modify: `apps/web/src/server/trpc/routers/analysis.ts`
 
 - [ ] **Step 1: `triggerSubscription` mutation 추가**
@@ -310,6 +320,7 @@ triggerSubscription: protectedProcedure
 - [ ] **Step 2: 기존 `analysis.trigger`에서 subscriptionId 분기 제거**
 
 기존 `analysis.trigger` mutation에서:
+
 - 라인 94 `subscriptionId: z.number().optional()` 제거
 - 라인 248-254 `subscriptionId`를 `persistedOptions`에 저장하는 로직 제거
 - 라인 257-272 subscriptionId 검증 블록 제거
@@ -334,6 +345,7 @@ git commit -m "feat: triggerSubscription mutation 추가, 기존 trigger에서 s
 ### Task 6: 프론트엔드 — 마법사 페이지 기본 구조
 
 **Files:**
+
 - Create: `apps/web/src/components/subscriptions/analyze/analyze-wizard.tsx`
 - Create: `apps/web/src/app/subscriptions/analyze/page.tsx`
 
@@ -378,7 +390,7 @@ export function AnalyzeWizard({ children }: AnalyzeWizardProps) {
   });
 
   const setState = (partial: Partial<WizardState>) =>
-    setStateRaw(prev => ({ ...prev, ...partial }));
+    setStateRaw((prev) => ({ ...prev, ...partial }));
 
   const currentIdx = STEP_ORDER.indexOf(state.step);
 
@@ -399,7 +411,9 @@ export function AnalyzeWizard({ children }: AnalyzeWizardProps) {
             >
               {i + 1}
             </div>
-            <span className={`text-sm ${i === currentIdx ? 'font-medium' : 'text-muted-foreground'}`}>
+            <span
+              className={`text-sm ${i === currentIdx ? 'font-medium' : 'text-muted-foreground'}`}
+            >
               {STEP_LABELS[s]}
             </span>
             {i < STEP_ORDER.length - 1 && (
@@ -430,9 +444,7 @@ export default function SubscriptionAnalyzePage() {
     <div className="container mx-auto max-w-4xl py-6">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">구독 분석 실행</h1>
-        <p className="text-muted-foreground">
-          활성 구독에서 수집된 데이터로 AI 분석을 실행합니다
-        </p>
+        <p className="text-muted-foreground">활성 구독에서 수집된 데이터로 AI 분석을 실행합니다</p>
       </div>
       <AnalyzeWizard>
         {(state, setState) => {
@@ -440,11 +452,13 @@ export default function SubscriptionAnalyzePage() {
             case 'select':
               return (
                 <SubscriptionSelectStep
-                  onSelect={(sub) => setState({
-                    step: 'config',
-                    subscription: sub,
-                    keyword: sub.keyword,
-                  })}
+                  onSelect={(sub) =>
+                    setState({
+                      step: 'config',
+                      subscription: sub,
+                      keyword: sub.keyword,
+                    })
+                  }
                 />
               );
             case 'config':
@@ -467,12 +481,14 @@ export default function SubscriptionAnalyzePage() {
               return state.jobId ? (
                 <AnalysisResultStep
                   jobId={state.jobId}
-                  onNewAnalysis={() => setState({
-                    step: 'select',
-                    subscription: null,
-                    jobId: null,
-                    keyword: '',
-                  })}
+                  onNewAnalysis={() =>
+                    setState({
+                      step: 'select',
+                      subscription: null,
+                      jobId: null,
+                      keyword: '',
+                    })
+                  }
                 />
               ) : null;
           }
@@ -495,6 +511,7 @@ git commit -m "feat: 구독 분석 마법사 페이지 기본 구조 (page + wiz
 ### Task 7: Step 1 — 구독 선택 컴포넌트
 
 **Files:**
+
 - Create: `apps/web/src/components/subscriptions/analyze/subscription-select-step.tsx`
 
 - [ ] **Step 1: subscription-select-step.tsx 생성**
@@ -523,7 +540,9 @@ export function SubscriptionSelectStep({ onSelect }: SubscriptionSelectStepProps
   });
 
   if (isLoading) {
-    return <div className="py-12 text-center text-muted-foreground">구독 목록을 불러오는 중...</div>;
+    return (
+      <div className="py-12 text-center text-muted-foreground">구독 목록을 불러오는 중...</div>
+    );
   }
 
   if (!subscriptions?.length) {
@@ -558,11 +577,11 @@ export function SubscriptionSelectStep({ onSelect }: SubscriptionSelectStepProps
                 ))}
               </div>
               {sub.domain && (
-                <Badge variant="outline" className="text-xs">{sub.domain}</Badge>
+                <Badge variant="outline" className="text-xs">
+                  {sub.domain}
+                </Badge>
               )}
-              <div className="text-xs text-muted-foreground">
-                1회 최대 {sub.limits.maxPerRun}건
-              </div>
+              <div className="text-xs text-muted-foreground">1회 최대 {sub.limits.maxPerRun}건</div>
             </CardContent>
           </Card>
         ))}
@@ -596,6 +615,7 @@ git commit -m "feat: 구독 분석 Step 1 — 구독 카드 그리드 선택 컴
 ### Task 8: Step 2 — 분석 설정 컴포넌트
 
 **Files:**
+
 - Create: `apps/web/src/components/subscriptions/analyze/analysis-config-step.tsx`
 
 - [ ] **Step 1: analysis-config-step.tsx 생성**
@@ -676,8 +696,8 @@ export function AnalysisConfigStep({ subscription, onTrigger, onBack }: Analysis
         subscriptionId: subscription.id,
         startDate: start.toISOString(),
         endDate: now.toISOString(),
-        domain: domain as typeof DOMAINS[number]['value'],
-        optimizationPreset: optimization as typeof OPTIMIZATION_OPTIONS[number]['value'],
+        domain: domain as (typeof DOMAINS)[number]['value'],
+        optimizationPreset: optimization as (typeof OPTIMIZATION_OPTIONS)[number]['value'],
       },
       {
         onSuccess: (data) => {
@@ -764,10 +784,7 @@ export function AnalysisConfigStep({ subscription, onTrigger, onBack }: Analysis
         <Button variant="outline" onClick={onBack}>
           이전
         </Button>
-        <Button
-          onClick={handleTrigger}
-          disabled={triggerMutation.isPending}
-        >
+        <Button onClick={handleTrigger} disabled={triggerMutation.isPending}>
           {triggerMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           분석 실행
         </Button>
@@ -789,6 +806,7 @@ git commit -m "feat: 구독 분석 Step 2 — 분석 설정 폼 (기간/도메�
 ### Task 9: Step 3, 4 — 실행 중 + 결과 컴포넌트
 
 **Files:**
+
 - Create: `apps/web/src/components/subscriptions/analyze/analysis-running-step.tsx`
 - Create: `apps/web/src/components/subscriptions/analyze/analysis-result-step.tsx`
 
@@ -810,11 +828,7 @@ export function AnalysisRunningStep({ jobId, keyword, onComplete }: AnalysisRunn
   return (
     <Card>
       <CardContent className="pt-6">
-        <PipelineMonitor
-          jobId={jobId}
-          keyword={keyword}
-          onComplete={onComplete}
-        />
+        <PipelineMonitor jobId={jobId} keyword={keyword} onComplete={onComplete} />
       </CardContent>
     </Card>
   );
@@ -864,6 +878,7 @@ git commit -m "feat: 구독 분석 Step 3, 4 — 실행 중 + 결과 컴포넌�
 ### Task 10: 내비게이션 + 통합 테스트
 
 **Files:**
+
 - Modify: `apps/web/src/app/subscriptions/layout.tsx:18-22`
 
 - [ ] **Step 1: NAV_ITEMS에 "분석 실행" 추가**
@@ -892,6 +907,7 @@ pnpm dev
 ```
 
 수동 확인:
+
 1. `/subscriptions/analyze` 접속 → 활성 구독 카드 표시
 2. 구독 선택 → 분석 설정 단계 이동
 3. 설정 후 실행 → BullMQ `analysis` 큐에 `run-analysis` 잡만 생성 (collect/normalize 없음)

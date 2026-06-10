@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Phase 2/2.5에서 저장된 manipulation_runs/_signals/_evidence 데이터를 두 진입점 — `/showcase/[jobId]` 새 탭 + `/subscriptions/[id]` 새 탭 — 에서 사용자에게 노출한다.
+**Goal:** Phase 2/2.5에서 저장된 manipulation_runs/\_signals/\_evidence 데이터를 두 진입점 — `/showcase/[jobId]` 새 탭 + `/subscriptions/[id]` 새 탭 — 에서 사용자에게 노출한다.
 
 **Architecture:** 신규 tRPC `manipulationRouter`가 권한 검증 후 run+signals+evidence를 join 반환. 7개 visualization 컴포넌트로 evidence card의 viz JSONB 분기. Phase 2 dryrun으로 만들어진 jobId=273 (subscriptionId=37)에서 즉시 검증 가능.
 
@@ -17,42 +17,46 @@
 ## File Inventory
 
 ### tRPC layer
-| 파일 | 변경 | 책임 |
-|------|------|------|
-| `apps/web/src/server/trpc/routers/manipulation.ts` | Create | `getRunByJobId` + `listRunsBySubscription` |
-| `apps/web/src/server/trpc/routers/__tests__/manipulation.test.ts` | Create | 5 테스트 케이스 |
-| `apps/web/src/server/trpc/router.ts` | Modify | manipulationRouter 등록 |
+
+| 파일                                                              | 변경   | 책임                                       |
+| ----------------------------------------------------------------- | ------ | ------------------------------------------ |
+| `apps/web/src/server/trpc/routers/manipulation.ts`                | Create | `getRunByJobId` + `listRunsBySubscription` |
+| `apps/web/src/server/trpc/routers/__tests__/manipulation.test.ts` | Create | 5 테스트 케이스                            |
+| `apps/web/src/server/trpc/router.ts`                              | Modify | manipulationRouter 등록                    |
 
 ### Page integration
-| 파일 | 변경 | 책임 |
-|------|------|------|
-| `apps/web/src/app/showcase/[jobId]/page.tsx` | Modify | 새 탭 (activeTab===7) 추가 |
-| `apps/web/src/components/layout/showcase-sidebar.tsx` | Modify | 탭 메뉴 항목 추가 |
-| `apps/web/src/app/subscriptions/[id]/page.tsx` | Modify | TabsTrigger + TabsContent 한 쌍 추가 |
+
+| 파일                                                  | 변경   | 책임                                 |
+| ----------------------------------------------------- | ------ | ------------------------------------ |
+| `apps/web/src/app/showcase/[jobId]/page.tsx`          | Modify | 새 탭 (activeTab===7) 추가           |
+| `apps/web/src/components/layout/showcase-sidebar.tsx` | Modify | 탭 메뉴 항목 추가                    |
+| `apps/web/src/app/subscriptions/[id]/page.tsx`        | Modify | TabsTrigger + TabsContent 한 쌍 추가 |
 
 ### Components
-| 파일 | 변경 | 책임 |
-|------|------|------|
-| `apps/web/src/components/manipulation/manipulation-view.tsx` | Create | 5탭 컨테이너 (상태 분기) |
-| `apps/web/src/components/manipulation/manipulation-hero.tsx` | Create | 점수/신뢰도/narrative |
-| `apps/web/src/components/manipulation/signal-grid.tsx` | Create | 7신호 grid |
-| `apps/web/src/components/manipulation/evidence-card.tsx` | Create | viz 분기 카드 |
-| `apps/web/src/components/manipulation/timeseries-view.tsx` | Create | 구독 탭 (라인+표) |
-| `apps/web/src/components/manipulation/visualizations/index.ts` | Create | 7 viz re-export |
-| `apps/web/src/components/manipulation/visualizations/burst-heatmap.tsx` | Create | BarChart |
-| `apps/web/src/components/manipulation/visualizations/trend-line.tsx` | Create | LineChart |
-| `apps/web/src/components/manipulation/visualizations/temporal-bars.tsx` | Create | BarChart (current vs baseline) |
-| `apps/web/src/components/manipulation/visualizations/vote-scatter.tsx` | Create | ScatterChart |
-| `apps/web/src/components/manipulation/visualizations/similarity-cluster.tsx` | Create | 표 |
-| `apps/web/src/components/manipulation/visualizations/media-sync-timeline.tsx` | Create | 표 |
-| `apps/web/src/components/manipulation/visualizations/cross-platform-flow.tsx` | Create | 표 (Phase 5에 Sankey) |
+
+| 파일                                                                          | 변경   | 책임                           |
+| ----------------------------------------------------------------------------- | ------ | ------------------------------ |
+| `apps/web/src/components/manipulation/manipulation-view.tsx`                  | Create | 5탭 컨테이너 (상태 분기)       |
+| `apps/web/src/components/manipulation/manipulation-hero.tsx`                  | Create | 점수/신뢰도/narrative          |
+| `apps/web/src/components/manipulation/signal-grid.tsx`                        | Create | 7신호 grid                     |
+| `apps/web/src/components/manipulation/evidence-card.tsx`                      | Create | viz 분기 카드                  |
+| `apps/web/src/components/manipulation/timeseries-view.tsx`                    | Create | 구독 탭 (라인+표)              |
+| `apps/web/src/components/manipulation/visualizations/index.ts`                | Create | 7 viz re-export                |
+| `apps/web/src/components/manipulation/visualizations/burst-heatmap.tsx`       | Create | BarChart                       |
+| `apps/web/src/components/manipulation/visualizations/trend-line.tsx`          | Create | LineChart                      |
+| `apps/web/src/components/manipulation/visualizations/temporal-bars.tsx`       | Create | BarChart (current vs baseline) |
+| `apps/web/src/components/manipulation/visualizations/vote-scatter.tsx`        | Create | ScatterChart                   |
+| `apps/web/src/components/manipulation/visualizations/similarity-cluster.tsx`  | Create | 표                             |
+| `apps/web/src/components/manipulation/visualizations/media-sync-timeline.tsx` | Create | 표                             |
+| `apps/web/src/components/manipulation/visualizations/cross-platform-flow.tsx` | Create | 표 (Phase 5에 Sankey)          |
 
 ### Tests
-| 파일 | 변경 | 책임 |
-|------|------|------|
-| `apps/web/src/components/manipulation/__tests__/manipulation-view.test.tsx` | Create | 6 상태 분기 |
-| `apps/web/src/components/manipulation/__tests__/evidence-card.test.tsx` | Create | viz.kind 7+1 분기 |
-| `apps/web/src/components/manipulation/__tests__/timeseries-view.test.tsx` | Create | 빈 결과 + 정상 렌더 + 링크 |
+
+| 파일                                                                        | 변경   | 책임                       |
+| --------------------------------------------------------------------------- | ------ | -------------------------- |
+| `apps/web/src/components/manipulation/__tests__/manipulation-view.test.tsx` | Create | 6 상태 분기                |
+| `apps/web/src/components/manipulation/__tests__/evidence-card.test.tsx`     | Create | viz.kind 7+1 분기          |
+| `apps/web/src/components/manipulation/__tests__/timeseries-view.test.tsx`   | Create | 빈 결과 + 정상 렌더 + 링크 |
 
 ---
 
@@ -71,6 +75,7 @@
 **TDD 사이클.** 권한 검증이 핵심이라 테스트 먼저 작성.
 
 **Files:**
+
 - Create: `apps/web/src/server/trpc/routers/manipulation.ts`
 - Create: `apps/web/src/server/trpc/routers/__tests__/manipulation.test.ts`
 
@@ -169,16 +174,30 @@ describe('manipulationRouter', () => {
     );
     const { manipulationRouter } = await import('../manipulation');
     const caller = manipulationRouter.createCaller(ctx);
-    await expect(
-      caller.listRunsBySubscription({ subscriptionId: 99, limit: 30 }),
-    ).rejects.toThrow('접근 거부');
+    await expect(caller.listRunsBySubscription({ subscriptionId: 99, limit: 30 })).rejects.toThrow(
+      '접근 거부',
+    );
   });
 
   it('listRunsBySubscription — limit 적용, startedAt DESC 요약 반환', async () => {
     verifySubscriptionOwnership.mockResolvedValueOnce(undefined);
     const rows = [
-      { id: 'r2', jobId: 280, manipulationScore: 60.1, confidenceFactor: 0.8, startedAt: new Date('2026-04-28'), status: 'completed' },
-      { id: 'r1', jobId: 273, manipulationScore: 57.2, confidenceFactor: 0.84, startedAt: new Date('2026-04-26'), status: 'completed' },
+      {
+        id: 'r2',
+        jobId: 280,
+        manipulationScore: 60.1,
+        confidenceFactor: 0.8,
+        startedAt: new Date('2026-04-28'),
+        status: 'completed',
+      },
+      {
+        id: 'r1',
+        jobId: 273,
+        manipulationScore: 57.2,
+        confidenceFactor: 0.84,
+        startedAt: new Date('2026-04-26'),
+        status: 'completed',
+      },
     ];
     dbSelect.mockReturnValueOnce({
       from: () => ({
@@ -314,6 +333,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ## Task 2: Root router 등록
 
 **Files:**
+
 - Modify: `apps/web/src/server/trpc/router.ts`
 
 - [ ] **Step 1: import + 등록**
@@ -354,6 +374,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 5번째 탭의 핵심 컨테이너. 이 task에서는 6가지 상태 분기를 구현하되, 내부 `<CompletedView>`는 임시로 `<pre>{JSON.stringify(data)}</pre>` 같은 placeholder로 둔다 (Task 4-5에서 실제 렌더). EmptyState/Error/Loading만 정식 구현.
 
 **Files:**
+
 - Create: `apps/web/src/components/manipulation/manipulation-view.tsx`
 - Create: `apps/web/src/components/manipulation/__tests__/manipulation-view.test.tsx`
 
@@ -549,6 +570,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 `<CompletedView>`의 첫 두 섹션. evidence 카드는 Task 5-6에서.
 
 **Files:**
+
 - Create: `apps/web/src/components/manipulation/manipulation-hero.tsx`
 - Create: `apps/web/src/components/manipulation/signal-grid.tsx`
 - Modify: `apps/web/src/components/manipulation/manipulation-view.tsx` (Task 3의 `<pre>` placeholder 교체)
@@ -736,6 +758,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 **이유:** evidence 데이터가 바인딩되는 frame을 먼저 검증하면, Task 6의 7개 viz를 병렬로 작업할 수 있다.
 
 **Files:**
+
 - Create: `apps/web/src/components/manipulation/visualizations/index.ts`
 - Create: `apps/web/src/components/manipulation/visualizations/burst-heatmap.tsx`
 - Create: `apps/web/src/components/manipulation/visualizations/trend-line.tsx`
@@ -773,6 +796,7 @@ export function BurstHeatmap({ data }: Props) {
 ```
 
 나머지 6개 파일도 같은 패턴 (이름·kind 문자열만 다름):
+
 - `trend-line.tsx` — kind `'trend-line'`
 - `temporal-bars.tsx` — kind `'temporal-bars'`
 - `vote-scatter.tsx` — kind `'vote-scatter'`
@@ -1009,6 +1033,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 각 viz를 실제 Recharts/표 형태로 교체. **task가 가장 큼** — subagent로 위임할 때는 이 task 하나에 모든 7개 viz 코드를 명시적으로 포함시켜 dispatch 단위를 1회로 유지.
 
 **Files:**
+
 - Modify: `apps/web/src/components/manipulation/visualizations/burst-heatmap.tsx`
 - Modify: `apps/web/src/components/manipulation/visualizations/trend-line.tsx`
 - Modify: `apps/web/src/components/manipulation/visualizations/temporal-bars.tsx`
@@ -1345,6 +1370,7 @@ pnpm tsc --noEmit 2>&1 | tail -3
 ```
 
 Expected:
+
 - 모든 manipulation 테스트 PASS (Task 5의 evidence-card 테스트는 viz 컴포넌트의 `kind` 문자열을 본문에 출력하는지 검증했는데 — Task 6에서 stub의 `JSON.stringify` 출력이 사라졌으므로 테스트 방식이 깨질 수 있음. 검증 방식을 `data-testid`로 바꿔야 함 — 다음 step에서.)
 
 - [ ] **Step 9: evidence-card 테스트를 testid 기반으로 갱신**
@@ -1382,6 +1408,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ## Task 7: TimeseriesView + 잡 표 (구독 탭)
 
 **Files:**
+
 - Create: `apps/web/src/components/manipulation/timeseries-view.tsx`
 - Create: `apps/web/src/components/manipulation/__tests__/timeseries-view.test.tsx`
 
@@ -1586,6 +1613,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ## Task 8: 페이지 통합 — showcase 새 탭 + 구독 새 탭
 
 **Files:**
+
 - Modify: `apps/web/src/app/showcase/[jobId]/page.tsx`
 - Modify: `apps/web/src/components/layout/showcase-sidebar.tsx`
 - Modify: `apps/web/src/app/subscriptions/[id]/page.tsx`
@@ -1654,6 +1682,7 @@ pnpm --filter @ai-signalcraft/web test 2>&1 | tail -5
 ```
 
 Expected:
+
 - tsc: No errors
 - 모든 web 테스트 PASS (50 + 신규 ~20 = ~70 PASS)
 
@@ -1718,6 +1747,7 @@ COLLECTOR_URL=http://192.168.0.5:3401 pnpm dev 2>&1 &
 ```
 
 브라우저에서:
+
 1. `/showcase/273` → 7번째 탭 "조작 신호" 클릭 → Hero(57.2) + 7신호 그리드 + 29개 evidence card 표시 확인
 2. `/subscriptions/37` → "조작 분석" 탭 → LineChart + 잡 표 (jobId=273 포함) → "상세 보기" 클릭 → /showcase/273로 이동 확인
 3. 토글 OFF 구독의 잡 (예: 다른 jobId) → /showcase/{X} 7탭 → EmptyState 메시지 확인
@@ -1733,6 +1763,7 @@ E2E는 Phase 2 dryrun으로 만든 데이터 그대로 활용 가능 — 추가 
 ## Self-Review Checklist (작성자 확인용)
 
 **1. Spec coverage:**
+
 - tRPC router 2 procedures + 권한 → Task 1
 - root router 등록 → Task 2
 - ManipulationView 6 상태 → Task 3
@@ -1745,11 +1776,13 @@ E2E는 Phase 2 dryrun으로 만든 데이터 그대로 활용 가능 — 추가 
 - 모든 Spec 항목이 task에 매핑됨 ✓
 
 **2. Placeholder scan:**
-- "TODO Task X" 같은 코드 내 marker는 placeholder 아닌 *task 내 단계 포인터*. 명확히 후속 task 번호 명시 ✓
+
+- "TODO Task X" 같은 코드 내 marker는 placeholder 아닌 _task 내 단계 포인터_. 명확히 후속 task 번호 명시 ✓
 - "기존 항목과 동일한 icon prop 패턴 (파일 내 다른 메뉴 참조)" — sidebar 메뉴 형태가 파일별로 다양해 일반화하기 어려움. implementer가 파일 직접 확인하라고 명시. 이건 내재적 한계 ✓
 - `params.id` 변수명 확인 지시 → 같은 이유. file 직접 확인 필요 ✓
 
 **3. Type consistency:**
+
 - `manipulation_runs` 컬럼명 (`manipulationScore`, `confidenceFactor`, `startedAt`, `status`) — Task 1 router, Task 4 Hero, Task 7 TimeseriesView 모두 일치 ✓
 - `evidence` shape (`id`, `signal`, `severity`, `title`, `summary`, `visualization`, `rawRefs`, `rank`) — Task 1 router, Task 5 EvidenceCard 일치 ✓
 - viz.kind 7개 문자열 — Spec, Task 5, Task 6 모두 동일 (`burst-heatmap`, `trend-line`, `temporal-bars`, `vote-scatter`, `similarity-cluster`, `media-sync-timeline`, `cross-platform-flow`) ✓
