@@ -14,6 +14,7 @@
 
 import { Queue } from 'bullmq';
 import { getBullMQOptions } from './connection';
+import { isCancellationRequested } from './cancellation';
 import { COLLECTOR_SOURCES, type CollectionJobData } from './types';
 
 export async function recoverOrphanedJobs(): Promise<void> {
@@ -30,15 +31,30 @@ export async function recoverOrphanedJobs(): Promise<void> {
       if (activeJobs.length === 0) continue;
 
       let recovered = 0;
+      let skipped = 0;
       for (const job of activeJobs) {
         if (!job || !job.data) continue;
+
+        // 취소 요청된 run은 재큐잉하지 않음 — 재실행→즉시 취소 실패가 재시작마다
+        // 반복되는 루프 방지 (취소된 run이 24h에 283행을 쌓던 사례).
+        if (await isCancellationRequested(job.data.runId, source)) {
+          await job.remove().catch(() => void 0);
+          skipped++;
+          continue;
+        }
 
         // processedOn이 있고 finishedOn이 없으면 orphan 후보.
         // active 상태 자체가 이미 processedOn 설정 이후이므로 중복 확인 불필요.
         try {
-          // 원본 job은 제거 — 같은 jobId로 재큐잉하면 충돌
-          await job.remove().catch(() => void 0);
+          // 원본 job 제거. lock이 아직 살아있으면(이전 실행이 유효하게 진행 중) throw —
+          // 이때 재큐잉하면 같은 run의 이중 실행이 되므로 stall 메커니즘에 맡기고 건너뛴다.
+          await job.remove();
+        } catch {
+          skipped++;
+          continue;
+        }
 
+        try {
           await queue.add(`collect-${source}`, job.data, {
             jobId: `${job.data.runId}-${source}-recovered-${Date.now()}`,
             attempts: 3,
@@ -53,6 +69,10 @@ export async function recoverOrphanedJobs(): Promise<void> {
             err instanceof Error ? err.message : err,
           );
         }
+      }
+
+      if (skipped > 0) {
+        console.log(`[startup-recovery] ${source}: ${skipped}개 skip (취소됨 또는 lock 유효)`);
       }
 
       if (recovered > 0) {

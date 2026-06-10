@@ -145,8 +145,9 @@ services:
     # PID 1 init이 고아 프로세스를 reap — 워커 비정상 종료(OOM kill 등) 시 chromium 잔존 방지
     init: true
     stop_grace_period: 60s
-    mem_limit: 6g
-    memswap_limit: 6g
+    # 임베딩(Xenova) + Playwright 동시 수행 시 6g에서 OOM kill(exit 137) 재발 — 8g로 상향
+    mem_limit: 8g
+    memswap_limit: 8g
     env_file:
       - ../.env.production
     environment:

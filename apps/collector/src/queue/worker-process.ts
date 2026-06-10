@@ -50,15 +50,15 @@ function buildWorker(source: CollectorSource): Worker<CollectionJobData, Collect
   const opts: WorkerOptions = {
     ...getBullMQOptions(),
     concurrency: CONCURRENCY[source],
-    // 대량 수집(특히 youtube 수천건 댓글 + 임베딩)은 한 job이 수 분 이상 걸린다.
-    // BullMQ 기본 lockDuration=30s로는 CPU가 임베딩 추론에 점유될 때 갱신 실패 →
-    // "stalled" 오판으로 같은 job이 중복 재실행되거나 실패 기록됨.
-    // 5분으로 늘려 정상적으로 오래 걸리는 작업을 stalled로 오판하지 않도록 한다.
-    // YouTube 대량 수집(수천 건 비디오+댓글+임베딩)은 5분 이상 소요 가능.
-    // 10분으로 늘려 stalled 오판 방지.
-    lockDuration: 600_000,
-    // 2분마다 stall check — 10분 lockDuration의 1/5.
-    stalledInterval: 120_000,
+    // 임베딩(Xenova CPU 추론)이 이벤트 루프를 장시간 점유하면 lock 갱신이 밀린다.
+    // lockDuration이 실제 잡 시간(naver-comments 1만 댓글 = 30~50분)보다 짧으면
+    // BullMQ가 stalled로 오판해 같은 잡을 재배달하는데, 기존 실행은 죽지 않고 계속
+    // 돌아 이중 실행(유령 실행)이 릴레이처럼 이어진다 — 2026-06-10 분석: 한 run이
+    // 17일간 시간당 1~2회 재수집 루프를 돌며 OOM(exit 137) 크래시까지 유발.
+    // 최대 잡 시간보다 넉넉한 60분으로 설정. 워커 사망 시 복구는 startup-recovery 담당.
+    lockDuration: 3_600_000,
+    // 5분마다 stall check — 60분 lock에서 2분 체크는 과도.
+    stalledInterval: 300_000,
     // Worker 재시작 시 orphaned job 복구 허용. 수집은 멱등.
     maxStalledCount: 1,
     // 차단 방지: 작업 간 최소 간격 (ms). 소스별로 별도 튜닝 여지.

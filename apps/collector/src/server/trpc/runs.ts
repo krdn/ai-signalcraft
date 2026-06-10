@@ -326,7 +326,12 @@ export const runsRouter = router({
         .select()
         .from(collectionRuns)
         .where(
-          and(eq(collectionRuns.status, 'running'), sql`${collectionRuns.time} < ${threshold}`),
+          and(
+            eq(collectionRuns.status, 'running'),
+            // 진행 하트비트(last_progress_at) 기준으로 판정 — 시작시각(time) 기준이면
+            // 30분 넘게 정상 진행 중인 run도 전부 '멈춤 의심'으로 표시된다.
+            sql`COALESCE(${collectionRuns.lastProgressAt}, ${collectionRuns.time}) < ${threshold}`,
+          ),
         )
         .orderBy(desc(collectionRuns.time))
         .limit(50);
