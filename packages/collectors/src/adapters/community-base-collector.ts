@@ -22,6 +22,36 @@ export abstract class CommunityBaseCollector extends BrowserCollector<CommunityP
   private static readonly MAX_CONSECUTIVE_EMPTY_PAGES = 5;
   // 빈/차단 페이지 지수 백오프 베이스 (10s → 20s → 40s → 80s → 160s).
   private static readonly EMPTY_PAGE_BACKOFF_BASE_MS = 10_000;
+  // 윈도우 도달 불가 외삽을 시작하기 위한 최소 표본 페이지 수.
+  private static readonly MIN_PAGES_FOR_UNREACHABLE_ESTIMATE = 10;
+  // 추정 오차 보호 마진 — 필요 페이지가 남은 예산의 N배를 넘을 때만 포기.
+  private static readonly UNREACHABLE_PAGES_MARGIN = 2;
+
+  /**
+   * 최신순 검색에서 페이지네이션 외삽으로 수집 윈도우 도달 가능성을 추정한다.
+   *
+   * 글 폭증 시(예: 선거 시즌 정치 키워드) maxSearchPages 예산이 몇 시간 분량밖에
+   * 거슬러 가지 못해 과거 윈도우 잡이 전 페이지를 헛돌고 0건으로 끝나는 문제의 가드.
+   * 표본(pagesSoFar)으로 측정한 페이지당 시간 진행 속도 대비, 남은 페이지 예산으로
+   * 윈도우 끝까지 도달할 수 없다고 추정되면 true.
+   */
+  static estimateWindowUnreachable(params: {
+    anchorNewestTs: number;
+    oldestSeenTs: number;
+    windowEndTs: number;
+    pagesSoFar: number;
+    maxPages: number;
+  }): boolean {
+    const { anchorNewestTs, oldestSeenTs, windowEndTs, pagesSoFar, maxPages } = params;
+    if (oldestSeenTs < windowEndTs) return false; // 이미 윈도우(또는 그 이전)에 도달
+    if (pagesSoFar < CommunityBaseCollector.MIN_PAGES_FOR_UNREACHABLE_ESTIMATE) return false;
+    const traversedMs = anchorNewestTs - oldestSeenTs;
+    if (traversedMs <= 0) return false; // 시간 진행 측정 불가 — 보수적으로 계속
+    const msPerPage = traversedMs / pagesSoFar;
+    const pagesNeeded = (oldestSeenTs - windowEndTs) / msPerPage;
+    const remaining = maxPages - pagesSoFar;
+    return pagesNeeded > remaining * CommunityBaseCollector.UNREACHABLE_PAGES_MARGIN;
+  }
 
   protected abstract readonly selectors: SiteSelectors;
   protected abstract readonly baseUrl: string;
@@ -262,6 +292,9 @@ export abstract class CommunityBaseCollector extends BrowserCollector<CommunityP
     let pageEmptyCount = 0;
     let endReason: CollectionStats['endReason'] = 'completed';
     let lastPageReached = 0;
+    // 윈도우 도달 가능성 외삽용 — 파싱 가능한 링크 시각의 페이지 진행 속도 추적
+    let anchorNewestTs: number | null = null;
+    let oldestSeenTs: number | null = null;
 
     const dayKey = (d: Date): number => kstDayStartMs(d);
 
@@ -299,6 +332,13 @@ export abstract class CommunityBaseCollector extends BrowserCollector<CommunityP
         continue;
       }
       consecutiveEmptyPages = 0;
+
+      for (const l of postLinks) {
+        const t = l.publishedAt?.getTime();
+        if (t === undefined || !Number.isFinite(t)) continue;
+        if (anchorNewestTs === null || t > anchorNewestTs) anchorNewestTs = t;
+        if (oldestSeenTs === null || t < oldestSeenTs) oldestSeenTs = t;
+      }
 
       const posts: CommunityPost[] = [];
 
@@ -414,6 +454,28 @@ export abstract class CommunityBaseCollector extends BrowserCollector<CommunityP
 
       const filtered = this.enforcePerDayCap(posts, dayKey, perDayLimit, enforced);
       if (filtered.length > 0) yield filtered;
+
+      // 과거 윈도우 도달 불가 조기 종료 — 아직 아무것도 수집하지 못한 catch-up 상태에서,
+      // 페이지당 시간 진행 속도를 외삽해 남은 페이지 예산으로 윈도우 끝까지 거슬러 갈 수
+      // 없으면 즉시 포기한다. (글 폭증 시 maxSearchPages 전체를 헛도는 낭비 방지)
+      if (
+        totalCollected === 0 &&
+        anchorNewestTs !== null &&
+        oldestSeenTs !== null &&
+        CommunityBaseCollector.estimateWindowUnreachable({
+          anchorNewestTs,
+          oldestSeenTs,
+          windowEndTs: daysDescMs[0] + 86400000,
+          pagesSoFar: pageNum,
+          maxPages: this.config.maxSearchPages,
+        })
+      ) {
+        endReason = 'windowUnreachable';
+        console.warn(
+          `${this.source} 윈도우 도달 불가 — page=${pageNum} 최고(古) ${new Date(oldestSeenTs).toISOString()} > 윈도우 끝 ${new Date(daysDescMs[0] + 86400000).toISOString()}, 남은 페이지 예산으로 도달 불가 추정 → 조기 종료`,
+        );
+        break;
+      }
 
       // 포화된 일자를 건너뜀 — 현재 dayIdx의 일자가 cap에 도달하면 앞으로 진행.
       // 이 과정에서 dayIdx >= daysDescMs.length가 되면 모든 일자가 완료 → 루프 탈출.

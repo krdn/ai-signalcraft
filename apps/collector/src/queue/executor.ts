@@ -9,6 +9,7 @@ import { classifySentimentFromTexts } from '../services/sentiment';
 import { CancelledError, checkCancellation, finalizeCancellationIfDone } from './cancellation';
 import { mapToRawItem } from './item-mapper';
 import { enqueueCollectionJob } from './queues';
+import { isStaleCatchupJob } from './stale-job';
 import type {
   CollectionJobData,
   CollectionJobResult,
@@ -406,12 +407,16 @@ export async function executeCollectionJob(
     }
 
     // subscription 상태 업데이트 (source 중 하나라도 완료되면 lastRunAt 갱신)
-    const nextRunAt = await computeNextRunAt(subscriptionId);
+    const { nextRunAt, intervalHours } = await computeNextRunAt(subscriptionId);
+    // 큐에 묵었다 늦게 실행된 백로그 잡의 완료가 nextRunAt을 미래로 밀면, 백로그가
+    // 소진될 때까지 스케줄러가 due를 보지 못해 현재 윈도우 잡 발급이 기아 상태가 된다
+    // (2026-06-11 dcinside 사례). 백로그 잡은 nextRunAt 갱신을 생략한다.
+    const staleCatchup = isStaleCatchupJob(dateRange.endISO, intervalHours);
     await db
       .update(keywordSubscriptions)
       .set({
         lastRunAt: new Date(),
-        nextRunAt,
+        ...(staleCatchup ? {} : { nextRunAt }),
         status: 'active',
         lastError: null,
       })
@@ -686,7 +691,9 @@ async function executeCommentsJob(job: Job<CollectionJobData>): Promise<Collecti
 /**
  * 다음 실행 시각 — subscription.intervalHours 기반.
  */
-async function computeNextRunAt(subscriptionId: number): Promise<Date> {
+async function computeNextRunAt(
+  subscriptionId: number,
+): Promise<{ nextRunAt: Date; intervalHours: number }> {
   const db = getDb();
   const [row] = await db
     .select({ intervalHours: keywordSubscriptions.intervalHours })
@@ -694,7 +701,7 @@ async function computeNextRunAt(subscriptionId: number): Promise<Date> {
     .where(eq(keywordSubscriptions.id, subscriptionId))
     .limit(1);
   const hours = row?.intervalHours ?? 6;
-  return new Date(Date.now() + hours * 3600 * 1000);
+  return { nextRunAt: new Date(Date.now() + hours * 3600 * 1000), intervalHours: hours };
 }
 
 // sql import used implicitly by drizzle query builders above — suppress unused
