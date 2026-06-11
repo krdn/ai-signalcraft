@@ -70,7 +70,8 @@ export interface CollectionStats {
     | 'pageEmptyOrBlocked'
     | 'noMoreResults'
     | 'completed'
-    | 'quotaExhausted';
+    | 'quotaExhausted'
+    | 'windowUnreachable';
   /** 마지막으로 시도한 검색 페이지 번호 */
   lastPage: number;
   /** 일자별 수집 분포 (KST yyyy-mm-dd → count) */

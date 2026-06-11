@@ -351,7 +351,9 @@ export const runsRouter = router({
         .update(collectionRuns)
         .set({
           status: 'failed',
-          durationMs: sql`EXTRACT(EPOCH FROM (NOW() - ${collectionRuns.time})) * 1000`,
+          // 수십 일 묵은 좀비 행은 EPOCH×1000이 integer 한계(~24.8일)를 넘어
+          // "integer out of range"로 강제 완료가 불가능했다 — LEAST로 캡.
+          durationMs: sql`LEAST(EXTRACT(EPOCH FROM (NOW() - ${collectionRuns.time})) * 1000, 2147483647)::int`,
           errorReason: 'force-completed from monitor (worker unresponsive)',
         })
         .where(

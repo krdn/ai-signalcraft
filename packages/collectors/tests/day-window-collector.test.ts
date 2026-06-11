@@ -219,4 +219,116 @@ describe('collectByDayWindowDescending', () => {
     });
     expect(posts).toHaveLength(2);
   });
+
+  it('과거 윈도우에 페이지 예산 내 도달이 불가능하면 windowUnreachable로 조기 종료한다', async () => {
+    // 글 폭증 재현: 링크가 20분 간격으로 쏟아져 페이지당 ~1시간씩만 과거로 전진.
+    // 앵커(06-10)에서 윈도우(05-30)까지 ~10.5일 — 100페이지 예산으로 도달 불가.
+    const anchor = kstDate('2026-06-10', '12:00').getTime();
+    const pages: FakeLink[][] = Array.from({ length: 100 }, (_, p) =>
+      Array.from({ length: 3 }, (_, i) => ({
+        url: `p${p}-${i}`,
+        title: `p${p}-${i}`,
+        publishedAt: new Date(anchor - (p * 3 + i) * 20 * 60 * 1000),
+      })),
+    );
+    const c = new FakeDayWindowCollector(pages);
+    const posts = await collectAll(c, {
+      keyword: 'test',
+      startDate: '2026-05-30T00:00:00+09:00',
+      endDate: '2026-05-30T00:00:00+09:00',
+      maxItems: 1000,
+      maxItemsPerDay: 100,
+      mode: 'incremental',
+    });
+    expect(posts).toHaveLength(0);
+    const stats = c.getLastRunStats();
+    expect(stats?.endReason).toBe('windowUnreachable');
+    // 100페이지를 다 돌지 않고 표본 구간(10페이지 부근)에서 멈춰야 한다
+    expect(stats?.lastPage).toBeLessThan(20);
+  });
+
+  it('과거 윈도우라도 페이지 예산 내 도달 가능하면 조기 종료 없이 수집한다', async () => {
+    // 페이지당 12시간씩 전진 — 3일 전 윈도우는 ~7페이지에 도달.
+    const anchor = kstDate('2026-06-10', '12:00').getTime();
+    const futurePages: FakeLink[][] = Array.from({ length: 6 }, (_, p) => [
+      { url: `f${p}`, title: `f${p}`, publishedAt: new Date(anchor - p * 12 * 3600 * 1000) },
+    ]);
+    const targetPage: FakeLink[] = [
+      { url: 'hit', title: 'hit', publishedAt: kstDate('2026-06-07', '10:00') },
+    ];
+    const c = new FakeDayWindowCollector([...futurePages, targetPage]);
+    const posts = await collectAll(c, {
+      keyword: 'test',
+      startDate: '2026-06-07T00:00:00+09:00',
+      endDate: '2026-06-07T00:00:00+09:00',
+      maxItems: 1000,
+      maxItemsPerDay: 100,
+      mode: 'incremental',
+    });
+    expect(posts.map((p) => p.url)).toEqual(['hit']);
+    expect(c.getLastRunStats()?.endReason).not.toBe('windowUnreachable');
+  });
+});
+
+describe('estimateWindowUnreachable', () => {
+  const H = 3600_000;
+  const base = {
+    anchorNewestTs: 1000 * H,
+    pagesSoFar: 20,
+    maxPages: 120,
+  };
+
+  it('이미 윈도우에 도달했으면 false', () => {
+    expect(
+      CommunityBaseCollector.estimateWindowUnreachable({
+        ...base,
+        oldestSeenTs: 900 * H,
+        windowEndTs: 950 * H,
+      }),
+    ).toBe(false);
+  });
+
+  it('표본 페이지 수가 부족하면 false', () => {
+    expect(
+      CommunityBaseCollector.estimateWindowUnreachable({
+        ...base,
+        pagesSoFar: 5,
+        oldestSeenTs: 995 * H,
+        windowEndTs: 100 * H,
+      }),
+    ).toBe(false);
+  });
+
+  it('남은 예산의 마진(2배) 이내로 도달 가능한 애매한 경우는 false', () => {
+    // 20페이지에 20시간 전진(1h/page), 남은 100페이지 × 마진 2 = 200h 여유, 갭 150h → 계속
+    expect(
+      CommunityBaseCollector.estimateWindowUnreachable({
+        ...base,
+        oldestSeenTs: 980 * H,
+        windowEndTs: 830 * H,
+      }),
+    ).toBe(false);
+  });
+
+  it('명백히 도달 불가하면 true', () => {
+    // 1h/page 속도로 갭 500h — 남은 100페이지 × 2 마진을 초과 → 포기
+    expect(
+      CommunityBaseCollector.estimateWindowUnreachable({
+        ...base,
+        oldestSeenTs: 980 * H,
+        windowEndTs: 480 * H,
+      }),
+    ).toBe(true);
+  });
+
+  it('시간 진행을 측정할 수 없으면(모든 링크 동일 시각) false', () => {
+    expect(
+      CommunityBaseCollector.estimateWindowUnreachable({
+        ...base,
+        anchorNewestTs: 980 * H,
+        oldestSeenTs: 980 * H,
+        windowEndTs: 100 * H,
+      }),
+    ).toBe(false);
+  });
 });
