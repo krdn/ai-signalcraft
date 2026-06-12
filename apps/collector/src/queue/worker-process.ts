@@ -96,6 +96,25 @@ export async function finalizeTerminalFailedRun(
   }
 }
 
+/**
+ * 프로세스 레벨 크래시 가드 (이슈 #154 유형 B 진단).
+ *
+ * 핸들러가 없으면 uncaughtException/unhandledRejection이 무로그 즉사로 이어져
+ * 사망 원인 추적이 불가능하다 (2026-06-11 하루 9회 재부팅 중 다수가 원인 미상).
+ * 프로세스 상태는 이미 불확정이므로 복구를 시도하지 않고, 원인을 로그한 뒤
+ * exit(1)로 종료해 docker restart(unless-stopped)가 깨끗하게 재기동하게 한다.
+ */
+export function registerProcessGuards(): void {
+  process.on('uncaughtException', (err) => {
+    console.error('[worker-process] uncaughtException — 종료 후 재기동:', err);
+    process.exit(1);
+  });
+  process.on('unhandledRejection', (reason) => {
+    console.error('[worker-process] unhandledRejection — 종료 후 재기동:', reason);
+    process.exit(1);
+  });
+}
+
 function buildWorker(source: CollectorSource): Worker<CollectionJobData, CollectionJobResult> {
   const opts: WorkerOptions = {
     ...getBullMQOptions(),
@@ -170,6 +189,7 @@ export async function shutdownWorkers(
  * docker-compose의 collector-worker 서비스가 사용.
  */
 async function main() {
+  registerProcessGuards();
   console.warn('[worker-process] verifying hypertable constraints...');
   await assertHypertableConstraints();
   // Worker 시작 전 orphaned job 복구
