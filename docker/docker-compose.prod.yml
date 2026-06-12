@@ -152,6 +152,10 @@ services:
       - ../.env.production
     environment:
       NODE_ENV: production
+      # V8 heap cap — mem_limit 8g 중 네이티브 몫(onnxruntime·Playwright chromium 자식)을
+      # 남긴다. cap이 없으면 V8이 cgroup 한도를 모른 채 heap을 키우다 무로그 OOM kill로
+      # 즉사한다 (이슈 #154 유형 B, RSS 5.7GB 관측).
+      NODE_OPTIONS: --max-old-space-size=5120
       DATABASE_URL: ${COLLECTOR_DATABASE_URL:-postgres://postgres:krdn_fx_2026@host.docker.internal:5435/ais_collection}
       REDIS_URL: ${COLLECTOR_REDIS_URL:-redis://redis:6379}
       BULL_PREFIX: collector
