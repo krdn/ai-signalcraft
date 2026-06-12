@@ -13,6 +13,9 @@
 // 안전하게 orphan을 식별한다.
 
 import { Queue } from 'bullmq';
+import { and, lt, eq, sql } from 'drizzle-orm';
+import { getDb } from '../db';
+import { collectionRuns } from '../db/schema';
 import { getBullMQOptions } from './connection';
 import { isCancellationRequested } from './cancellation';
 import { COLLECTOR_SOURCES, type CollectionJobData } from './types';
@@ -95,4 +98,40 @@ export async function recoverOrphanedJobs(): Promise<void> {
   } else {
     console.log('[startup-recovery] orphaned job 없음');
   }
+}
+
+/**
+ * 어떤 finalize 경로도 못 탄 좀비 'running' 행 정리 — 워커 기동 시 1회 실행.
+ *
+ * worker.on('failed')의 finalize가 누락되는 경로(finalize 직전 크래시, DB 일시 장애,
+ * 잡이 실행 없이 큐에서 제거됨 등)에서 collection_runs가 running으로 영구 잔류한다.
+ * packages/core/src/analysis/stale-recovery.ts의 recoverStaleJobs와 동일 패턴.
+ *
+ * 임계 기본 90분: lockDuration 60분(worker-process.ts)을 초과하면 살아있는 잡일 수
+ * 없다 — 살아있다면 lock 갱신과 함께 청크 하트비트(last_progress_at)가 찍힌다.
+ *
+ * 정리된 행의 잡이 이후 재배달되더라도 ensureRunningRun이 새 running 행을
+ * INSERT하므로(재시도 이력 보존 설계) 데이터 손실은 없다.
+ */
+export async function recoverStaleRunningRuns(thresholdMinutes = 90): Promise<number> {
+  const cutoff = new Date(Date.now() - thresholdMinutes * 60_000);
+  const swept = await getDb()
+    .update(collectionRuns)
+    .set({
+      status: 'failed',
+      errorReason: `startup-recovery: stale running ${thresholdMinutes}분+ 무진행 (worker crash 추정)`,
+    })
+    .where(
+      and(
+        eq(collectionRuns.status, 'running'),
+        lt(sql`COALESCE(${collectionRuns.lastProgressAt}, ${collectionRuns.time})`, cutoff),
+      ),
+    )
+    .returning({ runId: collectionRuns.runId, source: collectionRuns.source });
+
+  if (swept.length > 0) {
+    const detail = swept.map((r) => `${r.runId.slice(0, 8)}/${r.source}`).join(', ');
+    console.warn(`[startup-recovery] stale running ${swept.length}건 failed 처리: ${detail}`);
+  }
+  return swept.length;
 }

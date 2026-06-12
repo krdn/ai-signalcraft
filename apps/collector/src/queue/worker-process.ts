@@ -13,7 +13,7 @@ import {
   type CollectionJobResult,
 } from './types';
 import { executeCollectionJob } from './executor';
-import { recoverOrphanedJobs } from './startup-recovery';
+import { recoverOrphanedJobs, recoverStaleRunningRuns } from './startup-recovery';
 
 /**
  * 소스별 기동 전 환경 검증.
@@ -45,6 +45,56 @@ const CONCURRENCY: Record<CollectorSource, number> = {
   fmkorea: 1,
   clien: 1,
 };
+
+/** worker.on('failed')가 전달하는 job 중 finalize 판정에 필요한 최소 형태 */
+interface FailedJobInfo {
+  data: { runId: string };
+  attemptsMade: number;
+  finishedOn?: number;
+}
+
+/**
+ * executor의 catch를 거치지 않는 실패 경로(stalled 한도 초과 등)에서
+ * collection_runs가 status='running'으로 영구 orphan이 되는 것을 방지.
+ *
+ * terminal 판정은 attemptsMade 비교가 아니라 finishedOn 유무로 한다:
+ * BullMQ는 재시도 예정 실패(moveToDelayed/retryJob)에서는 finishedOn을 설정하지
+ * 않고, terminal 실패(attempts 소진·stalled 한도 초과(UnrecoverableError)·discard)
+ * 에서만 moveToFinished로 설정한 뒤 'failed'를 emit한다. stalled 한도 초과는
+ * attemptsMade < attempts 상태에서도 terminal이라(2026-06-11 run 2bbdb301 사건)
+ * attemptsMade 비교는 이 경우 finalize를 놓쳐 영구 running 좀비를 만든다.
+ */
+export async function finalizeTerminalFailedRun(
+  source: CollectorSource,
+  job: FailedJobInfo | undefined,
+  err: Error,
+): Promise<void> {
+  if (!job) return;
+  if (job.finishedOn == null) return; // 재시도 예정 — terminal 실패만 finalize
+
+  const runId = job.data.runId;
+  const reason = (err.message ?? 'unknown').slice(0, 500);
+  try {
+    await getDb()
+      .update(collectionRuns)
+      .set({
+        status: 'failed',
+        errorReason: `worker.failed: ${reason}`,
+      })
+      .where(
+        and(
+          eq(collectionRuns.runId, runId),
+          eq(collectionRuns.source, source),
+          eq(collectionRuns.status, 'running'),
+        ),
+      );
+  } catch (dbErr) {
+    console.error(
+      `[worker:${source}] failed-hook DB finalize 실패 runId=${runId}:`,
+      dbErr instanceof Error ? dbErr.message : dbErr,
+    );
+  }
+}
 
 function buildWorker(source: CollectorSource): Worker<CollectionJobData, CollectionJobResult> {
   const opts: WorkerOptions = {
@@ -84,36 +134,7 @@ function buildWorker(source: CollectorSource): Worker<CollectionJobData, Collect
     console.error(
       `[worker:${source}] failed runId=${job?.data.runId} attempt=${job?.attemptsMade}: ${err.message}`,
     );
-
-    // executor의 catch를 거치지 않는 실패 경로(stalled 초과 등)에서
-    // collection_runs가 status='running'으로 영구 orphan이 되는 것을 방지.
-    // 재시도 경쟁을 피하려고 '마지막 시도'일 때만 finalize.
-    if (!job) return;
-    const maxAttempts = job.opts.attempts ?? 1;
-    const isLastAttempt = job.attemptsMade >= maxAttempts;
-    if (!isLastAttempt) return;
-
-    const runId = job.data.runId;
-    const reason = (err.message ?? 'unknown').slice(0, 500);
-    void getDb()
-      .update(collectionRuns)
-      .set({
-        status: 'failed',
-        errorReason: `worker.failed: ${reason}`,
-      })
-      .where(
-        and(
-          eq(collectionRuns.runId, runId),
-          eq(collectionRuns.source, source),
-          eq(collectionRuns.status, 'running'),
-        ),
-      )
-      .catch((dbErr) => {
-        console.error(
-          `[worker:${source}] failed-hook DB finalize 실패 runId=${runId}:`,
-          dbErr instanceof Error ? dbErr.message : dbErr,
-        );
-      });
+    void finalizeTerminalFailedRun(source, job, err);
   });
 
   worker.on('error', (err) => {
@@ -154,6 +175,10 @@ async function main() {
   // Worker 시작 전 orphaned job 복구
   await recoverOrphanedJobs().catch((err) =>
     console.error('[startup-recovery] 복구 실패 (무시하고 계속):', err),
+  );
+  // 어떤 finalize 경로도 못 탄 좀비 running 행 정리 (terminal 실패 직전 크래시 등)
+  await recoverStaleRunningRuns().catch((err) =>
+    console.error('[startup-recovery] stale running 정리 실패 (무시하고 계속):', err),
   );
   console.warn('[worker-process] starting all source workers...');
   const workers = startAllWorkers();
