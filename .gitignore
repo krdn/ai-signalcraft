@@ -450,6 +450,8 @@ claude-proxy.sh
 
 # Runtime DB
 ruvector.db
+agentdb.rvf
+agentdb.rvf.lock
 
 # Playwright MCP temp
 .playwright-mcp/
