@@ -67,9 +67,11 @@ describe('fetchAnalysisPayload 단일 RPC 기반 data-loader', () => {
     dbMock.mockReset();
   });
 
-  it('ragConfig 있을 때(rag-standard): ragSample에서 input 구성, fullset/collectionMeta도 반환', async () => {
+  it('rag-standard에서 RAG under-deliver(요청 1500 대비 3건)면 fullset 병합으로 복구', async () => {
     dbMock.mockResolvedValue([baseJob]);
 
+    // RAG가 요청 topK(타겟 600)보다 크게 미달(article 3건) — 임베딩 희소 신호.
+    // sourceId가 fullset과 겹치므로 dedup 후 fullset 커버리지(10건)로 복구돼야 한다.
     const ragSample = [
       ...Array.from({ length: 3 }, (_, i) => makeRow('article', i)),
       ...Array.from({ length: 2 }, (_, i) => makeRow('comment', i)),
@@ -103,9 +105,11 @@ describe('fetchAnalysisPayload 단일 RPC 기반 data-loader', () => {
     expect(call.ragOptions.articleVideoTopK).toBe(1500);
     expect(call.ragOptions.commentTopK).toBe(1350);
 
-    // input은 ragSample(3개 article, 2개 comment)에서 구성
-    expect(result.input.articles.length).toBe(3);
-    expect(result.input.comments.length).toBe(2);
+    // under-deliver → ragSample(3) + fullset(10) 병합·dedup = 기사 10건으로 복구
+    // (예전 버그: ragSample 3건만 쓰고 fullset 7건을 버렸음)
+    expect(result.input.articles.length).toBe(10);
+    // 댓글도 target(450) 미달이므로 동일하게 병합·dedup = 5건
+    expect(result.input.comments.length).toBe(5);
 
     // fullset은 Drizzle insert 형태로 변환
     expect(result.fullset.articles.length).toBe(10);
@@ -119,7 +123,7 @@ describe('fetchAnalysisPayload 단일 RPC 기반 data-loader', () => {
     expect(result.collectionMeta.sources).toContain('naver-news');
   });
 
-  it('rag-light 프리셋: 기사는 fullset 전체 유지, 댓글만 RAG 필터', async () => {
+  it('rag-light 프리셋: 기사는 RAG 미요청이라 fullset 유지, 댓글 under-deliver면 병합 복구', async () => {
     dbMock.mockResolvedValue([
       {
         ...baseJob,
@@ -156,10 +160,10 @@ describe('fetchAnalysisPayload 단일 RPC 기반 data-loader', () => {
     expect(call.ragOptions).not.toHaveProperty('articleVideoTopK');
     expect(call.ragOptions.commentTopK).toBe(750);
 
-    // 기사는 ragSample에 없으므로 fullset(5건)에서 폴백
+    // 기사는 RAG 미요청(target 0)이고 ragSample에 없으므로 fullset(5건)에서 폴백
     expect(result.input.articles.length).toBe(5);
-    // 댓글은 ragSample(5건)에서
-    expect(result.input.comments.length).toBe(5);
+    // 댓글 5건은 target(250) 미달 → under-deliver → fullset(10건) 병합·dedup으로 복구
+    expect(result.input.comments.length).toBe(10);
 
     // fullset 변환도 정상
     expect(result.fullset.articles.length).toBe(5);
