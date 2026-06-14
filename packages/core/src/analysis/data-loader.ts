@@ -266,19 +266,27 @@ export async function loadAnalysisInputFromCollector(
   });
 
   // ragSample → AnalysisInput
-  // itemType별로 독립 폴백 — ragSample에 해당 itemType이 없으면 fullset 전체를 사용.
-  // rag-light처럼 articleTopK=0인 프리셋은 ragSample에 기사가 없으므로 fullset에서 전체 유지.
-  // rag-standard처럼 RAG가 유사도 미달로 0건을 반환했을 때도 fullset으로 자동 복구.
+  // RAG가 "요청한 topK 근처"를 반환했으면 의미 선별이 정상 동작한 것 → ragSample 신뢰.
+  // 임베딩 희소(NULL률 높음) 등으로 요청량보다 크게 미달하면 under-deliver → fullset 병합 복구.
+  // 비교 기준은 ×3 인플레된 articleVideoTopK가 아니라 다운스트림 컷 타겟(un-inflated)이다.
+  // (rag-light처럼 articleTopK=0인 프리셋은 타겟 0이므로 항상 ragSample을 그대로 통과.)
   const ragArticles = resp.ragSample.filter((i) => i.itemType === 'article');
   const ragVideos = resp.ragSample.filter((i) => i.itemType === 'video');
   const ragComments = resp.ragSample.filter((i) => i.itemType === 'comment');
+  const fullArticles = resp.fullset.filter((i) => i.itemType === 'article');
+  const fullVideos = resp.fullset.filter((i) => i.itemType === 'video');
+  const fullComments = resp.fullset.filter((i) => i.itemType === 'comment');
 
-  const articleRows =
-    ragArticles.length > 0 ? ragArticles : resp.fullset.filter((i) => i.itemType === 'article');
-  const videoRows =
-    ragVideos.length > 0 ? ragVideos : resp.fullset.filter((i) => i.itemType === 'video');
-  const commentRows =
-    ragComments.length > 0 ? ragComments : resp.fullset.filter((i) => i.itemType === 'comment');
+  // article+video는 collector가 단일 topK로 함께 요청하므로 결합해 판정한다.
+  // 타겟(articleVideoTarget/commentTarget)은 위 collector 요청 계산과 동일한 un-inflated 값.
+  const selectedArticleVideo = selectAnalysisRows(
+    [...ragArticles, ...ragVideos],
+    [...fullArticles, ...fullVideos],
+    articleVideoTarget,
+  );
+  const articleRows = selectedArticleVideo.filter((i) => i.itemType === 'article');
+  const videoRows = selectedArticleVideo.filter((i) => i.itemType === 'video');
+  const commentRows = selectAnalysisRows(ragComments, fullComments, commentTarget);
 
   const articlesOut = articleRows
     .filter((a) => a.title)
@@ -340,6 +348,51 @@ export async function loadAnalysisInputFromCollector(
     fullset,
     collectionMeta: resp.collectionMeta,
   };
+}
+
+/**
+ * collector RAG 결과(ragRows)와 전체 풀(fullsetRows)을 합쳐 분석 입력 행을 선택한다.
+ *
+ * collector 측 RAG에는 유사도 컷오프가 없어 ragSample은 거의 항상 0건이 아니다.
+ * 따라서 "0건이면 폴백" 게이트는 무력화되고, 임베딩 희소(NULL률 높음)로 RAG가
+ * 요청량보다 크게 미달해도 그 소수만 쓰고 fullset 전체를 버리는 데이터 손실이 발생했다.
+ *
+ * 판정 기준은 "RAG가 요청한 targetK 근처를 반환했는가":
+ *   - targetK <= 0               → 이 itemType은 RAG 미요청 → fullset 전체 사용
+ *   - ragRows >= targetK         → RAG가 충분히 선별 → ragRows 그대로 (관련도 순위 보존)
+ *   - ragRows < targetK & 풀 더 큼 → under-deliver → dedup(ragRows ++ fullsetRows)로 복구
+ *   - 그 외(풀도 작음)            → ragRows 그대로 (폴백 무의미)
+ *
+ * 무조건 병합하지 않는 이유: RAG가 충분히 반환했을 때 병합 후 다운스트림 시계열 컷을 하면
+ * 관련 선별 결과가 전체의 시간 샘플로 대체되어 RAG가 동작한 경우의 관련도 신호를 파괴한다.
+ * 병합 결과는 runTokenOptimization의 stratifiedSample이 presetTopK로 캡하므로 토큰 안전.
+ *
+ * @param targetK collector가 요청한 un-inflated 다운스트림 컷 타겟 (×3 인플레값 아님).
+ *               0이면 해당 itemType을 RAG로 요청하지 않은 것 → fullset 전체 사용.
+ */
+export function selectAnalysisRows<T extends Record<string, unknown>>(
+  ragRows: T[],
+  fullsetRows: T[],
+  targetK: number,
+): T[] {
+  // 이 itemType은 RAG 미요청 — ragSample에 없으므로 fullset 전체로 폴백 (rag-light의 기사 등).
+  if (targetK <= 0) return ragRows.length > 0 ? ragRows : fullsetRows;
+  const delivered = ragRows.length >= targetK;
+  if (delivered || fullsetRows.length <= ragRows.length) return ragRows;
+
+  // under-deliver — ragRows에 fullset을 합쳐 커버리지를 복구한다.
+  // (RAG가 미달했으므로 관련도 순위는 이미 신뢰할 수 없고, 이후 시계열 컷이 시간 기준으로
+  //  재샘플하므로 순위 보존이 아니라 '범위 복구'가 목적이다.)
+  // collector가 쓰는 동일 키(source::sourceId::itemType)로 중복 제거.
+  const seen = new Set<string>();
+  const merged: T[] = [];
+  for (const r of [...ragRows, ...fullsetRows]) {
+    const key = `${String(r.source)}::${String(r.sourceId)}::${String(r.itemType)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    merged.push(r);
+  }
+  return merged;
 }
 
 function toDate(d: string | Date | null): Date {
