@@ -15,6 +15,17 @@ type FailReason =
   | 'captions_http_error' // baseUrl fetch 실패 — 대부분 429 (PO token)
   | 'parse_empty'; // XML은 받았지만 <p> 세그먼트 파싱 실패
 
+// 성공 시 자막을, 실패 시 차단 여부를 노출하는 판별 유니온.
+// blocked=true는 run 단위 회로 차단기(youtube-collector.ts)의 트리거가 된다.
+export type TranscriptResult =
+  | { ok: true; text: string; lang: string }
+  | { ok: false; blocked: boolean };
+
+// 429/403은 rate-limit/PO token 차단으로 간주. no_tracks 등은 차단이 아님.
+function isBlockedStatus(status: number): boolean {
+  return status === 429 || status === 403;
+}
+
 function logFailure(videoId: string, reason: FailReason, detail?: string): void {
   // 운영 환경에서 구조화된 grep이 가능하도록 고정 prefix 사용.
   // 향후 재활성화 시도 시 reason별 빈도를 집계해 원인을 판별한다.
@@ -35,9 +46,7 @@ function decodeEntities(text: string): string {
     .replace(/&#(\d+);/g, (_, dec) => String.fromCodePoint(parseInt(dec, 10)));
 }
 
-export async function fetchTranscript(
-  videoId: string,
-): Promise<{ text: string; lang: string } | null> {
+export async function fetchTranscript(videoId: string): Promise<TranscriptResult> {
   try {
     const resp = await fetch(INNERTUBE_PLAYER_URL, {
       method: 'POST',
@@ -55,7 +64,7 @@ export async function fetchTranscript(
 
     if (!resp.ok) {
       logFailure(videoId, 'player_http_error', `status=${resp.status}`);
-      return null;
+      return { ok: false, blocked: isBlockedStatus(resp.status) };
     }
 
     const data = await resp.json();
@@ -65,7 +74,7 @@ export async function fetchTranscript(
     if (!tracks?.length) {
       // 자막이 원래 없는 영상이 다수이므로 흔한 케이스 — 로그 남기되 집계는 의미 있음
       logFailure(videoId, 'no_tracks');
-      return null;
+      return { ok: false, blocked: false };
     }
 
     const koTrack = tracks.find((t) => t.languageCode === 'ko');
@@ -78,7 +87,7 @@ export async function fetchTranscript(
         'captions_http_error',
         `status=${xmlResp.status} lang=${selected.languageCode}`,
       );
-      return null;
+      return { ok: false, blocked: isBlockedStatus(xmlResp.status) };
     }
 
     const xml = await xmlResp.text();
@@ -91,16 +100,17 @@ export async function fetchTranscript(
 
     if (texts.length === 0) {
       logFailure(videoId, 'parse_empty', `xml_bytes=${xml.length} lang=${selected.languageCode}`);
-      return null;
+      return { ok: false, blocked: false };
     }
 
     return {
+      ok: true,
       text: texts.join(' '),
       lang: selected.languageCode === 'ko' ? 'ko' : selected.languageCode,
     };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.warn(`[transcript] ${videoId} reason=exception ${msg}`);
-    return null;
+    return { ok: false, blocked: false };
   }
 }
