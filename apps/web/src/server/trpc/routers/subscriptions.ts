@@ -15,6 +15,7 @@ export interface SubscriptionRecord {
   limits: { maxPerRun: number; maxPerDay?: number; commentsPerItem?: number };
   options?: {
     collectTranscript?: boolean;
+    transcriptAutoSkipOnBlock?: boolean;
     includeComments?: boolean;
     enableManipulation?: boolean;
   } | null;
@@ -245,6 +246,7 @@ const limitsSchema = z.object({
 const optionsSchema = z
   .object({
     collectTranscript: z.boolean().optional(),
+    transcriptAutoSkipOnBlock: z.boolean().optional(),
     includeComments: z.boolean().optional(),
     enableManipulation: z.boolean().optional(),
   })

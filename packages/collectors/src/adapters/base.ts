@@ -41,6 +41,9 @@ export const CollectionOptionsSchema = z.object({
   since: z.string().datetime().optional(),
   commentOrder: z.enum(['relevance', 'time']).default('relevance').optional(),
   collectTranscript: z.boolean().default(true).optional(),
+  // 자막 차단(429/403)이 누적되면 run 잔여 영상의 자막 호출을 자동 스킵.
+  // undefined/true = 활성(권장). false = 차단돼도 모든 영상에서 자막 재시도(비권장).
+  transcriptAutoSkipOnBlock: z.boolean().default(true).optional(),
 });
 export type CollectionOptions = z.infer<typeof CollectionOptionsSchema>;
 
@@ -90,6 +93,10 @@ export interface CollectionStats {
   quotaRemaining?: number;
   /** 폴백 전략 사용 여부 */
   usedFallback?: boolean;
+  /** run 내 자막 차단(429/403) 회로가 열렸는지 (YouTube 전용) */
+  transcriptCircuitOpen?: boolean;
+  /** 회로 open으로 자막 호출을 스킵한 영상 수 (YouTube 전용) */
+  transcriptSkippedByCircuit?: number;
 }
 
 // 모든 수집기가 구현하는 인터페이스

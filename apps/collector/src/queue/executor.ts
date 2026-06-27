@@ -175,6 +175,7 @@ export async function executeCollectionJob(
       maxItemsPerDay: limits.maxPerRun,
       maxComments: limits.commentsPerItem,
       collectTranscript: options?.collectTranscript,
+      transcriptAutoSkipOnBlock: options?.transcriptAutoSkipOnBlock,
       mode: job.data.mode,
     });
 

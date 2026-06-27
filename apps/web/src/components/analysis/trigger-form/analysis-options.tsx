@@ -13,6 +13,8 @@ export interface AnalysisOptionsProps {
   onEnableItemAnalysisChange: (v: boolean) => void;
   collectTranscript: boolean;
   onCollectTranscriptChange: (v: boolean) => void;
+  transcriptAutoSkipOnBlock: boolean;
+  onTranscriptAutoSkipOnBlockChange: (v: boolean) => void;
   sources: SourceId[];
 }
 
@@ -24,6 +26,8 @@ export function AnalysisOptions({
   onEnableItemAnalysisChange,
   collectTranscript,
   onCollectTranscriptChange,
+  transcriptAutoSkipOnBlock,
+  onTranscriptAutoSkipOnBlockChange,
   sources,
 }: AnalysisOptionsProps) {
   return (
@@ -74,6 +78,26 @@ export function AnalysisOptions({
             <p className="text-xs text-muted-foreground">
               영상 자막을 수집합니다. YouTube 자막이 없는 영상은 조회수 상위 20건에 한해 오디오를
               자동 전사(Whisper)해 채웁니다. 다음 분석 실행부터 반영됩니다.
+            </p>
+          </div>
+        </label>
+      )}
+      {sources.includes('youtube') && collectTranscript && (
+        <label
+          className={`ml-6 flex items-start gap-2 rounded-lg border p-3 transition-colors ${isDemo ? 'opacity-70' : 'cursor-pointer hover:bg-accent/50'}`}
+        >
+          <Checkbox
+            checked={transcriptAutoSkipOnBlock}
+            onCheckedChange={(checked) => onTranscriptAutoSkipOnBlockChange(!!checked)}
+            disabled={isDemo || disabled || isSubMode}
+            className="mt-0.5"
+          />
+          <div className="space-y-1">
+            <span className="text-sm font-medium">차단 시 자동 스킵</span>
+            <p className="text-xs text-muted-foreground">
+              YouTube가 자막 요청을 차단(429)하면, 그 수집 회차의 나머지 영상은 자막 호출을 건너뛰고
+              Whisper·설명문 폴백으로 진행합니다. 끄면 차단돼도 모든 영상에서 자막을 계속
+              시도합니다(권장하지 않음).
             </p>
           </div>
         </label>

@@ -105,6 +105,8 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
   const [breakpoints, setBreakpoints] = useState<BreakpointValue[]>([]);
   const [forceRefetch, setForceRefetch] = useState(false);
   const [collectTranscript, setCollectTranscript] = useState(false);
+  // 차단 시 자동 스킵 — 기본 활성 (회로 차단기 ON)
+  const [transcriptAutoSkipOnBlock, setTranscriptAutoSkipOnBlock] = useState(true);
   const [subscriptionMode, setSubscriptionMode] = useState<{
     isActive: boolean;
     subscription: SubscriptionSummary | null;
@@ -220,6 +222,8 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
     setForceRefetch(false);
     setEnableItemAnalysis(sub.options.includeComments !== false);
     setCollectTranscript(!!sub.options.collectTranscript);
+    // undefined(기존 구독)는 활성으로 복원 — 회로 차단기 기본 ON
+    setTranscriptAutoSkipOnBlock(sub.options.transcriptAutoSkipOnBlock !== false);
     if (sub.limits.maxPerRun) {
       setMaxNaverArticles(Math.min(sub.limits.maxPerRun, 5000));
       setMaxYoutubeVideos(Math.min(Math.round(sub.limits.maxPerRun / 10), 500));
@@ -267,6 +271,9 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
               ...(enableItemAnalysis && { enableItemAnalysis: true }),
               ...(optimizationPreset !== 'none' && { tokenOptimization: optimizationPreset }),
               ...(collectTranscript && { collectTranscript: true }),
+              // default-ON — OFF일 때만 명시 전송(자막 수집이 켜진 경우에 한해)
+              ...(collectTranscript &&
+                !transcriptAutoSkipOnBlock && { transcriptAutoSkipOnBlock: false }),
             }
           : undefined,
       limits: {
@@ -393,6 +400,8 @@ export function TriggerForm({ onJobStarted, preset, onChangePreset }: TriggerFor
             onEnableItemAnalysisChange={setEnableItemAnalysis}
             collectTranscript={collectTranscript}
             onCollectTranscriptChange={setCollectTranscript}
+            transcriptAutoSkipOnBlock={transcriptAutoSkipOnBlock}
+            onTranscriptAutoSkipOnBlockChange={setTranscriptAutoSkipOnBlock}
             sources={sources}
           />
 

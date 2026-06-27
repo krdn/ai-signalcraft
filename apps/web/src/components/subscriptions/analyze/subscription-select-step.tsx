@@ -50,6 +50,8 @@ export function SubscriptionSelectStep({ onSelect }: SubscriptionSelectStepProps
       limits: sub.limits,
       options: {
         collectTranscript: sub.options?.collectTranscript ?? false,
+        // undefined(기존 구독)는 활성으로 — 회로 차단기 기본 ON
+        transcriptAutoSkipOnBlock: sub.options?.transcriptAutoSkipOnBlock !== false,
         includeComments: sub.options?.includeComments ?? true,
       },
       domain: sub.domain,

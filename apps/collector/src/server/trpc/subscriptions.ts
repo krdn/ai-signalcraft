@@ -22,6 +22,7 @@ export const limitsSchema = z.object({
 export const optionsSchema = z
   .object({
     collectTranscript: z.boolean().optional(),
+    transcriptAutoSkipOnBlock: z.boolean().optional(),
     includeComments: z.boolean().optional(),
     enableManipulation: z.boolean().optional(),
   })

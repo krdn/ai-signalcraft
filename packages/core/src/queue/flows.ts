@@ -318,6 +318,8 @@ export async function triggerCollection(params: CollectionTrigger, dbJobId: numb
             maxComments: limits.commentsPerItem,
             commentOrder: 'relevance',
             collectTranscript: params.collectTranscript ?? false,
+            // 차단 자동 스킵 — 기본 활성 (undefined → true)
+            transcriptAutoSkipOnBlock: params.transcriptAutoSkipOnBlock ?? true,
             flowId,
             dbJobId,
             reusePlan,

@@ -37,6 +37,7 @@ export interface CollectionJobData {
   };
   options?: {
     collectTranscript?: boolean;
+    transcriptAutoSkipOnBlock?: boolean;
     includeComments?: boolean;
   };
   /** 수집 시간 범위 — 스케줄러는 "직전 수집 이후 ~ 지금" 범위를 넘김 */

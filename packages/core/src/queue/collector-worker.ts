@@ -107,6 +107,8 @@ export function createCollectorHandler(): (job: Job) => Promise<CollectorResult>
             quotaUsed?: number;
             quotaRemaining?: number;
             usedFallback?: boolean;
+            transcriptCircuitOpen?: boolean;
+            transcriptSkippedByCircuit?: number;
           };
           const distStr = Object.entries(s.perDayCount)
             .sort(([a], [b]) => a.localeCompare(b))
@@ -117,10 +119,14 @@ export function createCollectorHandler(): (job: Job) => Promise<CollectorResult>
               ? ` quota=${s.quotaUsed}/${s.quotaUsed + (s.quotaRemaining ?? 0)}`
               : '';
           const fallbackInfo = s.usedFallback ? ' [innertube-fallback]' : '';
+          // 자막 차단 회로가 열렸으면 스킵 수와 함께 배지 노출 (운영자 진단용)
+          const transcriptCircuitInfo = s.transcriptCircuitOpen
+            ? ` [transcript-circuit-open skipped=${s.transcriptSkippedByCircuit ?? 0}]`
+            : '';
           appendJobEvent(
             dbJobId,
             'info',
-            `[${source}] 종료: reason=${s.endReason} lastPage=${s.lastPage}${quotaInfo}${fallbackInfo} 분포(KST)={${distStr}} capSkip=${s.perDayCapSkip ?? 0} preFilterSkip=${s.preFilterSkip ?? 0} outOfRange=${s.outOfRange ?? 0} pageEmpty=${s.pageEmptyCount ?? 0}`,
+            `[${source}] 종료: reason=${s.endReason} lastPage=${s.lastPage}${quotaInfo}${fallbackInfo}${transcriptCircuitInfo} 분포(KST)={${distStr}} capSkip=${s.perDayCapSkip ?? 0} preFilterSkip=${s.preFilterSkip ?? 0} outOfRange=${s.outOfRange ?? 0} pageEmpty=${s.pageEmptyCount ?? 0}`,
           ).catch((err) => logError('collector-worker', err));
         }
       }
