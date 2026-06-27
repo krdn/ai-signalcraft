@@ -49,6 +49,7 @@ export const analysisRouter = router({
               ])
               .optional(),
             collectTranscript: z.boolean().optional(),
+            transcriptAutoSkipOnBlock: z.boolean().optional(),
           })
           .optional(),
         limits: z
@@ -292,6 +293,7 @@ export const analysisRouter = router({
           limitMode,
           forceRefetch: effectiveForceRefetch,
           collectTranscript: input.options?.collectTranscript,
+          transcriptAutoSkipOnBlock: input.options?.transcriptAutoSkipOnBlock,
         },
         job.id,
       );

@@ -41,6 +41,9 @@ export const CollectionOptionsSchema = z.object({
   since: z.string().datetime().optional(),
   commentOrder: z.enum(['relevance', 'time']).default('relevance').optional(),
   collectTranscript: z.boolean().default(true).optional(),
+  // 자막 차단(429/403)이 누적되면 run 잔여 영상의 자막 호출을 자동 스킵.
+  // undefined/true = 활성(권장). false = 차단돼도 모든 영상에서 자막 재시도(비권장).
+  transcriptAutoSkipOnBlock: z.boolean().default(true).optional(),
 });
 export type CollectionOptions = z.infer<typeof CollectionOptionsSchema>;
 

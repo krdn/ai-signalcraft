@@ -82,6 +82,10 @@ export function SubscriptionForm({ initial, onSaved, onCreated, onCancel }: Subs
   const [collectTranscript, setCollectTranscript] = useState(
     initial?.options?.collectTranscript ?? false,
   );
+  // 차단 시 자동 스킵 — undefined(기존 구독)는 활성 (회로 차단기 기본 ON)
+  const [transcriptAutoSkipOnBlock, setTranscriptAutoSkipOnBlock] = useState(
+    initial?.options?.transcriptAutoSkipOnBlock !== false,
+  );
   const [enableManipulation, setEnableManipulation] = useState(
     initial?.options?.enableManipulation ?? false,
   );
@@ -99,7 +103,11 @@ export function SubscriptionForm({ initial, onSaved, onCreated, onCancel }: Subs
       sources: string[];
       intervalHours: number;
       limits: { maxPerRun: number; commentsPerItem: number };
-      options?: { collectTranscript?: boolean; enableManipulation?: boolean };
+      options?: {
+        collectTranscript?: boolean;
+        transcriptAutoSkipOnBlock?: boolean;
+        enableManipulation?: boolean;
+      };
     }) =>
       trpcClient.subscriptions.create.mutate({
         keyword: input.keyword,
@@ -124,7 +132,11 @@ export function SubscriptionForm({ initial, onSaved, onCreated, onCancel }: Subs
       sources: string[];
       intervalHours: number;
       limits: { maxPerRun: number; commentsPerItem: number };
-      options?: { collectTranscript?: boolean; enableManipulation?: boolean };
+      options?: {
+        collectTranscript?: boolean;
+        transcriptAutoSkipOnBlock?: boolean;
+        enableManipulation?: boolean;
+      };
     }) =>
       trpcClient.subscriptions.update.mutate({
         id: input.id,
@@ -182,6 +194,7 @@ export function SubscriptionForm({ initial, onSaved, onCreated, onCancel }: Subs
       limits: { maxPerRun, commentsPerItem },
       options: {
         collectTranscript,
+        transcriptAutoSkipOnBlock,
         enableManipulation,
       },
     };
@@ -400,6 +413,24 @@ export function SubscriptionForm({ initial, onSaved, onCreated, onCancel }: Subs
             <p className="text-xs text-muted-foreground">
               영상 자막을 수집합니다. YouTube 자막이 없는 영상은 조회수 상위 20건에 한해 오디오를
               자동 전사(Whisper)해 채웁니다. 다음 분석 실행부터 반영됩니다.
+            </p>
+          </div>
+        </label>
+      )}
+      {sources.includes('youtube') && collectTranscript && (
+        <label className="ml-6 flex items-start gap-2 rounded-lg border p-3 cursor-pointer hover:bg-accent/50">
+          <Checkbox
+            checked={transcriptAutoSkipOnBlock}
+            onCheckedChange={(checked) => setTranscriptAutoSkipOnBlock(!!checked)}
+            disabled={isPending}
+            className="mt-0.5"
+          />
+          <div className="space-y-1">
+            <span className="text-sm font-medium">차단 시 자동 스킵</span>
+            <p className="text-xs text-muted-foreground">
+              YouTube가 자막 요청을 차단(429)하면, 그 수집 회차의 나머지 영상은 자막 호출을 건너뛰고
+              Whisper·설명문 폴백으로 진행합니다. 끄면 차단돼도 모든 영상에서 자막을 계속
+              시도합니다(권장하지 않음).
             </p>
           </div>
         </label>

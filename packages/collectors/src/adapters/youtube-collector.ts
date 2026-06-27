@@ -65,6 +65,8 @@ export class YoutubeCollector implements Collector<YoutubeVideo> {
     const maxComments = options.maxComments ?? DEFAULT_MAX_COMMENTS;
     const commentOrder = options.commentOrder ?? 'relevance';
     const collectTranscript = options.collectTranscript !== false;
+    // 차단 자동 스킵 — undefined(기존 구독)는 활성으로 간주 (회로 차단기 유지)
+    const transcriptCircuitEnabled = options.transcriptAutoSkipOnBlock !== false;
     const days = splitIntoDaysKst(options.startDate, options.endDate);
     const perDayLimit = options.maxItemsPerDay ?? Math.max(1, Math.floor(maxItems / days.length));
     const skipUrlSet = new Set(options.reusePlan?.skipUrls ?? []);
@@ -158,7 +160,7 @@ export class YoutubeCollector implements Collector<YoutubeVideo> {
             video.comments = await this.collectComments(video.sourceId, maxComments, commentOrder);
           }
           if (collectTranscript) {
-            if (circuit.open) {
+            if (transcriptCircuitEnabled && circuit.open) {
               // 회로 열림 — 호출 자체를 스킵 (Whisper/description 폴백으로 진행)
               circuit = { ...circuit, skipped: circuit.skipped + 1 };
             } else {
@@ -167,7 +169,10 @@ export class YoutubeCollector implements Collector<YoutubeVideo> {
                 video.transcript = result.text;
                 video.transcriptLang = result.lang;
               }
-              circuit = evaluateTranscriptCircuit(circuit, result, TRANSCRIPT_BLOCK_THRESHOLD);
+              // 자동 스킵 OFF면 회로를 열지 않음 — 모든 영상에서 계속 시도
+              if (transcriptCircuitEnabled) {
+                circuit = evaluateTranscriptCircuit(circuit, result, TRANSCRIPT_BLOCK_THRESHOLD);
+              }
             }
           }
         }

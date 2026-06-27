@@ -17,6 +17,7 @@ export type SubscriptionLimits = {
 
 export type SubscriptionOptions = {
   collectTranscript?: boolean;
+  transcriptAutoSkipOnBlock?: boolean;
   includeComments?: boolean;
   enableManipulation?: boolean;
 };

@@ -12,7 +12,11 @@ export interface SubscriptionSummary {
   keyword: string;
   sources: string[];
   limits: { maxPerRun: number; maxPerDay?: number; commentsPerItem?: number };
-  options: { collectTranscript?: boolean; includeComments?: boolean };
+  options: {
+    collectTranscript?: boolean;
+    transcriptAutoSkipOnBlock?: boolean;
+    includeComments?: boolean;
+  };
   domain?: string | null;
 }
 
@@ -57,6 +61,8 @@ export function SubscriptionPicker({ onSelect, disabled }: SubscriptionPickerPro
       limits: sub.limits,
       options: {
         collectTranscript: sub.options?.collectTranscript ?? false,
+        // undefined(기존 구독)는 활성으로 — 회로 차단기 기본 ON
+        transcriptAutoSkipOnBlock: sub.options?.transcriptAutoSkipOnBlock !== false,
         includeComments: sub.options?.includeComments ?? true,
       },
       domain: sub.domain,

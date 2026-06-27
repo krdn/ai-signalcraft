@@ -43,3 +43,35 @@ describe('evaluateTranscriptCircuit', () => {
     ).not.toThrow();
   });
 });
+
+describe('차단 자동 스킵 게이트 (transcriptCircuitEnabled)', () => {
+  // collect 루프의 게이트 동작 재현: enabled=false면 evaluateTranscriptCircuit를
+  // 호출하지 않으므로, 차단이 아무리 누적돼도 회로가 열리지 않는다.
+  function runLoop(enabled: boolean, results: Array<{ ok: false; blocked: boolean }>) {
+    let circuit: CircuitState = { blockedCount: 0, open: false, skipped: 0 };
+    for (const result of results) {
+      if (enabled && circuit.open) {
+        circuit = { ...circuit, skipped: circuit.skipped + 1 };
+      } else if (enabled) {
+        circuit = evaluateTranscriptCircuit(circuit, result, THRESHOLD);
+      }
+      // enabled=false면 회로 상태를 전혀 건드리지 않음
+    }
+    return circuit;
+  }
+
+  it('게이트 ON: 차단 3회면 회로가 열리고 스킵이 누적된다', () => {
+    const blocked = { ok: false as const, blocked: true };
+    const final = runLoop(true, [blocked, blocked, blocked]);
+    expect(final.open).toBe(true);
+    expect(final.skipped).toBe(1); // 3번째는 이미 open이라 스킵
+  });
+
+  it('게이트 OFF: 차단이 누적돼도 회로가 절대 열리지 않는다', () => {
+    const blocked = { ok: false as const, blocked: true };
+    const final = runLoop(false, [blocked, blocked, blocked, blocked]);
+    expect(final.open).toBe(false);
+    expect(final.blockedCount).toBe(0);
+    expect(final.skipped).toBe(0);
+  });
+});

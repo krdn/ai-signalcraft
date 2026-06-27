@@ -23,6 +23,8 @@ export const CollectionTriggerSchema = z.object({
   forceRefetch: z.boolean().optional(),
   // YouTube 영상 자막 수집 여부 (기본: false)
   collectTranscript: z.boolean().optional(),
+  // 자막 차단 누적 시 자동 스킵 (기본: 활성). false면 차단돼도 모든 영상 재시도
+  transcriptAutoSkipOnBlock: z.boolean().optional(),
 });
 export type CollectionTrigger = z.infer<typeof CollectionTriggerSchema>;
 
