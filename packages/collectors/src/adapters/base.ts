@@ -90,6 +90,10 @@ export interface CollectionStats {
   quotaRemaining?: number;
   /** 폴백 전략 사용 여부 */
   usedFallback?: boolean;
+  /** run 내 자막 차단(429/403) 회로가 열렸는지 (YouTube 전용) */
+  transcriptCircuitOpen?: boolean;
+  /** 회로 open으로 자막 호출을 스킵한 영상 수 (YouTube 전용) */
+  transcriptSkippedByCircuit?: number;
 }
 
 // 모든 수집기가 구현하는 인터페이스

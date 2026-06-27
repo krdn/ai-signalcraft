@@ -2,7 +2,7 @@
 import { getYoutubeClient, YoutubeApiKeyMissingError } from '../utils/youtube-client';
 import { getInnertubeClient } from '../utils/youtube-innertube';
 import { QuotaTracker } from '../utils/youtube-quota';
-import { fetchTranscript } from '../utils/youtube-transcript';
+import { fetchTranscript, type TranscriptResult } from '../utils/youtube-transcript';
 import { splitIntoDaysKst, KST_OFFSET_MS } from '../utils/community-parser';
 import type { Collector, CollectionOptions, CollectionStats } from './base';
 import { parseYoutubeDuration, type YoutubeVideo } from './youtube-videos';
@@ -15,6 +15,34 @@ const SEARCH_PAGE_SIZE = 50;
 const COMMENTS_PAGE_SIZE = 100;
 // 쿼터 임계값 — search 1회(100유닛) 미만이면 fallback 전환
 const QUOTA_FALLBACK_THRESHOLD = 150;
+
+// ─── 자막 차단 회로 차단기 ───
+// YouTube가 PO token 없는 자막 요청을 429/403으로 거부하면, 한 run 내에서 영상마다
+// 똑같이 차단당하므로 무의미한 재요청이 누적된다. 임계치만큼 차단을 맞으면 회로를 열어
+// 그 run의 잔여 영상은 자막 호출을 스킵한다(Whisper/description 폴백은 그대로 작동).
+export type CircuitState = { blockedCount: number; open: boolean; skipped: number };
+
+const TRANSCRIPT_BLOCK_THRESHOLD = 2;
+
+/**
+ * 자막 스크래퍼 차단(429/403)을 run 내에서 집계해 회로를 연다.
+ * 성공·no_tracks는 무시. 임계치 도달 시 open=true. 불변 — 새 상태를 반환한다.
+ */
+export function evaluateTranscriptCircuit(
+  state: CircuitState,
+  result: TranscriptResult,
+  threshold: number,
+): CircuitState {
+  if (result.ok || !result.blocked) return state;
+  const blockedCount = state.blockedCount + 1;
+  const open = blockedCount >= threshold;
+  if (open && !state.open) {
+    console.warn(
+      `[transcript] circuit_open run skipping remaining videos (blocked=${blockedCount})`,
+    );
+  }
+  return { ...state, blockedCount, open };
+}
 
 /**
  * YoutubeCollector — 통합 수집기
@@ -50,6 +78,8 @@ export class YoutubeCollector implements Collector<YoutubeVideo> {
     let totalCollected = 0;
     let endReason: CollectionStats['endReason'] = 'completed';
     let lastPage = 0;
+    // 자막 차단 회로 — run 스코프(동시 run 간 오염 방지)
+    let circuit: CircuitState = { blockedCount: 0, open: false, skipped: 0 };
     let perDayCapSkip = 0;
     let outOfRange = 0;
 
@@ -128,10 +158,16 @@ export class YoutubeCollector implements Collector<YoutubeVideo> {
             video.comments = await this.collectComments(video.sourceId, maxComments, commentOrder);
           }
           if (collectTranscript) {
-            const transcript = await fetchTranscript(video.sourceId);
-            if (transcript) {
-              video.transcript = transcript.text;
-              video.transcriptLang = transcript.lang;
+            if (circuit.open) {
+              // 회로 열림 — 호출 자체를 스킵 (Whisper/description 폴백으로 진행)
+              circuit = { ...circuit, skipped: circuit.skipped + 1 };
+            } else {
+              const result = await fetchTranscript(video.sourceId);
+              if (result.ok) {
+                video.transcript = result.text;
+                video.transcriptLang = result.lang;
+              }
+              circuit = evaluateTranscriptCircuit(circuit, result, TRANSCRIPT_BLOCK_THRESHOLD);
             }
           }
         }
@@ -157,6 +193,8 @@ export class YoutubeCollector implements Collector<YoutubeVideo> {
       quotaUsed: this.quota.getUsed(),
       quotaRemaining: this.quota.getRemaining(),
       usedFallback: this.fallbackActive || undefined,
+      transcriptCircuitOpen: circuit.open || undefined,
+      transcriptSkippedByCircuit: circuit.skipped || undefined,
     };
   }
 
